@@ -122,7 +122,7 @@ int tn5250_config_load (Tn5250Config *This, const char *filename)
 
    /* It is not an error for a config file not to exist. */
    if ((f = fopen (filename, "r")) == NULL)
-      return errno == ENOENT ? 0 : -1;
+     return errno == ENOENT ? 0 : -1;
 
    while (fgets (buf, sizeof(buf)-1, f)) {
       buf[sizeof (buf)-1] = '\0';

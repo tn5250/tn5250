@@ -49,8 +49,13 @@ static void telnet_stream_destroy(Tn5250Stream *This);
 static void telnet_stream_disconnect(Tn5250Stream * This);
 static int telnet_stream_handle_receive(Tn5250Stream * This);
 static void telnet_stream_send_packet(Tn5250Stream * This, int length,
-	      int flowtype, unsigned char flags, unsigned char opcode,
+				      int flowtype, unsigned char flags, 
+				      unsigned char opcode,
 				      unsigned char *data);
+static void tn3270_stream_send_packet(Tn5250Stream * This, int length,
+				      int flowtype, unsigned char flags,
+				      unsigned char opcode,
+				      unsigned char * data);
 
 #define SEND    1
 #define IS      0
@@ -71,6 +76,36 @@ static void telnet_stream_send_packet(Tn5250Stream * This, int length,
 #define TERMINAL_TYPE   24
 #define TIMING_MARK     6
 #define NEW_ENVIRON	39
+
+#define TN3270E         40
+
+/* Sub-Options for TN3270E negotiation */
+#define TN3270E_ASSOCIATE   0
+#define TN3270E_CONNECT     1
+#define TN3270E_DEVICE_TYPE 2
+#define TN3270E_FUNCTIONS   3
+#define TN3270E_IS          4
+#define TN3270E_REASON      5
+#define TN3270E_REJECT      6
+#define TN3270E_REQUEST     7
+#define TN3270E_SEND        8
+
+/* Reason codes for TN3270E negotiation */
+#define TN3270E_CONN_PARTNER    0
+#define TN3270E_DEVICE_IN_USE   1
+#define TN3270E_INV_ASSOCIATE   2
+#define TN3270E_INV_NAME        3
+#define TN3270E_INV_DEVICE_TYPE 4
+#define TN3270E_TYPE_NAME_ERROR 5
+#define TN3270E_UNKNOWN_ERROR   6
+#define TN3270E_UNSUPPORTED_REQ 7
+
+/* Function names for TN3270E FUNCTIONS sub-option */
+#define TN3270E_BIND_IMAGE      0
+#define TN3270E_DATA_STREAM_CTL 1
+#define TN3270E_RESPONSES       2
+#define TN3270E_SCS_CTL_CODES   3
+#define TN3270E_SYSREQ          4
 
 #define EOR  239
 #define SE   240
@@ -297,6 +332,29 @@ int tn5250_telnet_stream_init (Tn5250Stream *This)
    This->handle_receive = telnet_stream_handle_receive;
    This->send_packet = telnet_stream_send_packet;
    This->destroy = telnet_stream_destroy;
+   This->streamtype = TN5250_STREAM;
+   return 0; /* Ok */
+}
+
+/****f* lib5250/tn3270_telnet_stream_init
+ * NAME
+ *    tn3270_telnet_stream_init
+ * SYNOPSIS
+ *    ret = tn3270_telnet_stream_init (This);
+ * INPUTS
+ *    Tn5250Stream *       This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
+int tn3270_telnet_stream_init (Tn5250Stream *This)
+{
+   This->connect = telnet_stream_connect;
+   This->accept = telnet_stream_accept;
+   This->disconnect = telnet_stream_disconnect;
+   This->handle_receive = telnet_stream_handle_receive;
+   This->send_packet = tn3270_stream_send_packet;
+   This->destroy = telnet_stream_destroy;
+   This->streamtype = TN3270_STREAM;
    return 0; /* Ok */
 }
 
@@ -444,7 +502,6 @@ static int telnet_stream_accept(Tn5250Stream * This, int masterfd)
 
    return 0;
 }
-
 
 /****i* lib5250/telnet_stream_disconnect
  * NAME
@@ -1054,8 +1111,11 @@ static void telnet_stream_send_packet(Tn5250Stream * This, int length, int flowt
    telnet_stream_write(This, tn5250_buffer_data(&out_buf), tn5250_buffer_length(&out_buf));
    tn5250_buffer_free(&out_buf);
 }
+
 void
-tn3270_stream_send_packet(Tn5250Stream * This, int length, 
+tn3270_stream_send_packet(Tn5250Stream * This, int length,
+			  int flowtype, unsigned char flags,
+			  unsigned char opcode,
 			  unsigned char * data)
 {
   Tn5250Buffer out_buf;

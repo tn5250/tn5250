@@ -1,3 +1,7 @@
+2000-06-13 Mike Madore <mmadore@turbolinux.com>
+- Did some restructuring to better accomodate the 3270 data stream in 
+  preparation for handling the tn3270e protocol.
+	
 2000-06-09 Mike Madore <mmadore@turbolinux.com>
 - Added tn3270_get_record function to stream.c.  The 5250 version assumes a 
   header which doesn't exist on simple 3270 streams.

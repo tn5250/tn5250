@@ -42,6 +42,9 @@
 extern "C" {
 #endif
 
+#define TN3270_STREAM 0
+#define TN5250_STREAM 1
+
 struct _Tn5250Config;
 
 /****s* lib5250/Tn5250Stream
@@ -81,6 +84,7 @@ struct _Tn5250Stream {
    SOCKET_TYPE sockfd;
    int status;
    int state;
+  int streamtype;
   long msec_wait;
 
 #ifndef NDEBUG
@@ -96,7 +100,8 @@ extern int tn5250_stream_config (Tn5250Stream *This, struct _Tn5250Config *confi
 extern void tn5250_stream_destroy(Tn5250Stream /*@only@*/ * This);
 extern Tn5250Record /*@only@*/ *tn5250_stream_get_record(Tn5250Stream * This);
 extern Tn5250Record /*@only@*/ *tn3270_stream_get_record(Tn5250Stream * This);
-extern Tn5250Stream *tn5250_stream_host(SOCKET_TYPE masterSock, long timeout);
+extern Tn5250Stream *tn5250_stream_host(SOCKET_TYPE masterSock, long timeout,
+					int streamtype);
 #define tn5250_stream_connect(This,to) \
    (* (This->connect)) ((This),(to))
 #define tn5250_stream_disconnect(This) \

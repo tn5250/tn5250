@@ -70,6 +70,7 @@ static void streamInit(Tn5250Stream *This, long timeout)
    This->records = This->current_record = NULL;
    This->sockfd = (SOCKET_TYPE) - 1;
    This->msec_wait = timeout;
+   This->streamtype = TN5250_STREAM;
    tn5250_buffer_init(&(This->sb_buf));
 }
 
@@ -154,7 +155,8 @@ Tn5250Stream *tn5250_stream_open (const char *to)
  * DESCRIPTION
  *    DOCUMENT ME!!!
  *****/
-Tn5250Stream *tn5250_stream_host (int masterfd, long timeout)
+Tn5250Stream *tn5250_stream_host (int masterfd, long timeout,
+				  int streamtype)
 {
    Tn5250Stream *This = tn5250_new(Tn5250Stream, 1);
    Tn5250StreamType *iter;
@@ -163,11 +165,17 @@ Tn5250Stream *tn5250_stream_host (int masterfd, long timeout)
 
    if (This != NULL) {
       streamInit(This, timeout);
-      /* Assume telnet stream type. */
-      ret = tn5250_telnet_stream_init (This);
+      if(streamtype == TN5250_STREAM) 
+	{
+	  /* Assume telnet stream type. */
+	  ret = tn5250_telnet_stream_init (This);
+	}
+      else
+	{
+	  ret = tn3270_telnet_stream_init (This);
+	}
       if (ret != 0) {
          tn5250_stream_destroy (This);
-	 printf("1\n");
          return NULL;
       }
       /* Accept */
@@ -177,9 +185,7 @@ Tn5250Stream *tn5250_stream_host (int masterfd, long timeout)
 	 return This;
 
       tn5250_stream_destroy (This);
-      printf("2\n");
    }
-   printf("3\n");
    return NULL;
 }
 
@@ -253,44 +259,20 @@ Tn5250Record *tn5250_stream_get_record(Tn5250Stream * This)
    This->records = tn5250_record_list_remove(This->records, record);
    This->record_count--;
 
-   TN5250_ASSERT(tn5250_record_length(record)>= 10);
-
-   offset = 6 + tn5250_record_data(record)[6];
-
-   TN5250_LOG(("tn5250_stream_get_record: offset = %d\n", offset));
-   tn5250_record_set_cur_pos(record, offset);
-   return record;
-}
-
-/****f* lib5250/tn3270_stream_get_record
- * NAME
- *    tn3270_stream_get_record
- * SYNOPSIS
- *    ret = tn3270_stream_get_record (This);
- * INPUTS
- *    Tn3270Stream *       This       - 
- * DESCRIPTION
- *    DOCUMENT ME!!!
- *****/
-Tn5250Record *tn3270_stream_get_record(Tn5250Stream * This)
-{
-   Tn5250Record *record;
-   int offset;
-
-   record = This->records;
-   TN5250_ASSERT(This->record_count >= 1);
-   TN5250_ASSERT(record != NULL);
-
-   This->records = tn5250_record_list_remove(This->records, record);
-   This->record_count--;
-
-   offset = 0;
+   if(This->streamtype == TN5250_STREAM)
+     {
+       TN5250_ASSERT(tn5250_record_length(record)>= 10);
+       offset = 6 + tn5250_record_data(record)[6];
+     }
+   else
+     {
+       offset = 0;
+     }
 
    TN5250_LOG(("tn5250_stream_get_record: offset = %d\n", offset));
    tn5250_record_set_cur_pos(record, offset);
    return record;
 }
-
 
 /****f* lib5250/tn5250_stream_setenv
  * NAME
