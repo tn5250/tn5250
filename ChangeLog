@@ -3,6 +3,11 @@
   now properly referenced as being in $(srcdir) in makefile.
 - Don't build/distribute transmaps.h.html
 - Put tn5250.m4 in $(datdir)/aclocal, not /usr/share/aclocal.
+  (after releasing 0.15.8 - ugh):
+- Changed license in tn5250.m4 to read `TN5250' instead of `GUILE'.
+- Added LGPL exception clause to headers of src/*.[ch] except for
+  src/scs2pdf.c, src/tn5250.c, and src/scs2ascii.c; in other words,
+  everything in `lib5250.a' is now LGPL.
 
 2000-03-26 Mike Madore <mmadore@turbolinux.com>
 - Added documentation to tn5250_stream_open function

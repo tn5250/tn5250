@@ -18,24 +18,16 @@ dnl   the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
 dnl   Boston, MA 02111-1307 USA
 dnl   
 dnl   As a special exception, the Free Software Foundation gives permission
-dnl   for additional uses of the text contained in its release of GUILE.
+dnl   for additional uses of the text contained in its release of TN5250.
 dnl   
-dnl   The exception is that, if you link the GUILE library with other files
+dnl   The exception is that, if you link the TN5250 library with other files
 dnl   to produce an executable, this does not by itself cause the
 dnl   resulting executable to be covered by the GNU General Public License.
 dnl   Your use of that executable is in no way restricted on account of
-dnl   linking the GUILE library code into it.
+dnl   linking the TN5250 library code into it.
 dnl   
 dnl   This exception does not however invalidate any other reasons why
 dnl   the executable file might be covered by the GNU General Public License.
-dnl   
-dnl   This exception applies only to the code released by the
-dnl   Free Software Foundation under the name GUILE.  If you copy
-dnl   code from other Free Software Foundation releases into a copy of
-dnl   GUILE, as the General Public License permits, the exception does
-dnl   not apply to the code that you add in this way.  To avoid misleading
-dnl   anyone as to the status of such modified files, you must delete
-dnl   this exception notice from them.
 dnl   
 dnl   If you write modifications of your own for TN5250, it is your choice
 dnl   whether to permit this exception to apply to your modifications.
