@@ -1,3 +1,9 @@
+2000-05-09 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Per Scott Klement, indicators not updated until first keystroke in some
+  cases (should now be resolved).
+- Removed tn5250_session_message_on/tn5250_session_message_off - One-line
+  functions are silly more often than not.
+
 2000-05-05 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - Minor tweak to tn5250.h (still including formattable.h)
 

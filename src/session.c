@@ -51,8 +51,6 @@ static void tn5250_session_home(Tn5250Session * This);
 static void tn5250_session_print(Tn5250Session * This);
 static void tn5250_session_output_only(Tn5250Session * This);
 static void tn5250_session_save_screen(Tn5250Session * This);
-static void tn5250_session_message_on(Tn5250Session * This);
-static void tn5250_session_message_off(Tn5250Session * This);
 static void tn5250_session_roll(Tn5250Session * This);
 static void tn5250_session_start_of_field(Tn5250Session * This);
 static void tn5250_session_start_of_header(Tn5250Session * This);
@@ -238,11 +236,13 @@ static void tn5250_session_handle_receive(Tn5250Session * This)
 	 break;
 
       case TN5250_RECORD_OPCODE_MESSAGE_ON:
-	 tn5250_session_message_on(This);
+	 tn5250_display_indicator_set(This->display,
+	       TN5250_DISPLAY_IND_MESSAGE_WAITING);
 	 break;
 
       case TN5250_RECORD_OPCODE_MESSAGE_OFF:
-	 tn5250_session_message_off(This);
+	 tn5250_display_indicator_clear(This->display, 
+	       TN5250_DISPLAY_IND_MESSAGE_WAITING);
 	 break;
 
       case TN5250_RECORD_OPCODE_NO_OP:
@@ -257,12 +257,11 @@ static void tn5250_session_handle_receive(Tn5250Session * This)
 	 TN5250_ASSERT(0);
       }
 
-      if (!tn5250_record_is_chain_end(This->record)) {
+      if (!tn5250_record_is_chain_end(This->record))
 	 tn5250_session_process_stream(This);
-	 tn5250_display_update (This->display);
-      }
    }
 
+   tn5250_display_update (This->display);
 }
 
 /****i* lib5250/tn5250_session_invite
@@ -562,7 +561,7 @@ static void tn5250_session_process_stream(Tn5250Session * This)
 	 TN5250_ASSERT(0);
       }
    }
-   
+
 }
 
 /****i* lib5250/tn5250_session_write_error_code
@@ -1071,39 +1070,6 @@ static void tn5250_session_save_screen(Tn5250Session * This)
 	 TN5250_RECORD_FLOW_DISPLAY, TN5250_RECORD_H_NONE,
 	 TN5250_RECORD_OPCODE_SAVE_SCR, tn5250_buffer_data (&buffer));
    tn5250_buffer_free (&buffer);
-}
-
-/****i* lib5250/tn5250_session_message_on
- * NAME
- *    tn5250_session_message_on
- * SYNOPSIS
- *    tn5250_session_message_on (This);
- * INPUTS
- *    Tn5250Session *      This       - 
- * DESCRIPTION
- *    DOCUMENT ME!!!
- *****/
-static void tn5250_session_message_on(Tn5250Session * This)
-{
-   TN5250_LOG(("MessageOn: entered.\n"));
-   tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_MESSAGE_WAITING);
-}
-
-/****i* lib5250/tn5250_session_message_off
- * NAME
- *    tn5250_session_message_off
- * SYNOPSIS
- *    tn5250_session_message_off (This);
- * INPUTS
- *    Tn5250Session *      This       - 
- * DESCRIPTION
- *    DOCUMENT ME!!!
- *****/
-static void tn5250_session_message_off(Tn5250Session * This)
-{
-   TN5250_LOG(("MessageOff: entered.\n"));
-   tn5250_display_indicator_clear(This->display,
-				  TN5250_DISPLAY_IND_MESSAGE_WAITING);
 }
 
 /****i* lib5250/tn5250_session_roll
