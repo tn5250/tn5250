@@ -16,11 +16,6 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/* TODO:
- *    - Why a duplicate 'data' field when we have enough info to get
- *        this from the display?  More prone to error.
- */
-
 #include "config.h"
 
 #include <stddef.h>
@@ -34,14 +29,14 @@
 #include "field.h"
 #include "formattable.h"
 
-Tn5250Field *tn5250_field_new(Tn5250DBuffer * display)
+Tn5250Field *tn5250_field_new(int w)
 {
    Tn5250Field *This = tn5250_new(Tn5250Field, 1);
    if (This == NULL)
       return NULL;
    memset(This, 0, sizeof(Tn5250Field));
    This->id = -1;
-   This->display = display;
+   This->w = w;
    return This;
 }
 
@@ -53,21 +48,11 @@ Tn5250Field *tn5250_field_copy(Tn5250Field * This)
    memcpy(fld, This, sizeof(Tn5250Field));
    fld->next = NULL;
    fld->prev = NULL;
-   if (This->data != NULL) {
-      fld->data = (unsigned char *) malloc(This->length);
-      if (fld->data == NULL) {
-	 free (fld);
-	 return NULL;
-      }
-      memcpy(fld->data, This->data, This->length);
-   }
    return fld;
 }
 
 void tn5250_field_destroy(Tn5250Field * This)
 {
-   if (This->data != NULL)
-      free(This->data);
    free(This);
 }
 
@@ -95,13 +80,6 @@ void tn5250_field_dump(Tn5250Field * This)
    TN5250_LOG(("\ntn5250_field_dump: type = %s\n", tn5250_field_description (This)));
    TN5250_LOG(("tn5250_field_dump: adjust = %s\ntn5250_field_dump: data = ", tn5250_field_adjust_description (This)));
    
-   if (This->data != NULL) {
-      for (curchar = 0; curchar < This->length; curchar++)
-	 TN5250_LOG(("%c", tn5250_ebcdic2ascii(This->data[curchar])));
-      TN5250_LOG(("\ntn5250_field_dump: hex = "));
-      for (curchar = 0; curchar < This->length; curchar++)
-	 TN5250_LOG(("0x%02X ", This->data[curchar]));
-   }
    TN5250_LOG(("\n"));
 }
 #endif
@@ -112,7 +90,7 @@ void tn5250_field_dump(Tn5250Field * This)
  */
 int tn5250_field_hit_test(Tn5250Field * This, int y, int x)
 {
-   int pos = (y * tn5250_dbuffer_width(This->display)) + x;
+   int pos = (y * This->w) + x;
 
    return (pos >= tn5250_field_start_pos(This)
 	   && pos <= tn5250_field_end_pos(This));
@@ -123,8 +101,8 @@ int tn5250_field_hit_test(Tn5250Field * This, int y, int x)
  */
 int tn5250_field_start_pos(Tn5250Field * This)
 {
-   return (This->start_row - 1) * tn5250_dbuffer_width(This->display) +
-       (This->start_col - 1);
+   return This->start_row * This->w +
+       This->start_col;
 }
 
 /*
@@ -137,22 +115,18 @@ int tn5250_field_end_pos(Tn5250Field * This)
 
 /*
  *    Figure out the ending row of this field.
- *    FIXME: This value is ones based.
  */
 int tn5250_field_end_row(Tn5250Field * This)
 {
-   return (tn5250_field_end_pos(This) / tn5250_dbuffer_width(This->display))
-       + 1;
+   return tn5250_field_end_pos(This) / This->w;
 }
 
 /*
  *    Figure out the ending column of this field.
- *    FIXME: This value is ones based.
  */
 int tn5250_field_end_col(Tn5250Field * This)
 {
-   return (tn5250_field_end_pos(This) % tn5250_dbuffer_width(This->display))
-       + 1;
+   return tn5250_field_end_pos(This) % This->w;
 }
 
 /*
@@ -211,33 +185,13 @@ const char *tn5250_field_adjust_description (Tn5250Field * This)
    }
 }
 
-/*
- *    Return the number of characters in this field up to and 
- *    including the last non-blank or non-null character.
- *    FIXME: Return value is ones-based.
- */
-int tn5250_field_count_eof(Tn5250Field *This)
-{
-   int count;
-   unsigned char c;
-
-   if (This->data == NULL)
-      return 0;
-
-   for (count = This->length; count > 0; count--) {
-      c = This->data[count - 1];
-      if (c != '\0' && c != ' ')
-	 break;
-   }
-   return (count);
-}
-
-int tn5250_field_is_full(Tn5250Field *This)
+/* FIXME: Reimplement on display or something.
+ * int tn5250_field_is_full(Tn5250Field *This)
 {
    if (This->data == NULL)
       return 1;
    return (This->data[This->length - 1] != 0);
-}
+} */
 
 /*
  *    Return the number of characters in the this field which
@@ -248,7 +202,7 @@ int tn5250_field_count_left(Tn5250Field *This, int y, int x)
 {
    int pos;
 
-   pos = (y * tn5250_dbuffer_width(This->display) + x);
+   pos = (y * This->w + x);
    pos -= tn5250_field_start_pos(This);
 
    TN5250_ASSERT (tn5250_field_hit_test(This, y, x));
@@ -265,76 +219,11 @@ int tn5250_field_count_left(Tn5250Field *This, int y, int x)
 int tn5250_field_count_right (Tn5250Field *This, int y, int x)
 {
    TN5250_ASSERT(tn5250_field_hit_test(This, y, x));
-   return tn5250_field_end_pos (This) -
-      (y * tn5250_dbuffer_width(This->display) + x);
+   return tn5250_field_end_pos (This) - (y * This->w + x);
 }
 
-unsigned char tn5250_field_get_char (Tn5250Field *This, int pos)
-{
-   TN5250_ASSERT (pos >= 0);
-   TN5250_ASSERT (pos < This->length);
-   return This->data[pos];
-}
-
-void tn5250_field_put_char (Tn5250Field *This, int pos, unsigned char c)
-{
-   TN5250_ASSERT (pos >= 0);
-   TN5250_ASSERT (pos < tn5250_field_length(This));
-   TN5250_LOG(("tn5250_field_put_char: id = %d, pos = %d, c = 0x%02X\n",
-	    This->id, pos, c));
-   This->data[pos] = c;
-}
-
-void tn5250_field_process_adjust (Tn5250Field *This, int y, int x)
-{
-   int i;
-   int count_left;
-
-   switch (tn5250_field_mand_fill_type(This)) {
-   case TN5250_FIELD_NO_ADJUST:
-      TN5250_LOG(("Processing Adjust/Edit: No_Adjust\n"));
-      i = tn5250_field_count_left (This, y, x);
-      TN5250_LOG(("Processing Adjust/Edit: No_Adjust, At end.\n"));
-      for (; i < This->length; i++)
-	 This->data[i] = tn5250_ascii2ebcdic('\0');
-      TN5250_LOG(("Processing Adjust/Edit: No_Adjust, At end.\n"));
-      break;
-   case TN5250_FIELD_RIGHT_ZERO:
-      TN5250_LOG(("Processing Adjust/Edit: Right Zero Fill\n"));
-      /* FIXME: This should be a Tn5250Field method... */
-      count_left = tn5250_field_count_left (This, y, x);
-      tn5250_field_shift_right_fill(This,
-	    count_left, tn5250_ascii2ebcdic('0'));
-      break;
-   case TN5250_FIELD_RIGHT_BLANK:
-      TN5250_LOG(("Processing Adjust/Edit: Right Blank Fill\n"));
-      count_left = tn5250_field_count_left (This, y, x);
-      tn5250_field_shift_right_fill(This,
-	    count_left, tn5250_ascii2ebcdic(' '));
-      break;
-   case TN5250_FIELD_MANDATORY_FILL:
-      TN5250_LOG(("Processing Adjust/Edit: Manditory Fill  NOT CODED\n"));
-      /* FIXME: Implement */
-      break;
-   }
-   tn5250_field_update_display (This);
-   tn5250_field_dump (This);
-}
-
-/*
- *    This updates the display from the contents of the field in
- *    the format table.
- */
-void tn5250_field_update_display (Tn5250Field *This)
-{
-   tn5250_dbuffer_mvaddnstr(This->display, This->start_row - 1,
-			    This->start_col - 1, This->data,
-			    This->length);
-}
-
-/*
+/* FIXME: Reimplement elsewhere.
  *    Not sure if this works, but I fixed two typos. -JMF
- */
 void tn5250_field_set_minus_zone(Tn5250Field *This)
 {
    unsigned char lastchar;
@@ -352,31 +241,55 @@ void tn5250_field_set_minus_zone(Tn5250Field *This)
 
    tn5250_dbuffer_cursor_set(This->display, tn5250_field_end_row(This) - 1,
 	 tn5250_field_end_col(This) - 1);
-   tn5250_dbuffer_addch(This->display, tn5250_ascii2ebcdic('-'));
-}
+   tn5250_dbuffer_addch(This->display, tn5250_ascii2ebcdic('-')); 
+} */
 
 /*
- *    Shift characters to the left and fill the balance with `fill_char'.
- */ 
-void tn5250_field_shift_right_fill(Tn5250Field * field, int leftcount, unsigned char fill_char)
+ *    Determine if the supplied character is a valid data character
+ *    for this field.
+ */
+int tn5250_field_valid_char (Tn5250Field *field, int ch)
 {
-   int o, n;
+   TN5250_LOG(("HandleKey: fieldtype = %d\n", tn5250_field_type (field)));
+   switch (tn5250_field_type (field)) {
+   case TN5250_FIELD_ALPHA_SHIFT:
+      return 1;
 
-   n = tn5250_field_length(field) - 1;
-   if (tn5250_field_is_num_only(field) || tn5250_field_is_signed_num(field))
-      n--;
+   case TN5250_FIELD_ALPHA_ONLY:
+      return (isalpha(ch) ||
+	  ch == ',' ||
+	  ch == '.' ||
+	  ch == '-' ||
+	  ch == ' ');
 
-   if (!tn5250_field_is_fer(field))
-      leftcount--;
+   case TN5250_FIELD_NUM_SHIFT:
+      return 1;
 
-   for (o = leftcount; o >= 0; o--) {
-      field->data[n] = field->data[o];
-      n--;
+   case TN5250_FIELD_NUM_ONLY:
+      return (tn5250_isnumeric(ch) ||
+	  ch == '+' ||
+	  ch == ',' ||
+	  ch == '.' ||
+	  ch == '-' ||
+	  ch == ' ');
+
+   case TN5250_FIELD_KATA_SHIFT:
+      TN5250_LOG(("KATAKANA not implemneted.\n"));
+      return 1;
+
+   case TN5250_FIELD_DIGIT_ONLY:
+      return isdigit (ch);
+
+   case TN5250_FIELD_MAG_READER:
+      TN5250_LOG(("MAG_READER not implemneted.\n"));
+      return 1;
+
+   case TN5250_FIELD_SIGNED_NUM:
+      return (isdigit(ch) ||
+	  ch == '+' ||
+	  ch == '-');
    }
-
-   /* fill the balance with 'fill_char' */
-   for (; n >= 0; n--)
-      field->data[n] = fill_char;
+   return 0;
 }
 
 /*

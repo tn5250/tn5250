@@ -13,6 +13,7 @@ lib5250_la_SOURCES =	buffer.c\
 			cursesterm.c\
 			debug.c\
 			dbuffer.c\
+			display.c\
 			field.c\
 			formattable.c\
 			printsession.c\
@@ -40,6 +41,7 @@ pkginclude_HEADERS = 	buffer.h\
 		 	cursesterm.h\
 			debug.h\
 			dbuffer.h\
+			display.h\
 			field.h\
 			formattable.h\
 			printsession.h\

@@ -66,11 +66,13 @@ extern "C" {
 
 #define TN5250_SESSION_KEY_QUEUE_SIZE   100
 
+   struct _Tn5250Display;
+
    struct _Tn5250Session {
-      Tn5250Terminal /*@owned@*/ /*@null@*/ *term;
+      struct _Tn5250Display *		display;
+
       Tn5250Stream /*@owned@*/ /*@null@*/ *stream;
       Tn5250DBuffer /*@owned@*/ *dsp;
-      Tn5250DBuffer *saved_bufs[256];
       Tn5250Record /*@owned@*/ *record;
       Tn5250Table /*@owned@*/ *table;
       int pending_insert;

@@ -24,11 +24,11 @@
   </bug>
 
   <bug>
-    <date>99.10.01.16.45.00</date>
-    <owner email="c.evans@clear.net.nz">Carey Evans</owner>
+    <date>99.11.15.22.50.00</date>
+    <owner email="jasonf@nacs.net">Jay 'Eraserhead' Felice</owner>
 
-    System Request provides too many options.  For some reason, the AS/400
-    thinks there is a host system to be able to return to.
+    System request at signon screen (which is apparently ignored by the 400)
+    causes an assertion/core dump.
   </bug>
 
 </bugs>

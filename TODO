@@ -55,5 +55,12 @@
     Look into how vim handles the ESC key, so that we can eliminate strangeness
     about how ESC A (for Attention) can act strange if pressed too quickly.
   </item>
+
+  <item>
+    FER (Field Exit Required) fields aren't handled correctly at all.  If the
+    Field Exit Required bit is set, don't perform an automatic field exit
+    when the last character of data is entered.
+  </item>
+
 </todo>
 <!-- vi:set sts=2 sw=2 autoindent: -->

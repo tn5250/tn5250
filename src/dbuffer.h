@@ -15,8 +15,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#ifndef DISPLAY_H
-#define DISPLAY_H
+#ifndef DBUFFER_H
+#define DBUFFER_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,11 +29,17 @@ extern "C" {
 #define TN5250_DISPLAY_IND_INSERT	   	0x0010
 
    struct _Tn5250DBuffer {
+ 
+      /* How we keep track of multiple saved display buffers */
+      struct _Tn5250DBuffer *	next;
+      struct _Tn5250DBuffer *	prev;
+      unsigned char		id;	/* Saved buffer id */
+
       int w, h;
       int cx, cy;		/* Cursor Position */
       int tcx, tcy;		/* for set_new_ic */
       int disp_indicators;
-      unsigned char /*@notnull@*/ **rows;
+      unsigned char /*@notnull@*/ *data;
    };
 
    typedef struct _Tn5250DBuffer Tn5250DBuffer;
@@ -62,9 +68,6 @@ extern "C" {
 
    extern void tn5250_dbuffer_indicator_set(Tn5250DBuffer * This, int inds);
    extern void tn5250_dbuffer_indicator_clear(Tn5250DBuffer * This, int inds);
-   extern int tn5250_dbuffer_save(Tn5250DBuffer * This);
-   extern void tn5250_dbuffer_restore(Tn5250DBuffer * This);
-
    extern unsigned char tn5250_dbuffer_char_at(Tn5250DBuffer * This, int y, int x);
 
 #define tn5250_dbuffer_width(This) ((This)->w)
@@ -83,4 +86,4 @@ extern "C" {
 }
 
 #endif
-#endif				/* DISPLAY_H */
+#endif				/* DBUFFER_H */

@@ -50,6 +50,7 @@ static int debug_stream_handle_receive(Tn5250Stream * This);
 static void debug_stream_send_packet(Tn5250Stream * This, int length,
 	      int flowtype, unsigned char flags, unsigned char opcode,
 				      unsigned char *data);
+static void debug_stream_destroy(Tn5250Stream *This);
 
 static void debug_terminal_init(Tn5250Terminal *This);
 static void debug_terminal_term(Tn5250Terminal *This);
@@ -68,7 +69,7 @@ int tn5250_debug_stream_init (Tn5250Stream *This)
    This->disconnect = debug_stream_disconnect;
    This->handle_receive = debug_stream_handle_receive;
    This->send_packet = debug_stream_send_packet;
-   This->destroy = NULL; /* FIXME: */
+   This->destroy = debug_stream_destroy;
    This->debugfile = NULL;
    return 0; /* Ok */
 }
@@ -127,6 +128,11 @@ static void debug_stream_send_packet(Tn5250Stream * This, int length,
    /* noop */
 }
 
+static void debug_stream_destroy(Tn5250Stream *This)
+{
+   /* noop */
+}
+
 static void debug_terminal_init(Tn5250Terminal *This)
 {
    (* (This->data->slaveterm->init)) (This->data->slaveterm);
@@ -140,6 +146,8 @@ static void debug_terminal_term(Tn5250Terminal *This)
 static void debug_terminal_destroy(Tn5250Terminal /*@only@*/ *This)
 {
    (* (This->data->slaveterm->destroy)) (This->data->slaveterm);
+   free (This->data);
+   free (This);
 }
 
 static int debug_terminal_width(Tn5250Terminal *This)
@@ -218,7 +226,6 @@ static int debug_terminal_waitevent(Tn5250Terminal *This)
 	 /* It's useful to force a core dump sometimes... */
 	 abort ();
       } else if (!memcmp (buf, "@key ", 5)) {
-	 /* FIXME: */
 	 (* (This->data->slaveterm->waitevent)) (This->data->slaveterm);
 	 This->data->keyq = atoi (buf + 5);
 	 return TN5250_TERMINAL_EVENT_KEY;
