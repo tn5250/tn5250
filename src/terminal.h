@@ -177,6 +177,16 @@ extern "C"
 			      struct _Tn5250Scrollbar * scrollbar);
     void (*destroy_scrollbar) (struct _Tn5250Terminal * This,
 			       struct _Tn5250Display * display);
+    void (*create_menubar) (struct _Tn5250Terminal * This,
+			    struct _Tn5250Display * display,
+			    struct _Tn5250Menubar * menubar);
+    void (*destroy_menubar) (struct _Tn5250Terminal * This,
+			     struct _Tn5250Display * display);
+    void (*create_menuitem) (struct _Tn5250Terminal * This,
+			     struct _Tn5250Display * display,
+			     struct _Tn5250Menuitem * menuitem);
+    void (*destroy_menuitem) (struct _Tn5250Terminal * This,
+			      struct _Tn5250Display * display);
   };
 
   typedef struct _Tn5250Terminal Tn5250Terminal;
@@ -218,6 +228,16 @@ extern "C"
 						struct _Tn5250Scrollbar *s);
   extern void tn5250_terminal_destroy_scrollbar (Tn5250Terminal * This,
 						 struct _Tn5250Display *d);
+  extern void tn5250_terminal_create_menubar (Tn5250Terminal * This,
+					      struct _Tn5250Display *d,
+					      struct _Tn5250Menubar *m);
+  extern void tn5250_terminal_destroy_menubar (Tn5250Terminal * This,
+					       struct _Tn5250Display *d);
+  extern void tn5250_terminal_create_menuitem (Tn5250Terminal * This,
+					       struct _Tn5250Display *d,
+					       struct _Tn5250Menuitem *i);
+  extern void tn5250_terminal_destroy_menuitem (Tn5250Terminal * This,
+						struct _Tn5250Display *d);
 
 #ifdef __cplusplus
 }

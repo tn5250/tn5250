@@ -2779,7 +2779,7 @@ tn5250_session_query_reply (Tn5250Session * This)
 static void
 tn5250_session_define_selection_field (Tn5250Session * This, int length)
 {
-  Tn5250Menu *menu;
+  Tn5250Menubar *menubar;
   unsigned char flagbyte;
   unsigned char fieldtype;
   unsigned char textsize;
@@ -2797,7 +2797,7 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
   TN5250_LOG (("Entering tn5250_session_define_selection_field()\n"));
 
 
-  menu = tn5250_menu_new ();
+  menubar = tn5250_menubar_new ();
 
   flagbyte = tn5250_record_get_byte (This->record);
 
@@ -2854,38 +2854,38 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
   if (flagbyte & 0x80)
     {
       TN5250_LOG (("Use scroll bar\n"));
-      menu->use_scrollbar = 1;
+      menubar->use_scrollbar = 1;
       usescrollbar = 1;
     }
 
   if (flagbyte & 0x40)
     {
       TN5250_LOG (("Add blank after numeric seperator\n"));
-      menu->num_sep_blank = 1;
+      menubar->num_sep_blank = 1;
     }
 
   if (flagbyte & 0x20)
     {
       TN5250_LOG (("Use * for unavailable options\n"));
-      menu->asterisk = 1;
+      menubar->asterisk = 1;
     }
 
   if (flagbyte & 0x10)
     {
       TN5250_LOG (("Limit cursor to input capable positions\n"));
-      menu->inputonly = 1;
+      menubar->inputonly = 1;
     }
 
   if (flagbyte & 0x08)
     {
       TN5250_LOG (("Field advance = character advance\n"));
-      menu->fieldadvischaradv = 1;
+      menubar->fieldadvischaradv = 1;
     }
 
   if (flagbyte & 0x04)
     {
       TN5250_LOG (("Cursor may not exit selection field\n"));
-      menu->nocursormove = 1;
+      menubar->nocursormove = 1;
     }
 
 
@@ -2901,7 +2901,7 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
 
   if (fieldtype == 0x01)
     {
-      TN5250_LOG (("Menu bar\n"));
+      TN5250_LOG (("Menubar bar\n"));
     }
   else if (fieldtype == 0x11)
     {
@@ -2940,7 +2940,7 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
       TN5250_LOG (("Invalid field selection type!!\n"));
     }
 
-  menu->type = fieldtype;
+  menubar->type = fieldtype;
 
   reserved = tn5250_record_get_byte (This->record);
   reserved = tn5250_record_get_byte (This->record);

@@ -2,7 +2,7 @@
 #define MENU_H
 
 /* TN5250 - An implementation of the 5250 telnet protocol.
- * Copyright (C) 1997 Michael Madore
+ * Copyright (C) 2005 James Rich
  * 
  * This file is part of TN5250.
  *
@@ -28,34 +28,34 @@ extern "C"
 {
 #endif
 
-#define MENU_TYPE_MENUBAR 0x01 /* Menu bar */
-#define MENU_TYPE_SINGLE_SELECT_FIELD 0x11 /* Single choice selection field */
-#define MENU_TYPE_MULTIPLE_SELECT_FIELD 0x12 /* Multiple choice selection field */
-#define MENU_TYPE_SINGLE_SELECT_LIST 0x21 /* Single choice selection list */
-#define MENU_TYPE_MULTIPLE_SELECT_LIST 0x22 /* Multiple choice selection list */
-#define MENU_TYPE_SINGLE_SELECT_FIELD_PULL_DOWN 0x31 /* Single choice selection field and a pull-down list */
-#define MENU_TYPE_MULTIPLE_SELECT_FIELD_PULL_DOWN 0x32 /* Multiple choice selection field and a pull-down list */
-#define MENU_TYPE_PUSH_BUTTONS 0x41 /* Push buttons */
-#define MENU_TYPE_PUSH_BUTTONS_PULL_DOWN 0x51 /* Push buttons in a pull-down menu */
+#define MENU_TYPE_MENUBAR 0x01	/* Menu bar */
+#define MENU_TYPE_SINGLE_SELECT_FIELD 0x11	/* Single choice selection field */
+#define MENU_TYPE_MULTIPLE_SELECT_FIELD 0x12	/* Multiple choice selection field */
+#define MENU_TYPE_SINGLE_SELECT_LIST 0x21	/* Single choice selection list */
+#define MENU_TYPE_MULTIPLE_SELECT_LIST 0x22	/* Multiple choice selection list */
+#define MENU_TYPE_SINGLE_SELECT_FIELD_PULL_DOWN 0x31	/* Single choice selection field and a pull-down list */
+#define MENU_TYPE_MULTIPLE_SELECT_FIELD_PULL_DOWN 0x32	/* Multiple choice selection field and a pull-down list */
+#define MENU_TYPE_PUSH_BUTTONS 0x41	/* Push buttons */
+#define MENU_TYPE_PUSH_BUTTONS_PULL_DOWN 0x51	/* Push buttons in a pull-down menu */
 
 
-  struct _Tn5250Menu;
+  struct _Tn5250Menubar;
   struct _Tn5250DBuffer;
 
-/***** lib5250/Tn5250Menu
+/***** lib5250/Tn5250Menubar
  * NAME
- *    Tn5250Menu
+ *    Tn5250Menubar
  * SYNOPSIS
- *    Tn5250Menu *menu = tn5250_menu_new ();
+ *    Tn5250Menubar *menubar = tn5250_menubar_new ();
  * DESCRIPTION
- *    The Tn5250Menu object manages a 5250 menu on the display.
+ *    The Tn5250Menubar object manages a 5250 menubar on the display.
  * SOURCE
  */
-  struct _Tn5250Menu
+  struct _Tn5250Menubar
   {
-    struct _Tn5250Menu *next;
-    struct _Tn5250Menu *prev;
-    unsigned int id;		/* Numeric ID of this menu */
+    struct _Tn5250Menubar *next;
+    struct _Tn5250Menubar *prev;
+    unsigned int id;		/* Numeric ID of this menubar */
     unsigned char mdt;
     short use_scrollbar;
     short num_sep_blank;
@@ -64,35 +64,37 @@ extern "C"
     short fieldadvischaradv;
     short nocursormove;
     unsigned char type;
-    unsigned int row;		/* Row menu starts on */
-    unsigned int column;	/* Column menu starts on */
-    unsigned int size;		/* max size (in characters) of menu item */
-    unsigned int height;	/* height (in rows) of menu */
-    unsigned int items;		/* number of items on this menu */
+    unsigned int row;		/* Row menubar starts on */
+    unsigned int column;	/* Column menubar starts on */
+    unsigned int size;		/* max size (in characters) of menubar item */
+    unsigned int height;	/* height (in rows) of menubar */
+    unsigned int items;		/* number of items on this menubar */
     struct _Tn5250DBuffer *table;
   };
 
-  typedef struct _Tn5250Menu Tn5250Menu;
+  typedef struct _Tn5250Menubar Tn5250Menubar;
 
-/* Manipulate menus */
-  extern Tn5250Menu *tn5250_menu_new ();
-  extern Tn5250Menu *tn5250_menu_copy (Tn5250Menu * This);
-  extern void tn5250_menu_destroy (Tn5250Menu * This);
-  extern int tn5250_menu_start_row (Tn5250Menu * This);
-  extern int tn5250_menu_start_col (Tn5250Menu * This);
-  extern int tn5250_menu_size (Tn5250Menu * This);
-  extern int tn5250_menu_height (Tn5250Menu * This);
-  extern int tn5250_menu_items (Tn5250Menu * This);
+/* Manipulate menubars */
+  extern Tn5250Menubar *tn5250_menubar_new ();
+  extern Tn5250Menubar *tn5250_menubar_copy (Tn5250Menubar * This);
+  extern void tn5250_menubar_destroy (Tn5250Menubar * This);
+  extern int tn5250_menubar_start_row (Tn5250Menubar * This);
+  extern int tn5250_menubar_start_col (Tn5250Menubar * This);
+  extern int tn5250_menubar_size (Tn5250Menubar * This);
+  extern int tn5250_menubar_height (Tn5250Menubar * This);
+  extern int tn5250_menubar_items (Tn5250Menubar * This);
 
-/* Manipulate menu lists */
-  extern Tn5250Menu *tn5250_menu_list_destroy (Tn5250Menu * list);
-  extern Tn5250Menu *tn5250_menu_list_add (Tn5250Menu * list,
-					   Tn5250Menu * node);
-  extern Tn5250Menu *tn5250_menu_list_remove (Tn5250Menu * list,
-					      Tn5250Menu * node);
-  extern Tn5250Menu *tn5250_menu_list_find_by_id (Tn5250Menu * list, int id);
-  extern Tn5250Menu *tn5250_menu_list_copy (Tn5250Menu * list);
-  extern Tn5250Menu *tn5250_menu_hit_test (Tn5250Menu * list, int x, int y);
+/* Manipulate menubar lists */
+  extern Tn5250Menubar *tn5250_menubar_list_destroy (Tn5250Menubar * list);
+  extern Tn5250Menubar *tn5250_menubar_list_add (Tn5250Menubar * list,
+						 Tn5250Menubar * node);
+  extern Tn5250Menubar *tn5250_menubar_list_remove (Tn5250Menubar * list,
+						    Tn5250Menubar * node);
+  extern Tn5250Menubar *tn5250_menubar_list_find_by_id (Tn5250Menubar * list,
+							int id);
+  extern Tn5250Menubar *tn5250_menubar_list_copy (Tn5250Menubar * list);
+  extern Tn5250Menubar *tn5250_menubar_hit_test (Tn5250Menubar * list, int x,
+						 int y);
 
 
   struct _Tn5250Menuitem;

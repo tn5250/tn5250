@@ -1,5 +1,5 @@
 /* TN5250 - An implementation of the 5250 telnet protocol.
- * Copyright (C) 2000 Jay 'Eraserhead' Felice
+ * Copyright (C) 2005 James Rich
  * 
  * This file is part of TN5250.
  *
@@ -21,15 +21,15 @@
  */
 #include "tn5250-private.h"
 
-Tn5250Menu *
-tn5250_menu_new ()
+Tn5250Menubar *
+tn5250_menubar_new ()
 {
-  Tn5250Menu *This = tn5250_new (Tn5250Menu, 1);
+  Tn5250Menubar *This = tn5250_new (Tn5250Menubar, 1);
   if (This == NULL)
     {
       return NULL;
     }
-  memset (This, 0, sizeof (Tn5250Menu));
+  memset (This, 0, sizeof (Tn5250Menubar));
   This->next = NULL;
   This->prev = NULL;
   This->table = NULL;
@@ -38,16 +38,16 @@ tn5250_menu_new ()
 }
 
 
-Tn5250Menu *
-tn5250_menu_copy (Tn5250Menu * This)
+Tn5250Menubar *
+tn5250_menubar_copy (Tn5250Menubar * This)
 {
-  Tn5250Menu *win = tn5250_new (Tn5250Menu, 1);
+  Tn5250Menubar *win = tn5250_new (Tn5250Menubar, 1);
 
   if (win == NULL)
     {
       return NULL;
     }
-  memcpy (win, This, sizeof (Tn5250Menu));
+  memcpy (win, This, sizeof (Tn5250Menubar));
   win->next = NULL;
   win->prev = NULL;
   return win;
@@ -55,58 +55,58 @@ tn5250_menu_copy (Tn5250Menu * This)
 
 
 void
-tn5250_menu_destroy (Tn5250Menu * This)
+tn5250_menubar_destroy (Tn5250Menubar * This)
 {
   free (This);
 }
 
 
 int
-tn5250_menu_start_row (Tn5250Menu * This)
+tn5250_menubar_start_row (Tn5250Menubar * This)
 {
   return (This->row);
 }
 
 
 int
-tn5250_menu_start_col (Tn5250Menu * This)
+tn5250_menubar_start_col (Tn5250Menubar * This)
 {
   return (This->column);
 }
 
 
 int
-tn5250_menu_height (Tn5250Menu * This)
+tn5250_menubar_height (Tn5250Menubar * This)
 {
   return (This->height);
 }
 
 
 int
-tn5250_menu_size (Tn5250Menu * This)
+tn5250_menubar_size (Tn5250Menubar * This)
 {
   return (This->size);
 }
 
 
 int
-tn5250_menu_items (Tn5250Menu * This)
+tn5250_menubar_items (Tn5250Menubar * This)
 {
   return (This->items);
 }
 
 
-Tn5250Menu *
-tn5250_menu_list_destroy (Tn5250Menu * list)
+Tn5250Menubar *
+tn5250_menubar_list_destroy (Tn5250Menubar * list)
 {
-  Tn5250Menu *iter, *next;
+  Tn5250Menubar *iter, *next;
 
   if ((iter = list) != NULL)
     {
       do
 	{
 	  next = iter->next;
-	  tn5250_menu_destroy (iter);
+	  tn5250_menubar_destroy (iter);
 	  iter = next;
 	}
       while (iter != list);
@@ -115,8 +115,8 @@ tn5250_menu_list_destroy (Tn5250Menu * list)
 }
 
 
-Tn5250Menu *
-tn5250_menu_list_add (Tn5250Menu * list, Tn5250Menu * node)
+Tn5250Menubar *
+tn5250_menubar_list_add (Tn5250Menubar * list, Tn5250Menubar * node)
 {
   node->prev = node->next = NULL;
 
@@ -133,8 +133,8 @@ tn5250_menu_list_add (Tn5250Menu * list, Tn5250Menu * node)
 }
 
 
-Tn5250Menu *
-tn5250_menu_list_remove (Tn5250Menu * list, Tn5250Menu * node)
+Tn5250Menubar *
+tn5250_menubar_list_remove (Tn5250Menubar * list, Tn5250Menubar * node)
 {
   if (list == NULL)
     {
@@ -157,10 +157,10 @@ tn5250_menu_list_remove (Tn5250Menu * list, Tn5250Menu * node)
 }
 
 
-Tn5250Menu *
-tn5250_menu_list_find_by_id (Tn5250Menu * list, int id)
+Tn5250Menubar *
+tn5250_menubar_list_find_by_id (Tn5250Menubar * list, int id)
 {
-  Tn5250Menu *iter;
+  Tn5250Menubar *iter;
 
   if ((iter = list) != NULL)
     {
@@ -178,18 +178,18 @@ tn5250_menu_list_find_by_id (Tn5250Menu * list, int id)
 }
 
 
-Tn5250Menu *
-tn5250_menu_list_copy (Tn5250Menu * This)
+Tn5250Menubar *
+tn5250_menubar_list_copy (Tn5250Menubar * This)
 {
-  Tn5250Menu *new_list = NULL, *iter, *new_menu;
+  Tn5250Menubar *new_list = NULL, *iter, *new_menubar;
   if ((iter = This) != NULL)
     {
       do
 	{
-	  new_menu = tn5250_menu_copy (iter);
-	  if (new_menu != NULL)
+	  new_menubar = tn5250_menubar_copy (iter);
+	  if (new_menubar != NULL)
 	    {
-	      new_list = tn5250_menu_list_add (new_list, new_menu);
+	      new_list = tn5250_menubar_list_add (new_list, new_menubar);
 	    }
 	  iter = iter->next;
 	}
@@ -199,10 +199,10 @@ tn5250_menu_list_copy (Tn5250Menu * This)
 }
 
 
-Tn5250Menu *
-tn5250_menu_hit_test (Tn5250Menu * list, int x, int y)
+Tn5250Menubar *
+tn5250_menubar_hit_test (Tn5250Menubar * list, int x, int y)
 {
-  Tn5250Menu *iter;
+  Tn5250Menubar *iter;
 
   if ((iter = list) != NULL)
     {
