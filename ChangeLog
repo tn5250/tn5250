@@ -1,3 +1,11 @@
+1999-11-28 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Fixed certain key handlers not setting a field's modified flag (Delete key
+  was one of them).  Reported by Martin Rowe.
+- In insert mode, shift characters all the way to the end of the field as
+  reported by Sean Porterfield.  Also, display is inhibited if last cell of
+  field is full and user is trying to insert a character into the field.
+
 1999-11-27 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 
 - 'End' key now mapped properly in Xdefaults for xterm-5250.

@@ -207,7 +207,7 @@ void tn5250_dbuffer_ins(Tn5250DBuffer * This, unsigned char c, int shiftcount)
    int x = This->cx, y = This->cy, i;
    unsigned char c2;
 
-   for (i = 0; i < shiftcount; i++) {
+   for (i = 0; i <= shiftcount; i++) {
       c2 = This->data[y * This->w + x];
       This->data[y * This->w + x] = c;
       c = c2;
