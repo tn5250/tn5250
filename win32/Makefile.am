@@ -1,5 +1,6 @@
 EXTRA_DIST =	afterinstall.txt\
 		configure.bat\
+		dftmap.c\
 		lp5250d-win.c\
 		Makefile.win.in\
 		mkconfig.c\
