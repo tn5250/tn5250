@@ -6,7 +6,7 @@ EXTRA_DIST =	afterinstall.txt\
 		README.txt\
 		resource.h\
 		tn5250.ico\
-		tn5250-innosetup.iss.in\
+		tn5250_innosetup.iss.in\
 		tn5250-win.c\
 		tn5250-res.rc\
 		winterm.c
