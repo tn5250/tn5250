@@ -1,3 +1,11 @@
+2000-02-13 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+- Replaced src/transmaps with the new submission by Carey Evans which will
+  translate to different ISO code-pages (based on closest match to IBM
+  codepage).
+- Added `tn5250.m4' automake macro, and it installs in proper place.  Can
+  now say `AM_PATH_TN5250' or `AM_PATH_TN5250(version)' in configure.in
+  for programs which link with the 5250 library.
+
 2000-02-12 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 - Moved all includes, including conditionals into tn5250-private.h, which
   is now included by all C sources.

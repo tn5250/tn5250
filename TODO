@@ -58,10 +58,5 @@
     autoconf/automake macro for detecting lib5250.
   </item>
 
-  <item>
-    Backspace key should move to previous field when at first position of field.
-    Should also inhibit display when not in field.
-  </item>
-
 </todo>
 <!-- vi:set sts=2 sw=2 autoindent: -->
