@@ -167,7 +167,7 @@ int errnum;
  #define IACVERB_LOG(tag,verb,what)
  #define TNSB_LOG(sb_buf,sb_len)
  #define LOGERROR(tag, ecode)
- #define DUMP_ERR_STACK
+ #define DUMP_ERR_STACK()
 #else
  #define IACVERB_LOG	ssl_log_IAC_verb
  #define TNSB_LOG	ssl_log_SB_buf
@@ -1579,8 +1579,10 @@ int ssl_stream_handle_receive(Tn5250Stream * This)
 
       if (c == -END_OF_RECORD && This->current_record != NULL) {
 	 /* End of current packet. */
+#ifndef NDEBUG
          if (tn5250_logfile!=NULL) 
              tn5250_record_dump(This->current_record);
+#endif
 	 This->records = tn5250_record_list_add(This->records, This->current_record);
 	 This->current_record = NULL;
 	 This->record_count++;
