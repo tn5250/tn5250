@@ -619,6 +619,17 @@ static void curses_terminal_update(Tn5250Terminal * This, Tn5250Display *display
       }
       This->data->last_width = tn5250_display_width(display);
       This->data->last_height = tn5250_display_height(display);
+
+/* XXX: this is somewhat of a hack.  For some reason the change to
+      132 col lags a bit, causing our update to fail, so this just waits
+      for the update to finish...  (is there a better way?) */
+ 
+      for (x=0; x<10; x++) {
+          refresh ();
+          if (tn5250_display_width(display)==curses_terminal_width(This)-1)
+              break;
+          usleep(10000);
+      }
    }
    attrset(A_NORMAL);
    getmaxyx(stdscr, my, mx);
