@@ -14,7 +14,7 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 ..
-.TH LP5250D 1 "18 Mar 2000"
+.TH LP5250D 1 "28 May 2000"
 .SH NAME
 lp5250d \- start an AS/400 printer session
 .SH SYNOPSIS
@@ -40,11 +40,14 @@ emulating an IBM 3812 printer.  The printer session works with
 and host print transform on the AS/400 to print AS/400 spooled files
 on a local printer.
 .PP
-Press Control-C to end a printer session.
+To end a printer session, send it a
+.I SIGTERM
+signal with
+.BR kill (1).
 .PP
 Printing support requires named session support, which is available
 for most recent versions of OS/400, but is only supplied with V4R3 and
-V4R4.  For V3R2, V3R7, V4R1 and V4R2, please see informational APAR
+later versions.  For V3R2, V3R7, V4R1 and V4R2, please see informational APAR
 II10918.
 .SH OPTIONS
 .TP
