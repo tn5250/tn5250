@@ -1,6 +1,8 @@
 Notes on keyboard mapping under FreeBSD:
 
-Mapping the keys:
+-------------------------------------------------------------------------------
+Mapping the keys for "console mode":
+-------------------------------------------------------------------------------
 
 This approach (which is the one that I ended up using) works with the standard
 syscons termcap entry -- you do not need to modify your termcap, or change
@@ -16,11 +18,7 @@ your terminal type to use it.
        session, and switch to another session to do something else, you will
        probably find that some keys do strange things.  I tried to set things
        up so that pressing SHIFT with the remapped key will cause it to behave
-       in its default manner...  However, if this becomes too much of a 
-       nuisance for you, you may want to attempt to get yourself by with just
-       modifying your termcap entry, and learning a few control or escape
-       sequences for special AS/400 functions.  See "changing your termcap"
-       below.
+       in its default manner...  
  
 3) Each key is read by the syscons driver, and associated with a specific
        ASCII code or key according to the keyboard map that you currently
@@ -65,24 +63,30 @@ your terminal type to use it.
    then sets things back to normal...
 
 
+-------------------------------------------------------------------------------
+Keyboard mapping in an xterm (using the xt5250 script)
+-------------------------------------------------------------------------------
+NOTES:
 
-Changing your termcap:
+1) The xt5250 script thats installed with the tn5250 automates the process
+        of loading your keyboard mapping information from the XTerm file 
+        that it puts in /usr/local/share/tn5250/ and changes your TERM    
+        environment variable to xterm-5250.
 
-** THIS STEP IS NOT NECESSARY IF THE METHOD ABOVE WORKS FOR YOU **
-
-The first method I tried for remapping the keys was creating a new termcap
-entry for tn5250.  This method had a few advantages...  The main one being
-that only the tty that was running tn5250 had to change its keyboard map.
-There were also some disadvantages:
-
-   (1) Backtab and F14 conflict.  They send the same escape sequence, 
-         so they can't be mapped to do different things.
-   (2) You can't map "modifier" keys, such as control keys to do things
-         by themselves.  You also can't map special keys such as  
-         "scroll lock" or "the + on the keypad" to do things.
-
-Therefore, I abandoned the "termcap approach".  However, I have included
-a sample termcap file with this distribution, in case you want to play 
-with it yourself. 
+2) The sample.termcap file thats contained in the tn5250 distribution has
+        settings that appear to work great in FreeBSD 4.x, and also has
+        (commented out) settings that work better in FreeBSD 3.x and
+        older.  
 
 
+INSTALLATION:
+
+1) If the install script did not do it for you copy XTerm from the
+	distribution to /usr/local/share/tn5250.
+
+2) Check your .termcap or /etc/termcap and make sure that its got the
+	entries for xterm-5250 in it.   If you installed an older
+	version of tn5250, please remove the old termcap entries and
+	load the new ones from this distribution.  
+
+That should do it!  Now the xt5250 script should work nicely under FreeBSD!

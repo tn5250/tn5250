@@ -4,20 +4,21 @@
 kbdcontrol -F
 
 # load the keyboard map for 5250 keys
-kbdcontrol -l us.5250.kbd
+# if this doesnt work, check if us.5250.kbd is in /usr/local/share/tn5250
+kbdcontrol -l /usr/local/share/tn5250/us.5250.kbd
 
-kbdcontrol -f 13 `printf "\007!"`   # F13
-kbdcontrol -f 14 `printf "\007@"`   # F14
-kbdcontrol -f 15 `printf "\007#"`   # F15
-kbdcontrol -f 16 `printf "\007$"`   # F16
-kbdcontrol -f 17 `printf "\007%%"`  # F17
-kbdcontrol -f 18 `printf "\007^"`   # F18
-kbdcontrol -f 19 `printf "\007&"`   # F19
-kbdcontrol -f 20 `printf "\007*"`   # F20
-kbdcontrol -f 21 `printf "\007("`   # F21
-kbdcontrol -f 22 `printf "\007)"`   # F22
-kbdcontrol -f 23 `printf "\007_"`   # F23
-kbdcontrol -f 24 `printf "\007+"`   # F24
-kbdcontrol -f 52 `printf "\007M"`   # Field Minus
+kbdcontrol -f 13 `printf "\033!"`   # F13
+kbdcontrol -f 14 `printf "\033@"`   # F14
+kbdcontrol -f 15 `printf "\033#"`   # F15
+kbdcontrol -f 16 `printf "\033$"`   # F16
+kbdcontrol -f 17 `printf "\033%%"`  # F17
+kbdcontrol -f 18 `printf "\033^"`   # F18
+kbdcontrol -f 19 `printf "\033&"`   # F19
+kbdcontrol -f 20 `printf "\033*"`   # F20
+kbdcontrol -f 21 `printf "\033("`   # F21
+kbdcontrol -f 22 `printf "\033)"`   # F22
+kbdcontrol -f 23 `printf "\033_"`   # F23
+kbdcontrol -f 24 `printf "\033+"`   # F24
+kbdcontrol -f 52 `printf "\033M"`   # Field Minus
 kbdcontrol -f 56 `printf "\030"`    # Field Plus
-kbdcontrol -f 62 `printf "\007H"`   # Help
+kbdcontrol -f 62 `printf "\033H"`   # Help

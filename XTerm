@@ -1,35 +1,48 @@
 xt5250*VT100.Translations: #override\n\
-	<Key>KP_Enter: string("\033OM") \n\
-	<Key>BackSpace: string("\177") \n\
-	<Key>End: string("\033[4~") \n\
-	<Key>Home: string("\033[1~") \n\
-        ~Shift <Key>F1:  string("\033[[A") \n\
-        ~Shift <Key>F2:  string("\033[[B") \n\
-        ~Shift <Key>F3:  string("\033[[C") \n\
-        ~Shift <Key>F4:  string("\033[[D") \n\
-        ~Shift <Key>F5:  string("\033[[E") \n\
-        ~Shift <Key>F6:  string("\033[17~") \n\
-        ~Shift <Key>F7:  string("\033[18~") \n\
-        ~Shift <Key>F8:  string("\033[19~") \n\
-        ~Shift <Key>F9:  string("\033[20~") \n\
-        ~Shift <Key>F10: string("\033[21~") \n\
-        ~Shift <Key>F11: string("\033[23~") \n\
-        ~Shift <Key>F12: string("\033[24~") \n\
-        Shift <Key>F1: string("\033[25~") \n\
-        Shift <Key>F2: string("\033[26~") \n\
-        Shift <Key>F3: string("\033[28~") \n\
-        Shift <Key>F4: string("\033[29~") \n\
-        Shift <Key>F5: string("\033[31~") \n\
-        Shift <Key>F6: string("\033[32~") \n\
-        Shift <Key>F7: string("\033[33~") \n\
-        Shift <Key>F8: string("\033[34~") \n\
-        Shift <Key>F9: string("\033[35~") \n\
-        Shift <Key>F10: string("\033[36~") \n\
-        Shift <Key>F11: string("\033[37~") \n\
-        Shift <Key>F12: string("\033[38~") \n\
+	<Key>KP_Add: string("\030") \n\
+	<Key>KP_Subtract: string("\033M") \n\
+	<Key>KP_Multiply: string("*") \n\
+	<Key>KP_Divide: string("/") \n\
+        <Key>KP_0: string("0") \n\
+        <Key>KP_1: string("1") \n\
+        <Key>KP_2: string("2") \n\
+        <Key>KP_3: string("3") \n\
+        <Key>KP_4: string("4") \n\
+        <Key>KP_5: string("5") \n\
+        <Key>KP_6: string("6") \n\
+        <Key>KP_7: string("7") \n\
+        <Key>KP_8: string("8") \n\
+        <Key>KP_9: string("9") \n\
+        <Key>Scroll_Lock: string("\033H") \n\
+	~Shift<Key>Print: string("\020") \n\
+        <Key>Control_L: string("\022") \n\
+        <Key>Escape: string("\001") \n\
+	Shift <Key>Print: string("\003") \n\
+        ~Shift <Key>F1: string("\0331") \n\
+        ~Shift <Key>F2: string("\0332") \n\
+        ~Shift <Key>F3: string("\0333") \n\
+        ~Shift <Key>F4: string("\0334") \n\
+        ~Shift <Key>F5: string("\0335") \n\
+        ~Shift <Key>F6: string("\0336") \n\
+        ~Shift <Key>F7: string("\0337") \n\
+        ~Shift <Key>F8: string("\0338") \n\
+        ~Shift <Key>F9: string("\0339") \n\
+        ~Shift <Key>F10: string("\0330") \n\
+        ~Shift <Key>F11: string("\033-") \n\
+        ~Shift <Key>F12: string("\033=") \n\
+        Shift <Key>F1: string("\033!") \n\
+        Shift <Key>F2: string("\033@") \n\
+        Shift <Key>F3: string("\033#") \n\
+        Shift <Key>F4: string("\033$") \n\
+        Shift <Key>F5: string("\033%") \n\
+        Shift <Key>F6: string("\033^") \n\
+        Shift <Key>F7: string("\033&") \n\
+        Shift <Key>F8: string("\033*") \n\
+        Shift <Key>F9: string("\033(") \n\
+        Shift <Key>F10: string("\033)") \n\
+        Shift <Key>F11: string("\033_") \n\
+        Shift <Key>F12: string("\033+") \n\
         Shift <Key>Tab: string("\033[Z") \n\
-        ~Shift <Key>Delete: string("\033[3~") \n\
-        ~Shift <Key>Insert: string("\033[2~") 
 
 ! Something I did installed a file which turned off underLine
 ! and turned on colorULMode in my ~/.Xdefaults.  This, obviously, is not

@@ -12,6 +12,3 @@
 
 /* Define this to use the new key handler. */
 #undef USE_OWN_KEY_PARSING
-
-/* Define this to the system config directory. */
-#undef SYSCONFDIR
