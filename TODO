@@ -33,18 +33,6 @@
   </item>
 
   <item>
-    Move SCS ``library functions'' from scs2ascii.c to scs.c, make them part
-    of the library.  Include tn5250/scs.h from tn5250.h
-
-    Elaboration: We want some sort of `toolkit' for translating from SCS to
-    whatever (PostScript, PDF, ASCII, groff, PCL ...)
-
-    This is now partway done.  The library functions are in scs.c and scs.c
-    becomes part of the library, but we don't include scs.h from tn5250.h
-    Plus we don't really have a toolkit yet.
-  </item>
-
-  <item>
     Field resequencing is not implmented; however, an assertion has been added
     to break the emulator when it is encountered.  So far, no reported problems.
   </item>
