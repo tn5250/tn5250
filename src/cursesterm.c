@@ -17,6 +17,8 @@
  */
 #include "tn5250-config.h"
 
+#define USE_OWN_KEY_PARSING
+
 #ifdef USE_CURSES
 
 #define _TN5250_TERMINAL_PRIVATE_DEFINED
@@ -32,6 +34,7 @@
 #ifdef HAVE_TERMCAP_H
 #include <termcap.h>
 #endif
+#include <stdlib.h>
 #include <signal.h>
 #include <string.h>
 #include <ctype.h>
@@ -189,6 +192,27 @@ static Key curses_caps[] = {
 /* This is an array mapping some of our vt100 sequences to our internal
  * key names. */
 static Key curses_vt100[] = {
+   /* CTRL strings */
+   { K_ATTENTION,	"\001" }, /* CTRL A */
+   { K_ROLLDN,		"\002" }, /* CTRL B */
+   { K_SYSREQ,		"\003" }, /* CTRL C */
+   { K_ROLLUP,		"\004" }, /* CTRL D */
+   { K_ERASE,           "\005" }, /* CTRL E */
+   { K_ROLLUP,		"\006" }, /* CTRL F */
+   { K_FIELDEXIT,       "\013" }, /* CTRL K */
+   { K_REFRESH,         "\014" }, /* CTRL L */
+   { K_HOME,            "\017" }, /* CTRL O */
+   { K_PRINT,           "\020" }, /* CTRL P */
+   { K_RESET,           "\022" }, /* CTRL R */
+   { K_TESTREQ,         "\024" }, /* CTRL T */
+   { K_ROLLDN,          "\025" }, /* CTRL U */
+   { K_FIELDEXIT,       "\030" }, /* CTRL X */
+
+   /* ASCII DEL is not correctly reported as the DC key in some
+    * termcaps */
+   { K_DELETE,		"\177" }, /* ASCII DEL */
+
+   /* ESC strings */
    { K_F1,		"\033\061" }, /* ESC 1 */
    { K_F2,		"\033\062" }, /* ESC 2 */
    { K_F3,		"\033\063" }, /* ESC 3 */
@@ -213,6 +237,22 @@ static Key curses_vt100[] = {
    { K_F22,		"\033\051" }, /* ESC ) */
    { K_F23,		"\033\137" }, /* ESC _ */
    { K_F24,		"\033\053" }, /* ESC + */
+   { K_ATTENTION,	"\033\101" }, /* ESC A */
+   { K_CLEAR,		"\033\103" }, /* ESC C */
+   { K_DUPLICATE,	"\033\104" }, /* ESC D */
+   { K_HELP,		"\033\110" }, /* ESC H */
+   { K_INSERT,		"\033\111" }, /* ESC I */
+   { K_REFRESH,		"\033\114" }, /* ESC L */
+   { K_FIELDMINUS,	"\033\115" }, /* ESC M */
+   { K_NEWLINE,		"\033\116" }, /* ESC N */ /* Our extension */
+   { K_PRINT,		"\033\120" }, /* ESC P */
+   { K_RESET,		"\033\122" }, /* ESC R */
+   { K_SYSREQ,		"\033\123" }, /* ESC S */
+   { K_TOGGLE,		"\033\124" }, /* ESC T */
+   { K_FIELDEXIT,	"\033\130" }, /* ESC X */
+   { K_NEWLINE,         "\033\012" }, /* ESC ^J */
+   { K_NEWLINE,         "\033\015" }, /* ESC ^M */
+   /* FIXME: { K_INSERT, "\033" + tgetstr("dc",NULL) } ( ESC DEL ) */
 };
 #endif
 
@@ -281,12 +321,11 @@ static void curses_terminal_init(Tn5250Terminal * This)
    char buf[MAX_K_BUF_LEN];
    int i = 0, c;
    struct timeval tv;
-#ifdef USE_OWN_KEY_PARSING
    char *str;
-#endif
 
    (void)initscr();
    raw();
+
 #ifdef USE_OWN_KEY_PARSING
    if ((str = tgetstr ("ks", NULL)) != NULL)
       tputs (str, 1, putchar);
@@ -299,22 +338,9 @@ static void curses_terminal_init(Tn5250Terminal * This)
    noecho();
 
    /* Determine if we're talking to an xterm ;) */
-   printf ("\x5");
-   fflush (stdout);
-
-   tv.tv_usec = 100;
-   tv.tv_sec = 0;
-   select (0, NULL, NULL, NULL, &tv);
-
-   while ((i < 5) && (c = getch ()) != -1) {
-      buf[i++] = (char)c;
-   }
-   buf[i] = '\0';
-   if (c != -1) {
-      while (getch () != -1)
-	 ;
-   }
-   This->data->is_xterm = !strcmp (buf, "xterm");
+   if ((str = getenv("TERM")) != NULL &&
+	 (!strcmp (str, "xterm") || !strcmp (str, "xterm-5250"))) 
+      This->data->is_xterm = 1;
 
    /* Initialize colors if the terminal supports it. */
    if (has_colors()) {
@@ -478,7 +504,6 @@ static void curses_terminal_update(Tn5250Terminal * This, Tn5250Display *display
       }
       This->data->last_width = tn5250_display_width(display);
       This->data->last_height = tn5250_display_height(display);
-      curses_terminal_update_indicators(This, display);
    }
    attrset(A_NORMAL);
    getmaxyx(stdscr, my, mx);
@@ -523,7 +548,9 @@ static void curses_terminal_update(Tn5250Terminal * This, Tn5250Display *display
    }				/* for (int y ... */
 
    move(tn5250_display_cursor_y(display), tn5250_display_cursor_x(display));
-   refresh();
+
+   /* This performs the refresh () */
+   curses_terminal_update_indicators(This, display);
 }
 
 /****i* lib5250/curses_terminal_update_indicators
@@ -557,6 +584,8 @@ static void curses_terminal_update_indicators(Tn5250Terminal /*@unused@*/ * This
    if ((inds & TN5250_DISPLAY_IND_INSERT) != 0) {
       memcpy(ind_buf + 30, "IM", 2);
    }
+   sprintf(ind_buf+72,"%03.3d/%03.3d",tn5250_display_cursor_x(display)+1,
+      tn5250_display_cursor_y(display)+1);
    attrset( (attr_t)COLOR_PAIR(COLOR_WHITE) );
    mvaddnstr(tn5250_display_height(display), 0, ind_buf, 80);
    move(tn5250_display_cursor_y(display), tn5250_display_cursor_x(display));
