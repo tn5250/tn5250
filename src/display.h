@@ -166,6 +166,8 @@ extern void       tn5250_display_kf_home              (Tn5250Display *This);
 extern void	  tn5250_display_kf_delete            (Tn5250Display *This);
 extern void	  tn5250_display_kf_prevword 	      (Tn5250Display *This);
 extern void	  tn5250_display_kf_nextword 	      (Tn5250Display *This);
+extern void	  tn5250_display_kf_prevfld 	      (Tn5250Display *This);
+extern void	  tn5250_display_kf_nextfld 	      (Tn5250Display *This);
 extern void	  tn5250_display_kf_fieldhome 	      (Tn5250Display *This);
 extern void	  tn5250_display_kf_newline 	      (Tn5250Display *This);
 

@@ -99,6 +99,8 @@ extern "C" {
 #define K_FIELDPLUS     0520    /* curses KEY_SF */
 #define K_PREVWORD	0611    /* curses KEY_SLEFT (as good as any) */
 #define K_NEXTWORD	0622    /* curses KEY_SRIGHT (as good as any) */
+#define K_PREVFLD	0xfffb  /* no similar curses key */
+#define K_NEXTFLD	0xfffc  /* no similar curses key */
 #define K_FIELDHOME	0607	/* curses KEY_SHOME (as good as any) */
 #define K_EXEC		0507    /* macro execution */
 #define K_MEMO		0510    /* macro record */
