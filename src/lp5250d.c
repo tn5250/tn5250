@@ -55,7 +55,6 @@ main (int argc, char *argv[])
 
   if (check_options (argc, argv, &user) != 0)
     {
-      tn5250_config_unref (config);
       exit (1);
     }
 
@@ -64,7 +63,6 @@ main (int argc, char *argv[])
     {
       if (change_user (user) != 0)
 	{
-	  tn5250_config_unref (config);
 	  exit (1);
 	}
     }
