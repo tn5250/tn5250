@@ -174,7 +174,6 @@ void tn5250_session_set_stream(Tn5250Session * This, Tn5250Stream * newstream)
 void tn5250_session_main_loop(Tn5250Session * This)
 {
    int r;
-   int pending_aid;
    
    while (1) {
       r = tn5250_display_waitevent(This->display);
@@ -184,13 +183,6 @@ void tn5250_session_main_loop(Tn5250Session * This)
 	 if (!tn5250_stream_handle_receive(This->stream))
 	    return;
 	 tn5250_session_handle_receive(This);
-      }
-      
-      pending_aid = tn5250_display_pending_aid(This->display);
-      
-      if(pending_aid && This->read_opcode) {
-         tn5250_session_handle_aidkey(This, pending_aid);
-         tn5250_display_clear_pending_aid(This->display);
       }
    }
 }
@@ -1138,7 +1130,6 @@ static void tn5250_session_start_of_field(Tn5250Session * This)
          Only for input fields 
       */
       tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_X_SYSTEM);
-      tn5250_display_clear_pending_aid(This->display);
       
       input_field = 1;
       FFW1 = cur_char;

@@ -176,11 +176,12 @@ Options:\n\
       m++; i++;
    }
    printf ("\n\
-   session=NAME            Use NAME as session name (default: none).\n"
+   env.DEVNAME=NAME         Use NAME as session name (default: none).\n"
 #ifndef NDEBUG
 "   trace=FILE              Log session to FILE.\n"
 #endif
-"   +/-underscores          Use/don't use underscores instead of underline attribute.\n\
+"   +/-underscores          Use/don't use underscores instead of underline\n\
+                           attribute.\n\
    +/-version              Show emulator version and exit.\n\
    env.NAME=VALUE          Set telnet environment string NAME to VALUE.\n\
    env.TERM=TYPE           Emulate IBM terminal type (default: depends)");
