@@ -1,3 +1,7 @@
+2005-03-24 James Rich <james@eaerich.com>
+- Fixed seg fault that was occurring in lp5250d due to unreferencing a non-
+  existant config object.
+
 2005-03-21 James Rich <james@eaerich.com>
 - Add --user=USER option to lp5250d to enable root to start it is another
   user (useful in startup scripts).  Also added --help option and changed
