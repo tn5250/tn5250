@@ -1,3 +1,13 @@
+1999-11-23 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Terminals now take pointers to displays instead of display buffers to
+  update.  Moved indicators from display buffer to display.  This allows us
+  to be flexible enough that we can add an html front-end at a later date,
+  since we need access to the format table to do that level of translation.
+- slangterm.c: fixed bug causing core on slang terminal bell.
+- debug.c: fixed bug causing core on debug terminal bell.
+- dbuffer.c: fixed assert submitted by Sean Porterfield.
+
 1999-11-22 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 
 - session.c: Fixed bug in Read MDT Fields handler where sign position was

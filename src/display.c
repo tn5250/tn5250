@@ -45,6 +45,8 @@ Tn5250Display *tn5250_display_new(int width, int height)
    This->display_buffers = NULL;
    This->format_tables = NULL;
    This->terminal = NULL;
+   This->indicators = 0;
+   This->indicators_dirty = 0;
 
    tn5250_display_add_dbuffer(This, tn5250_dbuffer_new(width, height));
    tn5250_display_add_table(This, tn5250_table_new());
@@ -202,8 +204,8 @@ void tn5250_display_set_terminal(Tn5250Display * This, Tn5250Terminal * term)
    if (This->terminal != NULL)
       tn5250_terminal_destroy(This->terminal);
    This->terminal = term;
-   tn5250_terminal_update(This->terminal, This->display_buffers);
-   tn5250_terminal_update_indicators(This->terminal, This->display_buffers);
+   tn5250_terminal_update(This->terminal, This);
+   tn5250_terminal_update_indicators(This->terminal, This);
 }
 
 /*
@@ -213,8 +215,11 @@ void tn5250_display_update(Tn5250Display * This)
 {
    if (This->terminal != NULL) {
       /* FIXME: We might want to keep dirty flags for each */
-      tn5250_terminal_update(This->terminal, This->display_buffers);
-      tn5250_terminal_update_indicators(This->terminal, This->display_buffers);
+      tn5250_terminal_update(This->terminal, This);
+      if (This->indicators_dirty) {
+	 tn5250_terminal_update_indicators(This->terminal, This);
+	 This->indicators_dirty = 0;
+      }
    }
 }
 
@@ -395,7 +400,7 @@ void tn5250_display_interactive_addch(Tn5250Display * This, unsigned char ch)
    int end_of_field = 0;
 
    if (field == NULL || tn5250_field_is_bypass(field)) {
-      tn5250_dbuffer_inhibit(This->display_buffers);
+      tn5250_display_inhibit(This);
       return;
    }
    /* Upcase the character if this is a monocase field. */
@@ -417,7 +422,7 @@ void tn5250_display_interactive_addch(Tn5250Display * This, unsigned char ch)
    /* Make sure this is a valid data character for this field type. */
    if (!tn5250_field_valid_char(field, ch)) {
       TN5250_LOG (("Inhibiting: invalid character for field type.\n"));
-      tn5250_dbuffer_inhibit(This->display_buffers);
+      tn5250_display_inhibit(This);
       return;
    }
    /* Are we at the last character of the field? */
@@ -429,11 +434,11 @@ void tn5250_display_interactive_addch(Tn5250Display * This, unsigned char ch)
     * number field. */
    if (end_of_field && tn5250_field_is_signed_num(field)) {
       TN5250_LOG (("Inhibiting: last character of signed num field.\n"));
-      tn5250_dbuffer_inhibit(This->display_buffers);
+      tn5250_display_inhibit(This);
       return;
    }
    /* Add or insert the character (depending on whether insert mode is on). */
-   if ((tn5250_dbuffer_indicators(This->display_buffers) &
+   if ((tn5250_display_indicators(This) &
 	TN5250_DISPLAY_IND_INSERT) != 0) {
       int shiftcount = tn5250_field_count_right(field,
 					   tn5250_display_cursor_y(This),
@@ -509,7 +514,6 @@ void tn5250_display_shift_right(Tn5250Display * This, Tn5250Field * field, unsig
 	 ptr[n] = ptr[n - 1];
       ptr[0] = fill;
    }
-
 }
 
 /*
@@ -554,7 +558,7 @@ void tn5250_display_field_exit(Tn5250Display * This)
 
    field = tn5250_display_current_field(This);
    if (field == NULL || tn5250_field_is_bypass(field)) {
-      tn5250_dbuffer_inhibit(This->display_buffers);
+      tn5250_display_inhibit(This);
       return;
    }
 
@@ -590,7 +594,7 @@ void tn5250_display_field_plus(Tn5250Display * This)
    if (field == NULL || 
 	 (tn5250_field_type(field) != TN5250_FIELD_SIGNED_NUM) &&
 	 (tn5250_field_type(field) != TN5250_FIELD_NUM_ONLY)) {
-      tn5250_dbuffer_inhibit(This->display_buffers);
+      tn5250_display_inhibit(This);
       return;
    }
 
@@ -623,7 +627,7 @@ void tn5250_display_field_minus(Tn5250Display * This)
    if (field == NULL || 
 	 (tn5250_field_type(field) != TN5250_FIELD_SIGNED_NUM) &&
 	 (tn5250_field_type(field) != TN5250_FIELD_NUM_ONLY)) {
-      tn5250_dbuffer_inhibit(This->display_buffers);
+      tn5250_display_inhibit(This);
       return;
    }
 
@@ -661,14 +665,14 @@ void tn5250_display_dup(Tn5250Display * This)
 
    field = tn5250_display_current_field (This);
    if (field == NULL || tn5250_field_is_bypass (field)) {
-      tn5250_dbuffer_inhibit(This->display_buffers);
+      tn5250_display_inhibit(This);
       return;
    }
 
    /* Hmm, should we really go to operator error mode when operator
     * hits Dup in a non-Dupable field? */
    if (!tn5250_field_is_dup_enable(field)) {
-      tn5250_dbuffer_inhibit(This->display_buffers);
+      tn5250_display_inhibit(This);
       return;
    }
 
@@ -690,6 +694,26 @@ void tn5250_display_dup(Tn5250Display * This)
       }
       tn5250_display_set_cursor_next_field (This);
    }
+}
+
+/*
+ *    Set the specified indicators and set a flag noting that the indicators
+ *    must be refreshed.
+ */
+void tn5250_display_indicator_set (Tn5250Display *This, int inds)
+{
+   This->indicators |= inds;
+   This->indicators_dirty = 1;
+}
+
+/*
+ *    Clear the specified indicators and set a flag noting that the indicators
+ *    must be refreshed.
+ */
+void tn5250_display_indicator_clear (Tn5250Display *This, int inds)
+{
+   This->indicators &= ~inds;
+   This->indicators_dirty = 1;
 }
 
 /* vi:set cindent sts=3 sw=3: */

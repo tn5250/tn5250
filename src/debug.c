@@ -34,6 +34,9 @@
 #include "stream.h"
 #include "dbuffer.h"
 #include "terminal.h"
+#include "field.h"
+#include "formattable.h"
+#include "display.h"
 #include "debug.h"
 
 struct _Tn5250TerminalPrivate {
@@ -58,10 +61,11 @@ static void debug_terminal_destroy(Tn5250Terminal /*@only@*/ *This);
 static int debug_terminal_width(Tn5250Terminal *This);
 static int debug_terminal_height(Tn5250Terminal *This);
 static int debug_terminal_flags(Tn5250Terminal *This);
-static void debug_terminal_update(Tn5250Terminal *This, Tn5250DBuffer *display);
-static void debug_terminal_update_indicators(Tn5250Terminal *This, Tn5250DBuffer *display);
+static void debug_terminal_update(Tn5250Terminal *This, Tn5250Display *display);
+static void debug_terminal_update_indicators(Tn5250Terminal *This, Tn5250Display *display);
 static int debug_terminal_waitevent(Tn5250Terminal *This);
 static int debug_terminal_getkey(Tn5250Terminal *This);
+static void debug_terminal_beep(Tn5250Terminal *This);
 
 int tn5250_debug_stream_init (Tn5250Stream *This)
 {
@@ -89,6 +93,7 @@ Tn5250Terminal *tn5250_debug_terminal_new (Tn5250Terminal *slave, Tn5250Stream *
       This->update_indicators = debug_terminal_update_indicators;
       This->waitevent = debug_terminal_waitevent;
       This->getkey = debug_terminal_getkey;
+      This->beep = debug_terminal_beep;
 
       This->data = tn5250_new(Tn5250TerminalPrivate, 1);
       if (This->data == NULL) {
@@ -165,14 +170,19 @@ static int debug_terminal_flags(Tn5250Terminal *This)
    return (* (This->data->slaveterm->flags)) (This->data->slaveterm);
 }
 
-static void debug_terminal_update(Tn5250Terminal *This, Tn5250DBuffer *display)
+static void debug_terminal_update(Tn5250Terminal *This, Tn5250Display *display)
 {
    (* (This->data->slaveterm->update)) (This->data->slaveterm, display);
 }
 
-static void debug_terminal_update_indicators(Tn5250Terminal *This, Tn5250DBuffer *display)
+static void debug_terminal_update_indicators(Tn5250Terminal *This, Tn5250Display *display)
 {
    (* (This->data->slaveterm->update_indicators)) (This->data->slaveterm, display);
+}
+
+static void debug_terminal_beep(Tn5250Terminal *This)
+{
+   (* (This->data->slaveterm->beep)) (This->data->slaveterm);
 }
 
 /*
