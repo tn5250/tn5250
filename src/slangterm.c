@@ -401,7 +401,7 @@ static int slang_terminal_getkey(Tn5250Terminal * This)
 	    This->data->quit_flag = 1;
 	 return -1;
 
-      case 127:
+      case SL_KEY_DELETE:
 	 return K_DELETE;
 
       case SL_KEY_F(1):
