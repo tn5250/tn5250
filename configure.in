@@ -1,0 +1,101 @@
+dnl ** Process this file with autoconf to produce a configure script.
+AC_INIT(src/tn5250.c)
+
+dnl ** Automake Intialization
+AM_INIT_AUTOMAKE(tn5250, 0.13.13)
+AM_CONFIG_HEADER(src/config.h)
+
+dnl ** Checks for programs.
+AC_PROG_CC
+AC_PROG_GCC_TRADITIONAL
+AM_PROG_LIBTOOL
+
+dnl **
+dnl ** Check for screen interface libraries.  There are a few posibilities here:
+dnl ** -lncurses, -lcurses, -lslang.  -lslang is only checked for if the 
+dnl ** --with-slang option is passed to ./configure
+dnl **
+dnl ** Under (at least) some BSDs, both curses and ncurses is installed.  In that
+dnl ** case, we prefer ncurses, and must use <ncurses.h>
+dnl **
+AC_ARG_WITH(slang,[  --with-slang            use the S/Lang library for screen management.],[
+if test "$with_slang" != "no"
+then
+	USE_SLANG=1
+	AC_DEFINE_UNQUOTED(USE_SLANG,1)
+else
+	USE_CURSES=1
+	AC_DEFINE_UNQUOTED(USE_CURSES,1)
+fi
+],[
+USE_CURSES=1
+AC_DEFINE_UNQUOTED(USE_CURSES,1)
+])
+if test "$USE_CURSES" = "1"
+then
+	AC_CHECK_LIB(ncurses, initscr)
+	if test "$ac_cv_lib_ncurses_initscr" != "yes"
+	then
+		dnl Check for -lcurses if -lncurses isn't found.
+		AC_CHECK_LIB(curses, initscr)
+		if test "$ac_cv_lib_curses_initscr" != "yes"
+		then
+			AC_MSG_ERROR([** You need a curses-compatibale library installed.])
+		fi
+	fi
+	AC_CHECK_HEADER(ncurses.h)
+	if test "$ac_cv_header_ncurses_h" != yes
+	then
+		AC_CHECK_HEADER(curses.h)
+		if test "$ac_cv_header_curses_h" != yes
+		then
+			AC_MSG_ERROR([** Can't find ncurses.h or curses.h **])
+		fi
+	fi
+else
+	AC_CHECK_LIB(slang, SLang_init_tty)
+	if test "$ac_cv_lib_slang_SLang_init_tty" != "yes"
+	then
+		AC_MSG_ERROR([** Can't find -lslang **])
+	fi
+fi
+
+dnl ** Check for libraries
+AC_CHECK_LIB(socket, main)
+AC_CHECK_LIB(nsl, main)
+
+dnl **
+dnl ** --with-extra-libs: a must for debugging.
+dnl **
+AC_ARG_WITH(extra-libs,[  --with-extra-libs=libs  List of extra libraries to link against.  This is
+                          good for linking against a malloc debugger, for
+			  example.],[
+if test x$with_extra_libs = no
+then
+	with_extra_libs=""
+fi
+],[
+with_extra_libs=""
+])
+
+AC_SUBST(with_extra_libs)
+
+AC_PATH_XTRA
+
+dnl ** Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS(sys/ioctl.h sys/filio.h sys/time.h unistd.h getopt.h slang/slang.h slang.h locale.h)
+
+dnl ** If you ain't using windows, this is true.
+AC_DEFINE(SOCKET_TYPE,int)
+
+dnl ** Checks for library functions.
+AC_FUNC_MEMCMP
+AC_CHECK_FUNCS(setlocale)
+AC_TYPE_SIGNAL
+AC_CHECK_FUNCS(select socket strerror)
+AC_CHECK_SIZEOF(short, 2)
+AC_CHECK_SIZEOF(int, 4)
+AC_CHECK_SIZEOF(long, 4)
+
+AC_OUTPUT(Makefile src/Makefile doc/Makefile)
