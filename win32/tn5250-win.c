@@ -57,6 +57,8 @@ static void usage(void);
 void msgboxf(const char *fmt, ...);
 int parse_cmdline(char *cmdline, char **my_argv);
 BOOL CALLBACK ConnectDlgProc (HWND, UINT, WPARAM, LPARAM);
+int GetParams(HWND hDlg);
+int SetParams(HWND hDlg);
 
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE prev, LPSTR cmdline, int show)
 {
@@ -107,12 +109,14 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE prev, LPSTR cmdline, int show)
          msgboxf("tn5250 %s", VERSION);
          exit (0);
     }
-    else if (tn5250_config_get (config, "host") == NULL) {
-          if (DialogBox(hInst, MAKEINTRESOURCE(IDD_DIALOG_CONNECT), NULL,
+    else if (tn5250_config_get (config, "host") == NULL
+          || tn5250_config_get (config, "dialog") != NULL) {
+             if (DialogBox(hInst, MAKEINTRESOURCE(IDD_DIALOG_CONNECT), NULL,
                     ConnectDlgProc)<1) {
-               exit(0);
-          }
+                 exit(0);
+             }
     }
+     
 
     if (tn5250_config_get (config, "font_80") == NULL) {
           tn5250_config_set(config, "font_80", "Terminal");
@@ -355,8 +359,7 @@ BOOL CALLBACK ConnectDlgProc (HWND hDlg, UINT message, WPARAM wParam,
    switch (message) {
 
       case WM_INITDIALOG:
-         CheckRadioButton (hDlg, IDC_RADIO_80, IDC_RADIO_132, IDC_RADIO_80);
-         SetDlgItemInt (hDlg, IDC_EDIT_CHARMAP, 37, FALSE);
+         GetParams(hDlg);
 
          hwndMap    = GetDlgItem (hDlg, IDC_EDIT_CHARMAP);
          hwndHost   = GetDlgItem (hDlg, IDC_EDIT_HOST);
@@ -391,6 +394,93 @@ BOOL CALLBACK ConnectDlgProc (HWND hDlg, UINT message, WPARAM wParam,
    }
 
   return FALSE;
+}
+
+/*
+ * This is used by the "connect to" dialog box to get the default
+ * values that it displays in the dialog
+ *
+ */
+
+int GetParams(HWND hDlg) {
+
+    int ccsid;
+    char *work;
+    int x;
+
+ /* char map (CCSID) */
+
+    ccsid = 37;
+    if (tn5250_config_get(config, "map")) 
+          ccsid = atoi(tn5250_config_get(config, "map"));
+    SetDlgItemInt (hDlg, IDC_EDIT_CHARMAP, ccsid, FALSE);
+
+
+ /* If any of the SSL keywords are given, then default SSL to being on */
+
+    if (  tn5250_config_get(config, "ssl_verify_server") != NULL
+       || tn5250_config_get(config, "ssl_ca_file"      ) != NULL
+       || tn5250_config_get(config, "ssl_cert_file"    ) != NULL
+       || tn5250_config_get(config, "ssl_pem_pass"     ) != NULL) {
+             CheckDlgButton(hDlg, IDC_CHECK_SSL, TRUE);
+    }
+    if (  tn5250_config_get(config, "host") != NULL) {
+         if (!strncmp(tn5250_config_get(config, "host"), "ssl:", 4)) {
+             CheckDlgButton(hDlg, IDC_CHECK_SSL, TRUE);
+         }
+    }
+
+
+/* Set checkbox for verifying the SSL server if needed */
+
+    if (tn5250_config_get(config, "ssl_verify_server")) {
+         CheckDlgButton(hDlg, IDC_CHECK_SSLVERIFY, 
+              tn5250_config_get_bool(config, "ssl_verify_server"));
+    }
+
+
+/* Set unix-like-copy mode */
+
+    if (tn5250_config_get(config, "unix_like_copy")) {
+         CheckDlgButton(hDlg, IDC_CHECK_UNIXCOPY, 
+              tn5250_config_get_bool(config, "unix_like_copy"));
+    }
+
+/* Set terminal size */
+
+    CheckRadioButton (hDlg, IDC_RADIO_80, IDC_RADIO_132, IDC_RADIO_80);
+
+    if (tn5250_config_get(config, "env.TERM")) {
+         work = malloc(strlen(tn5250_config_get(config, "env.TERM"))+1);
+         TN5250_ASSERT(work != NULL);
+         strcpy(work, tn5250_config_get(config, "env.TERM"));
+         x = 0;
+         while (valid_terms[x].name != NULL) {
+             if (!strcmp(work, valid_terms[x].name)) 
+                if (!strncmp(valid_terms[x].descr, "27x132", 6))
+                     CheckRadioButton (hDlg, IDC_RADIO_80, IDC_RADIO_132, 
+                          IDC_RADIO_132);
+             x++;
+         }
+         free(work);
+    }
+
+/* set host name */
+
+    if (tn5250_config_get(config, "host")) {
+        if (!strncmp(tn5250_config_get(config, "host"), "ssl:", 4)) 
+          SetDlgItemText(hDlg,IDC_EDIT_HOST,tn5250_config_get(config,"host")+4);
+        else
+          SetDlgItemText(hDlg,IDC_EDIT_HOST,tn5250_config_get(config,"host"));
+    }
+
+/* set device name */
+    if (tn5250_config_get(config, "env.DEVNAME")) 
+        SetDlgItemText(hDlg, IDC_EDIT_DEVICE, 
+             tn5250_config_get(config, "env.DEVNAME"));
+ 
+         
+    return 0;
 }
 
 
@@ -433,7 +523,7 @@ int SetParams(HWND hDlg) {
    strcat(host, work);
    tn5250_config_set(config, "host", host);
 
-   GetDlgItemText(hDlg, IDC_EDIT_DEVICE, device, MAX_DEVICE_SIZE);
+   GetDlgItemText(hDlg, IDC_EDIT_DEVICE, device, MAX_DEVICE_SIZE+1);
    tn5250_config_set(config, "env.DEVNAME", device);
 
    map = GetDlgItemInt(hDlg, IDC_EDIT_CHARMAP, NULL, FALSE);

@@ -30,14 +30,33 @@
 #define MB_BEEPFILE (MB_OK+2000)
 
 /* Mapping of 5250 colors to windows colors */
-#define A_5250_GREEN    RGB(0,255,0)
-#define A_5250_WHITE    RGB(255,255,255)
-#define A_5250_RED      RGB(255,0,0)
-#define A_5250_TURQ     RGB(0,128,128)
-#define A_5250_YELLOW   RGB(255,255,0)
-#define A_5250_PINK     RGB(255,0,255)  
-#define A_5250_BLUE     RGB(0,255,255)
-#define A_5250_BLACK    RGB(0,0,0)
+struct _win32_color_map {
+   char *name;
+   COLORREF ref;
+};
+typedef struct _win32_color_map win32_color_map;
+
+static win32_color_map colorlist[] =
+{
+  { "green",     RGB(0,   255, 0  ) },
+  { "white",     RGB(255, 255, 255) },
+  { "red",       RGB(255, 0,   0  ) },
+  { "turquoise", RGB(0,   128, 128) },
+  { "yellow",    RGB(255, 255, 0  ) },
+  { "pink",      RGB(255, 0,   255) },
+  { "blue",      RGB(0,   255, 255) },
+  { "black",     RGB(0,   0,   0  ) },
+  { NULL, -1 }
+};
+
+#define A_5250_GREEN    0
+#define A_5250_WHITE    1
+#define A_5250_RED      2
+#define A_5250_TURQ     3
+#define A_5250_YELLOW   4
+#define A_5250_PINK     5
+#define A_5250_BLUE     6
+#define A_5250_BLACK    7
 
 
 #define A_UNDERLINE  0x01
@@ -48,6 +67,7 @@
 
 struct _Tn5250Win32Attribute {
    COLORREF fg;
+   int colorindex;
    UINT flags;
 };
 typedef struct _Tn5250Win32Attribute Tn5250Win32Attribute;
@@ -55,38 +75,39 @@ typedef struct _Tn5250Win32Attribute Tn5250Win32Attribute;
 
 static Tn5250Win32Attribute attribute_map[] = 
 {
- { A_5250_GREEN, 0 },
- { A_5250_GREEN, A_REVERSE },
- { A_5250_WHITE, 0 },
- { A_5250_WHITE, A_REVERSE },
- { A_5250_GREEN, A_UNDERLINE },
- { A_5250_GREEN, A_REVERSE|A_UNDERLINE },
- { A_5250_WHITE, A_UNDERLINE },
- { A_5250_BLACK, A_NONDISPLAY },
- { A_5250_RED,   0 },
- { A_5250_RED,   A_REVERSE },
- { A_5250_RED,   A_BLINK },
- { A_5250_RED,   A_REVERSE|A_BLINK },
- { A_5250_RED,   A_UNDERLINE },
- { A_5250_RED,   A_REVERSE|A_UNDERLINE },
- { A_5250_RED,   A_UNDERLINE|A_BLINK },
- { A_5250_BLACK, A_NONDISPLAY },
- { A_5250_TURQ,  A_VERTICAL },
- { A_5250_TURQ,  A_REVERSE|A_VERTICAL },
- { A_5250_YELLOW,A_VERTICAL },
- { A_5250_YELLOW,A_REVERSE|A_VERTICAL },
- { A_5250_TURQ,  A_VERTICAL|A_UNDERLINE },
- { A_5250_TURQ,  A_REVERSE|A_VERTICAL|A_UNDERLINE },
- { A_5250_YELLOW,A_VERTICAL|A_UNDERLINE },
- { A_5250_BLACK, A_REVERSE|A_NONDISPLAY },
- { A_5250_PINK,  0 },
- { A_5250_PINK,  A_REVERSE },
- { A_5250_BLUE,  0 },
- { A_5250_BLUE,  A_REVERSE },
- { A_5250_PINK,  A_UNDERLINE },
- { A_5250_PINK,  A_REVERSE|A_UNDERLINE },
- { A_5250_BLUE,  A_UNDERLINE },
- { A_5250_BLACK, A_NONDISPLAY },
+ { 0, A_5250_GREEN, 0 },
+ { 0, A_5250_GREEN, A_REVERSE },
+ { 0, A_5250_WHITE, 0 },
+ { 0, A_5250_WHITE, A_REVERSE },
+ { 0, A_5250_GREEN, A_UNDERLINE },
+ { 0, A_5250_GREEN, A_REVERSE|A_UNDERLINE },
+ { 0, A_5250_WHITE, A_UNDERLINE },
+ { 0, A_5250_BLACK, A_NONDISPLAY },
+ { 0, A_5250_RED,   0 },
+ { 0, A_5250_RED,   A_REVERSE },
+ { 0, A_5250_RED,   A_BLINK },
+ { 0, A_5250_RED,   A_REVERSE|A_BLINK },
+ { 0, A_5250_RED,   A_UNDERLINE },
+ { 0, A_5250_RED,   A_REVERSE|A_UNDERLINE },
+ { 0, A_5250_RED,   A_UNDERLINE|A_BLINK },
+ { 0, A_5250_BLACK, A_NONDISPLAY },
+ { 0, A_5250_TURQ,  A_VERTICAL },
+ { 0, A_5250_TURQ,  A_REVERSE|A_VERTICAL },
+ { 0, A_5250_YELLOW,A_VERTICAL },
+ { 0, A_5250_YELLOW,A_REVERSE|A_VERTICAL },
+ { 0, A_5250_TURQ,  A_VERTICAL|A_UNDERLINE },
+ { 0, A_5250_TURQ,  A_REVERSE|A_VERTICAL|A_UNDERLINE },
+ { 0, A_5250_YELLOW,A_VERTICAL|A_UNDERLINE },
+ { 0, A_5250_BLACK, A_REVERSE|A_NONDISPLAY },
+ { 0, A_5250_PINK,  0 },
+ { 0, A_5250_PINK,  A_REVERSE },
+ { 0, A_5250_BLUE,  0 },
+ { 0, A_5250_BLUE,  A_REVERSE },
+ { 0, A_5250_PINK,  A_UNDERLINE },
+ { 0, A_5250_PINK,  A_REVERSE|A_UNDERLINE },
+ { 0, A_5250_BLUE,  A_UNDERLINE },
+ { 0, A_5250_BLACK, A_NONDISPLAY },
+ { -1, -1, -1 },
 };
  
 static HFONT font_80;
@@ -96,6 +117,7 @@ static Tn5250Terminal *globTerm = NULL;
 static Tn5250Display *globDisplay = NULL;
 static HDC bmphdc;
 static HBITMAP caretbm;
+static HBRUSH background_brush;
 
 static void win32_terminal_init(Tn5250Terminal * This);
 static void win32_terminal_term(Tn5250Terminal * This);
@@ -180,6 +202,7 @@ struct _Tn5250TerminalPrivate {
    int            maximized: 1;
    int            dont_auto_size: 1;
    int		  unix_like_copy: 1;
+   int            resize_fonts: 1;
 };
 
 
@@ -348,6 +371,7 @@ Tn5250Terminal *tn5250_win32_terminal_new(HINSTANCE hInst,
    r->data->maximized = 0;
    r->data->dont_auto_size = 0;
    r->data->unix_like_copy = 0;
+   r->data->resize_fonts = 0;
 
    r->conn_fd = -1;
    r->init = win32_terminal_init;
@@ -362,6 +386,7 @@ Tn5250Terminal *tn5250_win32_terminal_new(HINSTANCE hInst,
    r->getkey = win32_terminal_getkey;
    r->beep = win32_terminal_beep;
    r->config = win32_terminal_set_config;
+
 
    return r;
 }
@@ -387,6 +412,8 @@ static void win32_terminal_init(Tn5250Terminal * This)
    int height, width;
    int len;
    char *title;
+   int r, g, b;
+   LOGBRUSH lb;
 
    WNDCLASSEX wndclass;
 
@@ -427,6 +454,11 @@ static void win32_terminal_init(Tn5250Terminal * This)
                tn5250_config_get_bool(This->data->config, "unix_like_copy");
       }
 
+      if ( tn5250_config_get (This->data->config, "resize_fonts")) {
+            This->data->resize_fonts = 
+               tn5250_config_get_bool(This->data->config, "resize_fonts");
+      }
+
      /* FIXME: This opt should not exist when we have full keyboard mapping */
       if ( tn5250_config_get_bool (This->data->config, "unix_sysreq") ) {
            i=0;
@@ -439,8 +471,51 @@ static void win32_terminal_init(Tn5250Terminal * This)
            }
       }
 
+
+    /* set color list for black on white */
+
+      if (tn5250_config_get_bool(This->data->config, "black_on_white")) {
+           for (i=A_5250_GREEN; i<A_5250_BLACK; i++)
+               colorlist[i].ref = RGB(0,0,0);
+           colorlist[A_5250_BLACK].ref = RGB(255,255,255);
+      }
+
+
+    /* set color list for black on white */
+
+      if (tn5250_config_get_bool(This->data->config, "white_on_black")) {
+           for (i=A_5250_GREEN; i<A_5250_BLACK; i++)
+               colorlist[i].ref = RGB(255,255,255);
+           colorlist[A_5250_BLACK].ref = RGB(0,0,0);
+      }
+
+    
+    /* load any colors from the config file & set the attribute map */
+
+      i = 0; 
+      while (colorlist[i].name != NULL) {
+          if (tn5250_parse_color(This->data->config, colorlist[i].name, 
+                                                           &r, &g, &b)!=-1) {
+              colorlist[i].ref = RGB(r, g, b);
+          }
+          TN5250_LOG(("color %d (%s) = %02x%02x%02x\n", i, colorlist[i].name,
+                  colorlist[i].ref&0xff, (colorlist[i].ref>>8)&0xff,
+                  (colorlist[i].ref>>16)&0xff));
+          i++;
+      }
+      i = 0;
+      while (attribute_map[i].colorindex != -1) {
+          attribute_map[i].fg = colorlist[attribute_map[i].colorindex].ref;
+          i++;
+      }
+
    }
 
+   lb.lbStyle = BS_SOLID;
+   lb.lbColor = colorlist[A_5250_BLACK].ref;
+   lb.lbHatch = 0;
+   background_brush = CreateBrushIndirect(&lb);
+               
    
    if ( tn5250_config_get (This->data->config, "host") ) {
       if ( tn5250_config_get (This->data->config, "env.DEVNAME") ) { 
@@ -480,7 +555,7 @@ static void win32_terminal_init(Tn5250Terminal * This)
    wndclass.hIcon = LoadIcon (This->data->hInst, MAKEINTRESOURCE(IDI_TN5250_ICON));
    wndclass.hIconSm = LoadIcon (This->data->hInst, MAKEINTRESOURCE(IDI_TN5250_ICON));
    wndclass.hCursor = LoadCursor (NULL, IDC_ARROW);
-   wndclass.hbrBackground = (HBRUSH) GetStockObject(BLACK_BRUSH);
+   wndclass.hbrBackground = background_brush;
    RegisterClassEx (&wndclass);
 
    /* create our main window */
@@ -1021,7 +1096,7 @@ static void win32_terminal_update(Tn5250Terminal * This, Tn5250Display *display)
    /* clear the screen buffer (one big black rectangle) */
 
    GetClientRect(This->data->hwndMain, &cr);
-   oldbrush = SelectObject(bmphdc, GetStockObject(BLACK_BRUSH));
+   oldbrush = SelectObject(bmphdc, background_brush);
    oldpen = SelectObject(bmphdc, GetStockObject(BLACK_PEN));
    Rectangle(bmphdc, cr.left, cr.top, cr.right, cr.bottom);
    SelectObject(bmphdc, oldbrush);
@@ -1146,9 +1221,9 @@ void win32_terminal_draw_text(HDC hdc, int attr, const char *text, int len, int 
     SetBkMode(hdc, OPAQUE);
     if (flags&A_REVERSE) {
          SetBkColor(hdc, attribute_map[attr-0x20].fg);
-         SetTextColor(hdc, A_5250_BLACK);
+         SetTextColor(hdc, colorlist[A_5250_BLACK].ref);
     } else {
-         SetBkColor(hdc, A_5250_BLACK);
+         SetBkColor(hdc, colorlist[A_5250_BLACK].ref);
          SetTextColor(hdc, attribute_map[attr-0x20].fg);
     }
 
@@ -1189,7 +1264,8 @@ void win32_terminal_draw_text(HDC hdc, int attr, const char *text, int len, int 
     if (flags&A_VERTICAL) { 
        HPEN savepen;
        if (flags&A_REVERSE) 
-           savepen = SelectObject(hdc, CreatePen(PS_SOLID, 0, A_5250_BLACK));
+           savepen = SelectObject(hdc, CreatePen(PS_SOLID, 0, 
+                                               colorlist[A_5250_BLACK].ref));
        else
            savepen = SelectObject(hdc, CreatePen(PS_SOLID, 0, 
                                                attribute_map[attr-0x20].fg));
@@ -1500,7 +1576,7 @@ void win32_terminal_clear_screenbuf(HWND hwnd,int width,int height,int delet) {
    ReleaseDC(hwnd, hdc);
 
    SelectObject(bmphdc, screenbuf);
-   oldbrush = SelectObject(bmphdc, GetStockObject(BLACK_BRUSH));
+   oldbrush = SelectObject(bmphdc, background_brush);
    oldpen = SelectObject(bmphdc, GetStockObject(BLACK_PEN));
    Rectangle(bmphdc, 0, 0, width-1, height-1);
    SelectObject(bmphdc, oldbrush);
@@ -1624,9 +1700,18 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
            else
               globTerm->data->maximized = 0;
            if (h>0 && w>0) {
+              int c,r;
               win32_terminal_clear_screenbuf(hwnd, w, h, 1);
               if (globTerm!=NULL && globDisplay!=NULL) {
-                  // globTerm->data->resized = 1;
+                  if (globTerm->data->resize_fonts) {
+                       win32_calc_default_font_size(hwnd, 80, 24, &c, &r);
+                       globTerm->data->font_80_h = r;    
+                       globTerm->data->font_80_w = c;    
+                       win32_calc_default_font_size(hwnd, 132, 27, &c, &r);
+                       globTerm->data->font_132_h = r;    
+                       globTerm->data->font_132_w = c;    
+                       globTerm->data->resized = 1;
+                  }
                   win32_terminal_update(globTerm, globDisplay);
               }
            }
@@ -1896,7 +1981,7 @@ void win32_make_new_caret(Tn5250Terminal *This) {
     hdc = CreateCompatibleDC(NULL);
     SelectObject(hdc, caretbm);
     savepen = SelectObject(hdc, 
-               CreatePen(PS_SOLID, 0, A_5250_WHITE));
+               CreatePen(PS_SOLID, 0, RGB(255,255,255)));
     MoveToEx(hdc, 0, This->data->font_height-2, NULL);
     LineTo(hdc, This->data->font_width, This->data->font_height-2);
     savepen = SelectObject(hdc, savepen);
