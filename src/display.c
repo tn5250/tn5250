@@ -857,6 +857,7 @@ void
 tn5250_display_interactive_addch (Tn5250Display * This, unsigned char ch)
 {
    Tn5250Field *field = tn5250_display_current_field (This);
+   Tn5250Field *contfield;
    int end_of_field = 0;
    int nextfieldprogressionid = 0;
 
@@ -912,30 +913,49 @@ tn5250_display_interactive_addch (Tn5250Display * This, unsigned char ch)
       return;
    }
    /* Add or insert the character (depending on whether insert mode is on). */
-   if ((tn5250_display_indicators (This) & TN5250_DISPLAY_IND_INSERT) != 0) {
-      int ofs = tn5250_field_length (field) - 1;
-      unsigned char *data = tn5250_display_field_data (This, field);
-      if (tn5250_field_is_signed_num (field)) {
-	 ofs--;
-      }
-      if (data[ofs] != '\0'
-	  && tn5250_char_map_to_local (This->map, data[ofs]) != ' ') {
-	 This->keystate = TN5250_KEYSTATE_PREHELP;
-	 This->keySRC = TN5250_KBDSRC_NOROOM;
-	 tn5250_display_inhibit (This);
-	 return;
-      }
-      tn5250_dbuffer_ins (This->display_buffers,
-			  tn5250_char_map_to_remote (This->map, ch),
-			  tn5250_field_count_right (field,
-						    tn5250_display_cursor_y
-						    (This),
-						    tn5250_display_cursor_x
-						    (This)));
-   } else {
-      tn5250_dbuffer_addch (This->display_buffers,
-			    tn5250_char_map_to_remote (This->map, ch));
-   }
+   if ((tn5250_display_indicators (This) & TN5250_DISPLAY_IND_INSERT) != 0)
+     {
+       int ofs = tn5250_field_length (field) - 1;
+       unsigned char *data = tn5250_display_field_data (This, field);
+
+       if (tn5250_field_is_continued (field))
+	 {
+	   contfield = field;
+	   while (!tn5250_field_is_continued_last (contfield))
+	     {
+	       contfield = contfield->next;
+	     }
+	   ofs = tn5250_field_length (contfield) - 1;
+	   data = tn5250_display_field_data (This, contfield);
+	 }
+
+       if (tn5250_field_is_signed_num (field))
+	 {
+	   ofs--;
+	 }
+
+       if (data[ofs] != '\0'
+	   && tn5250_char_map_to_local (This->map, data[ofs]) != ' ')
+	 {
+	   This->keystate = TN5250_KEYSTATE_PREHELP;
+	   This->keySRC = TN5250_KBDSRC_NOROOM;
+	   tn5250_display_inhibit (This);
+	   return;
+	 }
+
+       tn5250_dbuffer_ins (This->display_buffers, field->id,
+			   tn5250_char_map_to_remote (This->map, ch),
+			   tn5250_field_count_right (field,
+						     tn5250_display_cursor_y
+						     (This),
+						     tn5250_display_cursor_x
+						     (This)));
+     }
+   else
+     {
+       tn5250_dbuffer_addch (This->display_buffers,
+			     tn5250_char_map_to_remote (This->map, ch));
+     }
 
    tn5250_field_set_mdt (field);
 

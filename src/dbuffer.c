@@ -758,10 +758,30 @@ tn5250_dbuffer_del (Tn5250DBuffer * This, int shiftcount)
  *    DOCUMENT ME!!!
  *****/
 void
-tn5250_dbuffer_ins (Tn5250DBuffer * This, unsigned char c, int shiftcount)
+tn5250_dbuffer_ins (Tn5250DBuffer * This, int fieldid,
+		    unsigned char c, int shiftcount)
 {
+  Tn5250Field *iter, *field;
   int x = This->cx, y = This->cy, i;
   unsigned char c2;
+
+  field = tn5250_field_list_find_by_id (This->field_list, fieldid);
+  iter = field;
+
+  while (tn5250_field_is_continued (iter))
+    {
+      if (tn5250_field_is_continued_last (iter))
+	{
+	  break;
+	}
+      iter = iter->next;
+      shiftcount =
+	shiftcount + tn5250_field_count_right (iter,
+					       tn5250_field_start_row (iter),
+					       tn5250_field_start_col (iter));
+    }
+
+  iter = field;
 
   for (i = 0; i <= shiftcount; i++)
     {
@@ -773,7 +793,18 @@ tn5250_dbuffer_ins (Tn5250DBuffer * This, unsigned char c, int shiftcount)
 	  x = 0;
 	  y++;
 	}
+
+      if (tn5250_field_is_continued (iter)
+	  && (!tn5250_field_is_continued_last (iter))
+	  && (x > tn5250_field_end_col (iter)))
+	{
+	  iter = iter->next;
+	  x = tn5250_field_start_col (iter);
+	  y = tn5250_field_start_row (iter);
+	  i--;
+	}
     }
+
   tn5250_dbuffer_right (This, 1);
 
   ASSERT_VALID (This);
