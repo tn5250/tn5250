@@ -496,7 +496,6 @@ static void tn5250_session_process_stream(Tn5250Session * This)
    int cur_command;
 
    TN5250_LOG(("ProcessStream: entered.\n"));
-   tn5250_display_clear_pending_insert (This->display);
    while (!tn5250_record_is_chain_end(This->record)) {
 
       cur_command = tn5250_record_get_byte(This->record);
@@ -541,7 +540,6 @@ static void tn5250_session_process_stream(Tn5250Session * This)
       case CMD_RESTORE_SCREEN:
 	 /* Ignored, the data following this should be a valid
 	  * Write To Display command. */
-	 tn5250_session_clear_unit(This);
 	 break;
       case CMD_WRITE_ERROR_CODE:
 	 tn5250_session_write_error_code(This);
@@ -717,7 +715,9 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
    int old_x = tn5250_display_cursor_x(This->display);
    int old_y = tn5250_display_cursor_y(This->display);
    int is_x_system;
-
+   int will_be_unlocked;
+   int cur_opcode;
+   
    TN5250_LOG(("WriteToDisplay: entered.\n"));
 
    CC1 = tn5250_record_get_byte(This->record);
@@ -818,9 +818,12 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
                 
    is_x_system = tn5250_display_indicators(This->display)
    	         & TN5250_DISPLAY_IND_X_SYSTEM;                
+   will_be_unlocked = ((CC2 & TN5250_SESSION_CTL_UNLOCK) != 0);
+   cur_opcode = tn5250_record_opcode(This->record);
    if (end_y != 0xff && end_x != 0xff) 
       tn5250_display_set_cursor(This->display, end_y, end_x);
-   else if(is_x_system) {
+   else if((is_x_system && will_be_unlocked) ||
+         cur_opcode == TN5250_RECORD_OPCODE_RESTORE_SCR) {
       tn5250_display_set_cursor_home (This->display);
    } else {
       tn5250_display_set_cursor(This->display, old_y, old_x);

@@ -1,3 +1,9 @@
+2000-12-19 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Okay, really applied second patch from Dave McKenzie *sigh*
+- Applied patch from Carey Evans to fix option parsing in xt5250.
+- Changed src/Makefile.am for compatibility with robodoc 3.2.2.
+- Released 0.16.1
+
 2000-12-06 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - Fixed text of LGPL exception clause in src/*.[ch]
 

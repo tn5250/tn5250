@@ -118,7 +118,7 @@ docs:
 	  for file in $(DOCFILES) ; do \
 	    robodoc $$file ../doc/$$file.html HTML -x ../doc/index.xrefs ; \
 	  done ; \
-	  robodoc ../doc/index.xrefs ../doc/index.html INDEX ; \
+	  robodoc ../doc/index.xrefs ../doc/index.html INDEX HTML ; \
 	  rm -f ../doc/*.xref ../doc/index.xrefs )
 
 clean-local:

@@ -21,14 +21,11 @@ get_host () {
   XT5250_HOST=""
   while [ $# -ne 0 ] ; do
     case "$1" in
-      -h|--help)
+      -help)
         exec "$bindir/tn5250";;
-      -V|--version)
-        exec "$bindir/tn5250" -V;;
-      -m|-s|-t|-y)
-	shift
-	;;
-      -*)
+      -version)
+        exec "$bindir/tn5250" -version;;
+      -*|*=*)
 	;;
       *)
         if [ -z "$XT5250_HOST" ] ; then XT5250_HOST="$1" ; fi
