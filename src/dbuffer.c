@@ -148,10 +148,20 @@ void tn5250_dbuffer_set_header_data(Tn5250DBuffer *This, unsigned char *data, in
 int tn5250_dbuffer_send_data_for_aid_key(Tn5250DBuffer *This, int k)
 {
    int byte, bit, result;
-   if (This->header_data == NULL) {
+
+   if (This->header_data == NULL || This->header_length <= 6) {
       result = 1;
+      TN5250_LOG (("tn5250_dbuffer_send_data_for_aid_key: no format table header or key mask.\n"));
       goto send_data_done;
    }
+
+#ifndef NDEBUG
+   TN5250_LOG (("tn5250_dbuffer_send_data_for_aid_key: format table header = \n"));
+   for (byte = 0; byte < This->header_length; byte++) {
+      TN5250_LOG (("0x%02X ",This->header_data[byte]));
+   }
+   TN5250_LOG (("\n"));
+#endif
 
    switch (k) {
    case TN5250_SESSION_AID_F1: byte = 6; bit = 7; break;
@@ -183,12 +193,7 @@ int tn5250_dbuffer_send_data_for_aid_key(Tn5250DBuffer *This, int k)
      goto send_data_done;
    }
 
-   if (byte >= This->header_length) {
-      result = 1;
-      goto send_data_done;
-   }
-      
-   result = ((This->header_data[byte] & (0x80 >> bit)) != 0);
+   result = ((This->header_data[byte] & (0x80 >> bit)) == 0);
 send_data_done:
    TN5250_LOG (("tn5250_dbuffer_send_data_for_aid_key() = %d\n", result));
    return result;
