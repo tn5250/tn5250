@@ -99,6 +99,11 @@ int main(int argc, char *argv[])
 	    tn5250_config_get_bool (config, "underscores")
 	    );
    }
+   if (tn5250_config_get (config, "ruler")) {
+      tn5250_curses_terminal_display_ruler(term,
+	    tn5250_config_get_bool (config, "ruler")
+	    );
+   }
    if ((tn5250_config_get (config, "font_80")) 
        && (tn5250_config_get (config, "font_132"))) {
       tn5250_curses_terminal_set_xterm_font (term,   
@@ -191,6 +196,7 @@ Options:\n\
    printf ("\
    +/-underscores          Use/don't use underscores instead of underline\n\
                            attribute.\n\
+   +/-ruler		   Draw a ruler pointing to the cursor position\n\
    +/-version              Show emulator version and exit.\n\
    env.NAME=VALUE          Set telnet environment string NAME to VALUE.\n\
    env.TERM=TYPE           Emulate IBM terminal type (default: depends)");

@@ -100,6 +100,7 @@ static int curses_terminal_waitevent(Tn5250Terminal * This) /*@modifies This@*/;
 static int curses_terminal_getkey(Tn5250Terminal * This) /*@modifies This@*/;
 static int curses_terminal_get_esc_key(Tn5250Terminal * This, int is_esc) /*@modifies This@*/;
 static void curses_terminal_beep(Tn5250Terminal * This);
+static int curses_terminal_is_ruler(Tn5250Terminal *This, Tn5250Display *display, int x, int y);
 
 #ifdef USE_OWN_KEY_PARSING
 struct _Key {
@@ -127,6 +128,7 @@ struct _Tn5250TerminalPrivate {
    int		  have_underscores : 1;
    int		  underscores : 1;
    int		  is_xterm : 1;
+   int		  display_ruler : 1;
 };
 
 #ifdef USE_OWN_KEY_PARSING
@@ -279,6 +281,7 @@ Tn5250Terminal *tn5250_curses_terminal_new()
    r->data->is_xterm = 0;
    r->data->font_80 = NULL;
    r->data->font_132 = NULL;
+   r->data->display_ruler = 0;
 
 #ifdef USE_OWN_KEY_PARSING
    r->data->k_buf_len = 0;
@@ -430,6 +433,23 @@ void tn5250_curses_terminal_use_underscores (Tn5250Terminal *This, int u)
 {
    This->data->have_underscores = 1;
    This->data->underscores = u;
+}
+
+/****i* lib5250/tn5250_curses_terminal_display_ruler
+ * NAME
+ *    tn5250_curses_terminal_display_ruler
+ * SYNOPSIS
+ *    tn5250_curses_terminal_display_ruler (This, f);
+ * INPUTS
+ *    Tn5250Terminal  *    This       - The curses terminal object.
+ *    int                  f          - Flag, set to 1 to show ruler
+ * DESCRIPTION
+ *    Call this function to tell a curses terminal to display a 
+ *    "ruler" that pinpoints where the cursor is on a given screen.
+ *****/
+void tn5250_curses_terminal_display_ruler (Tn5250Terminal *This, int f)
+{
+   This->data->display_ruler = f;
 }
 
 /****i* lib5250/tn5250_curses_terminal_set_xterm_font
@@ -605,11 +625,19 @@ static void curses_terminal_update(Tn5250Terminal * This, Tn5250Display *display
 	 c = tn5250_display_char_at(display, y, x);
 	 if ((c & 0xe0) == 0x20) {	/* ATTRIBUTE */
 	    a = (c & 0xff);
-	    addch(attribute_map[0] | ' ');
+               if (curses_terminal_is_ruler(This, display, x, y)) {
+                  addch( A_REVERSE | attribute_map[0] | ' ');
+               } else {
+         	  addch(attribute_map[0] | ' ');
+               }
 	 } else {		/* DATA */
 	    curs_attr = attribute_map[a - 0x20];
 	    if (curs_attr == 0x00) {	/* NONDISPLAY */
-	       addch(attribute_map[0] | ' ');
+               if (curses_terminal_is_ruler(This, display, x, y)) {
+                  addch( A_REVERSE | attribute_map[0] | ' ');
+               } else {
+         	  addch(attribute_map[0] | ' ');
+               }
 	    } else {
                /* UNPRINTABLE -- print block */
                if ((c==0x1f) || (c==0x3F)) {
@@ -635,6 +663,9 @@ static void curses_terminal_update(Tn5250Terminal * This, Tn5250Display *display
 			c = '_';
 		  }
 	       }
+               if (curses_terminal_is_ruler(This, display, x, y)) {
+		  curs_attr |= A_REVERSE;
+               }
 	       addch((chtype)(c | curs_attr));
 	    }
 	 }			/* if ((c & 0xe0) ... */
@@ -646,6 +677,37 @@ static void curses_terminal_update(Tn5250Terminal * This, Tn5250Display *display
    /* This performs the refresh () */
    curses_terminal_update_indicators(This, display);
 }
+
+
+/****i* lib5250/curses_terminal_is_ruler
+ * NAME
+ *    curses_terminal_is_ruler
+ * SYNOPSIS
+ *    curses_terminal_is_ruler (display, x, y);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ *    Tn5250Display *      display    - 
+ *    int 		   x          - position of char on X axis
+ *    int		   y          - position of char on Y axis
+ * DESCRIPTION
+ *    Returns 1 if a char on the screen should be displayed as part
+ *    of the ruler, or 0 if it should not.
+ *****/
+static int curses_terminal_is_ruler(Tn5250Terminal *This,
+               Tn5250Display *display, int x, int y) {
+
+   if (!(This->data->display_ruler)) return 0;
+
+   if (x==tn5250_display_cursor_x(display)) { 
+        return 1;
+   }
+   if (y==tn5250_display_cursor_y(display)) { 
+        return 1;
+   }
+
+   return 0;
+}
+
 
 /****i* lib5250/curses_terminal_update_indicators
  * NAME
