@@ -1,3 +1,6 @@
+2005-03-27 James Rich <james@eaerich.com>
+- Add support for insert in continuous fields.
+
 2005-03-26 James Rich <james@eaerich.com>
 - Fixed reverse cursor progression.
 
