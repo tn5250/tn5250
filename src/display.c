@@ -32,8 +32,6 @@ void tn5250_display_set_cursor_prev_progression_field (Tn5250Display *
 						       This,
 						       int currentfield);
 void tn5250_display_wordwrap_delete (Tn5250Display * This);
-void tn5250_display_wordwrap (Tn5250Display * This, unsigned char *text,
-			      int totallen, int fieldlen);
 
 
 /****f* lib5250/tn5250_display_new
@@ -2938,6 +2936,10 @@ tn5250_display_wordwrap (Tn5250Display * This, unsigned char *text,
   tn5250_dbuffer_cursor_set (This->display_buffers,
 			     tn5250_field_start_row (field),
 			     tn5250_field_start_col (field));
+  if (strlen (word) > 0)
+    {
+      sprintf (line, "%s%s", line, word);
+    }
   for (j = 0; j < strlen (line); j++)
     {
       tn5250_dbuffer_addch (This->display_buffers,
