@@ -203,7 +203,6 @@ void tn5250_print_session_main_loop(Tn5250PrintSession * This)
 	 }
       }
    }
-
 }
 
 /****i* lib5250/tn5250_print_session_waitevent

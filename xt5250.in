@@ -106,7 +106,7 @@ XUSERFILESEARCHPATH="$pkgdatadir/%N"
 export XUSERFILESEARCHPATH XT5250_HOST
 
 exec xterm -name "xt5250" -bg black -fg white -T "xt5250 - $XT5250_HOST" \
-  -tn xterm-5250 -e "$0" -BOOT "$@"
+  -tn xterm-5250 -geometry 80x25 -e "$0" -BOOT "$@"
 # If the exec fails:
 echo "${0##*/}: Can't exec xterm." >&2
 exit 1
