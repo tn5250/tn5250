@@ -111,9 +111,14 @@ int tn5250_daemon(int nochdir, int noclose, int ignsigcld)
 
     umask(0);
 
-    if(ignsigcld)
-      {
+    if(ignsigcld) {
+#ifdef SIGCHLD
+	signal(SIGCHLD,sig_child);
+#else
+#ifdef SIGCLD
 	signal(SIGCLD,sig_child);
+#endif
+#endif
       }
 
     return 0;
