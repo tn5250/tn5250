@@ -14,31 +14,25 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 ..
-.TH SCS2ASCII 1 "18 Mar 2000"
+.TH SCS2PDF 1 "18 Mar 2000"
 .SH NAME
-scs2ascii \- convert IBM SCS printer data into ASCII
+scs2pdf \- convert IBM SCS printer data into PDF
 .SH SYNOPSIS
-.B scs2ascii
+.B scs2pdf
 .SH DESCRIPTION
-This program handles the conversion from an SCS print stream from an
-AS/400 printer emulation to something suitable for sending to lpr.
+The program converts from an SCS print stream on the standard input,
+to a Portable Document Format file on the standard output.
 It is only intended for use with
 .BR lp5250d .
-.PP
-When using host print transform with
-.BR lp5250d ,
-.B scs2ascii
-will remove the remaining characters from the SCS print stream to
-leave only the data intended for the printer.
 .SH "SEE ALSO"
 .BR lp5250d (1)
 .SH COPYRIGHT
-.B scs2ascii
+.B scs2pdf
 is copyright
 .if t \(co
-1997 - 1999 Michael Madore.  This manpage is copyright
+2000 Michael Madore.  This manpage is copyright
 .if t \(co
-1999, 2000 Carey Evans.
+2000 Carey Evans.
 .PP
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
