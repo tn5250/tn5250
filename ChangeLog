@@ -1,3 +1,7 @@
+2001-01-18 Scott Klement <klemscot@klements.com>
+- Fix for sign not being set when field minus / field plus 
+   pressed in an auto-enter field.
+
 2001-01-04 Scott Klement <klemscot@klements.com>
 - Added xterm font support requested by Frank Richter
 - to use: set the font_80 and font_132 config options in ~/.tn5250rc
