@@ -95,7 +95,8 @@ extern Tn5250Stream /*@only@*/ /*@null@*/ *tn5250_stream_open (const char *to);
 extern int tn5250_stream_config (Tn5250Stream *This, struct _Tn5250Config *config);
 extern void tn5250_stream_destroy(Tn5250Stream /*@only@*/ * This);
 extern Tn5250Record /*@only@*/ *tn5250_stream_get_record(Tn5250Stream * This);
-  extern Tn5250Stream *tn5250_stream_host(SOCKET_TYPE masterSock, long timeout);
+extern Tn5250Record /*@only@*/ *tn3270_stream_get_record(Tn5250Stream * This);
+extern Tn5250Stream *tn5250_stream_host(SOCKET_TYPE masterSock, long timeout);
 #define tn5250_stream_connect(This,to) \
    (* (This->connect)) ((This),(to))
 #define tn5250_stream_disconnect(This) \
