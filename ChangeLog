@@ -1,3 +1,8 @@
+1999-11-22 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- session.c: Fixed bug in Read MDT Fields handler where sign position was
+  being sent for signed numeric fields which were negative.
+
 1999-11-21 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 
 - utility.c: Removed tn5250_isnumeric, only called from one place, and
