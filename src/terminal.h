@@ -95,6 +95,8 @@ extern "C" {
 #define K_FIELDPLUS     0520    /* curses KEY_SF */
 #define K_UNKNOW	0xffff
 
+   struct _Tn5250Display;
+
    struct _Tn5250Terminal {
       SOCKET_TYPE conn_fd;
       struct _Tn5250TerminalPrivate *data;
@@ -105,8 +107,10 @@ extern "C" {
       int (*width) (struct _Tn5250Terminal * This);
       int (*height) (struct _Tn5250Terminal * This);
       int (*flags) (struct _Tn5250Terminal * This);
-      void (*update) (struct _Tn5250Terminal * This, Tn5250DBuffer * dsp);
-      void (*update_indicators) (struct _Tn5250Terminal * This, Tn5250DBuffer * dsp);
+      void (*update) 			(struct _Tn5250Terminal * This,
+		                         struct _Tn5250Display *display);
+      void (*update_indicators) 	(struct _Tn5250Terminal * This,
+		                         struct _Tn5250Display *display);
       int (*waitevent) (struct _Tn5250Terminal * This);
       int (*getkey) (struct _Tn5250Terminal * This);
       void (* beep) (struct _Tn5250Terminal * This);

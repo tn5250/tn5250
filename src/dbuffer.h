@@ -37,7 +37,6 @@ extern "C" {
       int w, h;
       int cx, cy;		/* Cursor Position */
       int tcx, tcy;		/* for set_new_ic */
-      int disp_indicators;
       unsigned char /*@notnull@*/ *data;
    };
 
@@ -63,21 +62,12 @@ extern "C" {
    extern void tn5250_dbuffer_set_temp_ic(Tn5250DBuffer * This, int y, int x);
    extern void tn5250_dbuffer_roll(Tn5250DBuffer * This, int top, int bot, int lines);
 
-   extern void tn5250_dbuffer_indicator_set(Tn5250DBuffer * This, int inds);
-   extern void tn5250_dbuffer_indicator_clear(Tn5250DBuffer * This, int inds);
    extern unsigned char tn5250_dbuffer_char_at(Tn5250DBuffer * This, int y, int x);
 
 #define tn5250_dbuffer_width(This) ((This)->w)
 #define tn5250_dbuffer_height(This) ((This)->h)
 #define tn5250_dbuffer_cursor_x(This) ((This)->cx)
 #define tn5250_dbuffer_cursor_y(This) ((This)->cy)
-#define tn5250_dbuffer_indicators(This) ((This)->disp_indicators)
-
-   /* Useful macros for testing/setting INHIBIT flag */
-#define tn5250_dbuffer_inhibited(This) ((tn5250_dbuffer_indicators (This) & TN5250_DISPLAY_IND_INHIBIT) != 0)
-#define tn5250_dbuffer_inhibit(This) (tn5250_dbuffer_indicator_set (This, TN5250_DISPLAY_IND_INHIBIT))
-#define tn5250_dbuffer_uninhibit(This) \
-   (tn5250_dbuffer_indicator_clear (This, TN5250_DISPLAY_IND_INHIBIT))
 
 #ifdef __cplusplus
 }

@@ -48,7 +48,6 @@ Tn5250DBuffer *tn5250_dbuffer_new(int width, int height)
    This->h = height;
    This->cx = This->cy = 0;
    This->tcx = This->tcy = 0;
-   This->disp_indicators = 0;
    This->next = This->prev = NULL;
 
    This->data = tn5250_new(unsigned char, width * height);
@@ -76,7 +75,6 @@ Tn5250DBuffer *tn5250_dbuffer_copy(Tn5250DBuffer * dsp)
    This->cy = dsp->cy;
    This->tcx = dsp->tcx;
    This->tcy = dsp->tcy;
-   This->disp_indicators = dsp->disp_indicators;
    This->data = tn5250_new(unsigned char, dsp->w * dsp->h);
    if (This->data == NULL) {
       free(This);
@@ -99,11 +97,13 @@ void tn5250_dbuffer_destroy(Tn5250DBuffer * This)
  */
 void tn5250_dbuffer_set_size(Tn5250DBuffer * This, int rows, int cols)
 {
-   int r;
+   This->w = cols;
+   This->h = rows;
 
    free(This->data);
    This->data = tn5250_new(unsigned char, rows * cols);
    TN5250_ASSERT (This->data != NULL);
+
    tn5250_dbuffer_clear(This);
 }
 
@@ -180,18 +180,6 @@ void tn5250_dbuffer_addch(Tn5250DBuffer * This, unsigned char c)
    tn5250_dbuffer_right(This, 1);
 
    ASSERT_VALID(This);
-}
-
-void tn5250_dbuffer_indicator_set(Tn5250DBuffer * This, int inds)
-{
-   TN5250_LOG(("tn5250_dbuffer_indicator_set: setting indicators X'%02X'.\n", inds));
-   This->disp_indicators |= inds;
-}
-
-void tn5250_dbuffer_indicator_clear(Tn5250DBuffer * This, int inds)
-{
-   TN5250_LOG(("tn5250_dbuffer_indicator_clear: clearing indicators X'%02X'.\n", inds));
-   This->disp_indicators &= ~inds;
 }
 
 void tn5250_dbuffer_del(Tn5250DBuffer * This, int shiftcount)

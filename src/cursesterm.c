@@ -40,6 +40,9 @@
 #include "buffer.h"
 #include "record.h"
 #include "stream.h"
+#include "field.h"
+#include "formattable.h"
+#include "display.h"
 #include "terminal.h"
 #include "cursesterm.h"
 
@@ -100,9 +103,9 @@ static int curses_terminal_width(Tn5250Terminal * This);
 static int curses_terminal_height(Tn5250Terminal * This);
 static int curses_terminal_flags(Tn5250Terminal * This);
 static void curses_terminal_update(Tn5250Terminal * This,
-				   Tn5250DBuffer * dsp) /*@modifies This@*/;
+				   Tn5250Display * display) /*@modifies This@*/;
 static void curses_terminal_update_indicators(Tn5250Terminal * This,
-					      Tn5250DBuffer * dsp) /*@modifies This@*/;
+					      Tn5250Display * display) /*@modifies This@*/;
 static int curses_terminal_waitevent(Tn5250Terminal * This) /*@modifies This@*/;
 static int curses_terminal_getkey(Tn5250Terminal * This) /*@modifies This@*/;
 static int curses_terminal_get_esc_key(Tn5250Terminal * This, int is_esc) /*@modifies This@*/;
@@ -231,41 +234,41 @@ static int curses_terminal_flags(Tn5250Terminal /*@unused@*/ * This)
    return f;
 }
 
-static void curses_terminal_update(Tn5250Terminal * This, Tn5250DBuffer * dsp)
+static void curses_terminal_update(Tn5250Terminal * This, Tn5250Display *display)
 {
    int my, mx;
    int y, x;
    attr_t curs_attr;
    unsigned char a = 0x20, c;
 
-   if (This->data->last_width != tn5250_dbuffer_width(dsp)
-       || This->data->last_height != tn5250_dbuffer_height(dsp)) {
+   if (This->data->last_width != tn5250_display_width(display)
+       || This->data->last_height != tn5250_display_height(display)) {
       clear();
       if(1) {
 /*      if (This->data->is_xterm) {   */
 	 refresh ();
-	 printf ("\x1b[8;%d;%dt", tn5250_dbuffer_height (dsp)+1,
-	       tn5250_dbuffer_width (dsp));
+	 printf ("\x1b[8;%d;%dt", tn5250_display_height (display)+1,
+	       tn5250_display_width (display));
 	 fflush (stdout);
-	 resizeterm(tn5250_dbuffer_height(dsp)+1, tn5250_dbuffer_width(dsp)+1);
+	 resizeterm(tn5250_display_height(display)+1, tn5250_display_width(display)+1);
 
 	 /* Make sure we get a SIGWINCH - We need curses to resize its
 	  * buffer. */
 	 raise (SIGWINCH);
       }
-      This->data->last_width = tn5250_dbuffer_width(dsp);
-      This->data->last_height = tn5250_dbuffer_height(dsp);
-      curses_terminal_update_indicators(This, dsp);
+      This->data->last_width = tn5250_display_width(display);
+      This->data->last_height = tn5250_display_height(display);
+      curses_terminal_update_indicators(This, display);
    }
    attrset(A_NORMAL);
    getmaxyx(stdscr, my, mx);
-   for (y = 0; y < tn5250_dbuffer_height(dsp); y++) {
+   for (y = 0; y < tn5250_display_height(display); y++) {
       if (y > my)
 	 break;
 
       move(y, 0);
-      for (x = 0; x < tn5250_dbuffer_width(dsp); x++) {
-	 c = tn5250_dbuffer_char_at(dsp, y, x);
+      for (x = 0; x < tn5250_display_width(display); x++) {
+	 c = tn5250_display_char_at(display, y, x);
 	 if ((c & 0xe0) == 0x20) {	/* ATTRIBUTE */
 	    a = (c & 0xff);
 	    addch(attribute_map[0] | ' ');
@@ -299,13 +302,13 @@ static void curses_terminal_update(Tn5250Terminal * This, Tn5250DBuffer * dsp)
       }				/* for (int x ... */
    }				/* for (int y ... */
 
-   move(tn5250_dbuffer_cursor_y(dsp), tn5250_dbuffer_cursor_x(dsp));
+   move(tn5250_display_cursor_y(display), tn5250_display_cursor_x(display));
    refresh();
 }
 
-static void curses_terminal_update_indicators(Tn5250Terminal /*@unused@*/ * This, Tn5250DBuffer * dsp)
+static void curses_terminal_update_indicators(Tn5250Terminal /*@unused@*/ * This, Tn5250Display *display)
 {
-   int inds = tn5250_dbuffer_indicators(dsp);
+   int inds = tn5250_display_indicators(display);
    char ind_buf[80];
 
    memset(ind_buf, ' ', sizeof(ind_buf));
@@ -324,8 +327,8 @@ static void curses_terminal_update_indicators(Tn5250Terminal /*@unused@*/ * This
       memcpy(ind_buf + 30, "IM", 2);
    }
    attrset( (attr_t)COLOR_PAIR(COLOR_WHITE) );
-   mvaddnstr(tn5250_dbuffer_height(dsp), 0, ind_buf, 80);
-   move(tn5250_dbuffer_cursor_y(dsp), tn5250_dbuffer_cursor_x(dsp));
+   mvaddnstr(tn5250_display_height(display), 0, ind_buf, 80);
+   move(tn5250_display_cursor_y(display), tn5250_display_cursor_x(display));
    attrset(A_NORMAL);
    refresh();
 }

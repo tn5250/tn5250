@@ -37,6 +37,8 @@ struct _Tn5250Display {
    struct _Tn5250Table *   format_tables;
    struct _Tn5250DBuffer * display_buffers;
    struct _Tn5250Terminal *terminal;
+   int indicators;
+   int indicators_dirty : 1;
 };
 
 typedef struct _Tn5250Display Tn5250Display;
@@ -85,13 +87,32 @@ extern void	  tn5250_display_interactive_addch    (Tn5250Display *This,
 extern void	  tn5250_display_beep		      (Tn5250Display *This);
 extern void	  tn5250_display_q_aidcode	      (Tn5250Display *This,
                                                        int aidcode);
-
+extern void	  tn5250_display_indicator_set	      (Tn5250Display *This,
+						       int inds);
+extern void	  tn5250_display_indicator_clear      (Tn5250Display *This,
+						       int inds);
+#define tn5250_display_indicators(This) \
+   ((This)->indicators)
+#define tn5250_display_inhibited(This) \
+   ((tn5250_display_indicators (This) & TN5250_DISPLAY_IND_INHIBIT) != 0)
+#define tn5250_display_inhibit(This) \
+   (tn5250_display_indicator_set (This, TN5250_DISPLAY_IND_INHIBIT))
+#define tn5250_display_uninhibit(This) \
+   (tn5250_display_indicator_clear (This, TN5250_DISPLAY_IND_INHIBIT))
 #define tn5250_display_cursor_x(This) \
    (tn5250_dbuffer_cursor_x ((This)->display_buffers))
 #define tn5250_display_cursor_y(This) \
    (tn5250_dbuffer_cursor_y ((This)->display_buffers))
 #define tn5250_display_set_cursor(This,y,x) \
    (tn5250_dbuffer_cursor_set ((This)->display_buffers,(y),(x)))
+#define tn5250_display_width(This) \
+   (tn5250_dbuffer_width((This)->display_buffers))
+#define tn5250_display_height(This) \
+   (tn5250_dbuffer_height((This)->display_buffers))
+#define tn5250_display_char_at(This,y,x) \
+   (tn5250_dbuffer_char_at((This)->display_buffers,(y),(x))) 
+#define tn5250_display_addch(This,ch) \
+   (tn5250_dbuffer_addch((This)->display_buffers,(ch)))
 
 #ifdef __cplusplus
 }

@@ -39,6 +39,9 @@
 #include "buffer.h"
 #include "record.h"
 #include "stream.h"
+#include "field.h"
+#include "formattable.h"
+#include "display.h"
 #include "terminal.h"
 #include "slangterm.h"
 
@@ -100,9 +103,9 @@ static int slang_terminal_width(Tn5250Terminal * This);
 static int slang_terminal_height(Tn5250Terminal * This);
 static int slang_terminal_flags(Tn5250Terminal * This);
 static void slang_terminal_update(Tn5250Terminal * This,
-				   Tn5250DBuffer * dsp);
+				   Tn5250Display * display);
 static void slang_terminal_update_indicators(Tn5250Terminal * This,
-					      Tn5250DBuffer * dsp);
+					      Tn5250Display *display);
 static int slang_terminal_waitevent(Tn5250Terminal * This);
 static int slang_terminal_getkey(Tn5250Terminal * This);
 static void slang_terminal_beep(Tn5250Terminal * This);
@@ -121,29 +124,32 @@ struct _Tn5250TerminalPrivate {
 Tn5250Terminal *tn5250_slang_terminal_new()
 {
    Tn5250Terminal *r = tn5250_new(Tn5250Terminal, 1);
-   if (r != NULL) {
-      r->data = tn5250_new(struct _Tn5250TerminalPrivate, 1);
-      if (r->data == NULL) {
-	 free(r);
-	 return NULL;
-      }
-      r->data->quit_flag = 0;
-      r->data->last_width = 0;
-      r->data->last_height = 0;
-      r->data->attrs = 0;
+   if (r == NULL)
+      return NULL;
 
-      r->conn_fd = -1;
-      r->init = slang_terminal_init;
-      r->term = slang_terminal_term;
-      r->destroy = slang_terminal_destroy;
-      r->width = slang_terminal_width;
-      r->height = slang_terminal_height;
-      r->flags = slang_terminal_flags;
-      r->update = slang_terminal_update;
-      r->update_indicators = slang_terminal_update_indicators;
-      r->waitevent = slang_terminal_waitevent;
-      r->getkey = slang_terminal_getkey;
+   r->data = tn5250_new(struct _Tn5250TerminalPrivate, 1);
+   if (r->data == NULL) {
+      free(r);
+      return NULL;
    }
+
+   r->data->quit_flag = 0;
+   r->data->last_width = 0;
+   r->data->last_height = 0;
+   r->data->attrs = 0;
+
+   r->conn_fd = -1;
+   r->init = slang_terminal_init;
+   r->term = slang_terminal_term;
+   r->destroy = slang_terminal_destroy;
+   r->width = slang_terminal_width;
+   r->height = slang_terminal_height;
+   r->flags = slang_terminal_flags;
+   r->update = slang_terminal_update;
+   r->update_indicators = slang_terminal_update_indicators;
+   r->waitevent = slang_terminal_waitevent;
+   r->getkey = slang_terminal_getkey;
+   r->beep = slang_terminal_beep;
    return r;
 }
 
@@ -211,30 +217,30 @@ static int slang_terminal_flags(Tn5250Terminal /*@unused@*/ * This)
    return f;
 }
 
-static void slang_terminal_update(Tn5250Terminal * This, Tn5250DBuffer * dsp)
+static void slang_terminal_update(Tn5250Terminal * This, Tn5250Display * display)
 {
    int my, mx;
    int y, x;
    int curs_attr, temp_attr;
    unsigned char a = 0x20, c;
 
-   if (This->data->last_width != tn5250_dbuffer_width(dsp)
-       || This->data->last_height != tn5250_dbuffer_height(dsp)) {
+   if (This->data->last_width != tn5250_display_width(display)
+       || This->data->last_height != tn5250_display_height(display)) {
       SLsmg_cls ();
-      This->data->last_width = tn5250_dbuffer_width(dsp);
-      This->data->last_height = tn5250_dbuffer_height(dsp);
-      slang_terminal_update_indicators(This, dsp);
+      This->data->last_width = tn5250_display_width(display);
+      This->data->last_height = tn5250_display_height(display);
+      slang_terminal_update_indicators(This, display);
    }
    SLsmg_normal_video ();
    my = SLtt_Screen_Rows - 1;
    mx = SLtt_Screen_Cols - 1;
-   for (y = 0; y < tn5250_dbuffer_height(dsp); y++) {
+   for (y = 0; y < tn5250_display_height(display); y++) {
       if (y > my)
 	 break;
 
       SLsmg_gotorc (y, 0);
-      for (x = 0; x < tn5250_dbuffer_width(dsp); x++) {
-	 c = tn5250_dbuffer_char_at(dsp, y, x);
+      for (x = 0; x < tn5250_display_width(display); x++) {
+	 c = tn5250_display_char_at(display, y, x);
 	 if ((c & 0xe0) == 0x20) {	/* ATTRIBUTE */
 	    a = (c & 0xff);
 	    temp_attr = This->data->attrs;
@@ -272,13 +278,13 @@ static void slang_terminal_update(Tn5250Terminal * This, Tn5250DBuffer * dsp)
       }				/* for (int x ... */
    }				/* for (int y ... */
 
-   SLsmg_gotorc (tn5250_dbuffer_cursor_y(dsp), tn5250_dbuffer_cursor_x(dsp));
+   SLsmg_gotorc (tn5250_display_cursor_y(display), tn5250_display_cursor_x(display));
    SLsmg_refresh();
 }
 
-static void slang_terminal_update_indicators(Tn5250Terminal * This, Tn5250DBuffer * dsp)
+static void slang_terminal_update_indicators(Tn5250Terminal * This, Tn5250Display * display)
 {
-   int inds = tn5250_dbuffer_indicators(dsp);
+   int inds = tn5250_display_indicators(display);
    char ind_buf[80];
 
    memset(ind_buf, ' ', sizeof(ind_buf));
@@ -297,9 +303,9 @@ static void slang_terminal_update_indicators(Tn5250Terminal * This, Tn5250DBuffe
       memcpy(ind_buf + 30, "IM", 2);
    }
    SLsmg_normal_video ();
-   SLsmg_gotorc (tn5250_dbuffer_height (dsp), 0);
+   SLsmg_gotorc (tn5250_display_height (display), 0);
    SLsmg_write_nchars (ind_buf, 80);
-   SLsmg_gotorc (tn5250_dbuffer_cursor_y(dsp), tn5250_dbuffer_cursor_x(dsp));
+   SLsmg_gotorc (tn5250_display_cursor_y(display), tn5250_display_cursor_x(display));
    SLsmg_refresh();
 }
 

@@ -41,11 +41,6 @@
   </item>
 
   <item>
-    Add a beep() method to the terminal structure, make the terminal beep when
-    the AS/400 requests or when the keyboard buffer is full.
-  </item>
-
-  <item>
     Look into how vim handles the ESC key, so that we can eliminate strangeness
     about how ESC A (for Attention) can act strange if pressed too quickly.
   </item>
