@@ -14,6 +14,7 @@ endif
 lib_LTLIBRARIES =	lib5250.la
 
 bin_PROGRAMS =		scs2ascii\
+			scs2pdf\
                         scs2ps\
 			tn5250\
 			lp5250d
@@ -67,6 +68,11 @@ scs2ascii_SOURCES =	scs2ascii.c\
 			$(LIBSOURCES)
 
 scs2ascii_LDADD =	@with_extra_libs@ lib5250.la
+
+scs2pdf_SOURCES =	scs2pdf.c\
+			$(LIBSOURCES)
+
+scs2pdf_LDADD =		@with_extra_libs@ lib5250.la
 
 scs2ps_SOURCES = 	scs2ps.c\
 			$(LIBSOURCES)
