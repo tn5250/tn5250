@@ -50,8 +50,6 @@ static void tn5250_session_clear_format_table(Tn5250Session * This);
 static void tn5250_session_read_immediate(Tn5250Session * This);
 static void tn5250_session_home(Tn5250Session * This);
 static void tn5250_session_print(Tn5250Session * This);
-static void tn5250_session_system_request(Tn5250Session * This);
-static void tn5250_session_attention(Tn5250Session * This);
 static void tn5250_session_output_only(Tn5250Session * This);
 static void tn5250_session_save_screen(Tn5250Session * This);
 static void tn5250_session_message_on(Tn5250Session * This);
@@ -772,6 +770,18 @@ static int tn5250_session_handle_aidkey (Tn5250Session *This, int key)
       tn5250_buffer_free (&buf);
       break;
 
+   case TN5250_SESSION_AID_SYSREQ:
+      This->read_opcode = 0; /* We are out of the read */
+      tn5250_stream_send_packet(This->stream, 0, TN5250_RECORD_FLOW_DISPLAY,
+	    TN5250_RECORD_H_SRQ, TN5250_RECORD_OPCODE_NO_OP, NULL);
+      break;
+
+   case TN5250_SESSION_AID_ATTN:
+      This->read_opcode = 0; /* We are out of the read. */
+      tn5250_stream_send_packet(This->stream, 0, TN5250_RECORD_FLOW_DISPLAY,
+	    TN5250_RECORD_H_ATN, TN5250_RECORD_OPCODE_NO_OP, NULL);
+      break;
+
    default:
       tn5250_session_send_fields (This, key);
       tn5250_display_inhibit (This->display);
@@ -779,23 +789,6 @@ static int tn5250_session_handle_aidkey (Tn5250Session *This, int key)
    }
 
    return 1; /* Continue processing. */
-}
-
-static void tn5250_session_system_request(Tn5250Session * This)
-{
-   TN5250_LOG(("SystemRequest: entered.\n"));
-   This->read_opcode = 0; /* We are out of the read */
-   tn5250_stream_send_packet(This->stream, 0, TN5250_RECORD_FLOW_DISPLAY,
-			     TN5250_RECORD_H_SRQ,
-			     TN5250_RECORD_OPCODE_NO_OP, NULL);
-}
-
-static void tn5250_session_attention(Tn5250Session * This)
-{
-   TN5250_LOG(("Attention: entered.\n"));
-   This->read_opcode = 0; /* We are out of the read. */
-   tn5250_stream_send_packet(This->stream, 0, TN5250_RECORD_FLOW_DISPLAY, TN5250_RECORD_H_ATN,
-			     TN5250_RECORD_OPCODE_NO_OP, NULL);
 }
 
 /*
