@@ -136,6 +136,38 @@ int tn5250_daemon(int nochdir, int noclose, int ignsigcld)
     return 0;
 }
 
+int 
+tn5250_make_socket (unsigned short int port)
+{
+  int sock;
+  int on = 1;
+  struct sockaddr_in name;
+  u_long ioctlarg = 0;
+
+  /* Create the socket. */
+  sock = socket (PF_INET, SOCK_STREAM, 0);
+  if (sock < 0)
+    {
+      syslog(LOG_INFO, "socket: %s\n", strerror(errno));
+      exit (EXIT_FAILURE);
+    }
+
+  /* Give the socket a name. */
+  name.sin_family = AF_INET;
+  name.sin_port = htons (port);
+  name.sin_addr.s_addr = htonl (INADDR_ANY);
+  setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+  TN_IOCTL(sock, FIONBIO, &ioctlarg);
+  if (bind (sock, (struct sockaddr *) &name, sizeof (name)) < 0)
+    {
+      syslog(LOG_INFO, "bind: %s\n", strerror(errno));
+      exit (EXIT_FAILURE);
+    }
+
+  return sock;
+}
+
+
 /****f* lib5250/tn5250_char_map_to_remote
  * NAME
  *    tn5250_char_map_to_remote

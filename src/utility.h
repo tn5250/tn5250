@@ -85,7 +85,7 @@ void tn5250_char_map_destroy(Tn5250CharMap *This);
 
 void tn5250_closeall(int fd);
 int tn5250_daemon(int nochdir, int noclose, int ignsigcld);
-
+int tn5250_make_socket(unsigned short int port);
 Tn5250Char tn5250_char_map_to_remote(Tn5250CharMap *This, Tn5250Char ascii);
 Tn5250Char tn5250_char_map_to_local(Tn5250CharMap *This, Tn5250Char ebcdic);
 

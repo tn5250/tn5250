@@ -41,7 +41,7 @@ struct sohPacket_t {
 Tn5250Host *tn5250_host_new(Tn5250Stream *This);
 void set5250CharMap(Tn5250Host *This, const char *name); 
 void sendReadMDT(Tn5250Stream * This, Tn5250Buffer * buff,
-		 unsigned short ctrlWord, unsigned char Opcode);
+		 unsigned char ctrlchar);
 void appendBlock2Ebcdic(Tn5250Buffer * buff, unsigned char *str, 
 			int len, Tn5250CharMap * map);
 void writeToDisplay(Tn5250Host *This);

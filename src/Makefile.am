@@ -16,7 +16,8 @@ lib_LTLIBRARIES =	lib5250.la
 bin_PROGRAMS =		scs2ascii\
 			tn5250\
 			lp5250d\
-			tn5250d
+			tn5250d\
+			tn3270d
 
 lib5250_la_SOURCES =	buffer.c\
 			conf.c\
@@ -57,6 +58,12 @@ tn5250d_SOURCES =	tn5250d.c\
 			$(LIBSOURCES)
 
 tn5250d_LDADD =		@with_extra_libs@ lib5250.la
+
+tn3270d_SOURCES = 	tn3270d.c\
+			host3270.c\
+			$(LIBSOURCES)
+
+tn3270d_LDADD =		@with_extra_libs@ lib5250.la
 
 pkginclude_HEADERS = 	buffer.h\
 		 	codes5250.h\
