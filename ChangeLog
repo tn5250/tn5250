@@ -1,3 +1,8 @@
+2000-10-31 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Patch from Scott Klement to beep when a message is received.
+- Second patch from Dave McKenzie fixing cursor positioning issues when the
+  emulator is sent more than one WTD.
+ 
 2000-06-01 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - Applied Scott Klement's fix for aidkey handling in tn5250_display_do_aidkey
   (slightly modified to handle attention, also).

@@ -231,6 +231,7 @@ static void tn5250_session_handle_receive(Tn5250Session * This)
       case TN5250_RECORD_OPCODE_MESSAGE_ON:
 	 tn5250_display_indicator_set(This->display,
 	       TN5250_DISPLAY_IND_MESSAGE_WAITING);
+         tn5250_display_beep(This->display);
 	 break;
 
       case TN5250_RECORD_OPCODE_MESSAGE_OFF:

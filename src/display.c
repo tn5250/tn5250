@@ -529,9 +529,10 @@ Tn5250Field *tn5250_display_prev_field(Tn5250Display * This)
  *****/
 void tn5250_display_set_cursor_home(Tn5250Display * This)
 {
-   if (This->pending_insert)
+  if (This->pending_insert) {
       tn5250_dbuffer_goto_ic(This->display_buffers);
-   else {
+      This->pending_insert = 0;
+  } else {
       int y = 0, x = 0;
       Tn5250Field *iter = This->display_buffers->field_list;
       if (iter != NULL) {
@@ -870,6 +871,8 @@ void tn5250_display_do_keys (Tn5250Display *This)
  *****/
 void tn5250_display_do_key(Tn5250Display *This, int key)
 {
+   int pre_FER_clear = 0;
+
    TN5250_LOG (("@key %d\n", key));
 
    /* FIXME: Translate from terminal key via keyboard map to 5250 key. */
@@ -897,7 +900,7 @@ void tn5250_display_do_key(Tn5250Display *This, int key)
       case K_TAB:
       case K_BACKTAB:
       case K_RESET:
-	 tn5250_display_indicator_clear (This, TN5250_DISPLAY_IND_FER);
+	 pre_FER_clear = 1;
 	 break;
 
       default:
@@ -1020,6 +1023,9 @@ void tn5250_display_do_key(Tn5250Display *This, int key)
       } else {
 	 TN5250_LOG (("HandleKey: Weird key ignored: %d\n", key));
       }
+   }
+   if (pre_FER_clear) {
+  tn5250_display_indicator_clear (This, TN5250_DISPLAY_IND_FER);
    }
 }
 
