@@ -34,17 +34,17 @@
 #ifndef SCS
 #define SCS
 
-#define NOOP		0x00
-#define TRANSPARENT	0x03
-#define SW		0x2A
-#define RFF		0x3A
+#define SCS_NOOP	0x00
+#define SCS_TRANSPARENT	0x03
+#define SCS_SW		0x2A
+#define SCS_RFF		0x3A
 
-#define AVPP		0xC4
-#define AHPP		0xC0
-#define CR		0x0D
-#define NL		0x15
-#define RNL		0x06
-#define HT		0x05
-#define FF		0x0C
+#define SCS_AVPP	0xC4
+#define SCS_AHPP	0xC0
+#define SCS_CR		0x0D
+#define SCS_NL		0x15
+#define SCS_RNL		0x06
+#define SCS_HT		0x05
+#define SCS_FF		0x0C
 
 #endif

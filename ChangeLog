@@ -8,6 +8,8 @@
   I need this functionality for specifying lists of valid ip addresses that
   are allowed to connect to the 5250 server.  Might be useful for the client
   also.
+- Changed constants in scs.h/scs2ascii.c/scs2pdf.c so they don't conflict with
+  standard defines on UnixWare.
 	
 2000-05-25 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - Fixed syntax usage message in tn5250.c
