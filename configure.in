@@ -74,7 +74,7 @@ then
 		AC_CHECK_LIB(curses, initscr)
 		if test "$ac_cv_lib_curses_initscr" != "yes"
 		then
-			AC_MSG_ERROR([** You need a curses-compatibale library installed.])
+			AC_MSG_ERROR([** You need a curses-compatible library installed.])
 		fi
 	fi
 	AC_CHECK_HEADERS(ncurses.h curses.h,break)
