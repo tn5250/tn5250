@@ -321,48 +321,68 @@ int tn5250_field_count_right (Tn5250Field *This, int y, int x)
  * INPUTS
  *    Tn5250Field *        field      - 
  *    int                  ch         - 
+ *    int         *        src        -
  * DESCRIPTION
  *    Determine if the supplied character is a valid data character
- *    for this field.
+ *    for this field, and return system reference code for errors (SRC)
  *****/
-int tn5250_field_valid_char (Tn5250Field *field, int ch)
+int tn5250_field_valid_char (Tn5250Field *field, int ch, int *src)
 {
    TN5250_LOG(("HandleKey: fieldtype = %d; char = '%c'.\n",
 	    tn5250_field_type (field), ch));
+
+   *src = TN5250_KBDSRC_NONE;
+
    switch (tn5250_field_type (field)) {
    case TN5250_FIELD_ALPHA_SHIFT:
       return 1;
 
    case TN5250_FIELD_ALPHA_ONLY:
-      return (isalpha(ch) ||
+      if (!(isalpha(ch) ||
 	  ch == ',' ||
 	  ch == '.' ||
 	  ch == '-' ||
-	  ch == ' ');
+	  ch == ' ')) {
+          *src = TN5250_KBDSRC_ALPHAONLY;
+          return 0;
+      } 
+      return 1;
 
    case TN5250_FIELD_NUM_SHIFT:
       return 1;
 
    case TN5250_FIELD_NUM_ONLY:
-      return (isdigit (ch) ||
+      if (!(isdigit (ch) ||
 	  ch == ',' ||
 	  ch == '.' ||
 	  ch == '-' ||
-	  ch == ' ');
+	  ch == ' ')) {
+          *src = TN5250_KBDSRC_NUMONLY;
+          return 0;
+      }
+      return 1;
 
    case TN5250_FIELD_KATA_SHIFT:
       TN5250_LOG(("KATAKANA not implemneted.\n"));
       return 1;
 
    case TN5250_FIELD_DIGIT_ONLY:
-      return isdigit (ch);
+      if (!isdigit (ch)) {
+          *src = TN5250_KBDSRC_ONLY09;
+          return 0;
+      }
+      return 1;
 
    case TN5250_FIELD_MAG_READER:
       TN5250_LOG(("MAG_READER not implemneted.\n"));
       return 1;
 
    case TN5250_FIELD_SIGNED_NUM:
-      return (isdigit(ch));
+      if (!isdigit (ch)) {
+          *src = TN5250_KBDSRC_ONLY09;
+          return 0;
+      }
+      return 1;
    }
    return 0;
 }

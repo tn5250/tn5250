@@ -115,7 +115,7 @@ typedef struct _Tn5250Field Tn5250Field;
    extern int tn5250_field_count_left(Tn5250Field * This, int y, int x);
    extern int tn5250_field_count_right(Tn5250Field * This, int y, int x);
    extern void tn5250_field_set_mdt(Tn5250Field *This);
-   extern int tn5250_field_valid_char(Tn5250Field *This, int ch);
+   extern int tn5250_field_valid_char(Tn5250Field *This, int ch, int *src);
 
 #define tn5250_field_mdt(This) \
 	(((This)->FFW & TN5250_FIELD_MODIFIED) != 0)
