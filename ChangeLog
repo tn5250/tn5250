@@ -1,3 +1,6 @@
+2000-11-27 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Applied Carey Evans' patch fixing configure script under ash.
+
 2000-11-10 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - Apply Scott Klement's patch for fixing `Delete' key behavior.
 
