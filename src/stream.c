@@ -59,19 +59,20 @@ static Tn5250StreamType stream_types[] = {
 
 static void streamInit(Tn5250Stream *This, long timeout)
 {
-   This->status = 0;
-   This->config = NULL;
-   This->connect = NULL;
-   This->disconnect = NULL;
-   This->handle_receive = NULL;
-   This->send_packet = NULL;
-   This->destroy = NULL;
-   This->record_count = 0;
-   This->records = This->current_record = NULL;
-   This->sockfd = (SOCKET_TYPE) - 1;
-   This->msec_wait = timeout;
-   This->streamtype = TN5250_STREAM;
-   tn5250_buffer_init(&(This->sb_buf));
+  This->options = 0;
+  This->status = 0;
+  This->config = NULL;
+  This->connect = NULL;
+  This->disconnect = NULL;
+  This->handle_receive = NULL;
+  This->send_packet = NULL;
+  This->destroy = NULL;
+  This->record_count = 0;
+  This->records = This->current_record = NULL;
+  This->sockfd = (SOCKET_TYPE) - 1;
+  This->msec_wait = timeout;
+  This->streamtype = TN5250_STREAM;
+  tn5250_buffer_init(&(This->sb_buf));
 }
 
 /****f* lib5250/tn5250_stream_open

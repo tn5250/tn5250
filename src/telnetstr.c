@@ -870,10 +870,14 @@ static void telnet_stream_host_sb(Tn5250Stream * This, UCHAR *sb_buf,
 	  tn5250_buffer_init(&tbuf);
 	  tn5250_buffer_append_data(&tbuf, functionResponse, 
 				    sizeof(functionResponse));
-	  /*
+	  
+	  tn5250_buffer_append_byte(&tbuf, TN3270E_IS);
 	  for(i=0; i<sb_len && sb_buf[i] != IAC; i++)
-	    tn5250_buffer_append_byte(&tbuf, sb_buf[i]);
-	  */
+	    {
+	      tn5250_buffer_append_byte(&tbuf, sb_buf[i]);
+	      This->options = This->options | (1 << sb_buf[i]+1);
+	    }
+	  
 	  tn5250_buffer_append_byte(&tbuf, IAC);
 	  tn5250_buffer_append_byte(&tbuf, SE);
 	  rc = TN_SEND(This->sockfd, (char *) tn5250_buffer_data(&tbuf),
@@ -1275,8 +1279,8 @@ tn3270_stream_send_packet(Tn5250Stream * This, int length,
       tn5250_buffer_append_byte(&out_buf, header.h3270.request_flag);
       tn5250_buffer_append_byte(&out_buf, header.h3270.response_flag);
 
-      tn5250_buffer_append_byte(&out_buf, 0x00);
-      tn5250_buffer_append_byte(&out_buf, 0x00);
+      tn5250_buffer_append_byte(&out_buf, header.h3270.sequence >> 8);
+      tn5250_buffer_append_byte(&out_buf, header.h3270.sequence & 0x00ff);
     }
   
   tn5250_buffer_append_data(&out_buf, data, length);

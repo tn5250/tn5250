@@ -87,27 +87,28 @@ typedef union _StreamHeader StreamHeader;
  * SOURCE
  */
 struct _Tn5250Stream {
-   int (* connect) (struct _Tn5250Stream *This, const char *to);
+  int (* connect) (struct _Tn5250Stream *This, const char *to);
   int (* accept) (struct _Tn5250Stream *This, SOCKET_TYPE masterSock);
-   void (* disconnect) (struct _Tn5250Stream *This);
-   int (* handle_receive) (struct _Tn5250Stream *This);
-   void (* send_packet) (struct _Tn5250Stream *This, int length, 
-			 StreamHeader header, unsigned char *data);
-   void (/*@null@*/ * destroy) (struct _Tn5250Stream /*@only@*/ *This);
+  void (* disconnect) (struct _Tn5250Stream *This);
+  int (* handle_receive) (struct _Tn5250Stream *This);
+  void (* send_packet) (struct _Tn5250Stream *This, int length, 
+			StreamHeader header, unsigned char *data);
+  void (/*@null@*/ * destroy) (struct _Tn5250Stream /*@only@*/ *This);
 
-   struct _Tn5250Config *config; 
+  struct _Tn5250Config *config; 
 
-   Tn5250Record /*@null@*/ *records;
-   Tn5250Record /*@dependent@*/ /*@null@*/ *current_record;
-   int record_count;
+  Tn5250Record /*@null@*/ *records;
+  Tn5250Record /*@dependent@*/ /*@null@*/ *current_record;
+  int record_count;
 
-   Tn5250Buffer sb_buf;
-
-   SOCKET_TYPE sockfd;
-   int status;
-   int state;
+  Tn5250Buffer sb_buf;
+  
+  SOCKET_TYPE sockfd;
+  int status;
+  int state;
   int streamtype;
   long msec_wait;
+  unsigned char options;
 
 #ifndef NDEBUG
    FILE *debugfile;
