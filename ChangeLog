@@ -1,3 +1,30 @@
+2005-02-19 James Rich <james@eaerich.com>
+- Added support for the DEFINE SELECTION FIELD structured field.  For now
+  it simply logs the selection field data we receive.
+
+2004-08-02 James Rich <james@eaerich.com>
+- Added support for the CREATE WINDOW structured field to wtd.c.
+
+2004-07-15 James Rich <james@eaerich.com>
+- Began support for scrollbars.
+
+2004-07-08 James Rich <james@eaerich.com>
+- Fixed Erase to Address Order to actually erase stuff.  We only handle the
+  case of erasing 'all', not specific attributes.
+- Fixed bad comment in codes5250.h
+
+2004-07-06 James Rich <james@eaerich.com>
+- Fixed Erase to Address Order to get the list of attribute types and log
+  them.  Also sets the current position as per the docs.
+- Log Write Extended Attributes order.
+- Added missing create_window_structured_field and associated window destroy
+  support to the terminal objects.
+
+2004-06-30 James Rich <james@eaerich.com>
+- Added initial support for the enhanced 5250 protocol.  This requires
+  +enhanced in the user's .tn5250rc file.  With this cursor progression
+  works correctly, but 5250 windows are broken.
+
 2004-03-29 Scott Klement <klemscot@klements.com>
 - Added +always_ask option so that Win32 print screen always asks for a
     new device.  
