@@ -70,9 +70,7 @@ typedef unsigned char Tn5250Char;
  * SOURCE
  */
 
-#ifndef SWIG
 #include <glib.h>
-#endif /* ndef SWIG */
 
 struct _Tn5250CharMap {
    const char *name;
@@ -113,12 +111,10 @@ int tn5250_char_map_attribute_p(Tn5250CharMap *This, Tn5250Char data);
 
 #define TN5250_MAKESTRING(expr) #expr
 #ifndef NDEBUG
-#ifndef SWIG
 void tn5250_log_open(const char *fname);
 void tn5250_log_printf(const char *fmt,...);
 void tn5250_log_close(void);
 void tn5250_log_assert(int val, char const *expr, char const *file, int line);
-#endif
 #define TN5250_LOG(args) tn5250_log_printf args
 #define TN5250_ASSERT(expr) \
    tn5250_log_assert((expr), TN5250_MAKESTRING(expr), __FILE__, __LINE__)

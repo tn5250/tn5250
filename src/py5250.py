@@ -6,7 +6,7 @@
 
 import sys
 import os
-from _tn5250 import *
+import tn5250
 
 
 
@@ -17,29 +17,19 @@ def syntax ():
 class Error:
     pass
 
-config = tn5250_config_new ()
-if tn5250_config_load_default (config) == -1:
-    tn5250_config_unref (config)
-    sys.exit(1)
-
-a = tn5250_argv_new (len(sys.argv))
-for i in range(len(sys.argv)):
-    tn5250_argv_set (a, i, sys.argv[i])
-if tn5250_config_parse_argv (config, len(sys.argv), a) == -1:
-    tn5250_config_unref (config)
+config = tn5250.Config()
+config.load_default()
+config.parse_argv(sys.argv)
+if config.get('help') is not None:
     syntax ()
-tn5250_argv_free (a)
-
-if tn5250_config_exists (config, "help"):
-    syntax ()
-if tn5250_config_exists (config, "version"):
+if config.get('version') is not None:
     # version not implemented here.
     syntax ()
-if not tn5250_config_exists (config, "host"):
+if config.get('host') is None:
     syntax ()
 
 try:
-    stream = tn5250_stream_open (tn5250_config_get (config, "host"))
+    stream = tn5250_stream_open (config.get('host'))
     if stream == None:
 	raise Error
 

@@ -22,12 +22,6 @@ AM_PATH_GLIB
 CFLAGS="$CFLAGS $GLIB_CFLAGS"
 LIBS="$LIBS $GLIB_LIBS"
 
-dnl *
-dnl * Check for SWIG
-dnl *
-AC_PATH_PROG(SWIG,swig,no)
-AC_SUBST(SWIG)
-
 dnl **************************************************************************
 dnl * Python interface support.						     *
 dnl **************************************************************************
@@ -51,22 +45,17 @@ dnl * or if the user has explicitly told us to.
 dnl *
 AC_ARG_ENABLE(python,
 [  --enable-python         Enable python language support.],
-[ interface_python="$enable"
-  if test x$interface_python = xyes ; then
+[ if test x$enable_python = xyes ; then
     if test x$PYTHON = xno ; then
       AC_MSG_ERROR(** --enable-python specified and python binary not found **)
     fi
-    if test x$SWIG = xno ; then
-      AC_MSG_ERROR(** --enable-python specified and swig binary not found **)
-    fi
   fi
-],
-[ inteface_python=no
-  if test x$PYTHON != xno -a x$SWIG != xno ; then
-    interface_python=yes
-  fi
+],[
+  enable_python=no
 ])
-AM_CONDITIONAL(PYTHON,test x$interface_python = xyes)
+AC_MSG_CHECKING(for whether to enable python support)
+AM_CONDITIONAL(PYTHON, test x$enable_python = xyes)
+AC_MSG_RESULT($enable_python)
 
 AC_PATH_PROG(DIALOG,dialog,no)
 if test x$DIALOG = xno ; then
@@ -141,43 +130,6 @@ else
 	fi
 fi
 
-if test x$with_wine != x
-then
-	WINEPREFIX="$with_wine"
-	AC_SUBST(WINEPREFIX)
-	if test ! -f $WINEPREFIX/include/windows.h
-	then
-		AC_MSG_ERROR([ACK! THPTHT!  windows.h not found in $WINPREFIX/include/ ...
-please read README.nt before attempting to compile with Wine.])
-	fi
-	AC_PATH_X
-	CFLAGS="$CFLAGS -I$x_includes"
-	LDFLAGS="$LDFLAGS -L$x_libraries"
-
-	# Check for libraries needed by Wine
-	AC_CHECK_LIB(X11, XOpenDisplay)
-	AC_CHECK_LIB(Xext, main)
-	AC_CHECK_LIB(Xpm, main)
-	AC_CHECK_LIB(Xxf86dga, main)
-	AC_CHECK_LIB(Xxf86vm, main)
-	AC_CHECK_LIB(Xxf86misc, main)
-	AC_CHECK_LIB(m, main)
-	AC_CHECK_LIB(dl, dlopen)
-	AC_CHECK_LIB(util, openpty)
-	AC_CHECK_LIB(ncurses, endwin)
-	if test x$ac_cv_lib_ncurses_endwin = xno
-	then
-		AC_CHECK_LIB(curses, endwin)
-	fi
-
-	AM_CONDITIONAL(WINE, true)
-	AC_DEFINE(SOCKET_TYPE,SOCKET)
-	AC_DEFINE(WINE,1)
-else
-	AM_CONDITIONAL(WINE, false)
-	AC_DEFINE(SOCKET_TYPE,int)
-fi
-
 dnl ** Check for libraries
 AC_CHECK_LIB(socket, main)
 AC_CHECK_LIB(nsl, main)
@@ -216,6 +168,9 @@ AM_CONDITIONAL(LIB_GETOPT, test x$ac_cv_func_getopt_long = xno)
 AC_CHECK_SIZEOF(short, 2)
 AC_CHECK_SIZEOF(int, 4)
 AC_CHECK_SIZEOF(long, 4)
+
+dnl * True for anything other than Windoze.
+AC_DEFINE_UNQUOTED(SOCKET_TYPE,int)
 
 dnl *
 dnl *	 Export $sysconfdir as @SYSCONFDIR@ so tn5250 can find it's
