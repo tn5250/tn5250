@@ -370,6 +370,9 @@ static void slang_terminal_update_indicators(Tn5250Terminal * This, Tn5250Displa
    if ((inds & TN5250_DISPLAY_IND_INSERT) != 0) {
       memcpy(ind_buf + 30, "IM", 2);
    }
+   if ((inds & TN5250_DISPLAY_IND_MACRO) != 0) {
+      memcpy(ind_buf + 54, tn5250_macro_printstate (display), 11);
+   }
    SLsmg_normal_video ();
    SLsmg_gotorc (tn5250_display_height (display), 0);
    SLsmg_write_nchars (ind_buf, 80);
@@ -472,10 +475,14 @@ static int slang_terminal_getkey(Tn5250Terminal * This)
 	 return K_PRINT;
       case K_CTRL('R'):
 	 return K_RESET;	/* Error Reset */
+      case K_CTRL('S'):
+	 return K_MEMO;
       case K_CTRL('T'):
 	 return K_TESTREQ;
       case K_CTRL('U'):
 	 return K_ROLLDN;
+      case K_CTRL('W'):
+	 return K_EXEC;
       case K_CTRL('X'):
 	 return K_FIELDEXIT;
 

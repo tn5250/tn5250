@@ -26,7 +26,8 @@ lib5250_la_SOURCES =	buffer.c\
 			telnetstr.c\
 			utility.c\
 			version.c\
-			wtd.c
+			wtd.c\
+			macro.c
 
 lib5250_la_LIBADD =	@with_extra_libs@ @GLIB_LIBS@
 
@@ -86,7 +87,8 @@ pkginclude_HEADERS = 	buffer.h\
 			stream.h\
 			terminal.h\
 			utility.h\
-			wtd.h
+			wtd.h\
+			macro.h
 
 include_HEADERS =	tn5250.h
 

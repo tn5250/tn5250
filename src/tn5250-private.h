@@ -81,6 +81,7 @@
 #include "session.h"
 #include "printsession.h"
 #include "display.h"
+#include "macro.h"
 #include "debug.h"
 #include "wtd.h"
 #include "scs.h"

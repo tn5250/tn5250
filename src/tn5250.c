@@ -25,6 +25,7 @@ Tn5250Stream *stream = NULL;
 Tn5250Terminal *term = NULL;
 Tn5250Display *display = NULL;
 Tn5250Config *config = NULL;
+Tn5250Macro *macro = NULL;
 
 /* FIXME: This should be moved into session.[ch] or something. */
 static struct valid_term {
@@ -147,10 +148,15 @@ int main(int argc, char *argv[])
    if (tn5250_session_config (sess, config) == -1)
       goto bomb_out;
 
+   macro = tn5250_macro_init() ;
+   tn5250_macro_attach (display, macro) ;
+
    tn5250_session_main_loop(sess);
    errno = 0;
 
 bomb_out:
+   if (macro != NULL)
+      tn5250_macro_exit(macro);
    if (term != NULL)
       tn5250_terminal_term(term);
    if (sess != NULL)

@@ -31,6 +31,7 @@ Tn5250Stream *stream = NULL;
 Tn5250Terminal *term = NULL;
 Tn5250Display *display = NULL;
 Tn5250Config *config = NULL;
+Tn5250Macro *macro = NULL;
 
 /* FIXME: This should be moved into session.[ch] or something. */
 static struct valid_term {
@@ -178,6 +179,9 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE prev, LPSTR cmdline, int show)
     if (tn5250_session_config (sess, config) == -1) 
         clean_up_and_exit(errno);
 
+    macro = tn5250_macro_init() ;
+    tn5250_macro_attach (display, macro) ;
+
     tn5250_session_main_loop(sess);
 
     clean_up_and_exit(0);
@@ -190,6 +194,8 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE prev, LPSTR cmdline, int show)
 
 static void clean_up_and_exit(int error) {
 
+     if (macro != NULL)
+           tn5250_macro_exit(macro);
      if (term != NULL)
            tn5250_terminal_term(term);
      if (sess != NULL)

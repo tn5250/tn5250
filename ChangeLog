@@ -1,3 +1,7 @@
+2002-08-05 Scott Klement <klemscot@klements.com>
+- Added macro.c/macro.h and macro support which were contributed by
+  Jean-Marie Guenebaud <jmg@photim.com>
+ 
 2002-08-01 Scott Klement <klemscot@klements.com>
 - Added new config keyword +/-sign_key_hack to enable/disable the
   special handling of the + and - characters in signed numeric fields.
