@@ -364,14 +364,17 @@ void tn5250_char_map_destroy (Tn5250CharMap *map)
  */
 int tn5250_char_map_printable_p(Tn5250CharMap *map, Tn5250Char data)
 {
-   switch (data) {
-     /* 
-	Ideographic Shift-In and Shift-Out. 
-   case 0x0e: 
-   case 0x0f: 
-     */
-      return 0;                                                               
-   }
+   switch (data) 
+     {
+       /* 
+	  Ideographic Shift-In and Shift-Out. 
+	  case 0x0e: 
+	  case 0x0f: 
+       */
+     default:
+       return 0;                                                               
+       break;
+     }
    return 1;
 }
 /*******/

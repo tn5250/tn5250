@@ -206,7 +206,8 @@ void tn5250_session_send_error(Tn5250Session * This, unsigned long errorcode)
   header.h5250.flags    = TN5250_RECORD_H_ERR;
   header.h5250.opcode   = TN5250_RECORD_OPCODE_NO_OP;
 
-  tn5250_stream_send_packet(This->stream, 4, header, &errorcode);
+  tn5250_stream_send_packet(This->stream, 4, header, 
+			    (unsigned char *)&errorcode);
 
   tn5250_record_skip_to_end(This->record);
 }
