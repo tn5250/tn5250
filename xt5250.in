@@ -73,9 +73,9 @@ if [ "$1" = "-BOOT" ] ; then
 	# neither works, we just silently fail without setting the window title.
 	#
 	if command -v printf >/dev/null 2>&1 ; then
-	  printf '\033]2;xt5250 - '"$XT5250_HOST"'\07'
+	  printf '\033]0;xt5250 - '"$XT5250_HOST"'\07'
 	else
-	  echo -e '\033]2;xt5250 - '"$XT5250_HOST"'\07'
+	  echo -e '\033]0;xt5250 - '"$XT5250_HOST"'\07'
 	fi
       done
     else
