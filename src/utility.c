@@ -34,6 +34,8 @@
 #include "tn5250-private.h"
 #include "transmaps.h"
 
+#ifndef WIN32
+
 /****f* lp5250d/tn5250_closeall
  * NAME
  *    tn5250_closeall
@@ -136,6 +138,8 @@ int tn5250_daemon(int nochdir, int noclose, int ignsigcld)
     return 0;
 }
 
+#endif  /* ifndef WIN32 */
+
 int 
 tn5250_make_socket (unsigned short int port)
 {
@@ -148,7 +152,9 @@ tn5250_make_socket (unsigned short int port)
   sock = socket (PF_INET, SOCK_STREAM, 0);
   if (sock < 0)
     {
+#ifndef WIN32
       syslog(LOG_INFO, "socket: %s\n", strerror(errno));
+#endif
       exit (EXIT_FAILURE);
     }
 
@@ -156,11 +162,13 @@ tn5250_make_socket (unsigned short int port)
   name.sin_family = AF_INET;
   name.sin_port = htons (port);
   name.sin_addr.s_addr = htonl (INADDR_ANY);
-  setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+  setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char *)&on, sizeof(on));
   TN_IOCTL(sock, FIONBIO, &ioctlarg);
   if (bind (sock, (struct sockaddr *) &name, sizeof (name)) < 0)
     {
+#ifndef WIN32
       syslog(LOG_INFO, "bind: %s\n", strerror(errno));
+#endif
       exit (EXIT_FAILURE);
     }
 

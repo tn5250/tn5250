@@ -103,7 +103,9 @@ int ssl_stream_passwd_cb(char *buf, int size, int rwflag, Tn5250Stream *This);
 #define RECV_EOR	4
 #define SEND_EOR	8
 
+#ifndef HAVE_UCHAR
 typedef unsigned char UCHAR;
+#endif
 
 static UCHAR hostInitStr[] = {IAC,DO,NEW_ENVIRON,IAC,DO,TERMINAL_TYPE};
 static UCHAR hostDoEOR[] = {IAC,DO,END_OF_RECORD};
@@ -133,12 +135,12 @@ int errnum;
  #define IACVERB_LOG(tag,verb,what)
  #define TNSB_LOG(sb_buf,sb_len)
  #define LOGERROR(tag, ecode)
- #define DUMP_ERR_STACK
+ #define DUMP_ERR_STACK()
 #else
  #define IACVERB_LOG	ssl_log_IAC_verb
  #define TNSB_LOG	ssl_log_SB_buf
  #define LOGERROR	ssl_logError
- #define DUMP_ERR_STACK ssl_log_error_stack
+ #define DUMP_ERR_STACK() ssl_log_error_stack()
 
 static char *ssl_getTelOpt(what)
 {
@@ -530,7 +532,7 @@ static int ssl_stream_connect(Tn5250Stream * This, const char *to)
  * DESCRIPTION
  *    Accepts a connection from the client.
  *****/
-static int ssl_stream_accept(Tn5250Stream * This, int masterfd)
+static int ssl_stream_accept(Tn5250Stream * This, SOCKET_TYPE masterfd)
 {
    int i, len, retCode;
    struct sockaddr_in serv_addr;
@@ -1168,6 +1170,7 @@ static void ssl_stream_send_packet(Tn5250Stream * This, int length,
    tn5250_buffer_append_byte(&out_buf, IAC);
    tn5250_buffer_append_byte(&out_buf, EOR);
 
+#if 0
 #ifndef NDEBUG
    TN5250_LOG(("SendPacket: length = %d\nSendPacket: data follows.",
 	tn5250_buffer_length(&out_buf)));
@@ -1178,6 +1181,7 @@ static void ssl_stream_send_packet(Tn5250Stream * This, int length,
       TN5250_LOG(("%02X ", tn5250_buffer_data(&out_buf)[n]));
    }
    TN5250_LOG(("\n"));
+#endif
 #endif
 
    ssl_stream_write(This, tn5250_buffer_data(&out_buf), tn5250_buffer_length(&out_buf));

@@ -6,6 +6,10 @@ implementation for Linux, but it has been reportedly compiled on a number
 of other platforms.  Contributed keyboard maps and termcap entries for
 FreeBSD are in this tarball as well (see freebsd/README for more information).
 
+Windows Users:  The instructions in this file are meant for Unix/Linux/*BSD
+    users.  For Windows instructions see the README.txt file in the Win32
+    directory.
+
 Building from CVS
 =================
 

@@ -260,7 +260,7 @@ void tn5250_display_set_terminal(Tn5250Display * This, Tn5250Terminal * term)
    This->terminal = term;
    This->indicators_dirty = 1;
    tn5250_terminal_update(This->terminal, This);
-   tn5250_terminal_update_indicators(This->terminal, This);
+/*   tn5250_terminal_update_indicators(This->terminal, This); */
 }
 
 /****f* lib5250/tn5250_display_update
@@ -278,7 +278,7 @@ void tn5250_display_update(Tn5250Display * This)
    if (This->terminal != NULL) {
       tn5250_terminal_update(This->terminal, This);
       if (This->indicators_dirty) {
-	 tn5250_terminal_update_indicators(This->terminal, This);
+/*	 tn5250_terminal_update_indicators(This->terminal, This);  */
 	 This->indicators_dirty = 0;
       }
    }

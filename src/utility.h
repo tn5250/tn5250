@@ -108,6 +108,7 @@ void tn5250_log_assert(int val, char const *expr, char const *file, int line);
 extern FILE * tn5250_logfile;
 #else
 #define TN5250_LOG(args)
+#define TN5250_ASSERT(expr)
 #endif
 
 #ifdef __cplusplus

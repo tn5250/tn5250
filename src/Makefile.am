@@ -98,7 +98,8 @@ noinst_HEADERS =	getopt.h\
 
 EXTRA_DIST =		.lclintrc\
 			transmaps\
-			getopt.c
+			getopt.c\
+			scs2pdf.c
 
 lclint:
 	@echo "lint checking with lclint... "

@@ -1,3 +1,11 @@
+2002-01-18 Scott Klement <klemscot@klements.com>
+- Minor changes to lib5250 code so that it will compile on MS Windows
+- Fixed problem where source would not compile with NDEBUG defined.
+- Removed the (apparently redundant) calls to terminal_update_indicators
+   from display.c.
+- Added check to see if system has UCHAR already defined to eliminate
+   a compiler warning.
+
 2001-11-21 Scott Klement <klemscot@klements.com>
 - We were sending invalid attributes during a save screen operation
    which sometimes caused the parsing of SF orders in the restore

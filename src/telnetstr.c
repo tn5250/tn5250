@@ -94,7 +94,9 @@ static void telnet_stream_send_packet(Tn5250Stream * This, int length,
 #define RECV_EOR	4
 #define SEND_EOR	8
 
+#ifndef HAVE_UCHAR
 typedef unsigned char UCHAR;
+#endif
 
 static UCHAR hostInitStr[] = {IAC,DO,NEW_ENVIRON,IAC,DO,TERMINAL_TYPE};
 static UCHAR hostDoEOR[] = {IAC,DO,END_OF_RECORD};
@@ -388,7 +390,7 @@ static int telnet_stream_connect(Tn5250Stream * This, const char *to)
  * DESCRIPTION
  *    Accepts a connection from the client.
  *****/
-static int telnet_stream_accept(Tn5250Stream * This, int masterfd)
+static int telnet_stream_accept(Tn5250Stream * This, SOCKET_TYPE masterfd)
 {
    int i, len, retCode;
    struct sockaddr_in serv_addr;

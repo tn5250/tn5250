@@ -101,6 +101,7 @@ void tn5250_field_destroy(Tn5250Field * This)
  * DESCRIPTION
  *    DOCUMENT ME!!!
  *****/
+#ifndef NDEBUG
 void tn5250_field_dump(Tn5250Field * This)
 {
    int curchar;
@@ -126,6 +127,7 @@ void tn5250_field_dump(Tn5250Field * This)
    
    TN5250_LOG(("\n"));
 }
+#endif
 
 /****f* lib5250/tn5250_field_hit_test
  * NAME

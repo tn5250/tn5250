@@ -110,6 +110,25 @@ else
 	fi
 fi
 
+
+dnl **
+dnl **  Check for UCHAR being defined...
+dnl **
+AC_MSG_CHECKING(for UCHAR in sys/types.h)
+HAVE_UCHAR=no
+AC_TRY_COMPILE([
+#include <stdlib.h>
+#include <stdio.h>
+#include <sys/types.h>
+],[ UCHAR testvar; ],[HAVE_UCHAR=yes])
+if test x$HAVE_UCHAR = xyes ; then
+	AC_DEFINE_UNQUOTED(HAVE_UCHAR,1)
+fi
+AC_MSG_RESULT($HAVE_UCHAR)
+
+dnl **
+dnl ** do some Wine setup
+dnl **
 if test x$with_wine != x
 then
 	WINEPREFIX="$with_wine"

@@ -18,3 +18,6 @@
 
 /* Define this to the system config directory. */
 #undef SYSCONFDIR
+
+/* Define this if your system already has a def for UCHAR. */
+#undef HAVE_UCHAR

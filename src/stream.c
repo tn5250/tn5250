@@ -165,7 +165,7 @@ Tn5250Stream *tn5250_stream_open (const char *to, Tn5250Config *config)
  * DESCRIPTION
  *    DOCUMENT ME!!!
  *****/
-Tn5250Stream *tn5250_stream_host (int masterfd, long timeout)
+Tn5250Stream *tn5250_stream_host (SOCKET_TYPE masterfd, long timeout)
 {
    Tn5250Stream *This = tn5250_new(Tn5250Stream, 1);
    Tn5250StreamType *iter;

@@ -68,6 +68,10 @@ Click "Telnet server and SSL" to get started.
 
 CONFIGURING TN5250 TO USE SSL:
 
+   Windows Users: More detail on steps 1-3 of this section can be found
+      in the README.txt file in the Win32 directory.  The remainder of
+      this document does apply to you, however.
+   
    1) You must have OpenSSL installed on your Linux/FreeBSD (etc) machine
        before building tn5250 if you want it to use SSL.   If you don't
        already have it, you can get it from http://www.openssl.org
