@@ -104,8 +104,8 @@ extern "C" {
       int (*width) (struct _Tn5250Terminal * This);
       int (*height) (struct _Tn5250Terminal * This);
       int (*flags) (struct _Tn5250Terminal * This);
-      void (*update) (struct _Tn5250Terminal * This, Tn5250Display * dsp);
-      void (*update_indicators) (struct _Tn5250Terminal * This, Tn5250Display * dsp);
+      void (*update) (struct _Tn5250Terminal * This, Tn5250DBuffer * dsp);
+      void (*update_indicators) (struct _Tn5250Terminal * This, Tn5250DBuffer * dsp);
       int (*waitevent) (struct _Tn5250Terminal * This);
       int (*getkey) (struct _Tn5250Terminal * This);
    };

@@ -36,7 +36,7 @@
 #include "record.h"
 #include "stream.h"
 #include "utility.h"
-#include "display.h"
+#include "dbuffer.h"
 #include "field.h"
 #include "formattable.h"
 #include "codes5250.h"

@@ -1,3 +1,11 @@
+1999-11-01 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Removed Tn5250Session::inhibited - no longer used.
+- Some prep-work for the 0.15.x series - renamed Tn5250Display to
+  Tn5250DBuffer.  Also renamed display.[ch] to dbuffer.[ch]
+- Fix problems reported by Scott Klement for Dup key/Field Minus key not
+  advancing to the next field (hopefully ;)
+
 1999-10-13 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 
 - Reset key is now handled like System Request key -- that is, it will still

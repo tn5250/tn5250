@@ -30,7 +30,7 @@ extern "C" {
 #include <tn5250/buffer.h>
 #include <tn5250/utility.h>
 #include <tn5250/codes5250.h>
-#include <tn5250/display.h>
+#include <tn5250/dbuffer.h>
 #include <tn5250/field.h>
 #include <tn5250/formattable.h>
 #include <tn5250/record.h>

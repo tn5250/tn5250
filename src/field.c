@@ -30,11 +30,11 @@
 #include <string.h>
 
 #include "utility.h"
-#include "display.h"
+#include "dbuffer.h"
 #include "field.h"
 #include "formattable.h"
 
-Tn5250Field *tn5250_field_new(Tn5250Display * display)
+Tn5250Field *tn5250_field_new(Tn5250DBuffer * display)
 {
    Tn5250Field *This = tn5250_new(Tn5250Field, 1);
    if (This == NULL)
@@ -112,7 +112,7 @@ void tn5250_field_dump(Tn5250Field * This)
  */
 int tn5250_field_hit_test(Tn5250Field * This, int y, int x)
 {
-   int pos = (y * tn5250_display_width(This->display)) + x;
+   int pos = (y * tn5250_dbuffer_width(This->display)) + x;
 
    return (pos >= tn5250_field_start_pos(This)
 	   && pos <= tn5250_field_end_pos(This));
@@ -123,7 +123,7 @@ int tn5250_field_hit_test(Tn5250Field * This, int y, int x)
  */
 int tn5250_field_start_pos(Tn5250Field * This)
 {
-   return (This->start_row - 1) * tn5250_display_width(This->display) +
+   return (This->start_row - 1) * tn5250_dbuffer_width(This->display) +
        (This->start_col - 1);
 }
 
@@ -141,7 +141,7 @@ int tn5250_field_end_pos(Tn5250Field * This)
  */
 int tn5250_field_end_row(Tn5250Field * This)
 {
-   return (tn5250_field_end_pos(This) / tn5250_display_width(This->display))
+   return (tn5250_field_end_pos(This) / tn5250_dbuffer_width(This->display))
        + 1;
 }
 
@@ -151,7 +151,7 @@ int tn5250_field_end_row(Tn5250Field * This)
  */
 int tn5250_field_end_col(Tn5250Field * This)
 {
-   return (tn5250_field_end_pos(This) % tn5250_display_width(This->display))
+   return (tn5250_field_end_pos(This) % tn5250_dbuffer_width(This->display))
        + 1;
 }
 
@@ -248,7 +248,7 @@ int tn5250_field_count_left(Tn5250Field *This, int y, int x)
 {
    int pos;
 
-   pos = (y * tn5250_display_width(This->display) + x);
+   pos = (y * tn5250_dbuffer_width(This->display) + x);
    pos -= tn5250_field_start_pos(This);
 
    TN5250_ASSERT (tn5250_field_hit_test(This, y, x));
@@ -266,7 +266,7 @@ int tn5250_field_count_right (Tn5250Field *This, int y, int x)
 {
    TN5250_ASSERT(tn5250_field_hit_test(This, y, x));
    return tn5250_field_end_pos (This) -
-      (y * tn5250_display_width(This->display) + x);
+      (y * tn5250_dbuffer_width(This->display) + x);
 }
 
 unsigned char tn5250_field_get_char (Tn5250Field *This, int pos)
@@ -327,7 +327,7 @@ void tn5250_field_process_adjust (Tn5250Field *This, int y, int x)
  */
 void tn5250_field_update_display (Tn5250Field *This)
 {
-   tn5250_display_mvaddnstr(This->display, This->start_row - 1,
+   tn5250_dbuffer_mvaddnstr(This->display, This->start_row - 1,
 			    This->start_col - 1, This->data,
 			    This->length);
 }
@@ -350,9 +350,9 @@ void tn5250_field_set_minus_zone(Tn5250Field *This)
    }
    This->data[This->length - 2] = lastchar;
 
-   tn5250_display_cursor_set(This->display, tn5250_field_end_row(This) - 1,
+   tn5250_dbuffer_cursor_set(This->display, tn5250_field_end_row(This) - 1,
 	 tn5250_field_end_col(This) - 1);
-   tn5250_display_addch(This->display, tn5250_ascii2ebcdic('-'));
+   tn5250_dbuffer_addch(This->display, tn5250_ascii2ebcdic('-'));
 }
 
 /*

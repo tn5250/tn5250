@@ -69,14 +69,13 @@ extern "C" {
    struct _Tn5250Session {
       Tn5250Terminal /*@owned@*/ /*@null@*/ *term;
       Tn5250Stream /*@owned@*/ /*@null@*/ *stream;
-      Tn5250Display /*@owned@*/ *dsp;
-      Tn5250Display *saved_bufs[256];
+      Tn5250DBuffer /*@owned@*/ *dsp;
+      Tn5250DBuffer *saved_bufs[256];
       Tn5250Record /*@owned@*/ *record;
       Tn5250Table /*@owned@*/ *table;
       int pending_insert;
       int read_opcode;	/* Current read opcode. */
       int invited;
-      int inhibited;
 
       /* Queued keystroke ring buffer. */
       int key_queue_head, key_queue_tail;

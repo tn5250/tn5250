@@ -35,7 +35,7 @@ extern "C" {
 
    struct _Tn5250Table {
       Tn5250Field /*@null@*/ *field_list;
-      Tn5250Display /*@dependent@*/ *display;
+      Tn5250DBuffer /*@dependent@*/ *display;
       int numfields;
       int MasterMDT;
       Tn5250TableSaveBuffer /*@null@*/ *save_buffers;
@@ -46,7 +46,7 @@ extern "C" {
 
    typedef struct _Tn5250Table Tn5250Table;
 
-   extern /*@null@*/ /*@only@*/ Tn5250Table *tn5250_table_new(Tn5250Display /*@dependent@*/ * display);
+   extern /*@null@*/ /*@only@*/ Tn5250Table *tn5250_table_new(Tn5250DBuffer /*@dependent@*/ * display);
    extern void tn5250_table_destroy(Tn5250Table /*@only@*/ * This);
 
    extern void tn5250_table_add_field(Tn5250Table * This, Tn5250Field * field);
@@ -65,7 +65,7 @@ extern "C" {
    extern void tn5250_table_del_char(Tn5250Table * This, int y, int x);
    extern void tn5250_table_ins_char(Tn5250Table * This, int y, int x, unsigned char c);
    extern void tn5250_table_add_char(Tn5250Table * This, int y, int x, unsigned char c);
-   extern void tn5250_table_process_adjust(Tn5250Table * This, Tn5250Display * dsp, int y, int x);
+   extern void tn5250_table_process_adjust(Tn5250Table * This, Tn5250DBuffer * dsp, int y, int x);
 
    extern Tn5250Field *tn5250_table_field_yx (Tn5250Table *This, int y, int x);
 

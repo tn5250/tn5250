@@ -12,7 +12,7 @@ bin_SCRIPTS =		xt5250
 lib5250_la_SOURCES =	buffer.c\
 			cursesterm.c\
 			debug.c\
-			display.c\
+			dbuffer.c\
 			field.c\
 			formattable.c\
 			printsession.c\
@@ -39,7 +39,7 @@ pkginclude_HEADERS = 	buffer.h\
 			config.h\
 		 	cursesterm.h\
 			debug.h\
-			display.h\
+			dbuffer.h\
 			field.h\
 			formattable.h\
 			printsession.h\
