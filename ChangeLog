@@ -1,3 +1,10 @@
+2002-08-01 Scott Klement <klemscot@klements.com>
+- Added new config keyword +/-sign_key_hack to enable/disable the
+  special handling of the + and - characters in signed numeric fields.
+- Changed default behavior in Win32 terminal to have the "sign key hack"
+  be disabled.  
+- Default behavior under Un*x not changed.
+
 2002-07-29 Scott Klement <klemscot@klements.com>
 - Added some code to handle the AVPP SCS op-code in scs2ascii. 
 

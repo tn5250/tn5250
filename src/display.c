@@ -47,6 +47,7 @@ Tn5250Display *tn5250_display_new()
    This->indicators = 0;
    This->indicators_dirty = 0;
    This->pending_insert = 0;
+   This->sign_key_hack = 1;
    This->session = NULL;
    This->key_queue_head = This->key_queue_tail = 0;
    This->saved_msg_line = NULL;
@@ -107,6 +108,10 @@ int tn5250_display_config(Tn5250Display *This, Tn5250Config *config)
    if (This->config != NULL)
       tn5250_config_unref (This->config);
    This->config = config;
+
+   /* check if the +/- sign keyboard hack should be enabled */
+   if(tn5250_config_get(config, "sign_key_hack")) 
+      This->sign_key_hack = tn5250_config_get_bool(config, "sign_key_hack");
 
    /* Set a terminal type if necessary */
    termtype = tn5250_config_get(config, "env.TERM");
@@ -647,7 +652,8 @@ void tn5250_display_interactive_addch(Tn5250Display * This, unsigned char ch)
       ch = toupper(ch);
 
    /* '+' and '-' keys activate field exit/field minus for numeric fields. */
-   if (tn5250_field_is_num_only(field) || tn5250_field_is_signed_num(field)) {
+   if (This->sign_key_hack &&
+      (tn5250_field_is_num_only(field) || tn5250_field_is_signed_num(field))) {
       switch (ch) {
       case '+':
 	 tn5250_display_kf_field_plus(This);
@@ -658,6 +664,7 @@ void tn5250_display_interactive_addch(Tn5250Display * This, unsigned char ch)
 	 return;
       }
    }
+
    /* Make sure this is a valid data character for this field type. */
    if (!tn5250_field_valid_char(field, ch)) {
       TN5250_LOG (("Inhibiting: invalid character for field type.\n"));
