@@ -767,4 +767,3 @@ void tn5250_dbuffer_nextword(Tn5250DBuffer * This)
 
    ASSERT_VALID(This);
 }
-

@@ -4,6 +4,13 @@
     support.  If so, find & include the directory containing krb5.h in
     the CPPFLAGS so that tn5250 will compile.   (Fixes compatibility with
     RedHat 9)
+ 
+2003-04-17 Buck Calabro <buck.calabro@commsoft.net>
+- Added functions for Next field and Previous Field.  These act like
+  next word / prev word, but will stop at the beginning of each
+  input field, not just at every non-blank field.
+- Changed winterm and cursesterm to point to the new functions
+  instead of nextword / prevword.
 
 2003-03-17 Scott Klement <klemscot@klements.com>
 - Added glib dependency to tn5250.pc.in
@@ -50,7 +57,7 @@
 2002-08-05 Scott Klement <klemscot@klements.com>
 - Added macro.c/macro.h and macro support which were contributed by
   Jean-Marie Guenebaud <jmg@photim.com>
- 
+
 2002-08-01 Scott Klement <klemscot@klements.com>
 - Added new config keyword +/-sign_key_hack to enable/disable the
   special handling of the + and - characters in signed numeric fields.

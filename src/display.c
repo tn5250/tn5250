@@ -1122,6 +1122,14 @@ void tn5250_display_do_key(Tn5250Display *This, int key)
       tn5250_display_kf_prevword(This);
       break;
 
+   case K_NEXTFLD:
+      tn5250_display_kf_nextfld(This);
+      break;
+
+   case K_PREVFLD:
+      tn5250_display_kf_prevfld(This);
+      break;
+
    case K_FIELDHOME:
       tn5250_display_kf_fieldhome(This);
       break;
@@ -1830,6 +1838,122 @@ void tn5250_display_kf_prevword (Tn5250Display *This)
 void tn5250_display_kf_nextword (Tn5250Display *This)
 {
       tn5250_dbuffer_nextword(This->display_buffers);
+}
+
+/****f* lib5250/tn5250_display_kf_prevfld
+ * NAME
+ *    tn5250_display_kf_prevfld
+ * SYNOPSIS
+ *    tn5250_display_kf_prevfld (This);
+ * INPUTS
+ *    Tn5250Display *      This       -
+ * DESCRIPTION
+ *    Move the cursor backward to the beginning of the previous non-blank
+ *    or input field.  The intent is to emulate the dbuffer_prevword function
+ *    and add the additional functionality of stopping at a (possibly blank)
+ *    input-capable field as well.
+ *****/
+void tn5250_display_kf_prevfld (Tn5250Display *This)
+{
+   int foundblank=0;
+   int state=0;
+   int maxiter;
+   Tn5250Field *field;
+
+   TN5250_LOG (("dbuffer_prevfld: entered.\n"));
+
+   maxiter = (This->display_buffers->w * This->display_buffers->h);
+   TN5250_ASSERT(maxiter>0);
+
+   while (--maxiter) {
+        tn5250_dbuffer_left(This->display_buffers);
+
+        /* If at the start of a field, exit */
+        field = tn5250_display_current_field(This);
+        if ((field != NULL) &&
+             (tn5250_field_start_row(field) == This->display_buffers->cy) &&
+             (tn5250_field_start_col(field) == This->display_buffers->cx))
+        {
+           break;
+        }
+
+        switch (state) {
+           case 0:
+              if (This->display_buffers->data[
+                    This->display_buffers->cy *
+                    This->display_buffers->w +
+                    This->display_buffers->cx] <= 0x40) state++;
+              break;
+           case 1:
+              if (This->display_buffers->data[
+                    This->display_buffers->cy *
+                    This->display_buffers->w +
+                    This->display_buffers->cx] > 0x40) state++;
+              break;
+           case 2:
+              if (This->display_buffers->data[
+                    This->display_buffers->cy *
+                    This->display_buffers->w +
+                    This->display_buffers->cx] <= 0x40) {
+                  tn5250_dbuffer_right(This->display_buffers, 1);
+                  return;
+              }
+              break;
+        }
+   }
+
+}
+
+/****f* lib5250/tn5250_display_kf_nextfld
+ * NAME
+ *    tn5250_display_kf_nextfld
+ * SYNOPSIS
+ *    tn5250_display_kf_nextfld (This);
+ * INPUTS
+ *    Tn5250Display *      This       -
+ * DESCRIPTION
+ *    Move the cursor forward to the beginning of the next non-blank
+ *    or input field.  The intent is to emulate the dbuffer_nextword function
+ *    and add the additional functionality of stopping at a (possibly blank)
+ *    input-capable field as well.
+ *****/
+void tn5250_display_kf_nextfld (Tn5250Display *This)
+{
+   int foundblank=0;
+   int maxiter;
+   Tn5250Field *field;
+   int gx, gy;
+
+   TN5250_LOG (("dbuffer_nextfld: entered.\n"));
+
+   maxiter = (This->display_buffers->w * This->display_buffers->h);
+   TN5250_ASSERT(maxiter>0);
+
+   while (--maxiter) {
+      tn5250_dbuffer_right(This->display_buffers, 1);
+      if (This->display_buffers->data[
+            This->display_buffers->cy *
+            This->display_buffers->w +
+            This->display_buffers->cx] <= 0x40) foundblank++;
+
+      /* If found a blank previously and a non-blank now, exit */
+      if ((foundblank) && (This->display_buffers->data[
+                             This->display_buffers->cy *
+                             This->display_buffers->w +
+                             This->display_buffers->cx] > 0x40)) {
+           break;
+      }
+
+      /* If at the start of a field, exit */
+      field = tn5250_display_current_field(This);
+      if ((field != NULL) &&
+           (tn5250_field_start_row(field) == This->display_buffers->cy) &&
+           (tn5250_field_start_col(field) == This->display_buffers->cx))
+      {
+         break;
+      }
+   }
+
 }
 
 /****f* lib5250/tn5250_display_kf_fieldhome
