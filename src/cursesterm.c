@@ -15,38 +15,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include "tn5250-config.h"
+#define _TN5250_TERMINAL_PRIVATE_DEFINED
+#include "tn5250-private.h"
 
 #ifdef USE_CURSES
-
-#define _TN5250_TERMINAL_PRIVATE_DEFINED
-
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
-#ifdef HAVE_NCURSES_H
-#include <ncurses.h>
-#else
-#include <curses.h>
-#endif
-#ifdef HAVE_TERMCAP_H
-#include <termcap.h>
-#endif
-#include <stdlib.h>
-#include <signal.h>
-#include <string.h>
-#include <ctype.h>
-#include <malloc.h>
-
-#include "utility.h"
-#include "dbuffer.h"
-#include "buffer.h"
-#include "record.h"
-#include "stream.h"
-#include "field.h"
-#include "display.h"
-#include "terminal.h"
-#include "cursesterm.h"
 
 /* Some versions of ncurses don't have this defined. */
 #ifndef A_VERTICAL
@@ -208,7 +180,8 @@ static Key curses_vt100[] = {
 
    /* ASCII DEL is not correctly reported as the DC key in some
     * termcaps */
-   { K_DELETE,		"\177" }, /* ASCII DEL */
+   /* But it is backspace in some termcaps... */
+   /* { K_DELETE,		"\177" }, /* ASCII DEL */
 
    /* ESC strings */
    { K_F1,		"\033\061" }, /* ESC 1 */
@@ -318,7 +291,7 @@ Tn5250Terminal *tn5250_curses_terminal_new()
 static void curses_terminal_init(Tn5250Terminal * This)
 {
    char buf[MAX_K_BUF_LEN];
-   int i = 0, c;
+   int i = 0, c, s;
    struct timeval tv;
    char *str;
 
@@ -359,11 +332,12 @@ static void curses_terminal_init(Tn5250Terminal * This)
 #ifdef USE_OWN_KEY_PARSING
    /* Allocate and populate an array of escape code => key code 
     * mappings. */
-   This->data->k_map_len = sizeof (curses_vt100) / sizeof (Key)
+   This->data->k_map_len = (sizeof (curses_vt100) / sizeof (Key)) * 2
       + sizeof (curses_caps) / sizeof (Key) + 1;
    This->data->k_map = (Key*)malloc (sizeof (Key)*This->data->k_map_len);
 
    c = sizeof (curses_caps) / sizeof (Key);
+   s = sizeof (curses_vt100) / sizeof (Key);
    for (i = 0; i < c; i++) {
       This->data->k_map[i].k_code = curses_caps[i].k_code;
       if ((str = tgetstr (curses_caps[i].k_str, NULL)) != NULL) {
@@ -374,19 +348,31 @@ static void curses_terminal_init(Tn5250Terminal * This)
 	 This->data->k_map[i].k_str[0] = '\0';
    }
 
-   /* Populate vt100 escape codes. */
+   /* Populate vt100 escape codes, both ESC+ and C-g+ forms. */
    for (i = 0; i < sizeof (curses_vt100) / sizeof (Key); i++) {
-      This->data->k_map[i + c].k_code = curses_vt100[i].k_code;
+      This->data->k_map[i + c].k_code =
+	 This->data->k_map[i + c + s].k_code =
+	 curses_vt100[i].k_code;
       strcpy (This->data->k_map[i + c].k_str, curses_vt100[i].k_str);
+      strcpy (This->data->k_map[i + c + s].k_str, curses_vt100[i].k_str);
+
+      if (This->data->k_map[i + c + s].k_str[0] == '\033')
+	 This->data->k_map[i + c + s].k_str[0] = K_CTRL('G');
+      else 
+	 This->data->k_map[i + c + s].k_str[0] = '\0';
    }
 
    /* Damn the exceptions to the rules. (ESC + DEL) */
    This->data->k_map[This->data->k_map_len-1].k_code = K_INSERT;
+   This->data->k_map[This->data->k_map_len-s-1].k_code = K_INSERT;
    if ((str = tgetstr ("kD", NULL)) != NULL) {
       This->data->k_map[This->data->k_map_len-1].k_str[0] = '\033';
+      This->data->k_map[This->data->k_map_len-s-1].k_str[0] = K_CTRL('G');
       strcpy (This->data->k_map[This->data->k_map_len-1].k_str + 1, str);
+      strcpy (This->data->k_map[This->data->k_map_len-s-1].k_str + 1, str);
    } else
-      This->data->k_map[This->data->k_map_len-1].k_str[0] = 0;
+      This->data->k_map[This->data->k_map_len-1].k_str[0] =
+	 This->data->k_map[This->data->k_map_len-s-1].k_str[0] = 0;
 #endif
 }
 

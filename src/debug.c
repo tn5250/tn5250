@@ -21,6 +21,12 @@
 
 #define _TN5250_TERMINAL_PRIVATE_DEFINED
 
+#if defined(WINE) || defined(WIN32)
+#undef VERSION
+#include <windows.h>
+#include <winsock.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

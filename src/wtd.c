@@ -15,21 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include "tn5250-config.h"
-#include <string.h>
-#include <stdio.h>
-#include <malloc.h>
-#include "utility.h"
-#include "dbuffer.h"
-#include "field.h"
-#include "display.h"
-#include "terminal.h"
-#include "buffer.h"
-#include "record.h"
-#include "stream.h"
-#include "session.h"
-#include "codes5250.h"
-#include "wtd.h"
+#include "tn5250-private.h"
 
 /* TODO:
  * - We need to generate TD (Transparent Data) orders if needed.

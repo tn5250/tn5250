@@ -12,3 +12,6 @@
 
 /* Define this to use the new key handler. */
 #undef USE_OWN_KEY_PARSING
+
+/* Define this to compile the system under WINE. */
+#undef WINE

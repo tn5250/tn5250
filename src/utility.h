@@ -60,6 +60,8 @@ struct _Tn5250CharMap {
 };
 
 typedef struct _Tn5250CharMap Tn5250CharMap;
+
+extern Tn5250CharMap tn5250_transmaps[];
 /*******/
 
 Tn5250CharMap *tn5250_char_map_new(const char *maping);

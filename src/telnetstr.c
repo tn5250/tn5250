@@ -15,93 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include "tn5250-config.h"
-#ifdef WIN32
-#define USE_WINDOWS
-#endif
-#ifdef WINELIB
-#define USE_WINDOWS
-#endif
-
-#ifdef USE_WINDOWS
-#include <windows.h>
-#include <winsock.h>
-#endif
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#ifndef USE_WINDOWS
-#include <sys/time.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <errno.h>
-#include <netdb.h>
-#include <unistd.h>
-#endif
-#include <malloc.h>
-#ifdef HAVE_SYS_FILIO_H
-#include <sys/filio.h>
-#endif
-#include "buffer.h"
-#include "record.h"
-#include "stream.h"
-#include "utility.h"
-
-#ifdef WINELIB
-#define socket WINSOCK_socket
-#define connect WINSOCK_connect
-#define select WINSOCK_select
-#define gethostbyname WINSOCK_gethostbyname
-#define send WINSOCK_send
-#define recv WINSOCK_recv
-#define closesocket WINSOCK_closesocket
-
-struct hostent *WINAPI WINSOCK_gethostbyname(const char *name);
-INT WINAPI WINSOCK_socket(INT af, INT type, INT protocol);
-INT WINAPI WINSOCK_connect(SOCKET s, struct sockaddr *name, INT namelen);
-INT WINAPI WINSOCK_recv(SOCKET s, char *buf, INT len, INT flags);
-INT WINAPI WINSOCK_send(SOCKET s, char *buf, INT len, INT flags);
-void WINAPI WINSOCK_closesocket(SOCKET s);
-INT WINAPI WINSOCK_select(INT nfds, ws_fd_set32 * ws_readfds,
-		   ws_fd_set32 * ws_writefds, ws_fd_set32 * ws_exceptfds,
-			  struct timeval *timeout);
-
-#define fd_set ws_fd_set32
-#undef FD_ZERO
-#undef FD_SET
-#undef FD_ISSET
-#define FD_ZERO(x) WS_FD_ZERO((x))
-#define FD_SET(x,y) WS_FD_SET((x),(y))
-#define FD_ISSET(x,y) WS_FD_ISSET((x),(y))
-
-#endif
-
-#ifdef USE_WINDOWS
-/* Windows' braindead socketing */
-#define CLOSESOCKET(x)		closesocket ((x))
-#define IOCTLSOCKET(x,y,z)	ioctlsocket ((x),(y),(z))
-#define LAST_ERROR		(WSAGetLastError ())
-#define ERR_INTR		WSAEINTR
-#define ERR_AGAIN 		WSAEWOULDBLOCK
-#define WAS_ERROR_RET(r)	((r) == SOCKET_ERROR)
-#define WAS_INVAL_SOCK(r)	((r) == INVALID_SOCKET)
-#else
-/* Real, UNIX socketing */
-#define CLOSESOCKET(x)	close ((x))
-#define IOCTLSOCKET(x,y,z)	ioctl ((x),(y),(z))
-#define LAST_ERROR		(errno)
-#define ERR_INTR		EINTR
-#define ERR_AGAIN		EAGAIN
-#define WAS_ERROR_RET(r)	((r) < 0)
-#define WAS_INVAL_SOCK(r)	((r) < 0)
-#endif
-
-#ifndef INADDR_NONE
-#define INADDR_NONE 0xffffffff
-#endif
+#include "tn5250-private.h"
 
 static int telnet_stream_get_next(Tn5250Stream * This);
 static void telnet_stream_do_verb(Tn5250Stream * This, unsigned char verb, unsigned char what);
@@ -206,7 +120,7 @@ static int telnet_stream_connect(Tn5250Stream * This, const char *to)
    
    serv_addr.sin_addr.s_addr = inet_addr(address);
    if (serv_addr.sin_addr.s_addr == INADDR_NONE) {
-      struct hostent *pent = gethostbyname(address);
+      struct hostent *pent = TN_GETHOSTBYNAME(address);
       if (pent != NULL)
 	 serv_addr.sin_addr.s_addr = *((u_long *) (pent->h_addr));
    }
@@ -238,13 +152,13 @@ static int telnet_stream_connect(Tn5250Stream * This, const char *to)
    if (WAS_INVAL_SOCK(This->sockfd)) {
       return LAST_ERROR;
    }
-   r = connect(This->sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
+   r = TN_CONNECT(This->sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
    if (WAS_ERROR_RET(r)) {
       return LAST_ERROR;
    }
    /* Set socket to non-blocking mode. */
-#ifndef WINELIB
-   IOCTLSOCKET(This->sockfd, FIONBIO, &ioctlarg);
+#ifdef FIONBIO
+   TN_IOCTL(This->sockfd, FIONBIO, &ioctlarg);
 #endif
 
    This->state = TN5250_STREAM_STATE_DATA;
@@ -263,7 +177,7 @@ static int telnet_stream_connect(Tn5250Stream * This, const char *to)
  *****/
 static void telnet_stream_disconnect(Tn5250Stream * This)
 {
-   CLOSESOCKET(This->sockfd);
+   TN_CLOSE(This->sockfd);
 }
 
 /****i* lib5250/telnet_stream_destroy
@@ -303,11 +217,11 @@ static int telnet_stream_get_next(Tn5250Stream * This)
    FD_SET(This->sockfd, &fdr);
    tv.tv_sec = 0;
    tv.tv_usec = 0;
-   select(This->sockfd + 1, &fdr, NULL, NULL, &tv);
+   TN_SELECT(This->sockfd + 1, &fdr, NULL, NULL, &tv);
    if (!FD_ISSET(This->sockfd, &fdr))
       return -1;		/* No data on socket. */
 
-   rc = recv(This->sockfd, (char *) &curchar, 1, 0);
+   rc = TN_RECV(This->sockfd, (char *) &curchar, 1, 0);
    if (WAS_ERROR_RET(rc)) {
       if (LAST_ERROR != ERR_AGAIN && LAST_ERROR != ERR_INTR) {
 	 printf("Error reading from socket: %s\n", strerror(LAST_ERROR));
@@ -387,7 +301,7 @@ static void telnet_stream_do_verb(Tn5250Stream * This, unsigned char verb, unsig
     *
     * Actually, I don't even remember what that comment means -JMF */
 
-   ret = send(This->sockfd, (char *) reply, 3, 0);
+   ret = TN_SEND(This->sockfd, (char *) reply, 3, 0);
    if (WAS_ERROR_RET(ret)) {
       printf("Error writing to socket: %s\n", strerror(LAST_ERROR));
       exit(5);
@@ -452,7 +366,7 @@ static void telnet_stream_sb(Tn5250Stream * This, unsigned char *sb_buf, int sb_
       tn5250_buffer_append_byte(&out_buf, IAC);
       tn5250_buffer_append_byte(&out_buf, SE);
 
-      ret = send(This->sockfd, (char *) tn5250_buffer_data(&out_buf),
+      ret = TN_SEND(This->sockfd, (char *) tn5250_buffer_data(&out_buf),
 		 tn5250_buffer_length(&out_buf), 0);
       if (WAS_ERROR_RET(ret)) {
 	 printf("Error writing to socket: %s\n", strerror(LAST_ERROR));
@@ -476,7 +390,7 @@ static void telnet_stream_sb(Tn5250Stream * This, unsigned char *sb_buf, int sb_
       tn5250_buffer_append_byte(&out_buf, IAC);
       tn5250_buffer_append_byte(&out_buf, SE);
 
-      ret = send(This->sockfd, (char *) tn5250_buffer_data(&out_buf),
+      ret = TN_SEND(This->sockfd, (char *) tn5250_buffer_data(&out_buf),
 		 tn5250_buffer_length(&out_buf), 0);
       if (WAS_ERROR_RET(ret)) {
 	 printf("Error writing to socket: %s\n", strerror(LAST_ERROR));
@@ -611,7 +525,7 @@ static void telnet_stream_write(Tn5250Stream * This, unsigned char *data, int si
    do {
       FD_ZERO(&fdw);
       FD_SET(This->sockfd, &fdw);
-      r = select(This->sockfd + 1, NULL, &fdw, NULL, NULL);
+      r = TN_SELECT(This->sockfd + 1, NULL, &fdw, NULL, NULL);
       if (WAS_ERROR_RET(r)) {
 	 last_error = LAST_ERROR;
 	 switch (last_error) {
@@ -626,7 +540,7 @@ static void telnet_stream_write(Tn5250Stream * This, unsigned char *data, int si
 	 }
       }
       if (FD_ISSET(This->sockfd, &fdw)) {
-	 r = send(This->sockfd, (char *) data, size, 0);
+	 r = TN_SEND(This->sockfd, (char *) data, size, 0);
 	 if (WAS_ERROR_RET(r)) {
 	    last_error = LAST_ERROR;
 	    if (last_error != ERR_AGAIN) {
@@ -642,10 +556,23 @@ static void telnet_stream_write(Tn5250Stream * This, unsigned char *data, int si
    } while (size && (r >= 0 || last_error == ERR_AGAIN));
 }
 
-/*
+/****i* lib5250/telnet_stream_send_packet
+ * NAME
+ *    telnet_stream_send_packet
+ * SYNOPSIS
+ *    telnet_stream_send_packet (This, length, flowtype, flags, opcode, data);
+ * INPUTS
+ *    Tn5250Stream *       This       - 
+ *    int                  length     - 
+ *    int                  flowtype   -
+ *    unsigned char        flags      -
+ *    unsgined char        opcode     -
+ *    unsigned char *      data       - 
+ * DESCRIPTION
  *    Send a packet, prepending a header and escaping any naturally
- *      occuring IAC characters.
- */static void telnet_stream_send_packet(Tn5250Stream * This, int length, int flowtype, unsigned char flags,
+ *    occuring IAC characters.
+ *****/
+static void telnet_stream_send_packet(Tn5250Stream * This, int length, int flowtype, unsigned char flags,
 			       unsigned char opcode, unsigned char *data)
 {
    Tn5250Buffer out_buf;

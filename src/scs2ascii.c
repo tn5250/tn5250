@@ -16,12 +16,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "tn5250-config.h"
-
-#include <stdio.h>
-
-#include "utility.h"
-#include "scs.h"
+#include "tn5250-private.h"
 
 static void scs2ascii_sic();
 static void scs2ascii_sil();

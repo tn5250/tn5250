@@ -1,3 +1,23 @@
+2000-02-12 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+- Moved all includes, including conditionals into tn5250-private.h, which
+  is now included by all C sources.
+- Added getopt.[ch] to the package, including configure.in code to detect
+  whether they are needed.
+- Some work on re-adding WINE/WIN32 support.
+- Don't need to install the transmaps.h header for developers.
+- Added configure.in checks for some headers (fcntl.h, syslog.h,
+  sys/wait.h, ...) for lp5250d
+- Prettied up syntax/usage for tn5250.
+- Commented out 0x7f => K_DELETE mapping from cursesterm.c
+- Allow C-g+x to do same thing as Esc+x again.
+- tn5250_display_set_cursor_home:  Will now move to first non-bypass field
+  instead of 0,0 if a non-bypass field exists in the format table.
+- tn5250_session_write_to_display: If IC or MC order wasn't received, use
+  tn5250_display_set_cursor_home() which could set the cursor to the 
+  previous IC position (if one was sent).
+- Properly implemented backspace to wrap to last cell of previous field
+  (and inhibit display if pressed while not on field).
+
 2000-02-12 Mike Madore <mmadore@blarg.net>
 - Removed file descriptor 0 from select() in
   tn5250_print_session_wait_event.  Since this is a daemon, fd 0 is

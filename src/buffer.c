@@ -15,14 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
-#include "tn5250-config.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <malloc.h>
-#include "buffer.h"
-#include "utility.h"
+#include "tn5250-private.h"
 
 #define BUFFER_DELTA 128
 

@@ -15,21 +15,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include "tn5250-config.h"
-#include <string.h>
-#include <stdio.h>
-#include <malloc.h>
-#include "utility.h"
-#include "dbuffer.h"
-#include "field.h"
-#include "display.h"
-#include "terminal.h"
-#include "buffer.h"
-#include "record.h"
-#include "stream.h"
-#include "session.h"
-#include "codes5250.h"
-#include "wtd.h"
+
+#include "tn5250-private.h"
 
 static void tn5250_display_add_dbuffer(Tn5250Display * display,
 				       Tn5250DBuffer * dbuffer);
@@ -473,13 +460,30 @@ Tn5250Field *tn5250_display_prev_field(Tn5250Display * This)
  *    Tn5250Display *      This       - 
  * DESCRIPTION
  *    Set the cursor to the home position on the current display buffer.
+ *    The home position is:
+ *       1) the IC position, if we have one. 
+ *       2) the first position of the first non-bypass field, if we have on.
+ *       3) 0,0
  *****/
 void tn5250_display_set_cursor_home(Tn5250Display * This)
 {
    if (This->pending_insert)
       tn5250_dbuffer_goto_ic(This->display_buffers);
-   else
-      tn5250_display_set_cursor(This, 0, 0);
+   else {
+      int y = 0, x = 0;
+      Tn5250Field *iter = This->display_buffers->field_list;
+      if (iter != NULL) {
+	 do {
+	    if (!tn5250_field_is_bypass(iter)) {
+	       y = tn5250_field_start_row (iter);
+	       x = tn5250_field_start_col (iter);
+	       break;
+	    }
+	    iter = iter->next;
+	 } while (iter != This->display_buffers->field_list);
+      }
+      tn5250_display_set_cursor(This, y, x);
+   }
 }
 
 /****f* lib5250/tn5250_display_set_cursor_field
@@ -834,6 +838,9 @@ void tn5250_display_do_key(Tn5250Display *This, int key)
       break;
 
    case K_BACKSPACE:
+      tn5250_display_kf_backspace (This);
+      break;
+
    case K_LEFT:
       tn5250_display_kf_left (This);
       break;
@@ -1248,6 +1255,44 @@ void tn5250_display_clear_format_table (Tn5250Display *This)
    tn5250_display_set_cursor(This, 0, 0);
    tn5250_display_indicator_set(This, TN5250_DISPLAY_IND_X_SYSTEM);
    tn5250_display_indicator_clear(This, TN5250_DISPLAY_IND_INSERT);
+}
+
+/****f* lib5250/tn5250_display_kf_backspace
+ * NAME
+ *    tn5250_display_kf_backspace
+ * SYNOPSIS
+ *    tn5250_display_kf_backspace (This);
+ * INPUTS
+ *    Tn5250Display *      This       - 
+ * DESCRIPTION
+ *    Move the cursor left one position unless on the first position of
+ *    field, in which case we move to the last position of the previous
+ *    field. (Or inhibit if we aren't on a field).
+ *****/
+void tn5250_display_kf_backspace (Tn5250Display *This)
+{
+   Tn5250Field *field = tn5250_display_current_field (This);
+   if (field == NULL) {
+      /* FIXME: Inform user why. */
+      tn5250_display_inhibit (This);
+      return;
+   }
+
+   /* If in first position of field, set cursor position to last position
+    * of previous field. */
+   if (tn5250_display_cursor_x (This) == tn5250_field_start_col (field) &&
+	 tn5250_display_cursor_y (This) == tn5250_field_start_row (field)) {
+      field = tn5250_display_prev_field (This);
+      if (field == NULL)
+	 return; /* Should never happen */
+      tn5250_display_set_cursor_field (This, field);
+      if (tn5250_field_length (field) - 1 > 0)
+	 tn5250_dbuffer_right (This->display_buffers,
+	       tn5250_field_length (field) - 1);
+      return;
+   }
+
+   tn5250_dbuffer_left (This->display_buffers);
 }
 
 /****f* lib5250/tn5250_display_kf_left

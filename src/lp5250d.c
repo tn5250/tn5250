@@ -16,23 +16,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "tn5250-config.h"
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <syslog.h>
-#include <errno.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#include <stdlib.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <sys/wait.h>
-
-#include "tn5250.h"
+#include "tn5250-private.h"
 
 #define TCP_PORT 8888
 
@@ -120,7 +104,6 @@ int main(int argc, char *argv[])
         perror("daemon");
         exit(2);
     }
-    
 
     stream = tn5250_stream_open (remotehost);
     if(stream == NULL) {
