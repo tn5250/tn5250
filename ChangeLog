@@ -1,3 +1,7 @@
+2000-04-14 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+- Removed accidentally released debugging code from new config stuff.
+- Do not require a host if +/-version or +/-help is specified.
+
 2000-04-13 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 - getopt.c: Now includes "tn5250-config.h" instead of <config.h>
 - Added conf.[ch], rewrote argument parsing, hacked stream.c to use
