@@ -974,12 +974,6 @@ void win32_terminal_draw_text(HDC hdc, int attr, const char *text, int len, int 
        tell us that they are... so without this, the caret (aka "cursor")
        will not appear in the right place.  */
 
-    /* FIXME:
-       this is a hack copied from cursesterm.c which does underlines
-       since vertical lines aren't available.  If I weren't so lazy,
-       I could do proper vertical lines, here :)  */
-
-
     /* set up colors for this drawing style */
 
     SetBkMode(hdc, OPAQUE);
