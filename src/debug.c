@@ -121,6 +121,7 @@ Tn5250Terminal *tn5250_debug_terminal_new (Tn5250Terminal *slave, Tn5250Stream *
       This->waitevent = debug_terminal_waitevent;
       This->getkey = debug_terminal_getkey;
       This->beep = debug_terminal_beep;
+      This->config = NULL;
 
       This->data = tn5250_new(Tn5250TerminalPrivate, 1);
       if (This->data == NULL) {
