@@ -7,7 +7,7 @@ AC_PROG_GCC_TRADITIONAL
 AM_PROG_LIBTOOL
 
 dnl ** Automake Intialization
-AM_INIT_AUTOMAKE(tn5250, 0.16.4)
+AM_INIT_AUTOMAKE(tn5250, 0.16.5)
 AM_CONFIG_HEADER(src/tn5250-config.h)
 AC_ARG_ENABLE(old-keys,
 [  --enable-old-keys       Use the old key handler, which has some quirks
