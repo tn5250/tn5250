@@ -129,11 +129,11 @@ int ssl_stream_passwd_cb(char *buf, int size, int rwflag, Tn5250Stream *This);
 typedef unsigned char UCHAR;
 #endif
 
-static UCHAR hostInitStr[] = {IAC,DO,NEW_ENVIRON,IAC,DO,TERMINAL_TYPE};
-static UCHAR hostDoEOR[] = {IAC,DO,END_OF_RECORD};
-static UCHAR hostDoBinary[] = {IAC,DO,TRANSMIT_BINARY};
-static UCHAR hostDoTN3270E[] = {IAC,DO,TN3270E};
-static UCHAR hostSBDevice[] = {IAC,SB,TN3270E,TN3270E_SEND,TN3270E_DEVICE_TYPE,
+static const UCHAR hostInitStr[] = {IAC,DO,NEW_ENVIRON,IAC,DO,TERMINAL_TYPE};
+static const UCHAR hostDoEOR[] = {IAC,DO,END_OF_RECORD};
+static const UCHAR hostDoBinary[] = {IAC,DO,TRANSMIT_BINARY};
+static const UCHAR hostDoTN3270E[] = {IAC,DO,TN3270E};
+static const UCHAR hostSBDevice[] = {IAC,SB,TN3270E,TN3270E_SEND,TN3270E_DEVICE_TYPE,
 			       IAC,SE};
 typedef struct doTable_t {
    UCHAR	*cmd;
@@ -896,10 +896,7 @@ static int ssl_stream_get_next(Tn5250Stream *This,unsigned char *buf,int size)
 
 static int ssl_sendWill(Tn5250Stream *This, unsigned char what)
 {
-   static UCHAR buff[3]={IAC,WILL};
-
-   buff[2] = what;
-
+   UCHAR buff[3]={IAC,WILL, what};
    TN5250_LOG(("SSL_Write: %x %x %x\n", buff[0], buff[1], buff[2]));
    return SSL_write(This->ssl_handle, buff, 3);
 }

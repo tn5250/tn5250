@@ -24,7 +24,7 @@
 
 #include "tn5250-private.h"
 
-static struct response_code {
+static const struct response_code {
    char *code;
    int retval;
    char *text;

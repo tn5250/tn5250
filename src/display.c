@@ -24,6 +24,8 @@
 
 static void tn5250_display_add_dbuffer(Tn5250Display * display,
 				       Tn5250DBuffer * dbuffer);
+void tn5250_display_kf_macro (Tn5250Display *This, int Ch);
+
 
 /****f* lib5250/tn5250_display_new
  * NAME
