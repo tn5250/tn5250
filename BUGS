@@ -31,5 +31,19 @@
     there is a host system to be able to return to.
   </bug>
 
+  <bug>
+    <date>99.10.13.15.23.00</date>
+    <owner email="jasonf@nacs.net">Jay 'Eraserhead' Felice</owner>
+
+    Field minus (ESC M) not wired to anything.
+  </bug>
+
+  <bug>
+    <date>99.10.13.15.23.00</date>
+    <owner email="jasonf@nacs.net">Jay 'Eraserhead' Felice</owner>
+
+    DUP key isn't wired to anything.
+  </bug>
+
 </bugs>
 <!-- vi:set sts=2 sw=2 autoindent: -->
