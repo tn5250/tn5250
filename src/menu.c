@@ -83,9 +83,9 @@ tn5250_menubar_height (Tn5250Menubar * This)
 
 
 int
-tn5250_menubar_size (Tn5250Menubar * This)
+tn5250_menubar_itemsize (Tn5250Menubar * This)
 {
-  return (This->size);
+  return (This->itemsize);
 }
 
 

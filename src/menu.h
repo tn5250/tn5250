@@ -66,7 +66,7 @@ extern "C"
     unsigned char type;
     unsigned int row;		/* Row menubar starts on */
     unsigned int column;	/* Column menubar starts on */
-    unsigned int size;		/* max size (in characters) of menubar item */
+    unsigned int itemsize;	/* max size (in characters) of menubar item */
     unsigned int height;	/* height (in rows) of menubar */
     unsigned int items;		/* number of items on this menubar */
     struct _Tn5250DBuffer *table;
@@ -80,7 +80,7 @@ extern "C"
   extern void tn5250_menubar_destroy (Tn5250Menubar * This);
   extern int tn5250_menubar_start_row (Tn5250Menubar * This);
   extern int tn5250_menubar_start_col (Tn5250Menubar * This);
-  extern int tn5250_menubar_size (Tn5250Menubar * This);
+  extern int tn5250_menubar_itemsize (Tn5250Menubar * This);
   extern int tn5250_menubar_height (Tn5250Menubar * This);
   extern int tn5250_menubar_items (Tn5250Menubar * This);
 
