@@ -350,3 +350,11 @@ static int tn5250_print_session_waitevent(Tn5250PrintSession * This)
 }
 
 /* vi:set sts=3 sw=3: */
+
+
+
+
+
+
+
+
