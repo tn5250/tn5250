@@ -1,3 +1,6 @@
+2000-06-28 Mike Madore <mmadore@turbolinux.com>
+- Preliminary fix for Scott Klement's bogus negative response error.
+	
 2000-06-21 Mike Madore <mmadore@turbolinux.com>
 - Fixed off by one errors when checking screen position validity.  Emulator was
   erroneously sending negative responses when output was to the last row of the
