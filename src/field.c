@@ -347,6 +347,7 @@ int tn5250_field_valid_char (Tn5250Field *field, int ch)
       return (isdigit (ch) ||
 	  ch == ',' ||
 	  ch == '.' ||
+	  ch == '-' ||
 	  ch == ' ');
 
    case TN5250_FIELD_KATA_SHIFT:
