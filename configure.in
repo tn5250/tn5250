@@ -1,5 +1,17 @@
 dnl ** Process this file with autoconf to produce a configure script.
-AC_INIT(src/tn5250.c)
+AC_INIT
+AC_CONFIG_SRCDIR([src/tn5250.c])
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
+
+dnl * Templates for autoheader
+AH_TEMPLATE([SOCKET_TYPE], [Define to your system's socket descriptor type.])
+AH_TEMPLATE([USE_CURSES], [Define this to use the -lncurses or -lcurses support.])
+AH_TEMPLATE([USE_SLANG], [Define this to use the -lslang support.])
+AH_TEMPLATE([attr_t], [Define this to 'int' if your curses doesn't typedef attr_t])
+AH_TEMPLATE([USE_OWN_KEY_PARSING], [Define this to use the new key handler.])
+AH_TEMPLATE([BINARY_RELEASE], [Define this when creating a binary distribution])
+AH_TEMPLATE([NETSHARE400], [Define this when building the special Netshare400 edition])
 
 dnl * Checks for programs.
 AC_PROG_CC
@@ -198,7 +210,6 @@ dnl * True for anything other than Windoze.
 AC_DEFINE_UNQUOTED(SOCKET_TYPE,int)
 
 dnl * Decide whether to use OS-specific directories.
-AC_CANONICAL_HOST
 AC_ARG_ENABLE(os-dir,
 	[--enable-os-dir=DIR    Also install the OS-specific files in DIR.  If
                          DIR is not given, determine it automatically.  If
@@ -220,4 +231,6 @@ esac
 AC_MSG_RESULT(${SUBDIRS_ADD:-none})
 AC_SUBST(SUBDIRS_ADD)
 
-AC_OUTPUT(Makefile src/Makefile tn5250.spec doc/Makefile linux/Makefile freebsd/Makefile win32/Makefile sun/Makefile tn5250-config xt5250)
+AC_CONFIG_FILES([Makefile src/Makefile tn5250.spec doc/Makefile linux/Makefile freebsd/Makefile win32/Makefile sun/Makefile tn5250-config xt5250])
+AC_OUTPUT
+

@@ -1,3 +1,6 @@
+2002-11-18 Scott Klement <klemscot@klements.com>
+- Updated configure.in && autogen.sh to work with newer autoconf/automake
+
 2002-11-04 Scott Klement <klemscot@klements.com>
 - Implemented more of the keyboard states defined in the 5494 functions
    reference manual. (This fixes the display of some error messages,
