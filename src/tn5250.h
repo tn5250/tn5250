@@ -38,6 +38,8 @@ extern "C" {
 #include <tn5250/field.h>
 #include <tn5250/record.h>
 #include <tn5250/stream.h>
+#include <tn5250/scrollbar.h>
+#include <tn5250/window.h>
 
 #include <tn5250/terminal.h>
 #include <tn5250/session.h>
