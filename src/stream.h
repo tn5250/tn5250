@@ -94,6 +94,7 @@ struct _Tn5250Stream {
 #ifdef HAVE_LIBSSL
   SSL *ssl_handle;
   SSL_CTX *ssl_context;
+  void *userdata;
 #endif
 
 #ifndef NDEBUG

@@ -1,3 +1,7 @@
+2001-10-30 Scott Klement <klemscot@klements.com>
+- Implemented SSL client certificates, for use when the AS/400 
+    requires client authentication.
+
 2001-09-28 Scott Klement <klemscot@klements.com>
 - Fixed bug in sslstream.c that would cause the emulator to segfault
     if "This->config" was NULL.

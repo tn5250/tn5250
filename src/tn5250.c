@@ -198,7 +198,11 @@ Options:\n\
 #ifdef HAVE_LIBSSL
    printf ("\
    +/-ssl_verify_server    Verify/don't verify the server's SSL certificate\n\
-   ssl_ca_file=FILE        Use certificate authority (CA) certs from FILE\n");
+   ssl_ca_file=FILE        Use certificate authority (CA) certs from FILE\n\
+   ssl_cert_file=FILE      File containing SSL certificate in PEM format to\n\
+                           use if the AS/400 requires client authentication.\n\
+   ssl_pem_pass=PHRASE     Passphrase to use when decrypting a PEM private\n\
+                           key.  Used in conjunction with ssl_cert_file\n");
 #endif
    printf ("\
    +/-underscores          Use/don't use underscores instead of underline\n\
