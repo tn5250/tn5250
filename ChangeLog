@@ -1,5 +1,5 @@
 2002-03-12 James Rich <james@eaerich.com>
-- Fixed bug with unspecified page sizes in scsp2pdf.  Occasionally the page 
+- Fixed bug with unspecified page sizes in scs2pdf.  Occasionally the page 
   size is specified and we were defaulting to a bad value.  We also would 
   compute incorrect values for unusual page sizes.
 
