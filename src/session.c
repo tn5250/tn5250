@@ -1201,8 +1201,10 @@ static void tn5250_session_start_of_field(Tn5250Session * This)
 
    if (input_field) {
       TN5250_ASSERT (field != NULL);
+      
       endrow = tn5250_field_end_row(field);
       endcol = tn5250_field_end_col(field);
+
       if (endcol == tn5250_display_width(This->display) - 1) { 
 	 endcol = 0;
 	 if (endrow == tn5250_display_height(This->display) - 1)

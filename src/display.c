@@ -609,7 +609,8 @@ void tn5250_display_set_cursor_prev_field(Tn5250Display * This)
  *    Reconstruct WTD data as it might be sent from a host.  We use this
  *    to save our format table and display buffer.  We assume the buffer
  *    has been initialized, and we append to it.
- */void tn5250_display_make_wtd_data (Tn5250Display *This, Tn5250Buffer *buf,
+ */
+void tn5250_display_make_wtd_data (Tn5250Display *This, Tn5250Buffer *buf,
       Tn5250DBuffer *src_dbuffer)
 {
    Tn5250WTDContext *ctx;
