@@ -10,7 +10,7 @@ pkgdata_DATA = dialogrc\
 
 aclocal_DATA = tn5250.m4
 
-aclocaldir = /usr/share/aclocal
+aclocaldir = $(datadir)/aclocal
 
 EXTRA_DIST = acconfig.h\
 	tn5250-48x48.xpm\

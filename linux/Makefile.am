@@ -22,14 +22,14 @@ install-data-local:
 		rm -f /usr/share/terminfo/5/5250 ; \
 		rm -f /usr/lib/terminfo/x/xterm-5250 ; \
 		rm -f /usr/lib/terminfo/5/5250 ; \
-		tic 5250.terminfo || exit $$? ; \
 		good=yes ; \
+		tic $(srcdir)/5250.terminfo || good=no ; \
 	      else \
 		mkdir -p ~/.terminfo || exit $$? ; \
 		rm -f ~/.terminfo/x/xterm-5250 ; \
 		rm -f ~/.terminfo/5/5250 ; \
-		tic 5250.terminfo || exit $$? ; \
 		good=yes ; \
+		tic $(srcdir)/5250.terminfo || good=no ; \
 	      fi ; \
 	    fi ; \
 	  else \
