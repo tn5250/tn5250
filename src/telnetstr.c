@@ -650,7 +650,8 @@ static int telnet_stream_get_next(Tn5250Stream * This, unsigned char *buf, int s
 
 static int sendWill(SOCKET_TYPE sock, unsigned char what)
 {
-   UCHAR buff[3]={IAC,WILL, what};
+   UCHAR buff[3]={IAC,WILL};
+   buff[2] = what;
    return send(sock, buff, 3, 0);
 }
 
@@ -1022,28 +1023,23 @@ static void telnet_stream_sb(Tn5250Stream * This, unsigned char *sb_buf, int sb_
  *    is waiting on the socket or -2 if disconnected, or -END_OF_RECORD if a 
  *    telnet EOR escape sequence was encountered.
  *****/
-#define TN5250_RBSIZE 8192
 static int telnet_stream_get_byte(Tn5250Stream * This)
 {
    int temp;
    unsigned char verb;
-   static unsigned char rcvbuf[TN5250_RBSIZE];
-   static int rcvbufpos = 0;
-   static int rcvbuflen = -1;
-   
 
    do {
       if (This->state == TN5250_STREAM_STATE_NO_DATA)
 	 This->state = TN5250_STREAM_STATE_DATA;
 
-      rcvbufpos ++;
-      if (rcvbufpos >= rcvbuflen) {
-          rcvbufpos = 0;
-          rcvbuflen = telnet_stream_get_next(This, rcvbuf, TN5250_RBSIZE);
-          if (rcvbuflen<0) 
-               return rcvbuflen;
+      This->rcvbufpos ++;
+      if (This->rcvbufpos >= This->rcvbuflen) {
+          This->rcvbufpos = 0;
+          This->rcvbuflen = telnet_stream_get_next(This, This->rcvbuf, TN5250_RBSIZE);
+          if (This->rcvbuflen<0) 
+               return This->rcvbuflen;
       }
-      temp = rcvbuf[rcvbufpos];
+      temp = This->rcvbuf[This->rcvbufpos];
 
       switch (This->state) {
       case TN5250_STREAM_STATE_DATA:

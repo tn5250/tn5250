@@ -23,6 +23,7 @@
 
 /* External declarations of initializers for each type of stream. */
 extern int tn5250_telnet_stream_init (Tn5250Stream *This);
+extern int tn3270_telnet_stream_init (Tn5250Stream *This);
 #ifdef HAVE_LIBSSL
 extern int tn5250_ssl_stream_init (Tn5250Stream *This);
 #endif
@@ -33,13 +34,13 @@ extern int tn5250_debug_stream_init (Tn5250Stream *This);
 /* This structure and the stream_types[] array defines what types of
  * streams we can create. */
 struct _Tn5250StreamType {
-   char *prefix;
+   const char *prefix;
    int (* init) (Tn5250Stream *This);
 };
 
 typedef struct _Tn5250StreamType Tn5250StreamType;
 
-static Tn5250StreamType stream_types[] = {
+static const Tn5250StreamType stream_types[] = {
 #ifndef NDEBUG
    { "debug:", tn5250_debug_stream_init },
 #endif
@@ -68,6 +69,8 @@ static void streamInit(Tn5250Stream *This, long timeout)
   This->sockfd = (SOCKET_TYPE) - 1;
   This->msec_wait = timeout;
   This->streamtype = TN5250_STREAM;
+  This->rcvbufpos = 0;
+  This->rcvbuflen = -1;
   tn5250_buffer_init(&(This->sb_buf));
 }
 
@@ -98,7 +101,7 @@ static void streamInit(Tn5250Stream *This, long timeout)
 Tn5250Stream *tn5250_stream_open (const char *to, Tn5250Config *config)
 {
    Tn5250Stream *This = tn5250_new(Tn5250Stream, 1);
-   Tn5250StreamType *iter;
+   const Tn5250StreamType *iter;
    const char *postfix;
    int ret;
 
