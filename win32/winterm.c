@@ -1126,11 +1126,13 @@ static int win32_terminal_waitevent(Tn5250Terminal * This)
    if (This->data->quit_flag)
       return TN5250_TERMINAL_EVENT_QUIT;
 
-   if (WSAAsyncSelect(This->conn_fd, This->data->hwndMain, 
-          WM_TN5250_STREAM_DATA, FD_READ) == SOCKET_ERROR) {
-      TN5250_LOG(("WIN32: WSAASyncSelect failed, reason: %d\n", 
-            WSAGetLastError()));
-      return TN5250_TERMINAL_EVENT_QUIT;
+   if (This->conn_fd != -1) {
+        if (WSAAsyncSelect(This->conn_fd, This->data->hwndMain, 
+               WM_TN5250_STREAM_DATA, FD_READ) == SOCKET_ERROR) {
+           TN5250_LOG(("WIN32: WSAASyncSelect failed, reason: %d\n", 
+                 WSAGetLastError()));
+           return TN5250_TERMINAL_EVENT_QUIT;
+        }
    }
 
    result = TN5250_TERMINAL_EVENT_QUIT;
@@ -1147,7 +1149,8 @@ static int win32_terminal_waitevent(Tn5250Terminal * This)
       }
    }
 
-   WSAAsyncSelect(This->conn_fd, This->data->hwndMain, 0, 0);
+   if (This->conn_fd != -1) 
+        WSAAsyncSelect(This->conn_fd, This->data->hwndMain, 0, 0);
 
    return result;
 }

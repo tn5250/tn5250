@@ -1,3 +1,7 @@
+2002-03-25 Scott Klement <klemscot@klements.com>
+- Changed the win32_terminal_waitevent func so that it's compatible
+  with the debug.c code.
+
 2002-03-20 Scott Klement <klemscot@klements.com>
 - Changed the GPL license to the LGPL license, after gaining permission
   from the various copyright holders.  This will allow us to create
