@@ -1,3 +1,7 @@
+2001-06-29 Scott Klement <klemscot@klements.com>
+- Applied Martin Rowe's patch to fix 80 to 132 col screen resizing when
+    changing fonts. (along with my own update to his patch)
+    
 2001-06-20 Carey Evans  <carey@paradise.net.nz>
 - Add --enable-os-dir option to configure.in for selecting linux or
   freebsd directory.
