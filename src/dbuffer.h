@@ -59,7 +59,7 @@ extern "C" {
    extern void tn5250_dbuffer_addch(Tn5250DBuffer * This, unsigned char c);
    extern void tn5250_dbuffer_del(Tn5250DBuffer * This, int shiftcount);
    extern void tn5250_dbuffer_ins(Tn5250DBuffer * This, unsigned char c, int shiftcount);
-   extern void tn5250_dbuffer_set_temp_ic(Tn5250DBuffer * This, int y, int x);
+   extern void tn5250_dbuffer_set_ic(Tn5250DBuffer * This, int y, int x);
    extern void tn5250_dbuffer_roll(Tn5250DBuffer * This, int top, int bot, int lines);
 
    extern unsigned char tn5250_dbuffer_char_at(Tn5250DBuffer * This, int y, int x);

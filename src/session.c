@@ -200,14 +200,11 @@ static void tn5250_session_handle_key(Tn5250Session * This, int cur_key)
 {
    int send = 0;
    unsigned char aidcode;
-   int X, Y;
    Tn5250Field *field;
 
    TN5250_LOG(("HandleKey: entered.\n"));
 
    TN5250_LOG(("@key %d\n", cur_key));
-   X = tn5250_display_cursor_x(This->display);
-   Y = tn5250_display_cursor_y(This->display);
 
    if (tn5250_display_inhibited(This->display)) {
       if (cur_key != K_SYSREQ && cur_key != K_RESET) {
@@ -222,16 +219,16 @@ static void tn5250_session_handle_key(Tn5250Session * This, int cur_key)
 
    case K_BACKSPACE:
    case K_LEFT:
-      tn5250_dbuffer_left(This->dsp);
+      tn5250_display_kf_left (This->display);
       break;
    case K_RIGHT:
-      tn5250_dbuffer_right(This->dsp, 1);
+      tn5250_display_kf_right (This->display);
       break;
    case K_UP:
-      tn5250_dbuffer_up(This->dsp);
+      tn5250_display_kf_up (This->display);
       break;
    case K_DOWN:
-      tn5250_dbuffer_down(This->dsp);
+      tn5250_display_kf_down (This->display);
       break;
    case (K_F1):
       send = 1;
@@ -336,7 +333,7 @@ static void tn5250_session_handle_key(Tn5250Session * This, int cur_key)
 
    case (K_HOME):
       if (This->pending_insert)
-	 tn5250_dbuffer_goto_ic(This->dsp);
+	 tn5250_display_goto_ic(This->display);
       else {
 	 int gx, gy;
 	 field = tn5250_display_current_field (This->display);
@@ -354,46 +351,23 @@ static void tn5250_session_handle_key(Tn5250Session * This, int cur_key)
       break;
 
    case (K_END):
-      field = tn5250_display_current_field(This->display);
-      if (field != NULL && !tn5250_field_is_bypass(field)) {
-	 tn5250_display_set_cursor (This->display,
-	       tn5250_field_end_row (field),
-	       tn5250_field_end_col (field));
-      } else
-	 tn5250_display_inhibit(This->display);
+      tn5250_display_kf_end (This->display);
       break;
 
    case (K_DELETE):
-      field = tn5250_display_current_field (This->display);
-      if (field == NULL || tn5250_field_is_bypass(field))
-	 tn5250_display_inhibit(This->display);
-      else {
-	 int shiftcount = tn5250_field_count_right(field, Y, X);
-	 tn5250_dbuffer_del(This->dsp, shiftcount);
-      }
+      tn5250_display_kf_delete (This->display);
       break;
 
    case (K_INSERT):
-      if ((tn5250_display_indicators(This->display) & TN5250_DISPLAY_IND_INSERT)
-	  != 0)
-	 tn5250_display_indicator_clear(This->display, TN5250_DISPLAY_IND_INSERT);
-      else
-	 tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_INSERT);
+      tn5250_display_kf_insert (This->display);
       break;
 
    case (K_TAB):
-      tn5250_display_set_cursor_next_field (This->display);
+      tn5250_display_kf_tab (This->display);
       break;
 
    case (K_BACKTAB):
-      /* Backtab: Move to start of this field, or start of 
-       * previous field if already there. */
-      field = tn5250_display_current_field (This->display);
-      if (field == NULL || tn5250_field_count_left(field,
-	       tn5250_display_cursor_y(This->display),
-	       tn5250_display_cursor_x(This->display)) == 0)
-	 field = tn5250_display_prev_field (This->display);
-      tn5250_display_set_cursor_field (This->display, field);
+      tn5250_display_kf_backtab (This->display);
       break;
 
    case (K_ENTER):
@@ -412,11 +386,11 @@ static void tn5250_session_handle_key(Tn5250Session * This, int cur_key)
       break;
 
    case (K_FIELDEXIT):
-      tn5250_display_field_exit (This->display);
+      tn5250_display_kf_field_exit (This->display);
       break;
 
    case K_FIELDMINUS:
-      tn5250_display_field_minus (This->display);
+      tn5250_display_kf_field_minus (This->display);
       break;
 
    case K_SYSREQ:
@@ -432,13 +406,16 @@ static void tn5250_session_handle_key(Tn5250Session * This, int cur_key)
       break;
 
    case K_DUPLICATE:
-      tn5250_display_dup(This->display);
+      tn5250_display_kf_dup(This->display);
       break;
 
    default:
       TN5250_LOG(("HandleKey: cur_key = %c\n", cur_key));
-      if (cur_key >= 0 && cur_key <= 255)
+      if (cur_key >= ' ' && cur_key <= 255)
 	 tn5250_display_interactive_addch (This->display, cur_key);
+      else {
+	 TN5250_LOG (("Weird Key handled in default clause: %d\n", cur_key));
+      }
    }
    if (send) {
       tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_X_SYSTEM);
@@ -905,7 +882,7 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
    TN5250_LOG(("\n"));
 
    if (This->pending_insert)
-      tn5250_dbuffer_goto_ic(This->dsp);
+      tn5250_display_goto_ic(This->display);
    else {
       /* Set the cursor to the first non-bypass field, if there is one.  If
        * not, set cursor position to 0,0 */
@@ -950,41 +927,26 @@ static void tn5250_session_clear_unit(Tn5250Session * This)
 {
    TN5250_LOG(("ClearUnit: entered.\n"));
 
-   tn5250_table_clear(This->table);
-   tn5250_dbuffer_set_size(This->dsp, 24, 80);
-   tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_X_SYSTEM);
-   tn5250_display_indicator_clear(This->display, TN5250_DISPLAY_IND_INSERT | TN5250_DISPLAY_IND_INHIBIT);
+   tn5250_display_clear_unit(This->display);
    This->read_opcode = 0;
-   tn5250_dbuffer_set_temp_ic(This->dsp, 0, 0);
-
 }
 
 static void tn5250_session_clear_unit_alternate(Tn5250Session * This)
 {
    unsigned char c;
-
    TN5250_LOG(("tn5250_session_clear_unit_alternate entered.\n"));
    c = tn5250_record_get_byte(This->record);
    TN5250_LOG(("tn5250_session_clear_unit_alternate, parameter is 0x%02X.\n",
 	(int) c));
-   tn5250_table_clear(This->table);
-   tn5250_dbuffer_set_size(This->dsp, 27, 132);
-   tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_X_SYSTEM);
-   tn5250_display_indicator_clear(This->display, TN5250_DISPLAY_IND_INSERT | TN5250_DISPLAY_IND_INHIBIT);
+   tn5250_display_clear_unit_alternate(This->display);
    This->read_opcode = 0;
-   tn5250_dbuffer_set_temp_ic(This->dsp, 0, 0);
-   tn5250_display_update(This->display);
 }
 
 static void tn5250_session_clear_format_table(Tn5250Session * This)
 {
    TN5250_LOG(("ClearFormatTable: entered.\n"));
-   tn5250_table_clear(This->table);
-   tn5250_display_set_cursor(This->display, 0, 0);
-   tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_X_SYSTEM);
-   tn5250_display_indicator_clear(This->display, TN5250_DISPLAY_IND_INSERT);
+   tn5250_display_clear_format_table(This->display);
    This->read_opcode = 0;
-   tn5250_display_update(This->display);
 }
 
 static void tn5250_session_read_immediate(Tn5250Session * This)
@@ -1141,7 +1103,7 @@ static void tn5250_session_roll(Tn5250Session * This)
    if (lines == 0)
       return;
 
-   tn5250_dbuffer_roll(This->dsp, top, bot, lines);
+   tn5250_display_roll(This->display, top, bot, lines);
    tn5250_display_update(This->display);
 }
 
@@ -1342,7 +1304,7 @@ static void tn5250_session_insert_cursor(Tn5250Session * This)
 
    TN5250_LOG(("InsertCursor: row = %d; col = %d\n", cur_char1, cur_char2));
 
-   tn5250_dbuffer_set_temp_ic(This->dsp, cur_char1 - 1, cur_char2 - 1);
+   tn5250_display_set_ic(This->display, cur_char1 - 1, cur_char2 - 1);
    This->pending_insert = 1;
 }
 

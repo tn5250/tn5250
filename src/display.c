@@ -411,11 +411,11 @@ void tn5250_display_interactive_addch(Tn5250Display * This, unsigned char ch)
    if (tn5250_field_is_num_only(field) || tn5250_field_is_signed_num(field)) {
       switch (ch) {
       case '+':
-	 tn5250_display_field_plus(This);
+	 tn5250_display_kf_field_plus(This);
 	 return;
 
       case '-':
-	 tn5250_display_field_minus(This);
+	 tn5250_display_kf_field_minus(This);
 	 return;
       }
    }
@@ -518,7 +518,7 @@ void tn5250_display_shift_right(Tn5250Display * This, Tn5250Field * field, unsig
 
 /*
  *    Adjust the field data as required by the Field Format Word.  This is
- *    called from tn5250_display_field_exit.
+ *    called from tn5250_display_kf_field_exit.
  */
 void tn5250_display_field_adjust(Tn5250Display * This, Tn5250Field * field)
 {
@@ -550,7 +550,7 @@ void tn5250_display_field_adjust(Tn5250Display * This, Tn5250Field * field)
 /*
  *    Process a field exit function.
  */
-void tn5250_display_field_exit(Tn5250Display * This)
+void tn5250_display_kf_field_exit(Tn5250Display * This)
 {
    Tn5250Field *field;
    unsigned char *data;
@@ -582,7 +582,7 @@ void tn5250_display_field_exit(Tn5250Display * This)
 /*
  *    Process a field plus function.
  */
-void tn5250_display_field_plus(Tn5250Display * This)
+void tn5250_display_kf_field_plus(Tn5250Display * This)
 {
    Tn5250Field *field;
    unsigned char *data;
@@ -598,7 +598,7 @@ void tn5250_display_field_plus(Tn5250Display * This)
       return;
    }
 
-   tn5250_display_field_exit(This);
+   tn5250_display_kf_field_exit(This);
 
    /* For numeric only fields, we change the zone of the last digit if
     * field plus is pressed.  For signed numeric fields, we change the
@@ -615,7 +615,7 @@ void tn5250_display_field_plus(Tn5250Display * This)
 /*
  *    Process a field minus function.
  */
-void tn5250_display_field_minus(Tn5250Display * This)
+void tn5250_display_kf_field_minus(Tn5250Display * This)
 {
    Tn5250Field *field;
    unsigned char *data;
@@ -631,7 +631,7 @@ void tn5250_display_field_minus(Tn5250Display * This)
       return;
    }
 
-   tn5250_display_field_exit(This);
+   tn5250_display_kf_field_exit(This);
 
    /* For numeric only fields, we change the zone of the last digit if
     * field minus is pressed.  For signed numeric fields, we change the
@@ -656,7 +656,7 @@ void tn5250_display_q_aidcode (Tn5250Display *This, int aidcode)
 /*
  *    Process a DUP key function.
  */
-void tn5250_display_dup(Tn5250Display * This)
+void tn5250_display_kf_dup(Tn5250Display * This)
 {
    int y, x, i;
    Tn5250Field *field;
@@ -714,6 +714,161 @@ void tn5250_display_indicator_clear (Tn5250Display *This, int inds)
 {
    This->indicators &= ~inds;
    This->indicators_dirty = 1;
+}
+
+/*
+ *    Clear the display and set the display size to 24x80.
+ */
+void tn5250_display_clear_unit (Tn5250Display *This)
+{
+   tn5250_table_clear(This->format_tables);
+   tn5250_dbuffer_set_size(This->display_buffers, 24, 80);
+   tn5250_display_indicator_set(This, TN5250_DISPLAY_IND_X_SYSTEM);
+   tn5250_display_indicator_clear(This,
+	 TN5250_DISPLAY_IND_INSERT | TN5250_DISPLAY_IND_INHIBIT);
+   tn5250_dbuffer_set_ic(This->display_buffers, 0, 0);
+}
+
+/*
+ *    Clear the display and set the display size to 27x132.
+ */
+void tn5250_display_clear_unit_alternate (Tn5250Display *This)
+{
+   tn5250_table_clear(This->format_tables);
+   tn5250_dbuffer_set_size(This->display_buffers, 27, 132);
+   tn5250_display_indicator_set(This, TN5250_DISPLAY_IND_X_SYSTEM);
+   tn5250_display_indicator_clear(This,
+	 TN5250_DISPLAY_IND_INSERT | TN5250_DISPLAY_IND_INHIBIT);
+   tn5250_dbuffer_set_ic(This->display_buffers, 0, 0);
+}
+
+/*
+ *    Clear the format table.
+ */
+void tn5250_display_clear_format_table (Tn5250Display *This)
+{
+   tn5250_table_clear(This->format_tables);
+   tn5250_display_set_cursor(This, 0, 0);
+   tn5250_display_indicator_set(This, TN5250_DISPLAY_IND_X_SYSTEM);
+   tn5250_display_indicator_clear(This, TN5250_DISPLAY_IND_INSERT);
+}
+
+/*
+ *    Move the cursor left.
+ */
+void tn5250_display_kf_left (Tn5250Display *This)
+{
+   tn5250_dbuffer_left (This->display_buffers);
+}
+
+/*
+ *    Move the cursor right.
+ */
+void tn5250_display_kf_right (Tn5250Display *This)
+{
+   tn5250_dbuffer_right (This->display_buffers, 1);
+}
+
+/*
+ *    Move the cursor up.
+ */
+void tn5250_display_kf_up (Tn5250Display *This)
+{
+   tn5250_dbuffer_up (This->display_buffers);
+}
+
+/*
+ *    Move the cursor down.
+ */
+void tn5250_display_kf_down (Tn5250Display *This)
+{
+   tn5250_dbuffer_down (This->display_buffers);
+}
+
+/*
+ *    Toggle the insert indicator.
+ */
+void tn5250_display_kf_insert (Tn5250Display *This)
+{
+   if ((tn5250_display_indicators(This) & TN5250_DISPLAY_IND_INSERT) != 0)
+      tn5250_display_indicator_clear(This, TN5250_DISPLAY_IND_INSERT);
+   else
+      tn5250_display_indicator_set(This, TN5250_DISPLAY_IND_INSERT);
+}
+
+/*
+ *    Tab function.
+ */
+void tn5250_display_kf_tab (Tn5250Display *This)
+{
+   tn5250_display_set_cursor_next_field (This);
+}
+
+/*
+ *    Backwards tab function.
+ */
+void tn5250_display_kf_backtab (Tn5250Display *This)
+{
+   /* Backtab: Move to start of this field, or start of 
+    * previous field if already there. */
+   Tn5250Field *field = tn5250_display_current_field (This);
+   if (field == NULL || tn5250_field_count_left(field,
+	    tn5250_display_cursor_y(This),
+	    tn5250_display_cursor_x(This)) == 0)
+      field = tn5250_display_prev_field (This);
+
+   if (field != NULL)
+      tn5250_display_set_cursor_field (This, field);
+   else
+      tn5250_display_set_cursor_home (This);
+}
+
+/*
+ *    End key function.
+ */
+void tn5250_display_kf_end (Tn5250Display *This)
+{
+   Tn5250Field *field = tn5250_display_current_field(This);
+   if (field != NULL && !tn5250_field_is_bypass(field)) {
+      unsigned char *data = tn5250_display_field_data (This, field);
+      int i = tn5250_field_length (field) - 1;
+      int y = tn5250_field_start_row (field);
+      int x = tn5250_field_start_col (field);
+
+      if (data[i] == '\0') {
+	 while (i > 0 && data[i] == '\0')
+	    i--;
+	 while (i >= 0) {
+	    if (++x == tn5250_display_width(This)) {
+	       x = 0;
+	       if (++y == tn5250_display_height(This))
+		  y = 0;
+	    }
+	    i--;
+	 }
+      } else {
+	 y = tn5250_field_end_row (field);
+	 x = tn5250_field_end_col (field);
+      }
+      tn5250_display_set_cursor (This, y, x);
+   } else
+      tn5250_display_inhibit(This);
+}
+
+/*
+ *    Delete key function.
+ */
+void tn5250_display_kf_delete (Tn5250Display *This)
+{
+   Tn5250Field *field = tn5250_display_current_field (This);
+   if (field == NULL || tn5250_field_is_bypass(field))
+      tn5250_display_inhibit(This);
+   else {
+      tn5250_dbuffer_del(This->display_buffers,
+	    tn5250_field_count_right (field,
+	       tn5250_display_cursor_y (This),
+	       tn5250_display_cursor_x (This)));
+   }
 }
 
 /* vi:set cindent sts=3 sw=3: */

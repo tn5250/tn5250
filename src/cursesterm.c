@@ -429,13 +429,16 @@ static int curses_terminal_getkey(Tn5250Terminal * This)
 	 return K_ROLLDN;
 
       case KEY_C1:
-	 return KEY_END;
+	 return K_END;
 
       case KEY_C3:
 	 return K_ROLLUP;
 
       case KEY_ENTER:
 	 return K_FIELDEXIT;
+
+      case KEY_END:
+	 return K_END;
 
       default:
 	 return key;

@@ -221,7 +221,7 @@ void tn5250_dbuffer_ins(Tn5250DBuffer * This, unsigned char c, int shiftcount)
    ASSERT_VALID(This);
 }
 
-void tn5250_dbuffer_set_temp_ic(Tn5250DBuffer * This, int y, int x)
+void tn5250_dbuffer_set_ic(Tn5250DBuffer * This, int y, int x)
 {
    This->tcx = x;
    This->tcy = y;

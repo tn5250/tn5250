@@ -1,6 +1,7 @@
 xt5250*VT100.Translations: #override\n\
 	<Key>KP_Enter: string("\033OM") \n\
 	<Key>BackSpace: string("\177") \n\
+	<Key>End: string("\033[4~") \n\
         ~Shift <Key>F1:  string("\033[[A") \n\
         ~Shift <Key>F2:  string("\033[[B") \n\
         ~Shift <Key>F3:  string("\033[[C") \n\

@@ -1,3 +1,9 @@
+1999-11-27 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- 'End' key now mapped properly in Xdefaults for xterm-5250.
+- End key now moves to the cell just after the last non-null cell, unless the
+  last cell in the field is non-null, then it just moves to the last cell.
+
 1999-11-23 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 
 - Terminals now take pointers to displays instead of display buffers to
