@@ -371,7 +371,7 @@ int tn5250_ssl_stream_init (Tn5250Stream *This)
 
 /* if a certificate authority file is defined, load it into this context */
 
-   if (tn5250_config_get (This->config, "ssl_ca_file")) {
+   if (This->config!=NULL && tn5250_config_get (This->config, "ssl_ca_file")) {
         if (SSL_CTX_load_verify_locations(This->ssl_context, 
                   tn5250_config_get (This->config, "ssl_ca_file"), NULL)<1) {
             DUMP_ERR_STACK ();
@@ -420,7 +420,7 @@ int tn3270_ssl_stream_init (Tn5250Stream *This)
 
 /* if a certificate authority file is defined, load it into this context */
 
-   if (tn5250_config_get (This->config, "ssl_ca_file")) {
+   if (This->config!=NULL && tn5250_config_get (This->config, "ssl_ca_file")) {
         if (SSL_CTX_load_verify_locations(This->ssl_context, 
                   tn5250_config_get (This->config, "ssl_ca_file"), NULL)<1) {
             DUMP_ERR_STACK ();
@@ -558,7 +558,8 @@ static int ssl_stream_connect(Tn5250Stream * This, const char *to)
         } else {
            TN5250_LOG(("SSL Certificate verification failed, reason: %d\n", 
 		certvfy));
-           if (tn5250_config_get_bool (This->config, "ssl_verify_server")) 
+           if (This->config!=NULL && 
+              tn5250_config_get_bool (This->config, "ssl_verify_server")) 
                 return -1;
         }
    }
