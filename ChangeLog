@@ -1,3 +1,9 @@
+2001-09-25 Scott Klement <klemscot@klements.com>
+- Added an "SSL stream" object for encrypted streams
+- Added "ssl:" type to URL.  (tn5250 ssl:as400.whatever.com)
+- Added autoconf checks for OpenSSL libraries, to enable SSL code
+    when OpenSSL is found, and to ignore it when OpenSSL not found
+
 2001-09-04 Scott Klement <klemscot@klements.com>
 - Improved "next word" and "prev word" key handling
 - Added "field home" (Shift-Home) key handling

@@ -29,6 +29,7 @@ lib5250_la_SOURCES =	buffer.c\
 			record.c\
 			session.c\
 			slangterm.c\
+			sslstream.c\
 			stream.c\
 			terminal.c\
 			telnetstr.c\
