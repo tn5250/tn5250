@@ -249,12 +249,42 @@ Tn5250Record *tn5250_stream_get_record(Tn5250Stream * This)
    record = This->records;
    TN5250_ASSERT(This->record_count >= 1);
    TN5250_ASSERT(record != NULL);
+
    This->records = tn5250_record_list_remove(This->records, record);
    This->record_count--;
 
    TN5250_ASSERT(tn5250_record_length(record)>= 10);
 
    offset = 6 + tn5250_record_data(record)[6];
+
+   TN5250_LOG(("tn5250_stream_get_record: offset = %d\n", offset));
+   tn5250_record_set_cur_pos(record, offset);
+   return record;
+}
+
+/****f* lib5250/tn3270_stream_get_record
+ * NAME
+ *    tn3270_stream_get_record
+ * SYNOPSIS
+ *    ret = tn3270_stream_get_record (This);
+ * INPUTS
+ *    Tn3270Stream *       This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
+Tn5250Record *tn3270_stream_get_record(Tn5250Stream * This)
+{
+   Tn5250Record *record;
+   int offset;
+
+   record = This->records;
+   TN5250_ASSERT(This->record_count >= 1);
+   TN5250_ASSERT(record != NULL);
+
+   This->records = tn5250_record_list_remove(This->records, record);
+   This->record_count--;
+
+   offset = 0;
 
    TN5250_LOG(("tn5250_stream_get_record: offset = %d\n", offset));
    tn5250_record_set_cur_pos(record, offset);
