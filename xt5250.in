@@ -24,7 +24,7 @@ get_host () {
       -h|--help)
         exec "$bindir/tn5250";;
       -V|--version)
-        exec "$bindir/tn5250 -V";;
+        exec "$bindir/tn5250" -V;;
       -m|-s|-t|-y)
 	shift
 	;;
