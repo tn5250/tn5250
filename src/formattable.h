@@ -65,7 +65,6 @@ extern "C" {
    extern void tn5250_table_del_char(Tn5250Table * This, int y, int x);
    extern void tn5250_table_ins_char(Tn5250Table * This, int y, int x, unsigned char c);
    extern void tn5250_table_add_char(Tn5250Table * This, int y, int x, unsigned char c);
-   extern void tn5250_table_put_char(Tn5250Table * This, int y, int x, unsigned char cur_order);
    extern void tn5250_table_process_adjust(Tn5250Table * This, Tn5250Display * dsp, int y, int x);
 
    extern Tn5250Field *tn5250_table_field_yx (Tn5250Table *This, int y, int x);

@@ -319,34 +319,15 @@ void tn5250_table_clear(Tn5250Table * This)
 
 void tn5250_table_add_char(Tn5250Table * This, int y, int x, unsigned char Data)
 {
-   int fieldnum;
    int ins_loc;
    Tn5250Field *field;
 
-   fieldnum = tn5250_table_field_number(This, y, x);
-   field = tn5250_field_list_find_by_id(This->field_list, fieldnum);
+   field = tn5250_table_field_yx(This,y,x);
    TN5250_ASSERT(field != NULL);
    TN5250_ASSERT(!tn5250_field_is_bypass (field));
 
    ins_loc = tn5250_field_count_left(field, y, x);
 
-   tn5250_field_put_char(field, ins_loc, Data);
-   tn5250_field_set_mdt(field);
-}
-
-void tn5250_table_put_char(Tn5250Table * This, int y, int x, unsigned char Data)
-{
-   Tn5250Field *field;
-   int fieldnum;
-   int ins_loc;
-
-   fieldnum = tn5250_table_field_number(This, y, x);
-   field = tn5250_field_list_find_by_id(This->field_list, fieldnum);
-
-   TN5250_ASSERT(field != NULL);
-   TN5250_ASSERT(!tn5250_field_is_bypass (field));
-
-   ins_loc = tn5250_field_count_left(field, y, x);
    tn5250_field_put_char(field, ins_loc, Data);
    tn5250_field_set_mdt(field);
 }
