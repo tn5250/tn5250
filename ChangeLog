@@ -1,3 +1,8 @@
+2001-09-04 Scott Klement <klemscot@klements.com>
+- Improved "next word" and "prev word" key handling
+- Added "field home" (Shift-Home) key handling
+- Mapped Shift-Home to this new key in XTerm
+
 2001-09-03 Scott Klement <klemscot@klements.com>
 - Added "next word" and "prev word" key handling
 - Mapped Shift-Left and Shift-Right to these new keys in XTerm

@@ -720,24 +720,33 @@ int tn5250_dbuffer_msg_line (Tn5250DBuffer *This)
  *****/
 void tn5250_dbuffer_prevword(Tn5250DBuffer * This)
 {
-   int newx;
-   int pos;
    int foundblank=0;
+   int state=0;
+   int maxiter;
 
    TN5250_LOG (("dbuffer_prevword: entered.\n"));
 
-   newx = -1;
-   for (pos=This->cx; pos>=0; pos--) {
-        if (This->data[This->cy * This->w + pos] <= 0x40) foundblank++;
-        if ((foundblank) && (This->data[This->cy * This->w + pos] > 0x40)) {
-           newx = pos;
-           break;
+   maxiter = (This->w * This->h);
+   TN5250_ASSERT(maxiter>0);
+
+   while (--maxiter) {
+        tn5250_dbuffer_left(This);
+        switch (state) {
+           case 0:
+              if (This->data[This->cy * This->w + This->cx] <= 0x40) state++;
+              break;
+           case 1:
+              if (This->data[This->cy * This->w + This->cx] > 0x40) state++;
+              break;
+           case 2:
+              if (This->data[This->cy * This->w + This->cx] <= 0x40) {
+                   tn5250_dbuffer_right(This, 1);
+                   return;
+              }
+              break;
         }
    }
   
-   if (newx != -1) This->cx = newx;
-
-   ASSERT_VALID(This);
 }
 
 /****f* lib5250/tn5250_dbuffer_nextword
@@ -752,22 +761,21 @@ void tn5250_dbuffer_prevword(Tn5250DBuffer * This)
  *****/
 void tn5250_dbuffer_nextword(Tn5250DBuffer * This)
 {
-   int newx;
-   int pos;
    int foundblank=0;
+   int maxiter;
 
    TN5250_LOG (("dbuffer_nextword: entered.\n"));
 
-   newx = -1;
-   for (pos=This->cx; pos<This->w; pos++) {
-        if (This->data[This->cy * This->w + pos] <= 0x40) foundblank++;
-        if ((foundblank) && (This->data[This->cy * This->w + pos] > 0x40)) {
-           newx = pos;
+   maxiter = (This->w * This->h);
+   TN5250_ASSERT(maxiter>0);
+
+   while (--maxiter) {
+      tn5250_dbuffer_right(This, 1);
+      if (This->data[This->cy * This->w + This->cx] <= 0x40) foundblank++;
+      if ((foundblank) && (This->data[This->cy * This->w + This->cx] > 0x40)) {
            break;
-        }
+      }
    }
-  
-   if (newx != -1) This->cx = newx;
 
    ASSERT_VALID(This);
 }
