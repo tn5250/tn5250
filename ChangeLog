@@ -1,5 +1,6 @@
 2005-04-04 James Rich <james@eaerich.com>
 - Fix cursor positioning in word wrap support.
+- Bump version number.
 
 2005-04-03 James Rich <james@eaerich.com>
 - Fix several bugs in word wrap support.
