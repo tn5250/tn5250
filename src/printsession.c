@@ -5,8 +5,45 @@
 #include "record.h"
 #include "stream.h"
 #include <sys/time.h>
-#include "printsession.h"
 #include "utility.h"
+#include "printsession.h"
+
+static struct response_code {
+   char *code;
+   int retval;
+   char *text;
+} response_codes[] = {
+   { "I901", 1, "Virtual device has less function than source device." },
+   { "I902", 1, "Session successfully started." },
+   { "I906", 1, "Automatic sign-on requested, but not allowed.  A sign-on screen will follow." },
+   { "2702", 0, "Device description not found." },
+   { "2703", 0, "Controller description not found." },
+   { "2777", 0, "Damaged device description." },
+   { "8901", 0, "Device not varied on." },
+   { "8902", 0, "Device not available." },
+   { "8903", 0, "Device not valid for session." },
+   { "8906", 0, "Session initiation failed." },
+   { "8907", 0, "Session failure." },
+   { "8910", 0, "Controller not valid for session." },
+   { "8916", 0, "No matching device found." },
+   { "8917", 0, "Not authorized to object." },
+   { "8918", 0, "Job cancelled." },
+   { "8920", 0, "Object partially damaged." },  /* As opposed to fully damaged? */
+   { "8921", 0, "Communications error." },
+   { "8922", 0, "Negative response received." }, /* From what?!? */
+   { "8923", 0, "Start-up record built incorrectly." },
+   { "8925", 0, "Creation of device failed." },
+   { "8928", 0, "Change of device failed." },
+   { "8929", 0, "Vary on or vary off failed." },
+   { "8930", 0, "Message queue does not exist." },
+   { "8934", 0, "Start up for S/36 WSF received." },
+   { "8935", 0, "Session rejected." },
+   { "8936", 0, "Security failure on session attempt." },
+   { "8937", 0, "Automatic sign-on rejected." },
+   { "8940", 0, "Automatic configuration failed or not allowed." },
+   { "I904", 0, "Source system at incompatible release." },
+   { NULL, 0, NULL }
+};
 
 static int tn5250_print_session_waitevent(Tn5250PrintSession * This);
 
@@ -38,6 +75,8 @@ Tn5250PrintSession *tn5250_print_session_new()
    This->printfile = NULL;
    This->output_cmd = NULL;
    This->conn_fd = -1;
+   This->map = NULL;
+
    return This;
 }
 
@@ -59,6 +98,8 @@ void tn5250_print_session_destroy(Tn5250PrintSession * This)
       tn5250_record_destroy(This->rec);
    if (This->output_cmd != NULL)
       free(This->output_cmd);
+   if (This->map != NULL)
+      tn5250_char_map_destroy (This->map);
    free (This);
 }
 
@@ -96,6 +137,25 @@ void tn5250_print_session_set_stream(Tn5250PrintSession * This, Tn5250Stream * n
    This->stream = newstream;
 }
 
+/****f* lib5250/tn5250_print_session_set_char_map
+ * NAME
+ *    tn5250_print_session_set_char_map
+ * SYNOPSIS
+ *    tn5250_print_session_set_char_map (This, map);
+ * INPUTS
+ *    Tn5250PrintSession * This       - 
+ *    const char *         map        -
+ * DESCRIPTION
+ *    Sets the current translation map for this print session.  This is
+ *    used to translate response codes to something we can use.
+ *****/
+void tn5250_print_session_set_char_map (Tn5250PrintSession *This, const char *map)
+{
+   if (This->map != NULL)
+      tn5250_char_map_destroy (This->map);
+   This->map = tn5250_char_map_new (map);
+}
+
 /****f* lib5250/tn5250_print_session_set_output_command
  * NAME
  *    tn5250_print_session_set_output_command
@@ -127,10 +187,30 @@ void tn5250_print_session_set_output_command(Tn5250PrintSession * This, const ch
  * DESCRIPTION
  *    DOCUMENT ME!!!
  *****/
-void tn5250_print_session_get_response_code(Tn5250PrintSession * This, char *code)
+int tn5250_print_session_get_response_code(Tn5250PrintSession * This, char *code)
 {
-   memcpy (code, tn5250_record_data(This->rec) + 5, 4);
+   /* Offset of first byte of data after record variable-length header. */
+   int o = 6 + tn5250_record_data(This->rec)[6];
+   int i;
+
+   for (i = 0; i < 4; i++) {
+      if (This->map == NULL)
+	 code[i] = tn5250_record_data(This->rec)[o+i+5];
+      else {
+	 code[i] = tn5250_char_map_to_local (This->map,
+	       tn5250_record_data(This->rec)[o+i+5]
+	       );
+      }
+   }
    code[4] = '\0';
+   for (i = 0; i < sizeof (response_codes)/sizeof (struct response_code); i++) {
+      if (!strcmp (response_codes[i].code, code)) {
+	 printf ("%s %s\n", response_codes[i].code, response_codes[i].text);
+	 return response_codes[i].retval;
+      }
+   }
+   printf ("%s (Unknown response code)\n", code);
+   return 0;
 }
 
 /****f* lib5250/tn5250_print_session_main_loop
@@ -157,15 +237,9 @@ void tn5250_print_session_main_loop(Tn5250PrintSession * This)
 	    if (This->rec != NULL)
 	       tn5250_record_destroy(This->rec);
 	    This->rec = tn5250_stream_get_record(This->stream);
-	    tn5250_print_session_get_response_code(This, responsecode);
-	    if (strcmp(responsecode, "I902")) {
-	       printf("Could not establish printer session: %s\n",
-		      responsecode);
-	       exit(1);
-	    } else {
-	       printf("Printer session established.\n");
-	       break;
-	    }
+	    if (!tn5250_print_session_get_response_code(This, responsecode))
+	       exit (1);
+	    break;
 	 }
       }
    }
@@ -230,3 +304,5 @@ static int tn5250_print_session_waitevent(Tn5250PrintSession * This)
 
    return result;
 }
+
+/* vi:set sts=3 sw=3: */

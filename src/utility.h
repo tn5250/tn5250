@@ -39,8 +39,8 @@ typedef unsigned char Tn5250Char;
  *    Tn5250CharMap
  * SYNOPSIS
  *    Tn5250CharMap *map = tn5250_char_map_new ("en");
- *    ec = tn5250_char_map_to_local(map,ac);
- *    ac = tn5250_char_map_to_host(map,ec);
+ *    ac = tn5250_char_map_to_local(map,ec);
+ *    ec = tn5250_char_map_to_host(map,ac);
  *    if (tn5250_char_map_printable_p (map,ec))
  *	 ;
  *    if (tn5250_char_map_attribute_p (map,ec))

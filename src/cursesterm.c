@@ -17,8 +17,6 @@
  */
 #include "tn5250-config.h"
 
-#define USE_OWN_KEY_PARSING
-
 #ifdef USE_CURSES
 
 #define _TN5250_TERMINAL_PRIVATE_DEFINED

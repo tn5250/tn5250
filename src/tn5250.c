@@ -108,14 +108,14 @@ int main(int argc, char *argv[])
    if (stream == NULL)
       goto bomb_out;
 
-   display = tn5250_display_new ();
-   if (mapname != NULL)
-      tn5250_display_set_char_map (display, mapname);
-
    if (printsession) {
       printsess = tn5250_print_session_new();
       tn5250_stream_setenv(stream, "TERM", "IBM-3812-1");
    } else {
+      display = tn5250_display_new ();
+      if (mapname != NULL)
+	 tn5250_display_set_char_map (display, mapname);
+
 #ifdef USE_CURSES
       term = tn5250_curses_terminal_new();
 #endif
@@ -168,14 +168,17 @@ int main(int argc, char *argv[])
    tn5250_stream_setenv(stream, "DEVNAME", sessionname);
    tn5250_stream_setenv(stream, "IBMFONT", "12");
    if (transformname != NULL) {
-      tn5250_stream_setenv(stream, "IBMTRANSFORM", "0");
+      tn5250_stream_setenv(stream, "IBMTRANSFORM", "1");
       tn5250_stream_setenv(stream, "IBMMFRTYPMDL", transformname);
    } else
-      tn5250_stream_setenv(stream, "IBMTRANSFORM", "1");
+      tn5250_stream_setenv(stream, "IBMTRANSFORM", "0");
 
    if (printsession) {
       tn5250_print_session_set_fd(printsess, tn5250_stream_socket_handle(stream));
       tn5250_print_session_set_stream(printsess, stream);
+      if (mapname == NULL)
+	 mapname = "en";
+      tn5250_print_session_set_char_map(printsess, mapname);
       printf("-%s-\n", outputcommand);
       tn5250_print_session_set_output_command(printsess, outputcommand);
       tn5250_print_session_main_loop(printsess);
