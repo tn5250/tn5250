@@ -1,3 +1,17 @@
+2002-04-08 Scott Klement <klemscot@klements.com>
+- Added support for color keywords.   The keywords are: green, white,
+  red, turquoise, yellow, pink and blue.  They can either be set to
+  a hex RGB value, like #FF001C or to a symbolic name like: lightcyan
+- Added two new boolean keywords:  white_on_black and black_on_white
+- Incorporated these color keywords into the Win32 terminal object.
+  (I will try to put them into cursesterm as soon as I can)
+- Added "dialog" keyword to Win32 terminal to bring up the connect
+  dialog even if a host name is given.
+- Changed the Win32 tn5250 to load the command-line options into the
+  connect dialog if they are present.
+- Added resize_fonts keyword to the Win32 terminal to allow the fonts
+  to be resized when the window is resized
+
 2002-04-07 Scott Klement <klemscot@klements.com>
 - Changed the Win32 configure program, Makefile, etc to include the
   procedure for building a binary-release setup program.
