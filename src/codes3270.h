@@ -1,0 +1,4 @@
+#define TN3270_SESSION_CTL_UNLOCK 0x02
+
+#define CMD_3270_WRITE         0x01
+#define CMD_3270_READ_MODIFIED 0x06

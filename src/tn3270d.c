@@ -34,8 +34,8 @@
  */
 
 #include "tn5250-private.h"
-#include "host5250.h"
-#include "tn5250d.h"
+#include "host3270.h"
+#include "tn3270d.h"
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -51,13 +51,14 @@ process_client(int sockfd)
 
   if(hoststream != NULL) {
     host = tn5250_host_new(hoststream);
-    printf("Successful connection\n");
-    aidkey = SendTestScreen(host);
+    syslog(LOG_INFO, "Successful connection\n");
+    aidkey = SendTestScreen(host); 
+
     tn5250_host_destroy(host);
-    printf("aidkey = %d\n", aidkey);
+    syslog(LOG_INFO, "aidkey = %d\n", aidkey); 
     _exit(0);
   } else {
-    printf("Connection failed.\n");
+    syslog(LOG_INFO, "Connection failed.\n");
     _exit(1);
   }
 }
@@ -78,7 +79,7 @@ main(void)
 {
   int rc;
 
-  printf("Starting tn5250d server...\n");
+  printf("Starting tn3270d server...\n");
   
   tn5250_daemon(0,0,1);
 
@@ -99,7 +100,7 @@ main(void)
       exit(EXIT_FAILURE);
     }
 
-  syslog(LOG_INFO, "tn5250d server started\n");
+  syslog(LOG_INFO, "tn3270d server started\n");
   
   while(1) 
     {

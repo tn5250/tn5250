@@ -72,13 +72,6 @@ static void telnet_stream_send_packet(Tn5250Stream * This, int length,
 #define TIMING_MARK     6
 #define NEW_ENVIRON	39
 
-#define TN5250_STREAM_STATE_NO_DATA 	0	/* Dummy state */
-#define TN5250_STREAM_STATE_DATA	1
-#define TN5250_STREAM_STATE_HAVE_IAC	2
-#define TN5250_STREAM_STATE_HAVE_VERB	3	/* e.g. DO, DONT, WILL, WONT */
-#define TN5250_STREAM_STATE_HAVE_SB	4	/* SB data */
-#define TN5250_STREAM_STATE_HAVE_SB_IAC	5
-
 #define EOR  239
 #define SE   240
 #define SB   250
@@ -87,6 +80,13 @@ static void telnet_stream_send_packet(Tn5250Stream * This, int length,
 #define DO   253
 #define DONT 254
 #define IAC  255
+
+#define TN5250_STREAM_STATE_NO_DATA 	0	/* Dummy state */
+#define TN5250_STREAM_STATE_DATA	1
+#define TN5250_STREAM_STATE_HAVE_IAC	2
+#define TN5250_STREAM_STATE_HAVE_VERB	3	/* e.g. DO, DONT, WILL, WONT */
+#define TN5250_STREAM_STATE_HAVE_SB	4	/* SB data */
+#define TN5250_STREAM_STATE_HAVE_SB_IAC	5
 
 /* Internal Telnet option settings (bit-wise flags) */
 #define RECV_BINARY	1
@@ -1038,6 +1038,27 @@ static void telnet_stream_send_packet(Tn5250Stream * This, int length, int flowt
 
    telnet_stream_write(This, tn5250_buffer_data(&out_buf), tn5250_buffer_length(&out_buf));
    tn5250_buffer_free(&out_buf);
+}
+void
+tn3270_stream_send_packet(Tn5250Stream * This, int length, 
+			  unsigned char * data)
+{
+  Tn5250Buffer out_buf;
+
+   tn5250_buffer_init(&out_buf);
+
+   tn5250_buffer_append_data(&out_buf, data, length);
+
+   telnet_stream_escape(&out_buf);
+
+   tn5250_buffer_append_byte(&out_buf, IAC);
+   tn5250_buffer_append_byte(&out_buf, EOR);
+
+   telnet_stream_write(This, tn5250_buffer_data(&out_buf), 
+		       tn5250_buffer_length(&out_buf));
+
+   tn5250_buffer_free(&out_buf);
+
 }
 
 /****f* lib5250/telnet_stream_handle_receive
