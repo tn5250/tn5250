@@ -1,3 +1,8 @@
+2002-04-18 Scott Klement <klemscot@klements.com>
+- Applied old "Cursor Positioning" fix from Dave McKenzie from back in
+  Dec 2000.  (Apparently it never got committed)  Details are here:
+  http://archive.midrange.com/linux5250/200012/msg00086.html
+
 2002-04-12 Scott Klement <klemscot@klements.com>
 - Added "caret_style" config keyword to Win32 terminal so you can change
   the style of text cursor that you wish to use without recompiling.
