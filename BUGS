@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<!DOCTYPE bugs SYSTEM "http://cvs.cleveland.lug.net/xml/bugs.dtd">
+<!--
+  New BUGS format, more sophisticated than TODO format. The date format is the 
+  same date format from RCS. -JMF
+-->
+
+<bugs>
+  
+  <bug>
+    <date>99.10.01.16.45.00</date>
+    <owner email="jasonf@nacs.net">Jay 'Eraserhead' Felice</owner>
+
+    When exiting SDA on S/36, 'Ready for Option number: 0, 2 ==&gt; 0'.
+    Can't type anything!
+  </bug>
+
+  <bug>
+    <date>99.10.01.16.45.00</date>
+    <owner email="jasonf@nacs.net">Jay 'Eraserhead' Felice</owner>
+
+    Under S/36, when exiting SEU, prompted for Y/N for some reason the emulator
+    isn't sending 'Y', but will send 'N'.
+  </bug>
+
+  <bug>
+    <date>99.10.01.16.45.00</date>
+    <owner email="c.evans@clear.net.nz">Carey Evans</owner>
+
+    The Display Program Messages display at signon shows up breifly, then all
+    clears except for the title.
+  </bug>
+
+  <bug>
+    <date>99.10.01.16.45.00</date>
+    <owner email="c.evans@clear.net.nz">Carey Evans</owner>
+    
+    ILE programs using stdin (like REXX), and similar commands like WRKDOMCSL
+    and Java programs, don't clear the entry field at the bottom of the screen
+    once the command has completed.
+  </bug>
+
+  <bug>
+    <date>99.10.01.16.45.00</date>
+    <owner email="c.evans@clear.net.nz">Carey Evans</owner>
+
+    System Request provides too many options.  For some reason, the AS/400 thinks
+    there is a host system to be able to return to.
+  </bug>
+
+</bugs>
+<!-- vi:set sts=2 sw=2 autoindent: -->
