@@ -51,5 +51,12 @@
     handing the 400 a unique identifier.
   </item>
 
+  <item>
+    We are currently ignoring some useful information in the format table
+    header (given to us with the SOH order).  This includes the `Operator
+    Error Line' and a list of function keys which should be ignored (because
+    they aren't applicable for a particular screen).
+  </item>
+
 </todo>
 <!-- vi:set sts=2 sw=2 autoindent: -->

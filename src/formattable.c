@@ -37,7 +37,8 @@ Tn5250Table *tn5250_table_new()
    This->numfields = 0;
    This->field_list = NULL;
    This->MasterMDT = 0;
-   This->message_line = 25;
+   This->header_data = NULL;
+   This->header_length = 0;
    This->next = This->prev = NULL;
    return This;
 }
@@ -51,12 +52,35 @@ Tn5250Table *tn5250_table_copy(Tn5250Table *table)
    memcpy(This,table,sizeof(Tn5250Table));
    This->next = This->prev = NULL;
    This->field_list = tn5250_field_list_copy (table->field_list);
+   This->header_length = table->header_length;
+   if (table->header_data != NULL) {
+      This->header_data = (unsigned char *)malloc (This->header_length);
+      TN5250_ASSERT (This->header_data != NULL);
+      memcpy (This->header_data, table->header_data, table->header_length);
+   } else
+      This->header_data = NULL;
    return This;
+}
+
+void tn5250_table_set_header_data(Tn5250Table *This, unsigned char *data, int len)
+{
+   This->header_length = len;
+   if (This->header_data != NULL)
+      free (This->header_data);
+   if (This->header_length == 0)
+      This->header_data = NULL;
+   else {
+      This->header_data = (unsigned char *)malloc (This->header_length);
+      TN5250_ASSERT (This->header_data != NULL);
+      memcpy (This->header_data, data, len);
+   }
 }
 
 void tn5250_table_destroy(Tn5250Table * This)
 {
    (void)tn5250_field_list_destroy(This->field_list);
+   if (This->header_data)
+      free (This->header_data);
    free (This);
 }
 
@@ -86,7 +110,11 @@ void tn5250_table_clear(Tn5250Table * This)
    This->numfields = 0;
 
    This->MasterMDT = 0;
-   This->message_line = 24;
+   This->header_length = 0;
+   if (This->header_data) {
+      free (This->header_data);
+      This->header_data = NULL;
+   }
 
    TN5250_LOG(("FormatTable::Clear: entered.\n"));
 }

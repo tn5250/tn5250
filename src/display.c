@@ -415,11 +415,13 @@ void tn5250_display_set_cursor_prev_field(Tn5250Display * This)
  *    to save our format table and display buffer.  We assume the buffer
  *    has been initialized, and we append to it.
  */
-void tn5250_display_make_wtd_data (Tn5250Display *This, Tn5250Buffer *buf)
+void tn5250_display_make_wtd_data (Tn5250Display *This, Tn5250Buffer *buf,
+      Tn5250DBuffer *src_dbuffer, Tn5250Table *src_table)
 {
    Tn5250WTDContext *ctx;
 
-   if ((ctx = tn5250_wtd_context_new (This, buf)) == NULL)
+   if ((ctx = tn5250_wtd_context_new (buf, src_dbuffer, src_table, 
+	       This->display_buffers, This->format_tables)) == NULL)
       return;
 
    tn5250_wtd_context_convert (ctx);
@@ -836,7 +838,6 @@ void tn5250_display_kf_dup(Tn5250Display * This)
    int y, x, i;
    Tn5250Field *field;
    unsigned char *data;
-   int curfield;
 
    field = tn5250_display_current_field (This);
    if (field == NULL || tn5250_field_is_bypass (field)) {

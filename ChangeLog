@@ -1,3 +1,12 @@
+1999-12-19 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- CC1/CC2 bytes processed for Read MDT Fields and Read Input Fields commands
+  as they should be (previously only processed for Write to Display command).
+- save/restore screen rewrite seems to work now - added wtd.c and wtd.h which
+  manage a ``WTD Context'' which can be used for generating commands and WTD
+  orders for creating a particular display and format table.  This is designed
+  so that we can later do differentials (as in, for the 5250 server).
+
 1999-12-17 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 
 - Partial work on save/restore screen rewrite finished.

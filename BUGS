@@ -39,5 +39,14 @@
     key handler under the 'default' clause, we get two decimal 410s.  Why?
   </bug>
 
+  <bug>
+    <date>99.12.19.23.13.00</date>
+    <owner email="jasonf@nacs.net">Jay 'Eraserhead' Felice</owner>
+
+    Determining which line is the message line (and setting it) is horribly
+    broken.  We should sort all this out.  I don't think we're using the right
+    line in most cases.
+  </bug>
+
 </bugs>
 <!-- vi:set sts=2 sw=2 autoindent: -->

@@ -31,14 +31,19 @@ extern "C" {
       Tn5250Field /*@null@*/ *field_list;
       int numfields;
       int MasterMDT;
-      int message_line;
-      int curfield;
+
+      /* Header data (from SOH order) is saved here.  We even save data that
+       * we don't understand here so we can insert that into our generated
+       * WTD orders for save/restore screen. */
+      unsigned char *header_data;
+      int header_length;
    };
 
    typedef struct _Tn5250Table Tn5250Table;
 
    extern Tn5250Table *tn5250_table_new(void);
    extern Tn5250Table *tn5250_table_copy(Tn5250Table *table);
+   extern void tn5250_table_set_header_data(Tn5250Table *This, unsigned char *data, int len);
    extern void tn5250_table_destroy(Tn5250Table /*@only@*/ * This);
 
    extern void tn5250_table_add_field(Tn5250Table * This, Tn5250Field * field);
@@ -51,11 +56,9 @@ extern "C" {
 #define tn5250_table_mdt(This) ((This)->MasterMDT)
 #define tn5250_table_set_mdt(This) (void) ((This)->MasterMDT = 1)
 #define tn5250_table_clear_mdt(This) (void) ((This)->MasterMDT = 0)
-#define tn5250_table_set_message_line(This,row) (void) ((This)->message_line = (row))
 
 #define tn5250_table_field_count(This) ((This)->numfields)
 #define tn5250_table_mdt(This) ((This)->MasterMDT)
-#define tn5250_table_message_line(This) ((This)->message_line)
 
 #ifdef __cplusplus
 }
