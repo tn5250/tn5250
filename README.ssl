@@ -121,15 +121,101 @@ VERIFYING YOUR SERVERS CERTIFICATE:
                ssl:as400.example.com
 
 
+USING TN5250 WITH SSL CLIENT CERTIFICATES:
+
+Some versions of OS/400 allow you to require client authentication in
+the Telnet server.  If your AS/400 is set up this way, here's how you
+telnet TN5250 to use certificates & a private key:
+
+   1) If it's not already running, start the AS/400's HTTP *ADMIN server
+        by typing:  STRTCPSVR SERVER(*HTTP) HTTPSVR(*ADMIN) 
+
+   2) Connect to the Admin server with a web browser (I used Netscape
+        Navigator 4.77 in my tests):
+        http://as400.example.com:2001
+
+   3) Click "Digital Certificate Manager", then "Certificate Authority (CA)"
+        then "Install CA certificate on your PC", then click 
+        "Receive certificate"
+
+   4) Netscape brings up the "New Certificate Authority" wizard.  Follow
+        the prompts, until you can finally click "Finish".
+
+   5) Click "User Certificates", then "Request a new user certificate",
+        Fill out the form and click OK.
+
+   6) Netscape brings up the "Generate A Private Key" wizard.  Follow
+        the prompts.  The password you assign it is only temporary, 
+        but you should assign it one.   Maybe "tn5250" is a good password.
+
+   7) After filling out your password, and waiting a second or two, you
+        should come to a screen that says "User Certificate Created 
+        Successfully".   Click "Receive Certificate".  
+ 
+   8) The certificate should be downloaded into your web browser.  It 
+        may not tell you that it did anything, so don't be surprised if
+        nothing seems to happen.
+
+   9) On the Netscape "Navigation Toolbar" click the "Security" button.
+       (This is the button that looks like a padlock).  Then under 
+       "Certificates", click on "Yours".
+
+  10) The certificate that you just generated should appear, along with
+       any other private-key certficates that you have in your browser.
+       Highlight the cert that you just generated, and click "Export".
+
+  11) It asks for a password.  Type the password that you used in step 6.
+
+  12) It asks for a new password.   Type the same password again.  
+        Then type it one more time to verify it. :)
+
+  13) Save the exported certificate to a file called "tn5250.p12"
+        It will tell you that the certificate has been successfully
+        exported.  Good work!
+
+  14) Unfortunately, Netscape likes to save the certificate in pkcs12
+       format, which doesn't do us much good.  We need it in PEM format!
+       Back at your *BSD/Linux/Unix/etc prompt type:
+
+            openssl pkcs12 -clcerts -in tn5250.p12 -out tn5250.pem
+
+  15) It asks for the "Import Password".  This is the same password
+       that you assigned it in Step 12.  
+
+  16) It says "Enter PEM pass phrase".   This is, yet another, password.
+       However, this is the important one that you will be using from
+       this point on.  You might want to write it down.
+
+  17) Now, finally, to tell tn5250 to use this certificate that you
+       just received, use the ssl_cert_file keyword.  Here's an example:
+
+          tn5250 ssl_cert_file=/home/klemscot/tn5250.pem ssl:as400
+
+  18) It should ask you for your PEM pass phrase.  This is the password
+        that you typed in Step 16.
+
+  19) If you don't want to type your PEM pass phrase each time, you can
+        use the ssl_pem_pass keyword to assign it.  For example, you
+        might type the following (as one line):
+
+        tn5250 ssl_cert_file=/home/klemscot/tn5250.pem 
+            ssl_pem_pass=mmmbeer +ssl_verify_server ssl:as400.example.com
+
+
 USING SSL IN A CONFIGURATION FILE:
 
-If you are using a configuration file  (~/.tn5250rc or /usr/local/etc/tn5250rc)
+Since these commands are getting sort-of long, you'll probably want to use
+a configuration file.
+
+If you want to use a config file  (~/.tn5250rc or /usr/local/etc/tn5250rc)
 with tn5250, set it up like this:
 
    session1 {
       host = ssl:as400.example.com
       +ssl_verify_server
       ssl_ca_file = /path/to/as400_ca.pem
+      ssl_cert_file = /path/to/tn5250.pem
+      ssl_pem_pass = mmmbeer
       [ .. other options can go here ... ]
    }
 
