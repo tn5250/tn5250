@@ -21,6 +21,7 @@ Name: "desktopicon"; Description: "Create a &desktop icon"; GroupDescription: "A
 
 [Files]
 Source: "@installdir@\TN5250.EXE"; DestDir: "{app}"; CopyMode: alwaysoverwrite
+Source: "@installdir@\DFTMAP.EXE"; DestDir: "{app}"; CopyMode: alwaysoverwrite
 Source: "@installdir@\LP5250D.EXE"; DestDir: "{app}"; CopyMode: alwaysoverwrite
 Source: "@installdir@\LIB5250.DLL"; DestDir: "{app}"; CopyMode: alwaysoverwrite
 Source: "@installdir@\COPYING.TXT"; DestDir: "{app}"; CopyMode: alwaysoverwrite
@@ -37,6 +38,7 @@ Name: "{group}\Tn5250 Manual (PDF)"; Filename: "{app}\MANUAL.PDF"
 Name: "{userdesktop}\Tn5250"; Filename: "{app}\TN5250.EXE"; MinVersion: 4,4; Tasks: desktopicon
 
 [Run]
+Filename: "{app}\DFTMAP.EXE"; Parameters: "{app}"
 Filename: "{app}\TN5250.EXE"; Description: "Launch Tn5250"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]

@@ -1,3 +1,10 @@
+2002-04-10 Scott Klement <klemscot@klements.com>
+- Added program for Win32 binary dist:  If you don't already have a tn5250rc
+  file, it asks you for a default char map, and creates a tn5250rc file for
+  you containing the default char map.
+- Added +/-no_colseps keyword to Win32 version to inhibit the drawing of
+  column separators.
+
 2002-04-09 Scott Klement <klemscot@klements.com>
 - Added windows code pages to transmaps, transmaps.h and added code to handle
   them in utility.c

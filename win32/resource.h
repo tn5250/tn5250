@@ -38,3 +38,6 @@
 #define IDC_RADIO_80                    1006
 #define IDC_RADIO_132                   1007
 #define IDC_STATIC                      -1
+
+#define IDD_DIALOG_DFTMAP               102
+#define IDC_LIST_MAPS                   1020
