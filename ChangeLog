@@ -1,3 +1,6 @@
+2000-07-19 Mike Madore <mmadore@turbolinux.com>
+- Send negative response if we get an invalid command.
+	
 2000-07-18 Mike Madore <mmadore@turbolinux.com>
 - Preliminary fix for emulator hang when pressing attention key from the
   sysrequest menu.

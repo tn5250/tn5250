@@ -528,7 +528,8 @@ static void tn5250_session_send_field (Tn5250Session * This, Tn5250Buffer *buf, 
 static void tn5250_session_process_stream(Tn5250Session * This)
 {
    int cur_command;
-
+   unsigned long errorcode;
+   
    TN5250_LOG(("ProcessStream: entered.\n"));
    tn5250_display_clear_pending_insert (This->display);
    while (!tn5250_record_is_chain_end(This->record)) {
@@ -585,7 +586,11 @@ static void tn5250_session_process_stream(Tn5250Session * This)
 	 break;
       default:
 	 TN5250_LOG(("Error: Unknown command 0x%02X.\n", cur_command));
-	 TN5250_ASSERT(0);
+
+	 errorcode = TN5250_NR_INVALID_COMMAND;
+
+	 tn5250_session_send_error(This, errorcode);
+	 
       }
    }
 
