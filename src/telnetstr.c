@@ -388,7 +388,7 @@ static int telnet_stream_connect(Tn5250Stream * This, const char *to)
  * DESCRIPTION
  *    Accepts a connection from the client.
  *****/
-static int telnet_stream_accept(Tn5250Stream * This, SOCKET_TYPE masterSock)
+static int telnet_stream_accept(Tn5250Stream * This, int masterfd)
 {
    int i, len, retCode;
    struct sockaddr_in serv_addr;
@@ -396,11 +396,16 @@ static int telnet_stream_accept(Tn5250Stream * This, SOCKET_TYPE masterSock)
    u_long ioctlarg=1L;
 #endif
 
+   /*
    len = sizeof(serv_addr);
    This->sockfd = accept(masterSock, (struct sockaddr *) &serv_addr, &len);
    if (WAS_INVAL_SOCK(This->sockfd)) {
-      return LAST_ERROR;
+     return LAST_ERROR;
    }
+   */
+   printf("This->sockfd = %d\n", masterfd);
+   This->sockfd = masterfd;
+
    /* Set socket to non-blocking mode. */
 #ifndef WINELIB
    TN_IOCTL(This->sockfd, FIONBIO, &ioctlarg);
@@ -414,8 +419,10 @@ static int telnet_stream_accept(Tn5250Stream * This, SOCKET_TYPE masterSock)
 
    for (i=0; hostDoTable[i].cmd; i++) {
       retCode = send(This->sockfd, hostDoTable[i].cmd, hostDoTable[i].len, 0);
-      if (WAS_ERROR_RET(retCode))
+      if (WAS_ERROR_RET(retCode)) {
+	perror("telnetstr");
 	 return LAST_ERROR;
+      }
       if (!telnet_stream_handle_receive(This)) {
          retCode = LAST_ERROR;
          return retCode ? retCode : -1;
@@ -438,6 +445,7 @@ static int telnet_stream_accept(Tn5250Stream * This, SOCKET_TYPE masterSock)
  *****/
 static void telnet_stream_disconnect(Tn5250Stream * This)
 {
+  printf("Closing...\n");
    TN_CLOSE(This->sockfd);
 }
 
