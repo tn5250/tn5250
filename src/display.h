@@ -78,10 +78,6 @@ extern void	  tn5250_display_shift_right	      (Tn5250Display *This,
 						       unsigned char fill);
 extern void	  tn5250_display_field_adjust	      (Tn5250Display *This,
 						       Tn5250Field *field);
-extern void	  tn5250_display_field_exit	      (Tn5250Display *This);
-extern void	  tn5250_display_field_minus	      (Tn5250Display *This);
-extern void	  tn5250_display_field_plus	      (Tn5250Display *This);
-extern void	  tn5250_display_dup		      (Tn5250Display *This);
 extern void	  tn5250_display_interactive_addch    (Tn5250Display *This,
                                                        unsigned char ch);
 extern void	  tn5250_display_beep		      (Tn5250Display *This);
@@ -91,6 +87,25 @@ extern void	  tn5250_display_indicator_set	      (Tn5250Display *This,
 						       int inds);
 extern void	  tn5250_display_indicator_clear      (Tn5250Display *This,
 						       int inds);
+extern void	  tn5250_display_clear_unit           (Tn5250Display *This);
+extern void	  tn5250_display_clear_unit_alternate (Tn5250Display *This);
+extern void	  tn5250_display_clear_format_table   (Tn5250Display *This);
+
+/* Key functions */
+extern void	  tn5250_display_kf_up                (Tn5250Display *This);
+extern void	  tn5250_display_kf_down	      (Tn5250Display *This);
+extern void       tn5250_display_kf_left	      (Tn5250Display *This);
+extern void       tn5250_display_kf_right             (Tn5250Display *This);
+extern void	  tn5250_display_kf_field_exit	      (Tn5250Display *This);
+extern void	  tn5250_display_kf_field_minus	      (Tn5250Display *This);
+extern void	  tn5250_display_kf_field_plus	      (Tn5250Display *This);
+extern void	  tn5250_display_kf_dup		      (Tn5250Display *This);
+extern void	  tn5250_display_kf_insert	      (Tn5250Display *This);
+extern void	  tn5250_display_kf_tab		      (Tn5250Display *This);
+extern void       tn5250_display_kf_backtab	      (Tn5250Display *This);
+extern void	  tn5250_display_kf_end		      (Tn5250Display *This);
+extern void	  tn5250_display_kf_delete            (Tn5250Display *This);
+
 #define tn5250_display_indicators(This) \
    ((This)->indicators)
 #define tn5250_display_inhibited(This) \
@@ -113,6 +128,12 @@ extern void	  tn5250_display_indicator_clear      (Tn5250Display *This,
    (tn5250_dbuffer_char_at((This)->display_buffers,(y),(x))) 
 #define tn5250_display_addch(This,ch) \
    (tn5250_dbuffer_addch((This)->display_buffers,(ch)))
+#define tn5250_display_roll(This,top,bottom,lines) \
+   (tn5250_dbuffer_roll((This)->display_buffers,(top),(bottom),(lines)))
+#define tn5250_display_goto_ic(This) \
+   (tn5250_dbuffer_goto_ic((This)->display_buffers))
+#define tn5250_display_set_ic(This,y,x) \
+   (tn5250_dbuffer_set_ic((This)->display_buffers,(y),(x)))
 
 #ifdef __cplusplus
 }
