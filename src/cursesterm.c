@@ -574,14 +574,14 @@ static void curses_terminal_update(Tn5250Terminal * This, Tn5250Display *display
        || This->data->last_height != tn5250_display_height(display)) {
       clear();
       if(This->data->is_xterm) {
-	 printf ("\x1b[8;%d;%dt", tn5250_display_height (display)+1,
-	       tn5250_display_width (display));
          if (This->data->font_132!=NULL) {
                if (tn5250_display_width (display)>100)
                     printf(This->data->font_132);
                else
                     printf(This->data->font_80);
          }
+	 printf ("\x1b[8;%d;%dt", tn5250_display_height (display)+1,
+	       tn5250_display_width (display));
 	 fflush (stdout);
 #ifdef HAVE_RESIZETERM
 	 resizeterm(tn5250_display_height(display)+1, tn5250_display_width(display)+1);
