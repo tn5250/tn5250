@@ -1,3 +1,6 @@
+2002-03-18 Scott Klement <klemscot@klements.com>
+- Removed unnecessary/unused getopt.[ch]
+
 2002-03-17 Scott Klement <klemscot@klements.com>
 - Added a menu to the Windows terminal.  
 - Made copy/paste in the Windows terminal work more like other Windows apps.

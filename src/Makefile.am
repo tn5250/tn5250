@@ -1,16 +1,5 @@
 ## Process this file with automake to produce Makefile.in
 
-#
-# LIBSOURCES are sources which implement functions which might be missing
-# on this system, but we don't want to include them in the built libs. We
-# also need to put them in EXTRA_DIST.
-#
-if LIB_GETOPT
-LIBSOURCES =		getopt.c
-else
-LIBSOURCES =		
-endif
-
 lib_LTLIBRARIES =	lib5250.la
 
 bin_PROGRAMS =		scs2ascii\
@@ -60,28 +49,23 @@ libtn5250module_la_SOURCES =	tn5250-python.c\
 endif
 
 
-tn5250_SOURCES = 	tn5250.c\
-		        $(LIBSOURCES)
+tn5250_SOURCES = 	tn5250.c
 
 tn5250_LDADD = 		@with_extra_libs@ lib5250.la
 
-scs2ascii_SOURCES =	scs2ascii.c\
-			$(LIBSOURCES)
+scs2ascii_SOURCES =	scs2ascii.c
 
 scs2ascii_LDADD =	@with_extra_libs@ lib5250.la
 
-scs2pdf_SOURCES =	scs2pdf.c\
-			$(LIBSOURCES)
+scs2pdf_SOURCES =	scs2pdf.c
 
 scs2pdf_LDADD =		@with_extra_libs@ lib5250.la
 
-scs2ps_SOURCES = 	scs2ps.c\
-			$(LIBSOURCES)
+scs2ps_SOURCES = 	scs2ps.c
 
 scs2ps_LDADD = 		@with_extra_libs@ lib5250.la
 
-lp5250d_SOURCES =	lp5250d.c\
-			$(LIBSOURCES)
+lp5250d_SOURCES =	lp5250d.c
 
 lp5250d_LDADD =		@with_extra_libs@ lib5250.la
 
@@ -106,13 +90,11 @@ pkginclude_HEADERS = 	buffer.h\
 
 include_HEADERS =	tn5250.h
 
-noinst_HEADERS =	getopt.h\
-			transmaps.h\
+noinst_HEADERS =	transmaps.h\
 			tn5250-private.h
 
 EXTRA_DIST =		.lclintrc\
-			transmaps\
-			getopt.c
+			transmaps
 
 lclint:
 	@echo "lint checking with lclint... "
