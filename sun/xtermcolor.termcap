@@ -1,0 +1,8 @@
+xterm-5250|xt5250-color:\
+	:kB=\E[Z:bt=\E[Z:tc=xterm-color:
+#
+# 5250 xterm w/colors, but not underlines.  Use the +underscores option
+#    in tn5250 to simulate underlines.
+#
+#xterm-5250|xt5250-color:\
+#	:kB=\E[Z:bt=\E[Z:us@:ue@:tc=xterm-color:
