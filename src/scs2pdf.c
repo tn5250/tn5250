@@ -43,6 +43,9 @@
  */
 #define MAX_COLUMNS 80
 
+/* Define font names with a number that the PDF can use.  Numbers must be
+ * greater than 0, but it doesn't matter what numbers are chosen.
+ */
 #define COURIER 1
 #define COURIER_BOLD 2
 
@@ -66,8 +69,6 @@ int pdf_process_char (char character, int flush);
 
 unsigned char curchar;
 unsigned char nextchar;
-
-int columncount;
 
 GArray *ObjectList;
 
@@ -93,8 +94,12 @@ main ()
   int boldchars, do_bold;
   char text[255];
   ObjectList = g_array_new (FALSE, FALSE, sizeof (int));
-  columncount = 0;
 
+  /* This allows the user to select an output file other than stdout.
+   * I don't know that this will ever be useful since you do pretty much
+   * anything with output redirection.  Maybe some architectures will use
+   * this.
+   */
   if ((getenv ("TN5250_PDF")) != NULL)
     {
       outfile = fopen (getenv ("TN5250_PDF"), "w");
@@ -109,6 +114,10 @@ main ()
       outfile = stdout;
     }
 
+  /* Get the appropriate CCSID map from the user.  lp5250d will set this
+   * environment variable appropriately from the setting in the user's
+   * .tn5250rc file.
+   */
   if ((getenv ("TN5250_CCSIDMAP")) != NULL)
     {
       map = tn5250_char_map_new (getenv ("TN5250_CCSIDMAP"));
@@ -118,8 +127,16 @@ main ()
       map = tn5250_char_map_new ("37");
     }
 
+  /* Write out the PDF header.  filesize tracks how big the PDF is since
+   * we need that information later.
+   */
   filesize += pdf_header ();
 
+  /* ObjectList contains an entry for the filesize when the object was
+   * created.  Since the cross reference of a PDF needs to know what the
+   * byte count is for the beginning of each object we use ObjectList to 
+   * track it.
+   */
   g_array_append_val (ObjectList, filesize);
   objcount++;
   filesize += pdf_begin_stream (objcount, COURIER, fontsize);
@@ -167,12 +184,17 @@ main ()
 	case SCS_NL:
 	  {
 	    new_line = scs_nl ();
-	    column = 0;
-	    if (columncount > columncheck)
+
+	    /* If the current position on the page (column) is further to the
+	     * right than our current maximum line length (columncheck)
+	     * increase our length.  This is used later to see if we need a
+	     * larger page width if the page width is unspecified.
+	     */
+	    if (column > columncheck)
 	      {
-		columncheck = columncount;
-		columncount = 0;
+		columncheck = column;
 	      }
+	    column = 0;
 	    break;
 	  }
 	case SCS_RNL:
@@ -189,6 +211,12 @@ main ()
 	  {
 	    boldchars = 0;
 	    streamsize += scs2pdf_process34 (&column, &boldchars);
+
+	    /* If scs2pdf_process34() tells us that there are bold characters
+	     * to write and we aren't already in the middle of writing some
+	     * bold character, flush the buffer and send the bold font to the
+	     * PDF.
+	     */
 	    if ((boldchars > 0) && (do_bold == 0))
 	      {
 		do_bold = 1;
@@ -205,6 +233,12 @@ main ()
 	case 0x2B:
 	  {
 	    scs_process2b (&pagewidth, &pagelength, &newfontsize);
+
+	    /* If scs_process2b() wants to change the CPI (newfontsize), flush
+	     * the buffer and send the new font to the PDF.  Note that right
+	     * now we always reset the font to COURIER, even if we are using
+	     * a different font.  This will be changed soon.
+	     */
 	    if (newfontsize > 0)
 	      {
 #ifdef DEBUG
@@ -229,6 +263,10 @@ main ()
 	  {
 	    if (newpage)
 	      {
+		/* We need to know what stream objects (textobjects) were
+		 * put on this page.  We put one stream object on each
+		 * page.
+		 */
 		textobjects[pagenumber - 1] = objcount;
 
 		streamsize += pdf_process_char ('\0', 1);
@@ -243,6 +281,10 @@ main ()
 		fprintf (stderr, "objcount = %d\n", objcount);
 #endif
 
+		/* Ending the stream object above and starting a new one
+		 * here constitutes a new page, in conjuction with the
+		 * pdf_page() function below.
+		 */
 		g_array_append_val (ObjectList, filesize);
 		objcount++;
 		filesize += pdf_begin_stream (objcount, COURIER, fontsize);
@@ -253,22 +295,35 @@ main ()
 		pagenumber++;
 		newpage = 0;
 		column = 0;
-		columncount = 0;
 	      }
 	    if (new_line)
 	      {
+		/* On newline flush the buffer and move the active line down
+		 * 12 points.
+		 */
 		new_line = 0;
 		streamsize += pdf_process_char ('\0', 1);
 		fprintf (outfile, "0 -12 Td\n");
 		streamsize += 9;
 		column = 0;
-		columncount = 0;
 	      }
 	    streamsize += pdf_process_char (tn5250_char_map_to_local (map,
 								      curchar),
 					    0);
-	    /*streamsize += pdf_process_char(curchar, 0); */
+	    /* If you want to feed this program non-EBCDIC text then uncomment
+	     * the line below and comment the line above.
+	     */
+	    /*
+	     * streamsize += pdf_process_char(curchar, 0);
+	     */
 	    column++;
+
+	    /* If we are currently printing bold character then decrement the
+	     * bold character count (boldchars) given above by
+	     * scs2pdf_process34() until there aren't any bold characters left
+	     * to print.  When out of bold character reset the font and allow
+	     * changing to bold again.
+	     */
 	    if (boldchars > 0)
 	      {
 		boldchars--;
@@ -323,6 +378,10 @@ main ()
   fprintf (stderr, "procedure set objcount = %d\n", objcount);
 #endif
 
+  /* We need to create a font object for every font we use.  Since we don't
+   * necessarily know if we used bold just make a bold font object anyway.
+   * It doesn't hurt to have objects that aren't used.
+   */
   g_array_append_val (ObjectList, filesize);
   objcount++;
   filesize += pdf_font (objcount, COURIER);
@@ -339,6 +398,9 @@ main ()
   fprintf (stderr, "bold font objcount = %d\n", objcount);
 #endif
 
+  /* If the page size was not specified and we have lines longer than we
+   * think we can fit on a page increase the page width a half inch at a time.
+   */
   if ((pagewidth == 0) && (columncheck > MAX_COLUMNS))
     {
       for (i = 0; i < 15; i++)
@@ -347,8 +409,7 @@ main ()
 	    {
 #ifdef DEBUG
 	      fprintf (stderr, "columncheck = %d, pagewidth = %d\n",
-		       columncheck,
-		       pagewidth);
+		       columncheck, pagewidth);
 #endif
 	      break;
 	    }
@@ -384,6 +445,13 @@ main ()
   return (0);
 }
 
+
+
+/* This function is different than what is in scs.c because we want to pass
+ * a pointer to the number of bold characters to print to scs2pdf_ahpp()
+ * (which is a unique version of scs_ahpp()).  Since this program is the only
+ * one that handles bold this is unique.
+ */
 int
 scs2pdf_process34 (int *curpos, int *boldchars)
 {
@@ -411,6 +479,12 @@ scs2pdf_process34 (int *curpos, int *boldchars)
   return (bytes);
 }
 
+
+
+/* This function is different than what is in scs.c because we want to pass
+ * a pointer to the number of bold characters to print.  Since this program
+ * is the only one that handles bold this is unique.
+ */
 int
 scs2pdf_ahpp (int *curpos, int *boldchars)
 {
@@ -432,10 +506,6 @@ scs2pdf_ahpp (int *curpos, int *boldchars)
        * This is gives a bold effect on real SCS printers.  This ought to
        * be handled a better way to get bold.
        */
-
-      /* make columncount count columns only once */
-      columncount=0;
-
       *boldchars = *curpos - position;
       bytes += pdf_process_char ('\0', 1);
       fprintf (outfile, "0 0 Td\n");
@@ -461,6 +531,11 @@ scs2pdf_ahpp (int *curpos, int *boldchars)
   return (bytes);
 }
 
+
+
+/* This header is required on all PDFs to identify what level of the PDF
+ * specification was used to create this PDF.
+ */
 int
 pdf_header ()
 {
@@ -471,6 +546,9 @@ pdf_header ()
   return (strlen (text));
 }
 
+
+
+/* This is required to tell the reader where to find stuff.*/
 int
 pdf_catalog (int objnum, int outlinesobject, int pageobject)
 {
@@ -489,6 +567,9 @@ pdf_catalog (int objnum, int outlinesobject, int pageobject)
   return (strlen (text));
 }
 
+
+
+/* We don't really use outlines but they are required.*/
 int
 pdf_outlines (int objnum)
 {
@@ -505,6 +586,11 @@ pdf_outlines (int objnum)
   return (strlen (text));
 }
 
+
+
+/* Each time we begin a page we use this to start the stream object that the
+ * page will contain.
+ */
 int
 pdf_begin_stream (int objnum, int fontname, int fontsize)
 {
@@ -524,6 +610,8 @@ pdf_begin_stream (int objnum, int fontname, int fontsize)
   return (strlen (text));
 }
 
+
+/* And this ends the stream object started above.*/
 int
 pdf_end_stream ()
 {
@@ -534,6 +622,12 @@ pdf_end_stream ()
   return (strlen (text));
 }
 
+
+
+/* Since we don't know how long the stream object is when we start it we use
+ * an indirect object to specify its length.  That indirect object points to
+ * this function's output which is the length of the stream object created.
+ */
 int
 pdf_stream_length (int objnum, int objlength)
 {
@@ -550,6 +644,11 @@ pdf_stream_length (int objnum, int objlength)
   return (strlen (text));
 }
 
+
+
+/* This starts the page tree.  We only have one root (this function) which
+ * contains all the page leaves (created by pdf_page()).
+ */
 int
 pdf_pages (int objnum, int pagechildren, int pages)
 {
@@ -579,6 +678,11 @@ pdf_pages (int objnum, int pagechildren, int pages)
   return (bytes);
 }
 
+
+
+/* This describes the page size and contents for a page.  This is called once
+ * for each page that is in the PDF.
+ */
 int
 pdf_page (int objnum, int parent, int contents, int procset, int font,
 	  int boldfont, int pagewidth, int pagelength)
@@ -633,6 +737,9 @@ pdf_page (int objnum, int parent, int contents, int procset, int font,
   return (strlen (text));
 }
 
+
+
+/* The required procedure set.*/
 int
 pdf_procset (int objnum)
 {
@@ -645,6 +752,9 @@ pdf_procset (int objnum)
   return (strlen (text));
 }
 
+
+
+/* This creates the font objects used in the PDF.*/
 int
 pdf_font (int objnum, int fontname)
 {
@@ -698,6 +808,9 @@ pdf_font (int objnum, int fontname)
   return (strlen (text));
 }
 
+
+
+/* The required cross reference table.*/
 void
 pdf_xreftable (int objnum)
 {
@@ -734,6 +847,9 @@ pdf_xreftable (int objnum)
     }
 }
 
+
+
+/* And the required trailer.*/
 void
 pdf_trailer (int offset, int size, int root)
 {
@@ -749,6 +865,13 @@ pdf_trailer (int offset, int size, int root)
   fprintf (outfile, "%s", text);
 }
 
+
+
+/* Here we process the characters given in the input stream (stdin).  If
+ * flush is 1 then flush the buffer.  The buffer is 255 bytes long since
+ * that is what Adobe recommends because of limitations of some operating
+ * environments.
+ */
 int
 pdf_process_char (char character, int flush)
 {
@@ -761,11 +884,6 @@ pdf_process_char (char character, int flush)
   if (character == '(' || character == ')')
     {
       byteswritten = pdf_process_char ('\\', 0);
-    }
-
-  if (character != '\\')
-    {
-      columncount++;
     }
 
   if (bufloc >= 247 || flush == 1)

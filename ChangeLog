@@ -1,3 +1,7 @@
+2002-03-20 James Rich <james@eaerich.com>
+- Cleaned up scs2pdf.c and added comments to explain how it works.
+- Added more CPI mappings to scs.c
+
 2002-03-20 Scott Klement <klemscot@klements.com>
 - Changed the GPL license to the LGPL license, after gaining permission
   from the various copyright holders.  This will allow us to create
