@@ -113,8 +113,6 @@ static int curses_terminal_get_esc_key(Tn5250Terminal * This, int is_esc) /*@mod
 static void curses_terminal_beep(Tn5250Terminal * This);
 
 #ifdef USE_OWN_KEY_PARSING
-static int curses_getch (Tn5250Terminal *This);
-
 struct _Key {
    int	       k_code;
    char        k_str[10];
@@ -144,6 +142,7 @@ struct _Tn5250TerminalPrivate {
  * name. */
 static Key curses_caps[] = {
    { K_ENTER, "@8" },
+   { K_ENTER, "cr" },
    { K_BACKTAB, "kB" },
    { K_F1, "k1" },
    { K_F2, "k2" },
@@ -288,7 +287,11 @@ static void curses_terminal_init(Tn5250Terminal * This)
 
    (void)initscr();
    raw();
-#ifndef USE_OWN_KEY_PARSING
+#ifdef USE_OWN_KEY_PARSING
+   if ((str = tgetstr ("ks", NULL)) != NULL)
+      tputs (str, 1, putchar);
+   fflush (stdout);
+#else
    keypad(stdscr, 1);
 #endif
 
@@ -600,6 +603,7 @@ static int curses_terminal_waitevent(Tn5250Terminal * This)
    return result;
 }
 
+#ifndef USE_OWN_KEY_PARSING
 /****i* lib5250/curses_terminal_getkey
  * NAME
  *    curses_terminal_getkey
@@ -614,11 +618,7 @@ static int curses_terminal_getkey(Tn5250Terminal * This)
 {
    int key;
   
-#ifdef USE_OWN_KEY_PARSING
-   key = curses_getch (This);
-#else
    key = getch();
-#endif
 
    while (1) {
       switch (key) {
@@ -699,6 +699,7 @@ static int curses_terminal_getkey(Tn5250Terminal * This)
       }
    }
 }
+#endif
 
 /****i* lib5250/curses_terminal_beep
  * NAME
@@ -717,6 +718,7 @@ static void curses_terminal_beep (Tn5250Terminal *This)
    refresh ();
 }
 
+#ifndef USE_OWN_KEY_PARSING
 /****i* lib5250/curses_terminal_get_esc_key
  * NAME
  *    curses_terminal_get_esc_key
@@ -896,6 +898,7 @@ static int curses_terminal_get_esc_key(Tn5250Terminal * This, int is_esc)
    refresh();
    return key;
 }
+#endif
 
 /****f* lib5250/tn5250_curses_terminal_use_underscores
  * NAME
@@ -941,8 +944,10 @@ static int curses_get_key (Tn5250Terminal *This, int rmflag)
 	    complete_match_len = j;
 	    break;
 	 }
-	 if (j >= This->data->k_buf_len) {
+	 if (j == This->data->k_buf_len) {
 	    have_incomplete_match = i;
+	    TN5250_LOG (("Have incomplete match ('%s')\n",
+		     This->data->k_map[i].k_str));
 	    break;
 	 }
 	 if (This->data->k_map[i].k_str[j] != This->data->k_buf[j])
@@ -979,7 +984,7 @@ static int curses_get_key (Tn5250Terminal *This, int rmflag)
    return -1;
 }
 
-static int curses_getch (Tn5250Terminal *This)
+static int curses_terminal_getkey (Tn5250Terminal *This)
 {
    int ch;
 
@@ -989,7 +994,15 @@ static int curses_getch (Tn5250Terminal *This)
       This->data->k_buf[This->data->k_buf_len++] = ch;
    }
 
-   return curses_get_key (This, 1);
+   ch = curses_get_key (This, 1);
+   switch (ch) {
+   case K_CTRL('Q'):
+      This->data->quit_flag = 1;
+      return -1;
+   case 0x0a:
+      return 0x0d;
+   }
+   return ch;
 }
 #endif
 
