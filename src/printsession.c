@@ -102,6 +102,7 @@ Tn5250PrintSession *tn5250_print_session_new()
    This->output_cmd = NULL;
    This->conn_fd = -1;
    This->map = NULL;
+   This->script_slot = NULL;
 
    return This;
 }

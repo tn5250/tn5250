@@ -51,17 +51,31 @@ typedef struct {
     Tn5250Field *field;
 } Tn5250_Field;
 
+typedef struct {
+    PyObject_HEAD
+    Tn5250PrintSession *psess;
+} Tn5250_PrintSession;
+
+typedef struct {
+    PyObject_HEAD
+    Tn5250Record *rec;
+} Tn5250_Record;
+
 staticforward PyTypeObject Tn5250_ConfigType;
 staticforward PyTypeObject Tn5250_TerminalType;
 staticforward PyTypeObject Tn5250_DisplayType;
 staticforward PyTypeObject Tn5250_DisplayBufferType;
 staticforward PyTypeObject Tn5250_FieldType;
+staticforward PyTypeObject Tn5250_PrintSessionType;
+staticforward PyTypeObject Tn5250_RecordType;
 
 #define Tn5250_ConfigCheck(v)	    ((v)->ob_type == &Tn5250_ConfigType)
 #define Tn5250_TerminalCheck(v)	    ((v)->ob_type == &Tn5250_TerminalType)
 #define Tn5250_DisplayCheck(v)	    ((v)->ob_type == &Tn5250_DisplayType)
 #define Tn5250_DisplayBufferCheck(v)((v)->ob_type == &Tn5250_DisplayBufferType)
 #define Tn5250_FieldCheck(v)	    ((v)->ob_type == &Tn5250_FieldType)
+#define Tn5250_PrintSessionCheck(v) ((v)->ob_type == &Tn5250_PrintSessionType)
+#define Tn5250_RecordCheck(v)	    ((v)->ob_type == &Tn5250_RecordType)
 
 /****************************************************************************/
 /* Config class								    */
@@ -2978,9 +2992,464 @@ statichere PyTypeObject Tn5250_FieldType = {
 /* PrintSession class                                                       */
 /****************************************************************************/
 
+static PyObject*
+Tn5250_PrintSession_wrap (psess)
+    Tn5250PrintSession* psess;
+{
+    Tn5250_PrintSession* self;
+
+    if (psess != NULL && psess->script_slot != NULL)
+	return (PyObject*)psess->script_slot;
+
+    self = PyObject_NEW(Tn5250_PrintSession, &Tn5250_PrintSessionType);
+    if (self == NULL) {
+	// XXX: decref the psess
+	return NULL;
+    }
+
+    self->psess = psess;
+    psess->script_slot = self;
+    return (PyObject*)self;
+}
+
+static PyObject*
+tn5250_PrintSession (func_self, args)
+    PyObject* func_self;
+    PyObject* args;
+{
+    Tn5250PrintSession* psess;
+
+    psess = tn5250_print_session_new ();
+    if (psess == NULL) {
+	// XXX: Strerror
+	return NULL;
+    }
+
+    return Tn5250_PrintSession_wrap(psess);
+}
+
+static void
+tn5250_PrintSession_dealloc (self)
+    Tn5250_PrintSession* self;
+{
+    // XXX: Reference counting problems.
+    if (self->psess != NULL)
+	tn5250_print_session_destroy (self->psess);
+}
+
+static PyObject*
+tn5250_PrintSession_set_fd (self, args)
+    Tn5250_PrintSession* self;
+    PyObject* args;
+{
+    SOCKET_TYPE fd;
+    if (self == NULL || !Tn5250_PrintSessionCheck (self))
+        return PyErr_Format(PyExc_TypeError, "not a PrintSession.");
+    if (!PyArg_ParseTuple(args, "d:PrintSession.set_fd", &fd))
+        return NULL;
+    if (self->psess != NULL)
+	tn5250_print_session_set_fd (self->psess, fd);
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+static PyObject*
+tn5250_PrintSession_get_response_code (self, args)
+    Tn5250_PrintSession* self;
+    PyObject* args;
+{
+    if (self == NULL || !Tn5250_PrintSessionCheck (self))
+        return PyErr_Format(PyExc_TypeError, "not a PrintSession.");
+    if (!PyArg_ParseTuple(args, ":PrintSession.get_response_code"))
+        return NULL;
+    // XXX: Implement
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+static PyObject*
+tn5250_PrintSession_set_stream (self, args)
+    Tn5250_PrintSession* self;
+    PyObject* args;
+{
+    if (self == NULL || !Tn5250_PrintSessionCheck (self))
+        return PyErr_Format(PyExc_TypeError, "not a PrintSession.");
+    if (!PyArg_ParseTuple(args, ":PrintSession.set_stream"))
+        return NULL;
+    // XXX: Implement
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+static PyObject*
+tn5250_PrintSession_set_output_command (self, args)
+    Tn5250_PrintSession* self;
+    PyObject* args;
+{
+    if (self == NULL || !Tn5250_PrintSessionCheck (self))
+        return PyErr_Format(PyExc_TypeError, "not a PrintSession.");
+    if (!PyArg_ParseTuple(args, ":PrintSession.set_output_command"))
+        return NULL;
+    // XXX: Implement
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+static PyObject*
+tn5250_PrintSession_set_char_map (self, args)
+    Tn5250_PrintSession* self;
+    PyObject* args;
+{
+    if (self == NULL || !Tn5250_PrintSessionCheck (self))
+        return PyErr_Format(PyExc_TypeError, "not a PrintSession.");
+    if (!PyArg_ParseTuple(args, ":PrintSession.set_char_map"))
+        return NULL;
+    // XXX: Implement
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+static PyObject*
+tn5250_PrintSession_main_loop (self, args)
+    Tn5250_PrintSession* self;
+    PyObject* args;
+{
+    if (self == NULL || !Tn5250_PrintSessionCheck (self))
+        return PyErr_Format(PyExc_TypeError, "not a PrintSession.");
+    if (!PyArg_ParseTuple(args, ":PrintSession.main_loop"))
+        return NULL;
+    // XXX: Implement
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+static PyObject*
+tn5250_PrintSession_stream (self, args)
+    Tn5250_PrintSession* self;
+    PyObject* args;
+{
+    if (self == NULL || !Tn5250_PrintSessionCheck (self))
+        return PyErr_Format(PyExc_TypeError, "not a PrintSession.");
+    if (!PyArg_ParseTuple(args, ":PrintSession.stream"))
+        return NULL;
+    // XXX: Implement
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+
+static PyMethodDef Tn5250_PrintSessionMethods[] = {
+    { "set_fd",		tn5250_PrintSession_set_fd,	    METH_VARARGS },
+    { "get_response_code",tn5250_PrintSession_get_response_code,METH_VARARGS },
+    { "set_stream",	tn5250_PrintSession_set_stream,	    METH_VARARGS },
+    { "set_output_command",tn5250_PrintSession_set_output_command,METH_VARARGS },
+    { "set_char_map",	tn5250_PrintSession_set_char_map,   METH_VARARGS },
+    { "main_loop",	tn5250_PrintSession_main_loop,	    METH_VARARGS },
+    { "stream",		tn5250_PrintSession_stream,	    METH_VARARGS },
+    { NULL, NULL }
+};
+
+static PyObject*
+tn5250_PrintSession_getattr (self, name)
+    Tn5250_PrintSession* self;
+    char *name;
+{
+    return Py_FindMethod (Tn5250_PrintSessionMethods, (PyObject*)self, name);
+}
+
+statichere PyTypeObject Tn5250_PrintSessionType = {
+    PyObject_HEAD_INIT(NULL)
+    0,					/* ob_size */
+    "PrintSession",			/* tp_name */
+    sizeof (Tn5250_PrintSession),		/* tp_basicsize */
+    0,					/* tp_itemsize */
+    /* methods */
+    (destructor)tn5250_PrintSession_dealloc,/* tp_dealloc */
+    0,					/* tp_print */
+    (getattrfunc)tn5250_PrintSession_getattr,/* tp_getattr */
+    0,					/* tp_setattr */
+    0,					/* tp_compare */
+    0,					/* tp_repr */
+    0,					/* tp_as_number */
+    0,					/* tp_as_sequence */
+    0,					/* tp_as_mapping */
+    0,					/* tp_hash */
+};
+
 /****************************************************************************/
 /* Record class                                                             */
 /****************************************************************************/
+
+static PyObject*
+tn5250_Record (func_self, args)
+    PyObject *func_self;
+    PyObject *args;
+{
+    Tn5250_Record *self;
+    if (!PyArg_ParseTuple(args, ":Record"))
+	return NULL;
+    self = PyObject_NEW(Tn5250_Record, &Tn5250_RecordType);
+    if (self == NULL)
+	return NULL;
+
+    self->rec = tn5250_record_new ();
+    return (PyObject*)self;
+}
+
+static PyObject*
+tn5250_Record_get_byte (self, args)
+    Tn5250_Record* self;
+    PyObject *args;
+{
+    int b;
+    if (self == NULL || !Tn5250_RecordCheck (self))
+        return PyErr_Format(PyExc_TypeError, "not a Record.");
+    if (!PyArg_ParseTuple(args, ":Record.get_byte"))
+        return NULL;
+    b = tn5250_record_get_byte (self->rec);
+    return PyInt_FromLong((long)b);
+}
+
+static PyObject*
+tn5250_Record_unget_byte (self, args)
+    Tn5250_Record* self;
+    PyObject *args;
+{
+    if (self == NULL || !Tn5250_RecordCheck (self))
+	return PyErr_Format(PyExc_TypeError, "not a Record.");
+    if (!PyArg_ParseTuple(args, ":Record.unget_byte"))
+	return NULL;
+    tn5250_record_unget_byte (self->rec);
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+static PyObject*
+tn5250_Record_is_chain_end (self, args)
+    Tn5250_Record* self;
+    PyObject *args;
+{
+    if (self == NULL || !Tn5250_RecordCheck (self))
+	return PyErr_Format(PyExc_TypeError, "not a Record.");
+    if (!PyArg_ParseTuple(args, ":Record.is_chain_end"))
+	return NULL;
+    if (tn5250_record_is_chain_end (self->rec))
+	return PyInt_FromLong(1);
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+static PyObject*
+tn5250_Record_skip_to_end (self, args)
+    Tn5250_Record* self;
+    PyObject* args;
+{
+    if (self == NULL || !Tn5250_RecordCheck (self))
+	return PyErr_Format(PyExc_TypeError, "not a Record.");
+    if (!PyArg_ParseTuple(args, ":Record.skip_to_end"))
+	return NULL;
+    tn5250_record_skip_to_end (self->rec);
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+static PyObject*
+tn5250_Record_length (self, args)
+    Tn5250_Record* self;
+    PyObject* args;
+{
+    int l;
+    if (self == NULL || !Tn5250_RecordCheck (self))
+	return PyErr_Format(PyExc_TypeError, "not a Record.");
+    if (!PyArg_ParseTuple(args, ":Record.length"))
+	return NULL;
+    l = tn5250_record_length (self->rec);
+    return PyInt_FromLong(l);
+}
+
+static PyObject*
+tn5250_Record_append_byte (self, args)
+    Tn5250_Record *self;
+    PyObject* args;
+{
+    int c;
+    if (self == NULL || !Tn5250_RecordCheck (self))
+	return PyErr_Format(PyExc_TypeError, "not a Record.");
+    if (!PyArg_ParseTuple(args, "d:Record.append_byte", &c))
+	return NULL;
+    tn5250_record_append_byte (self->rec, c);
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+static PyObject*
+tn5250_Record_data (self, args)
+    Tn5250_Record* self;
+    PyObject* args;
+{
+    char *data;
+    if (self == NULL || !Tn5250_RecordCheck (self))
+	return PyErr_Format(PyExc_TypeError, "not a Record.");
+    if (!PyArg_ParseTuple(args, ":Record.data"))
+	return NULL;
+    return PyString_FromStringAndSize (tn5250_record_data (self->rec),
+				       tn5250_record_length (self->rec));
+}
+
+static PyObject*
+tn5250_Record_set_cur_pos (self, args)
+    Tn5250_Record* self;
+    PyObject* args;
+{
+    int newpos;
+    if (self == NULL || !Tn5250_RecordCheck (self))
+	return PyErr_Format(PyExc_TypeError, "not a Record.");
+    if (!PyArg_ParseTuple(args, "d:Record.set_cur_pos", &newpos))
+	return NULL;
+    tn5250_record_set_cur_pos (self->rec, newpos);
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+static PyObject*
+tn5250_Record_opcode (self, args)
+    Tn5250_Record* self;
+    PyObject* args;
+{
+    int op;
+    if (self == NULL || !Tn5250_RecordCheck (self))
+	return PyErr_Format(PyExc_TypeError, "not a Record.");
+    if (!PyArg_ParseTuple(args, ":Record.opcode"))
+	return NULL;
+    op = tn5250_record_opcode(self->rec);
+    return PyInt_FromLong((long)op);
+}
+
+static PyObject*
+tn5250_Record_flow_type (self, args)
+    Tn5250_Record* self;
+    PyObject* args;
+{
+    int ft;
+    if (self == NULL || !Tn5250_RecordCheck (self))
+	return PyErr_Format(PyExc_TypeError, "not a Record.");
+    if (!PyArg_ParseTuple(args, ":Record.flow_type"))
+	return NULL;
+    ft = tn5250_record_flow_type(self->rec);
+    return PyInt_FromLong((long)ft);
+}
+
+static PyObject*
+tn5250_Record_flags (self, args)
+    Tn5250_Record* self;
+    PyObject* args;
+{
+    int f;
+    if (self == NULL || !Tn5250_RecordCheck (self))
+	return PyErr_Format(PyExc_TypeError, "not a Record.");
+    if (!PyArg_ParseTuple(args, ":Record.flags"))
+	return NULL;
+    f = tn5250_record_flags(self->rec);
+    return PyInt_FromLong((long)f);
+}
+
+static PyObject*
+tn5250_Record_sys_request (self, args)
+    Tn5250_Record* self;
+    PyObject* args;
+{
+    if (self == NULL || !Tn5250_RecordCheck (self))
+	return PyErr_Format(PyExc_TypeError, "not a Record.");
+    if (!PyArg_ParseTuple(args, ":Record.sys_request"))
+	return NULL;
+    if (tn5250_record_sys_request (self->rec))
+	return PyInt_FromLong(1);
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+static PyObject*
+tn5250_Record_attention (self, args)
+    Tn5250_Record* self;
+    PyObject* args;
+{
+    if (self == NULL || !Tn5250_RecordCheck (self))
+	return PyErr_Format(PyExc_TypeError, "not a Record.");
+    if (!PyArg_ParseTuple(args, ":Record.attention"))
+	return NULL;
+    if (tn5250_record_attention (self->rec))
+	return PyInt_FromLong(1);
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+static PyObject*
+tn5250_Record_dump (self, args)
+    Tn5250_Record* self;
+    PyObject* args;
+{
+    if (self == NULL || !Tn5250_RecordCheck (self))
+	return PyErr_Format(PyExc_TypeError, "not a Record.");
+    if (!PyArg_ParseTuple(args, ":Record.dump"))
+	return NULL;
+    tn5250_record_dump (self->rec);
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+static void
+tn5250_Record_dealloc (self)
+    Tn5250_Record* self;
+{
+    // XXX: Reference counting problems.
+    if (self->rec != NULL)
+	tn5250_record_destroy (self->rec);
+}
+
+static PyMethodDef Tn5250_RecordMethods[] = {
+    { "get_byte",	tn5250_Record_get_byte,		METH_VARARGS },
+    { "unget_byte",	tn5250_Record_unget_byte,	METH_VARARGS },
+    { "is_chain_end",	tn5250_Record_is_chain_end,	METH_VARARGS },
+    { "skip_to_end",	tn5250_Record_skip_to_end,	METH_VARARGS },
+    { "length",		tn5250_Record_length,		METH_VARARGS },
+    { "append_byte",	tn5250_Record_append_byte,	METH_VARARGS },
+    { "data",		tn5250_Record_data,		METH_VARARGS },
+    { "set_cur_pos",	tn5250_Record_set_cur_pos,	METH_VARARGS },
+    { "opcode",		tn5250_Record_opcode,		METH_VARARGS },
+    { "flow_type",	tn5250_Record_flow_type,	METH_VARARGS },
+    { "flags",		tn5250_Record_flags,		METH_VARARGS },
+    { "sys_request",	tn5250_Record_sys_request,	METH_VARARGS },
+    { "attention",	tn5250_Record_attention,	METH_VARARGS },
+    { "dump",		tn5250_Record_dump,		METH_VARARGS },
+    { NULL, NULL }
+};
+
+static PyObject*
+tn5250_Record_getattr (self, name)
+    Tn5250_Record* self;
+    char *name;
+{
+    return Py_FindMethod (Tn5250_RecordMethods, (PyObject*)self, name);
+}
+
+statichere PyTypeObject Tn5250_RecordType = {
+    PyObject_HEAD_INIT(NULL)
+    0,					/* ob_size */
+    "Record",				/* tp_name */
+    sizeof (Tn5250_Record),		/* tp_basicsize */
+    0,					/* tp_itemsize */
+    /* methods */
+    (destructor)tn5250_Record_dealloc,	/* tp_dealloc */
+    0,					/* tp_print */
+    (getattrfunc)tn5250_Record_getattr,	/* tp_getattr */
+    0,					/* tp_setattr */
+    0,					/* tp_compare */
+    0,					/* tp_repr */
+    0,					/* tp_as_number */
+    0,					/* tp_as_sequence */
+    0,					/* tp_as_mapping */
+    0,					/* tp_hash */
+};
 
 /****************************************************************************/
 /* Session class                                                            */
@@ -3017,6 +3486,8 @@ static PyMethodDef Tn5250Methods[] = {
     { "DisplayBuffer",	tn5250_DisplayBuffer,	METH_VARARGS },
     { "Display",	tn5250_Display,		METH_VARARGS },
     { "Field",		tn5250_Field,		METH_VARARGS },
+    { "PrintSession",	tn5250_PrintSession,	METH_VARARGS },
+    { "Record",		tn5250_Record,		METH_VARARGS },
     { NULL, NULL }
 };
 

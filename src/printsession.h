@@ -57,6 +57,7 @@ struct _Tn5250PrintSession {
    FILE /*@null@*/ *printfile;
    Tn5250CharMap *map;
    char /*@null@*/ *output_cmd;
+   void *script_slot;
 };
 
 typedef struct _Tn5250PrintSession Tn5250PrintSession;
