@@ -45,6 +45,7 @@ xt5250*VT100.Translations: #override\n\
         Shift <Key>Tab: string("\033[Z") \n\
         Shift <Key>Left: string("\033\010") \n\
         Shift <Key>Right: string("\033\025") \n\
+        Shift <Key>Home: string("\033\006") \n\
 
 ! Something I did installed a file which turned off underLine
 ! and turned on colorULMode in my ~/.Xdefaults.  This, obviously, is not
