@@ -193,7 +193,7 @@ static Key curses_vt100[] = {
    { K_RESET,           "\022" }, /* CTRL R */
    { K_TESTREQ,         "\024" }, /* CTRL T */
    { K_ROLLDN,          "\025" }, /* CTRL U */
-   { K_FIELDEXIT,       "\030" }, /* CTRL X */
+   { K_FIELDPLUS,       "\030" }, /* CTRL X */
 
    /* ASCII DEL is not correctly reported as the DC key in some
     * termcaps */
@@ -741,7 +741,7 @@ static int curses_terminal_getkey(Tn5250Terminal * This)
       case K_CTRL('U'):
 	 return K_ROLLDN;
       case K_CTRL('X'):
-	 return K_FIELDEXIT;
+	 return K_FIELDPLUS;
 
       case K_CTRL('Q'):
 	 This->data->quit_flag = 1;

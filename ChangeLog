@@ -1,3 +1,11 @@
+2001-01-23 Scott Klement <klemscot@klements.com>
+- Wired Field+ to C-x in cursesterm.c
+- Made keys to exit FER state match those on an IBM 3487
+- Fixed Field- in "numeric only" field.  Prior to this fix, instead of 
+   changing the sign bit, it was adding a zero with a negative sign
+   bit ('}').  Effectively, hitting 1<FIELD-> now gives -1 instead of
+   -10 in these "numeric only" fields.
+
 2001-01-18 Scott Klement <klemscot@klements.com>
 - Fix for sign not being set when field minus / field plus pressed in an
   auto-enter field.

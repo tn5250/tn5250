@@ -894,6 +894,13 @@ void tn5250_display_do_key(Tn5250Display *This, int key)
 	 tn5250_display_indicator_clear (This, TN5250_DISPLAY_IND_FER);
 	 return;
 
+      case K_UP:
+      case K_DOWN:
+      case K_RIGHT:
+	 tn5250_display_indicator_clear (This, TN5250_DISPLAY_IND_FER);
+	 break;
+
+      case K_ENTER:
       case K_FIELDEXIT:
       case K_FIELDMINUS:
       case K_FIELDPLUS:
@@ -1177,7 +1184,8 @@ void tn5250_display_kf_field_minus(Tn5250Display * This)
    tn5250_display_field_pad_and_adjust ( This, field );
 
    /* For numeric only fields, we shift the data one character to the
-    * left and insert an ebcdic '}' in the rightmost position.  For
+    * left and change the zone to negative.  i.e. 0xf0 becomes 0xd0,
+    * 0xf1 becomes 0xd1, etc.  in the rightmost position.  For
     * signed numeric fields, we change the sign position to a '-'. */
    data = tn5250_display_field_data (This, field);
    if (tn5250_field_type(field) == TN5250_FIELD_NUM_ONLY) {
@@ -1185,10 +1193,8 @@ void tn5250_display_kf_field_minus(Tn5250Display * This)
 	 /* FIXME: Explain why to the user. */
 	 tn5250_display_inhibit(This);
       } else {
-	 int i;
-	 for (i = 0; i < tn5250_field_length(field) - 1; i++)
-	    data[i] = data[i+1];
-	 data[tn5250_field_length (field) - 1] = tn5250_char_map_to_remote (This->map, '}');
+         int i = tn5250_field_length (field) - 1;
+	 if (data[i]&0x20) data[i]&=0xDF;
       }
    } else
       data[tn5250_field_length (field) - 1] = tn5250_char_map_to_remote (This->map, '-');
