@@ -1,3 +1,7 @@
+2000-03-21 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+- Added updated manual pages per Carey Evans, including new manual pages
+  for lp5250d and scs2pdf.
+
 2000-03-01 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 - Added instructions on running `autogen.sh for building from CVS.
 

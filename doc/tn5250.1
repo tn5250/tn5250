@@ -2,7 +2,7 @@
 .ig
 Man page for tn5250.
 
-Copyright (C) 1999 Carey Evans.
+Copyright (C) 1999, 2000 Carey Evans.
 
 You can redistribute and/or modify this document under the terms of 
 the GNU General Public License as published by the Free Software
@@ -14,7 +14,7 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 ..
-.TH TN5250 1 "18 Sep 1999"
+.TH TN5250 1 "18 Mar 2000"
 .SH NAME
 tn5250 \- an implementation of the 5250 telnet protocol
 .SH SYNOPSIS
@@ -30,28 +30,24 @@ tn5250 \- an implementation of the 5250 telnet protocol
 .RB [\| \-u \|]
 .RI [\| protocol: \|] host [\| :port \|]
 .PP
-.B tn5250
-.B \-p
-.RB [\| \-t 
+.B xt5250
+.RB [\| \-t
 .IR tracefile \|]
+.RB [\| \-m
+.IR "translation map" \|]
 .RB [\| \-s
 .IR "session name" \|]
-.RB [\| \-P
-.IR "output command" \|]
-.RB [\| \-T
-.IR "transform name" \|]
-.RI [\| protocol: \|] host [\| :port \|]
+.RB [\| \-y
+.IR "terminal name" \|]
+.RI [\|[\| protocol: \|] host [\| :port \|]\|]
 .PP
 .B tn5250 \-V
 .SH "DESCRIPTION"
 .B tn5250
-emulates IBM's 5250 compatible terminals, or 3812 printer, to connect
-over TCP/IP to an IBM AS/400.  The terminal emulation works on any
-local terminal supported by curses, and provides 132x27 and full
-colour support where possible.  The printer emulation either works
-with host print transform, or in conjunction with the
-.B scs2ascii
-program, to print AS/400 spooled files on a local printer.
+emulates IBM's 5250 compatible terminals to connect over TCP/IP to an
+IBM AS/400.  The terminal emulation works on any local terminal
+supported by curses, and provides 132x27 and full colour support where
+possible.
 .PP
 .B tn5250
 will connect to the given
@@ -75,17 +71,12 @@ a standard ASCII terminal does not support all these keys,
 .B tn5250
 uses control sequences to perform the operations.
 .PP
-Printing support
-.RB ( \-p )
-and named sessions
+Named session support
 .RB ( \-s )
-are available for most versions of OS/400, but is only supplied with
+is available for most versions of OS/400, but is only supplied with
 V4R3 and V4R4.  For V3R2, V3R7, V4R1 and V4R2, please see
 informational APAR II10918.
 .SH OPTIONS
-.TP
-.BI \-p
-Begin a printer session instead of a terminal emulator.
 .TP
 .BI \-t\  tracefile
 Log all
@@ -97,25 +88,13 @@ such as the password used to log in.
 .TP
 .BI \-m\  "translation map"
 Set the translation table between ASCII and EBCDIC.  This should match
-the CCSID of the interactive job; for machines sold in the United
-States, Canada, the Netherlands, Portugal, Brazil, New Zealand and
-Australia this will be 37.  For the United Kingdom it will probably be
-285.  The default for
+the CCSID of the interactive job.  The default for
 .B tn5250
 is
 .BR 37 .
-.sp
-Currently recognised values for the translation map are: 37, 38, 274,
-275, 277, 278, 280, 281, 284, 285, 290, 297, 420, 423, 424, 500, 870,
-871, 880, 905, 918, atde, atdea, be, br, cafr, ccc, cpar1, cpar2,
-cpbe, cpca, cpch, cpes, cpfi, cpfr, cpgb, cpgr, cphe, cpis, cpit,
-cpnl, cpno, cproece, cptr, cpus, cpwt, cpyu, cyrillic, dkno, dknoa,
-en, es, esa, ess, fisea, fr, ibm, int, it, jpe, jpkana, pt, uk, us.
-.sp
-CCSIDs on the AS/400 are listed in Appendix G of IBM manual
-SC41-5101-01, AS/400 National Language Support V4R2.  This manual is
-available on the web at
-.RI < http://publib.boulder.ibm.com/cgi-bin/bookmgr/BOOKS/QB3AWC01/G.2 >.
+See
+.B Translation Maps
+below for more information.
 .TP
 .BI \-s\  "session name"
 Set the device name for the AS/400 to assign to the 5250 session.
@@ -132,19 +111,10 @@ it is large enough to support the large terminal size.  See
 below for valid model names.
 .TP
 .B \-u
-Use underline characters instead of the underline attribute, for
-terminals such as the Linux console that do not support the latter.
-.TP
-.BI \-P\  "output command"
-Set the command that will be receive printer output.  The default
-command is
-.BR "scs2ascii |lpr" .
-.TP
-.BI \-T\  "transform name"
-Set the name of the print transform to use on the AS/400.  This is the 
-same as the MFRTYPMDL parameter on the CRTDEVPRT command.  See the
-.B Printing
-section below for more information.
+Force the use of underline characters instead of the underline
+attribute, for terminals that do not support underlining but where
+.B tn5250
+does not work this out itself.
 .TP
 .B \-V
 Display the version of
@@ -157,15 +127,16 @@ These are some examples of the use of
 .I "tn5250 as400sys"
 Connect to the system
 .IR as400sys ,
-using the default translation map (en)
+using the default translation map (37)
 and a generated session name
 .RI (QPADEV #### ).
 .TP
-.I "tn5250 -m 37 -s session1 -u as400sys"
+.I "tn5250 -m 870 -s session1 -y IBM-3477-FC as400sys"
 Connect to
 .I as400sys
-using the translation map for CCSID 37, the session name SESSION1
-and with underlined spaces represented using underscore characters.
+using the translation map for CCSID 870 (Eastern Europe), the session
+name SESSION1 and with a terminal supporting colour and a 132x27
+display.
 .SH USAGE
 This manual assumes that the user is familiar with a real 5250
 terminal, or another 5250 emulator, and only describes features
@@ -196,6 +167,13 @@ or
 .B C-g
 followed by
 .BR C-a .
+Most setups also let you use the
+.B Alt
+or
+.B Meta
+key for
+.B M-
+keypresses.
 .PP
 .TS
 tab (@);
@@ -256,14 +234,12 @@ There are some unavoidable differences though:
 ASCII terminals (and curses) do not support the 5250 column
 separators.
 .PP
-Some terminals (mostly ones based on the VGA text mode) do not support 
-underlining.  In this case, you should pass the
+Some terminals (mostly ones based on the VGA text mode) do not support
+underlining.  If this is the case and
+.B tn5250
+does not detect it automatically, you should pass the
 .B \-u
-option to
-.BR tn5250 .
-Note that we cannot determine this automatically, since the Linux
-console, for example, supports an underline escape sequence but does
-not display the underlines when using VGA text mode.
+option.
 .PP
 Some terminals (such as
 .BR xterm )
@@ -291,40 +267,41 @@ IBM-5292-2@24x80 color
 IBM-5291-1@24x80 monochrome
 IBM-5251-11@24x80 monochrome@Yes
 .TE
+.SS "Translation Maps"
+CCSIDs on the AS/400 are listed in Appendix G of IBM manual
+SC41-5101-01, AS/400 National Language Support.  This manual is
+available on the web at
+.RI < http://publib.boulder.ibm.com/cgi-bin/bookmgr/BOOKS/QB3AWC01/G.2 >.
 .PP
-.SS Printing
-.B tn5250
-supports two options for printing.  If the
-.B \-T
-option is not given, then the AS/400 will generate an SCS data
-stream.  This can be output to
-.BR scs2ascii ,
-which will transform the stream into ASCII output which can then be
-piped to
-.BR lpr .
-This is the default behaviour.
+Currently recognised values for the translation map are: 37, 256, 273,
+277, 278, 280, 284, 285, 297, 420, 424, 500, 870, 871, 875, 880, 905,
+and 1026.  Most of these are translated to ISO-8859-1, also known as
+Latin 1.  Some of them contain characters only present in another
+encoding, which is used instead.  These are listed below.
 .PP
-If a printer model is specified, then the AS/400 will perform host
-print transform itself, and produce output suitable for sending to the
-same model of printer.  More information about valid values for this
-parameter is in the
-.I OS/400 CL Reference
-for
-.BR CRTDEVPRT ,
-and in the online help for that command, for the
-.B MFRTYPMDL
-parameter.  A common value would be
-.B *HP4
-for HP LaserJet 4 compatible printers.
+.TS
+tab (,);
+l l l
+___
+rB l l.
+CCSID,Unix encoding,Description
+290,JIS_X0201,Katakana Extended
+420,ISO-8859-6,Arabic
+424,ISO-8859-8,Hebrew
+870,ISO-8859-2,Eastern Europe
+875,ISO-8859-7,Greek
+880,ISO-8859-5,Cyrillic
+905,ISO-8859-3,Turkey - Latin3
+1026,ISO-8859-9,Turkey - Latin5
+.TE
 .PP
-To end a printer session, use Control-C.
+If possible, configure your terminal to use the appropriate encoding
+if your AS/400 uses any of those CCSIDs.
 .SH BUGS
-.B tn5250
-is still extremely BETA, but the program is very
-usable.  Please report any bugs to the mailing list at
-.RI < linux5250@sungro.com >.
+Please report any bugs you find to the mailing list at
+.RI < linux5250@midrange.com >.
 .SH "SEE ALSO"
-.BR scs2ascii (1),
+.BR lp5250d (1),
 .BR http://www.blarg.net/~mmadore/5250.html ,
 .BR RFC1205 ,
 .BR II10918 .
@@ -332,9 +309,9 @@ usable.  Please report any bugs to the mailing list at
 .B tn5250
 is copyright
 .if t \(co
-1997, 1998, 1999 Michael Madore.  This manpage is copyright
+1997 - 2000 Michael Madore.  This manpage is copyright
 .if t \(co
-1999 Carey Evans.
+1999, 2000 Carey Evans.
 .PP
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

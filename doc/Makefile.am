@@ -1,6 +1,8 @@
 
 man_MANS =		scs2ascii.1\
-			tn5250.1
+ 			scs2pdf.1\
+			tn5250.1\
+			lp5250d.1
 
 #
 # These are documentation of the lib5250 API
