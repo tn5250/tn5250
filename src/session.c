@@ -530,7 +530,7 @@ tn5250_session_send_field (Tn5250Session * This, Tn5250Buffer * buf,
 		 !tn5250_field_is_continued_last (field));
 
 
-  /* find the following fields with the same cursor progression id
+  /* find the following fields with the continuous flag set
    * until we got them all.
    *
    * Assumes for now that all the continued field are one after the
@@ -2764,6 +2764,7 @@ tn5250_session_define_selection_field (Tn5250Session * This,
   unsigned char unknownlength;
   unsigned char reserved;
   int minorlength;
+  short usescrollbar = 0;
 
   TN5250_LOG (("Entering tn5250_session_define_selection_field()\n"));
 
@@ -2823,6 +2824,7 @@ tn5250_session_define_selection_field (Tn5250Session * This,
   if (flagbyte & 0x80)
     {
       TN5250_LOG (("Use scroll bar\n"));
+      usescrollbar = 1;
     }
 
   if (flagbyte & 0x40)
@@ -2926,6 +2928,12 @@ tn5250_session_define_selection_field (Tn5250Session * This,
   if (length == 0)
     {
       return;
+    }
+
+  /* The docs are confusing and I'm not sure what to do.  So I'll give up */
+  if (usescrollbar)
+    {
+      TN5250_LOG (("Scroll bars not supported in selection fields\n"));
     }
 
   unknownlength = tn5250_record_get_byte (This->record);
@@ -3096,7 +3104,7 @@ tn5250_session_define_selection_item (Tn5250Session * This,
   length--;
 
   /* The first three bits cannot all be off */
-  if ((flagbyte & 0x100) == 0)
+  if ((flagbyte & 0xE0) == 0)
     {
       TN5250_LOG (("Minor structure ignored\n"));
 
@@ -3151,7 +3159,8 @@ tn5250_session_define_selection_item (Tn5250Session * This,
   while (length > 0)
     {
       reserved = tn5250_record_get_byte (This->record);
-      TN5250_LOG (("Choice text = 0x%02X\n", reserved));
+      TN5250_LOG (("Choice text = 0x%02X (%c)\n", reserved,
+		   tn5250_char_map_to_local (tn5250_display_char_map (This->display), reserved)));
       length--;
     }
 
