@@ -79,6 +79,8 @@ sig_child(int signum)
  *****/
 int tn5250_daemon(int nochdir, int noclose, int ignsigcld)
 {
+  struct sigaction sa;
+
     switch (fork())
     {
         case 0:  break;
@@ -111,15 +113,16 @@ int tn5250_daemon(int nochdir, int noclose, int ignsigcld)
 
     umask(0);
 
+
     if(ignsigcld) {
 #ifdef SIGCHLD
-	signal(SIGCHLD,sig_child);
+      signal(SIGCHLD,sig_child);
 #else
 #ifdef SIGCLD
-	signal(SIGCLD,sig_child);
+      signal(SIGCLD,sig_child);
 #endif
 #endif
-      }
+    }
 
     return 0;
 }

@@ -533,7 +533,7 @@ SendTestScreen(Tn5250Host * This)
 
   int currow;
 
-static char ascii_banner[][400]={
+static char ascii_banner[][560]={
 "                                                                  #####        ",
 "                                                                 #######       ",
 "                    @                                            ##O#O##       ",
@@ -545,21 +545,20 @@ static char ascii_banner[][400]={
 "     ##          @@#   ##     ##  ##     ##      ###        QQ#           ##Q  ",
 "     ##       # @@#    ##     ##  ##     ##     ## ##     QQQQQQ#       #QQQQQQ",
 "     ##      ## @@# #  ##     ##  ###   ###    ##   ##    QQQQQQQ#     #QQQQQQQ",
-"   ############  ###  ####   ####   #### ### ##### ######   QQQQQ#######QQQQQ  "
+"   ############  ###  ####   ####   #### ### ##### ######   QQQQQ#######QQQQQ  ",
 "                                                                               ",
-"                                                                               "
-"                                TN5250E Server                                 "
+"                                                                               ",
+"                                TN5250E Server                                 ",
+"                       (Press an AID key to disconnect)                        "
 };
 
- for(currow = 0; currow < 14; currow++) 
+ for(currow = 0; currow < 16; currow++) 
    { 
      setBufferAddr(This, currow+3, 1);
      appendBlock2Ebcdic(&This->buffer, ascii_banner[currow], 
 			strlen(ascii_banner[currow]),
 			This->map);
    }
- setBufferAddr(This, 20, 1);
- repeat2Addr(This, 20, 15, '*');
  This->inputInhibited = This->inSysInterrupt = FALSE;
  
  return( readMDTfields(This, 1) );
