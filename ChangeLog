@@ -1,3 +1,9 @@
+2000-06-14 Mike Madore <mmadore@turbolinux.com>
+- Added logic to check for clear print buffer in printsession.c.  Need to test
+  to see if it fixes Scott's problem.
+- Implemented tn3270e protocol negotiation.  Right now we only negotiate basic
+  TN3270E.  The LU name sent to the client is currently hardcoded.  
+	
 2000-06-13 Mike Madore <mmadore@turbolinux.com>
 - Did some restructuring to better accomodate the 3270 data stream in 
   preparation for handling the tn3270e protocol.

@@ -303,10 +303,19 @@ void tn5250_print_session_main_loop(Tn5250PrintSession * This)
 		     TN5250_RECORD_H_NONE,
 		     TN5250_RECORD_OPCODE_PRINT_COMPLETE,
 		     NULL);
-	       if (tn5250_record_length(This->rec) == 0x11) {
-	          syslog(LOG_INFO, "Job Complete\n");
-	          pclose(This->printfile);
-	          newjob = 1;
+	       if ( (tn5250_record_length(This->rec) == 0x11) 
+		    || (tn5250_record_length(This->rec) == 0x10) ) {
+		 if(tn5250_record_opcode(This->rec) 
+		    == TN5250_RECORD_OPCODE_CLEAR) 
+		   {
+		     syslog(LOG_INFO, "Clearing Buffers");
+		   }
+		 else 
+		   {
+		     syslog(LOG_INFO, "Job Complete\n");
+		     pclose(This->printfile);
+		     newjob = 1;
+		   }
 	       } else {
 	          while (!tn5250_record_is_chain_end(This->rec))
 		     fprintf(This->printfile, "%c", tn5250_record_get_byte(This->rec));

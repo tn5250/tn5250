@@ -134,17 +134,26 @@ typedef unsigned char UCHAR;
 static UCHAR hostInitStr[] = {IAC,DO,NEW_ENVIRON,IAC,DO,TERMINAL_TYPE};
 static UCHAR hostDoEOR[] = {IAC,DO,END_OF_RECORD};
 static UCHAR hostDoBinary[] = {IAC,DO,TRANSMIT_BINARY};
-
+static UCHAR hostDoTN3270E[] = {IAC,DO,TN3270E};
+static UCHAR hostSBDevice[] = {IAC,SB,TN3270E,TN3270E_SEND,TN3270E_DEVICE_TYPE,
+			       IAC,SE};
 typedef struct doTable_t {
    UCHAR	*cmd;
    unsigned	len;
 } DOTABLE;
 
-static const DOTABLE hostDoTable[] = {
-	hostInitStr,	sizeof(hostInitStr),
-	hostDoEOR,	sizeof(hostDoEOR),
-	hostDoBinary,	sizeof(hostDoBinary),
-	NULL,		0
+static const DOTABLE host5250DoTable[] = {
+  hostInitStr,	sizeof(hostInitStr),
+  hostDoEOR,	sizeof(hostDoEOR),
+  hostDoBinary,	sizeof(hostDoBinary),
+  NULL,		0
+};
+
+static const DOTABLE host3270DoTable[] = {
+  hostInitStr,  sizeof(hostInitStr),
+  hostDoEOR,    sizeof(hostDoEOR),
+  hostDoBinary, sizeof(hostDoBinary),
+  NULL,         0
 };
 
 static const UCHAR SB_Str_NewEnv[]={IAC, SB, NEW_ENVIRON, SEND, USERVAR,
@@ -451,6 +460,7 @@ static int telnet_stream_accept(Tn5250Stream * This, int masterfd)
    struct sockaddr_in serv_addr;
    fd_set fdr;
    struct timeval tv;
+   int negotiating;
 
 #ifndef WINELIB
    u_long ioctlarg=1L;
@@ -477,29 +487,94 @@ static int telnet_stream_accept(Tn5250Stream * This, int masterfd)
    /* Commence TN5250 negotiations...
       Send DO options (New Environment, Terminal Type, etc.) */
 
-   for (i=0; hostDoTable[i].cmd; i++) {
-      retCode = send(This->sockfd, hostDoTable[i].cmd, hostDoTable[i].len, 0);
-      if (WAS_ERROR_RET(retCode)) {
-	perror("telnetstr");
+   if(This->streamtype == TN3270_STREAM)
+     {
+       retCode = send(This->sockfd, hostDoTN3270E, sizeof(hostDoTN3270E), 0);
+       if (WAS_ERROR_RET(retCode)) {
+	 perror("telnetstr");
 	 return LAST_ERROR;
-      }
+       }
 
-      FD_ZERO(&fdr);
-      FD_SET(This->sockfd, &fdr);
-      tv.tv_sec = 5;
-      tv.tv_usec = 0;
-      TN_SELECT(This->sockfd + 1, &fdr, NULL, NULL, &tv);
-      if (FD_ISSET(This->sockfd, &fdr)) {
+       FD_ZERO(&fdr);
+       FD_SET(This->sockfd, &fdr);
+       tv.tv_sec = 5;
+       tv.tv_usec = 0;
+       TN_SELECT(This->sockfd + 1, &fdr, NULL, NULL, &tv);
+       if (FD_ISSET(This->sockfd, &fdr)) {
+	   
+	 if (!telnet_stream_handle_receive(This)) {
+	   retCode = LAST_ERROR;
+	   return retCode ? retCode : -1;
+	 }
+       } else {
+	 return -1;
+       }
 
-	if (!telnet_stream_handle_receive(This)) {
-	  retCode = LAST_ERROR;
-	  return retCode ? retCode : -1;
-	}
-      } else {
-	return -1;
-      }
-   }
+       retCode = send(This->sockfd, hostSBDevice, sizeof(hostSBDevice),0);
 
+       if (WAS_ERROR_RET(retCode)) {
+	 perror("telnetstr");
+	 return LAST_ERROR;
+       }
+
+       FD_ZERO(&fdr);
+       FD_SET(This->sockfd, &fdr);
+       tv.tv_sec = 5;
+       tv.tv_usec = 0;
+       TN_SELECT(This->sockfd + 1, &fdr, NULL, NULL, &tv);
+       if (FD_ISSET(This->sockfd, &fdr)) {
+	   
+	 if (!telnet_stream_handle_receive(This)) {
+	   retCode = LAST_ERROR;
+	   return retCode ? retCode : -1;
+	 }
+       } else {
+	 return -1;
+       }
+
+       FD_ZERO(&fdr);
+       FD_SET(This->sockfd, &fdr);
+       tv.tv_sec = 5;
+       tv.tv_usec = 0;
+       TN_SELECT(This->sockfd + 1, &fdr, NULL, NULL, &tv);
+       if (FD_ISSET(This->sockfd, &fdr)) {
+	   
+	 if (!telnet_stream_handle_receive(This)) {
+	   retCode = LAST_ERROR;
+	   return retCode ? retCode : -1;
+	 }
+       } else {
+	 return -1;
+       }
+
+     }
+   else
+     {
+
+       for (i=0; host5250DoTable[i].cmd; i++) {
+	 retCode = send(This->sockfd, host5250DoTable[i].cmd, 
+			host5250DoTable[i].len, 0);
+	 if (WAS_ERROR_RET(retCode)) {
+	   perror("telnetstr");
+	   return LAST_ERROR;
+	 }
+	 
+	 FD_ZERO(&fdr);
+	 FD_SET(This->sockfd, &fdr);
+	 tv.tv_sec = 5;
+	 tv.tv_usec = 0;
+	 TN_SELECT(This->sockfd + 1, &fdr, NULL, NULL, &tv);
+	 if (FD_ISSET(This->sockfd, &fdr)) {
+	   
+	   if (!telnet_stream_handle_receive(This)) {
+	     retCode = LAST_ERROR;
+	     return retCode ? retCode : -1;
+	   }
+	 } else {
+	   return -1;
+	 }
+       }
+     }
    return 0;
 }
 
@@ -735,35 +810,90 @@ static void telnet_stream_do_verb(Tn5250Stream * This, unsigned char verb, unsig
 static void telnet_stream_host_sb(Tn5250Stream * This, UCHAR *sb_buf,
 		int sb_len)
 {
-   int i, sbType;
-   Tn5250Buffer tbuf;
+  int rc;
+  int i;
+  int sbType;
+  int sbParm;
+  Tn5250Buffer tbuf;
+  UCHAR deviceResponse[] = {IAC,SB,TN3270E,TN3270E_DEVICE_TYPE,TN3270E_IS};
+  UCHAR functionResponse[] = {IAC,SB,TN3270E,TN3270E_FUNCTIONS};
+  char * dummyname = "TN3E002";
+  
+  if (sb_len <= 0)
+    return;
 
-   if (sb_len <= 0)
-      return;
-
-   TN5250_LOG(("GotSB:<IAC><SB>"));
-   TNSB_LOG(sb_buf,sb_len);
-   TN5250_LOG(("<IAC><SE>\n"));
-   sbType = sb_buf[0];
-   sb_buf += 2;  /* Assume IS follows SB option type. */
-   sb_len -= 2;
-   switch (sbType) {
-      case TERMINAL_TYPE:
-		tn5250_buffer_init(&tbuf);
-		for (i=0; i<sb_len && sb_buf[i]!=IAC; i++)
-                   tn5250_buffer_append_byte(&tbuf, sb_buf[i]);
-                tn5250_buffer_append_byte(&tbuf, 0);
-		tn5250_stream_setenv(This, "TERM", (char *) tbuf.data);
-		tn5250_buffer_free(&tbuf);
-		break;
-      case NEW_ENVIRON:
-		/* TODO:
-		 * setNewEnvVars(This, sb_buf, sb_len);
-		 */
-		break;
-      default:
-		break;
-   } /* switch */
+  TN5250_LOG(("GotSB:<IAC><SB>"));
+  TNSB_LOG(sb_buf,sb_len);
+  TN5250_LOG(("<IAC><SE>\n"));
+  sbType = sb_buf[0];
+  switch (sbType) 
+    {
+    case TN3270E:
+      sb_buf += 1;
+      sb_len -= 1;
+      sbParm = sb_buf[0];
+      switch (sbParm)
+	{
+	case TN3270E_DEVICE_TYPE:
+	  sb_buf += 2; /* Device string follows DEVICE_TYPE IS parameter */
+	  sb_len -= 2;
+	  tn5250_buffer_init(&tbuf);
+	  tn5250_buffer_append_data(&tbuf, deviceResponse, 
+				    sizeof(deviceResponse));
+	  for(i=0; i<sb_len && sb_buf[i] != IAC; i++)
+	    tn5250_buffer_append_byte(&tbuf, sb_buf[i]);
+	  tn5250_buffer_append_byte(&tbuf, TN3270E_CONNECT);
+	  tn5250_buffer_append_data(&tbuf, dummyname, strlen(dummyname));
+	  tn5250_buffer_append_byte(&tbuf, IAC);
+	  tn5250_buffer_append_byte(&tbuf, SE);
+	  rc = TN_SEND(This->sockfd, (char *) tn5250_buffer_data(&tbuf),
+		       tn5250_buffer_length(&tbuf), 0);
+	  if (WAS_ERROR_RET(rc)) {
+	    printf("Error writing to socket: %s\n", strerror(LAST_ERROR));
+	    exit(5);
+	  }
+	  break;
+	case TN3270E_FUNCTIONS:
+	  sb_buf += 2; /* Function list follows FUNCTIONS REQUEST parameter */ 
+	  sb_len -= 2;
+	  tn5250_buffer_init(&tbuf);
+	  tn5250_buffer_append_data(&tbuf, functionResponse, 
+				    sizeof(functionResponse));
+	  /*
+	  for(i=0; i<sb_len && sb_buf[i] != IAC; i++)
+	    tn5250_buffer_append_byte(&tbuf, sb_buf[i]);
+	  */
+	  tn5250_buffer_append_byte(&tbuf, IAC);
+	  tn5250_buffer_append_byte(&tbuf, SE);
+	  rc = TN_SEND(This->sockfd, (char *) tn5250_buffer_data(&tbuf),
+		       tn5250_buffer_length(&tbuf), 0);
+	  if (WAS_ERROR_RET(rc)) {
+	    printf("Error writing to socket: %s\n", strerror(LAST_ERROR));
+	    exit(5);
+	  }
+	  break;
+	default:
+	  break;
+	}
+      break;
+    case TERMINAL_TYPE:
+      sb_buf += 2;  /* Assume IS follows SB option type. */
+      sb_len -= 2;
+      tn5250_buffer_init(&tbuf);
+      for (i=0; i<sb_len && sb_buf[i]!=IAC; i++)
+	tn5250_buffer_append_byte(&tbuf, sb_buf[i]);
+      tn5250_buffer_append_byte(&tbuf, 0);
+      tn5250_stream_setenv(This, "TERM", (char *) tbuf.data);
+      tn5250_buffer_free(&tbuf);
+      break;
+    case NEW_ENVIRON:
+      /* TODO:
+       * setNewEnvVars(This, sb_buf, sb_len);
+       */
+      break;
+    default:
+      break;
+    } /* switch */
 } /* telnet_stream_host_sb */
 
 /****i* lib5250/telnet_stream_sb_var_value
@@ -906,11 +1036,10 @@ static int telnet_stream_get_byte(Tn5250Stream * This)
 	 break;
 
       case TN5250_STREAM_STATE_HAVE_IAC:
-	 switch (temp) {
-	 case IAC:
-	    This->state = TN5250_STREAM_STATE_DATA;
-	    break;
-
+	switch(temp) {
+	case IAC:
+	  This->state = TN5250_STREAM_STATE_DATA;
+	  
 	 case DO:
 	 case DONT:
 	 case WILL:
