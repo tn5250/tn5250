@@ -32,14 +32,17 @@ char *version_string = "not implemented";
 
 #define LP5250D_WINDOW_CLASS "lp5250d_window_class"
 #define WM_TN5250_STREAM_DATA WM_USER+2000
+#define WM_TN5250_NOTIFY_ICON WM_USER+2001
 
 WNDCLASSEX wndclass;
 HWND hWnd;
+int WindowIsVisible;
 
 Tn5250PrintSession *printsess = NULL;
 Tn5250Stream *stream = NULL;
 Tn5250Config *config = NULL;
 char globStatus[MAXMSG+1];
+NOTIFYICONDATA nid;
 
 struct _Tn5250Printer {
      int openpg;
@@ -133,8 +136,9 @@ int WINAPI WinMain(HINSTANCE i, HINSTANCE p, PSTR cmd, int show)
    GetClientRect(hWnd, &rec);
    MoveWindow(hWnd, rec.left, rec.top, newwidth, newheight, FALSE);
 
-   ShowWindow(hWnd, show);
-   UpdateWindow(hWnd);
+   ShowWindow(hWnd, SW_HIDE);
+   ShowWindow(hWnd, SW_HIDE);
+   WindowIsVisible = 0;
 
    /* Start up Windows Sockets, and make sure we've got a compatable
       winsock layer */
@@ -150,6 +154,16 @@ int WINAPI WinMain(HINSTANCE i, HINSTANCE p, PSTR cmd, int show)
 	exit(1);
     }
 
+   /* make us appear in system tray */
+   nid.cbSize = sizeof(nid);
+   nid.hWnd = hWnd;
+   nid.uID =  1;
+   nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+   nid.uCallbackMessage = WM_TN5250_NOTIFY_ICON;
+   nid.hIcon = LoadIcon(i, MAKEINTRESOURCE(IDI_TN5250_ICON));
+   strcpy(nid.szTip, "5250 printer");
+   Shell_NotifyIcon(NIM_ADD, &nid);
+
    /* parse the "cmd" variable into a seperate string for each argument */
    argc = parse_cmdline(cmd, NULL);
    if (argc>0) {
@@ -163,6 +177,7 @@ int WINAPI WinMain(HINSTANCE i, HINSTANCE p, PSTR cmd, int show)
    config = tn5250_config_new ();
    if (tn5250_config_load_default (config) == -1) {
         tn5250_config_unref(config);
+        Shell_NotifyIcon(NIM_DELETE, &nid);
         exit (1);  
    }
    if (tn5250_config_parse_argv (config, argc, argv) == -1) {
@@ -177,6 +192,7 @@ int WINAPI WinMain(HINSTANCE i, HINSTANCE p, PSTR cmd, int show)
        syntax();
    else if (tn5250_config_get (config, "version")) {
        msgboxf ("tn5250 version %s\n", version_string);
+       Shell_NotifyIcon(NIM_DELETE, &nid);
        exit (0);
    }
    else if (!tn5250_config_get (config, "host"))   
@@ -200,6 +216,7 @@ int WINAPI WinMain(HINSTANCE i, HINSTANCE p, PSTR cmd, int show)
     if (stream == NULL) {
        msgboxf("Couldn't connect to %s", 
 		         tn5250_config_get (config,"host"));
+       Shell_NotifyIcon(NIM_DELETE, &nid);
        exit(1);
     }
        
@@ -255,6 +272,7 @@ static void syntax()
 	  "\toutputcommand=CMD		specify the print output command\n"
 	  "\t+/-version			display version\n");
 
+   Shell_NotifyIcon(NIM_DELETE, &nid);
    exit (255);
 }
 
@@ -1052,13 +1070,16 @@ void tn5250_windows_print_session_main_loop(Tn5250PrintSession * This)
 	       if (This->rec != NULL)
 	          tn5250_record_destroy(This->rec);
 	       This->rec = tn5250_stream_get_record(This->stream);
-	       if (!tn5250_windows_print_session_get_response_code(This, responsecode))
+	       if (!tn5250_windows_print_session_get_response_code(This, responsecode)) {
+                  Shell_NotifyIcon(NIM_DELETE, &nid);
 	          exit (1);
+               }
 	       break;
 	    }
 	 }
 	 else {
             tn5250_windows_printer_status(2,"Socket closed by host.\n");
+            Shell_NotifyIcon(NIM_DELETE, &nid);
 	    exit(-1);
 	 }
       }
@@ -1109,6 +1130,7 @@ void tn5250_windows_print_session_main_loop(Tn5250PrintSession * This)
 	 }
 	 else {
             tn5250_windows_printer_status(2,"Socket closed by host\n");
+            Shell_NotifyIcon(NIM_DELETE, &nid);
 	    exit(-1);
 	 }
       }
@@ -1201,6 +1223,12 @@ LRESULT CALLBACK tn5250_windows_printer_wndproc(
            break;
        }
 
+       case WM_WINDOWPOSCHANGING:
+          break;
+
+       case WM_CLOSE:
+          Shell_NotifyIcon(NIM_DELETE, &nid);
+          break;
 
        case WM_DESTROY:
           PostQuitMessage(0);
@@ -1226,17 +1254,45 @@ LRESULT CALLBACK tn5250_windows_printer_wndproc(
           return 0;
           break;
 
+       case WM_SYSCOMMAND:
+          switch (wParam) {
+             case SC_RESTORE:
+                WindowIsVisible = 1;
+                ShowWindow(hwnd, SW_SHOW);
+                break;
+             case SC_MINIMIZE:
+                WindowIsVisible = 0;
+                ShowWindow(hwnd, SW_HIDE);
+                return 0;
+          }
+          break;
+                 
 
        case WM_COMMAND:
           if (LOWORD(wParam) == 1 &&
               HIWORD(wParam) == BN_CLICKED &&
               (HWND) lParam == hwndStopButton) 
           {
+              Shell_NotifyIcon(NIM_DELETE, &nid);
               DestroyWindow (hwnd);
           }
           return 0;
           break;
 
+      case WM_TN5250_NOTIFY_ICON:
+          switch (lParam) {
+             case WM_LBUTTONDBLCLK:
+               if (WindowIsVisible) {
+                  WindowIsVisible = 0;
+                  ShowWindow(hwnd, SW_HIDE);
+               }
+               else {
+                  WindowIsVisible = 1;
+                  ShowWindow(hwnd, SW_SHOW);
+               }  
+             break;
+          }
+          return 0;
 
       case WM_TN5250_STREAM_DATA:
           /* this is our special message to tell us that network data
