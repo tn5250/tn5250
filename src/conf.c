@@ -409,7 +409,6 @@ void tn5250_config_set (Tn5250Config *This, const char *name,
 {
    Tn5250ConfigStr *str = tn5250_config_get_str (This, name);
 
-           fprintf(stderr, "setting %s\n", name);
    if (str != NULL) {
      if(str->type == CONFIG_STRING) {
        g_free (str->value);
@@ -453,8 +452,6 @@ void tn5250_config_promote (Tn5250Config *This, const char *prefix)
      if (strlen(prefix) <= strlen( data->name ) + 2
 	 && !memcmp(data->name, prefix, strlen(prefix))
 	 && data->name[strlen(prefix)] == '.') {
-       fprintf(stderr, "promoting %s to %s for prefix %s\n", data->name,
-               data->name+strlen(prefix)+1, prefix);
        tn5250_config_set(This, data->name 
 			 + strlen(prefix) + 1,
 			 data->type,
