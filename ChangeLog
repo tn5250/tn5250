@@ -1,4 +1,12 @@
 2002-04-09 Scott Klement <klemscot@klements.com>
+- Added windows code pages to transmaps, transmaps.h and added code to handle
+  them in utility.c
+
+2002-04-09 Scott Klement <klemscot@klements.com>
+- Fixed silly bug in tn5250_parse_color() that didn't handle longer 
+  symbolic color names
+
+2002-04-09 Scott Klement <klemscot@klements.com>
 - Added that color support to cursesterm.  In cursesterm, the hex color
   code must match one of the 16 basic colors, or it will fall back to the
   default values.  

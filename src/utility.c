@@ -217,6 +217,20 @@ Tn5250Char tn5250_char_map_to_local(Tn5250CharMap *map, Tn5250Char ebcdic)
 Tn5250CharMap *tn5250_char_map_new (const char *map)
 {
    Tn5250CharMap *t;
+
+   /* Under Windows, we'll try the "winXXX" maps first, then fall back 
+      to the standard (unix) versions */
+#ifdef WIN32
+   {
+      char winmap[10];
+      _snprintf(winmap, sizeof(winmap)-1, "win%s", map);
+      for (t = tn5250_transmaps; t->name; t++) {
+         if (strcmp(t->name, winmap) == 0)
+   	 return t;
+      }
+   }
+#endif
+
    for (t = tn5250_transmaps; t->name; t++) {
       if (strcmp(t->name, map) == 0)
 	 return t;
@@ -398,7 +412,7 @@ int tn5250_parse_color(Tn5250Config *config, const char *colorname,
                         int *red, int *green, int *blue) {
 
     const char *p;
-    char colorspec[8];
+    char colorspec[16];
     int r, g, b;
 
     if ((p=tn5250_config_get(config, colorname)) == NULL) {
@@ -406,7 +420,7 @@ int tn5250_parse_color(Tn5250Config *config, const char *colorname,
     }
 
     strncpy(colorspec, p, sizeof(colorspec));
-    colorspec[7] = '\0';
+    colorspec[sizeof(colorspec)-1] = '\0';
 
     if (*colorspec != '#') {
           if (!strcasecmp(colorspec, "white")) {
