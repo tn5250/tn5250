@@ -1,3 +1,6 @@
+2000-05-05 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Minor tweak to tn5250.h (still including formattable.h)
+
 2000-04-27 Mike Madore <mmadore@turbolinux.com>
 - Applied Scott Klement's patches to improve handling of undisplayable 
   characters.
