@@ -1,3 +1,6 @@
+2002-03-14 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- tn5250-config.in: Now reports cflags and libs from glib, too.
+
 2002-03-01 Scott Klement <klemscot@klements.com>
 - Found/fixed bug in telnetstr.c, where TN5250_LOG was being called
    with a format containing "%s", but with no string argument.
