@@ -70,10 +70,8 @@ typedef struct _Tn5250TerminalPrivate Tn5250TerminalPrivate;
 static int debug_stream_connect(Tn5250Stream * This, const char *to);
 static void debug_stream_disconnect(Tn5250Stream * This);
 static int debug_stream_handle_receive(Tn5250Stream * This);
-static void debug_stream_send_packet(Tn5250Stream * This, int length,
-	      int flowtype, unsigned char flags, unsigned char opcode,
-				      unsigned char *data);
-static void debug_stream_destroy(Tn5250Stream *This);
+static void debug_stream_send_packet(Tn5250Stream * This, int length, 
+				     StreamHeader header, unsigned char *data);static void debug_stream_destroy(Tn5250Stream *This);
 
 static void debug_terminal_init(Tn5250Terminal *This);
 static void debug_terminal_term(Tn5250Terminal *This);
@@ -215,9 +213,9 @@ static int debug_stream_handle_receive(Tn5250Stream * This)
    return 1;
 }
 
-static void debug_stream_send_packet(Tn5250Stream * This, int length,
-      int flowtype, unsigned char flags, unsigned char opcode,
-      unsigned char *data)
+static void debug_stream_send_packet(Tn5250Stream * This, int length, 
+				     StreamHeader header, unsigned char *data)
+
 {
    /* noop */
 }
