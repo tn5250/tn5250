@@ -1,3 +1,8 @@
+2002-03-20 Scott Klement <klemscot@klements.com>
+- Changed the GPL license to the LGPL license, after gaining permission
+  from the various copyright holders.  This will allow us to create
+  binary releases that link with the OpenSSL library.
+
 2002-03-18 Scott Klement <klemscot@klements.com>
 - Removed unnecessary/unused getopt.[ch]
 
