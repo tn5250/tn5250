@@ -1,3 +1,8 @@
+2003-09-24 Scott Klement <klemscot@klements.com>
+- Added config option (ssl_check_exp=NUM) to check if a cert will be
+   expired in NUM seconds.  (You can set to 0 if you want to know if
+   it's expired now)
+
 2003-08-14 Scott Klement <klemscot@klements.com>
 - Added a pseudo-AID code for the TESTREQ function.  And added code
    to send a packet with TRQ bit set when it's pressed.  (We had mapping

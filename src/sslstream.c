@@ -1,5 +1,5 @@
 /* TN5250 - An implementation of the 5250 telnet protocol.
- * Copyright (C) 2001 Scott Klement
+ * Copyright (C) 2001-2003 Scott Klement
  *
  * parts of this were copied from telnetstr.c which is (C) 1997 Michael Madore
  * 
@@ -28,6 +28,7 @@
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#include <time.h>
 
 static int ssl_stream_get_next(Tn5250Stream *This,unsigned char *buf,int size);
 static void ssl_stream_do_verb(Tn5250Stream * This, unsigned char verb, unsigned char what);
@@ -51,6 +52,7 @@ static void tn3270_ssl_stream_send_packet(Tn5250Stream * This, int length,
 				      StreamHeader header,
 				      unsigned char * data);
 int ssl_stream_passwd_cb(char *buf, int size, int rwflag, Tn5250Stream *This);
+X509 *ssl_stream_load_cert(Tn5250Stream *This, const char *file);
 
 
 #define SEND    1
@@ -136,7 +138,7 @@ static const UCHAR hostDoTN3270E[] = {IAC,DO,TN3270E};
 static const UCHAR hostSBDevice[] = {IAC,SB,TN3270E,TN3270E_SEND,TN3270E_DEVICE_TYPE,
 			       IAC,SE};
 typedef struct doTable_t {
-   UCHAR	*cmd;
+   const UCHAR	*cmd;
    unsigned	len;
 } DOTABLE;
 
@@ -413,6 +415,34 @@ int tn5250_ssl_stream_init (Tn5250Stream *This)
 /* If a certificate file has been defined, load it into this context as well */
 
    if (This->config!=NULL && tn5250_config_get (This->config, "ssl_cert_file")){
+
+        if ( tn5250_config_get (This->config,  "ssl_check_exp") ) {
+           X509 *client_cert;
+           time_t tnow;
+           int extra_time;
+           TN5250_LOG(("SSL: Checking expiration of client cert\n"));
+           client_cert = ssl_stream_load_cert(This,
+                tn5250_config_get (This->config, "ssl_cert_file"));
+           if (client_cert == NULL) {
+                TN5250_LOG(("SSL: Unable to load client certificate!\n"));
+                return -1;
+           }
+           extra_time = tn5250_config_get_int(This->config, "ssl_check_exp");
+           tnow = time(NULL) + extra_time;
+           if (ASN1_UTCTIME_cmp_time_t(X509_get_notAfter(client_cert), tnow)
+                  == -1 ) {
+                if (extra_time > 1) {
+                   printf("SSL error: client certificate will be expired\n");
+                   TN5250_LOG(("SSL: client certificate will be expired\n"));
+                } else {
+                   printf("SSL error: client certificate has expired\n");
+                   TN5250_LOG(("SSL: client certificate has expired\n"));
+                }
+                return -1;
+           }
+           X509_free(client_cert);
+        }
+           
         TN5250_LOG(("SSL: Loading certificates from certificate file\n"));
         if (SSL_CTX_use_certificate_file(This->ssl_context,
                 tn5250_config_get (This->config, "ssl_cert_file"),
@@ -646,6 +676,25 @@ static int ssl_stream_connect(Tn5250Stream * This, const char *to)
         return -1;
    }
    else {
+        time_t tnow = time(NULL);
+        int extra_time= 0;
+        if (This->config!=NULL && 
+            tn5250_config_get(This->config, "ssl_check_exp")!=NULL) {
+                 extra_time = tn5250_config_get_int(This->config, 
+                                             "ssl_check_exp");
+                 tnow += extra_time;
+            if (ASN1_UTCTIME_cmp_time_t(X509_get_notAfter(server_cert), tnow)
+                   == -1 ) {
+                 if (extra_time > 1) {
+                    printf("SSL error: server certificate will be expired\n");
+                    TN5250_LOG(("SSL: server certificate will be expired\n"));
+                 } else {
+                    printf("SSL error: server certificate has expired\n");
+                    TN5250_LOG(("SSL: server certificate has expired\n"));
+                 }
+                 return -1;
+            }
+        }
         TN5250_LOG(("SSL Certificate issued by: %s\n",
            X509_NAME_oneline(X509_get_issuer_name(server_cert), 0,0) ));
         certvfy = SSL_get_verify_result(This->ssl_handle);
@@ -1648,6 +1697,28 @@ int ssl_stream_passwd_cb(char *buf, int size, int rwflag, Tn5250Stream *This) {
 
 }
 
+X509 *ssl_stream_load_cert(Tn5250Stream *This, const char *file) {
+
+    BIO *cf;
+    X509 *x;
+
+    if ((cf = BIO_new(BIO_s_file())) == NULL) {
+        DUMP_ERR_STACK();
+        return NULL;
+    }
+
+    if (BIO_read_filename(cf, file) <= 0) {
+        DUMP_ERR_STACK();
+        return NULL;
+    }
+
+    x = PEM_read_bio_X509_AUX(cf, NULL,
+            (pem_password_cb *)ssl_stream_passwd_cb, This);
+
+    BIO_free(cf);
+
+    return (x);
+}
 
 #endif /* HAVE_LIBSSL */
 
