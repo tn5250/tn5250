@@ -1,3 +1,7 @@
+2002-11-25 Scott Klement <klemscot@klements.com>
+- Make Windows version of lp5250d run in the System Tray, so that it
+   works more like a 'daemon' should.
+
 2002-11-18 Scott Klement <klemscot@klements.com>
 - Updated configure.in && autogen.sh to work with newer autoconf/automake
 
