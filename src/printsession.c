@@ -190,12 +190,14 @@ void tn5250_print_session_set_output_command(Tn5250PrintSession * This, const ch
  * NAME
  *    tn5250_print_session_get_response_code
  * SYNOPSIS
- *    tn5250_print_session_get_response_code (This, code);
+ *    rc = tn5250_print_session_get_response_code (This, code);
  * INPUTS
  *    Tn5250PrintSession * This       - 
  *    char *               code       - 
  * DESCRIPTION
- *    DOCUMENT ME!!!
+ *    Retrieves the response code from the startup response record.  The 
+ *    function returns 1 for a successful startup, and 0 otherwise.  On return,
+ *    code contains the 5 character response code.
  *****/
 int tn5250_print_session_get_response_code(Tn5250PrintSession * This, char *code)
 {
@@ -216,9 +218,8 @@ int tn5250_print_session_get_response_code(Tn5250PrintSession * This, char *code
 
    code[4] = '\0';
    for (i = 0; i < sizeof (response_codes)/sizeof (struct response_code); i++) {
-   printf("i= %d\n", i);
-   printf("%s\n", code);
       if (!strcmp (response_codes[i].code, code)) {
+         syslog(LOG_INFO, "%s : %s", response_codes[i].code, response_codes[i].text);
 	 return response_codes[i].retval;
       }
    }
@@ -233,7 +234,9 @@ int tn5250_print_session_get_response_code(Tn5250PrintSession * This, char *code
  * INPUTS
  *    Tn5250PrintSession * This       - 
  * DESCRIPTION
- *    DOCUMENT ME!!!
+ *    This function continually loops, waiting for print jobs from the AS/400.
+ *    When it gets one, it sends it to the output command which was specified 
+ *    on the command line.  If the host closes the socket, we exit.
  *****/
 void tn5250_print_session_main_loop(Tn5250PrintSession * This)
 {
@@ -255,12 +258,13 @@ void tn5250_print_session_main_loop(Tn5250PrintSession * This)
 	    }
 	 }
 	 else {
+	    syslog(LOG_INFO, "Socket closed by host.");
 	    exit(-1);
 	 }
       }
 
    }
-
+   
    
    newjob = 1;
    while (1) {
@@ -285,7 +289,7 @@ void tn5250_print_session_main_loop(Tn5250PrintSession * This)
 		     TN5250_RECORD_OPCODE_PRINT_COMPLETE,
 		     NULL);
 	       if (tn5250_record_length(This->rec) == 0x11) {
-	          printf("Job Complete\n");
+	          syslog(LOG_INFO, "Job Complete\n");
 	          pclose(This->printfile);
 	          newjob = 1;
 	       } else {
@@ -295,6 +299,7 @@ void tn5250_print_session_main_loop(Tn5250PrintSession * This)
 	    }
 	 }
 	 else {
+	    syslog(LOG_INFO, "Socket closed by host");
 	    exit(-1);
 	 }
       }

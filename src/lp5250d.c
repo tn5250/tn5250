@@ -31,11 +31,11 @@ char sessionname[20];
 char transformname[20];
 char outputcommand[30];
 char *mapname = "37";
+char logname[20];
 
 int main(int argc, char *argv[])
 {
    
-   openlog("lp5250d", LOG_PID, LOG_DAEMON);
 
    if (parse_options(argc, argv) < 0)
       syntax();
@@ -46,7 +46,13 @@ int main(int argc, char *argv[])
         exit(2);
     }
 
+#ifndef NDEBUG
+    tn5250_log_open(logname);
+    TN5250_LOG(("lp5250d version %s, built on %s\n", version_string, 
+          __DATE__));
+#endif 
 
+    openlog("lp5250d", LOG_PID, LOG_DAEMON);
     stream = tn5250_stream_open (remotehost);
     if(stream == NULL) {
        syslog(LOG_INFO, "Couldn't connect to %s", remotehost);
@@ -72,7 +78,9 @@ int main(int argc, char *argv[])
 
     tn5250_print_session_destroy(printsess);
     tn5250_stream_destroy (stream);
-
+ #ifndef NDEBUG
+    tn5250_log_close();
+#endif 
     return 0;
 }
 
@@ -80,8 +88,13 @@ static int parse_options(int argc, char *argv[])
 {
    int arg;
    
-   while ((arg = getopt(argc, argv, "m:s:T:P:Vwy:")) != EOF) {
+   while ((arg = getopt(argc, argv, "t:m:s:T:P:Vwy:")) != EOF) {
       switch (arg) {
+#ifndef NDEBUG
+      case 't':
+         strcpy(logname,optarg);
+         break;
+#endif         
       case 'm':
 	 mapname = optarg;
 	 break;
@@ -120,6 +133,7 @@ static void syntax()
 {
    printf("Usage:  lp5250d [options] host[:port]\n"
 	  "Options:\n"
+	  "\t-t name	 specify FULL path to log file\n"
 	  "\t-m map      specify translation map\n"
 	  "\t-s name     specify session name\n"
 	  "\t-T name     specify host print transform\n"
