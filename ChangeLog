@@ -1,3 +1,7 @@
+2003-10-20 James Rich <james@eaerich.com>
+- Rewrite scs* to use the same psuedo-OO approach as the rest of tn5250.
+- Fix scs2pdf to properly implement absolute horizontal positioning.
+
 2003-09-24 Scott Klement <klemscot@klements.com>
 - Added config option (ssl_check_exp=NUM) to check if a cert will be
    expired in NUM seconds.  (You can set to 0 if you want to know if
