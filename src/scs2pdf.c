@@ -79,11 +79,11 @@ main ()
 {
   Tn5250CharMap *map;
   int pagewidth, pagelength;
-  int objcount = 0;
-  int filesize = 0;
-  int streamsize = 0;
-  int pagenumber;
-  int textobjects[10000];
+  unsigned long objcount = 0;
+  unsigned long filesize = 0;
+  unsigned long streamsize = 0;
+  unsigned int pagenumber;
+  GArray *textobjects;
   int pageparent, procsetobject, fontobject, boldfontobject, rootobject;
   int i;
   int newpage = 0;
@@ -93,7 +93,9 @@ main ()
   int fontsize = 10, newfontsize;
   int boldchars, do_bold;
   char text[255];
+
   ObjectList = g_array_new (FALSE, FALSE, sizeof (int));
+  textobjects = g_array_new (FALSE, FALSE, sizeof (int));
 
   /* This allows the user to select an output file other than stdout.
    * I don't know that this will ever be useful since you do pretty much
@@ -267,7 +269,7 @@ main ()
 		 * put on this page.  We put one stream object on each
 		 * page.
 		 */
-		textobjects[pagenumber - 1] = objcount;
+                g_array_append_val (textobjects, objcount);
 
 		streamsize += pdf_process_char ('\0', 1);
 		filesize += streamsize;
@@ -343,7 +345,7 @@ main ()
 	}
 
     }
-  textobjects[pagenumber - 1] = objcount;
+  g_array_append_val (textobjects, objcount);
   streamsize += pdf_process_char ('\0', 1);
   filesize += streamsize;
   filesize += pdf_end_stream ();
@@ -430,7 +432,8 @@ main ()
       objcount++;
       filesize += pdf_page (objcount,
 			    pageparent,
-			    textobjects[i], procsetobject, fontobject,
+                            g_array_index (textobjects, int, i),
+			    procsetobject, fontobject,
 			    boldfontobject, pagewidth, pagelength);
 #ifdef DEBUG
       fprintf (stderr, "page objcount = %d\n", objcount);
@@ -440,6 +443,7 @@ main ()
   pdf_xreftable (objcount);
   pdf_trailer (filesize, objcount + 1, rootobject);
 
+  g_array_free (textobjects, TRUE);
   g_array_free (ObjectList, TRUE);
   tn5250_char_map_destroy (map);
   return (0);

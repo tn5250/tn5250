@@ -1,3 +1,9 @@
+2003-07-22 James Rich <james@eaerich.com>
+- Fixed scs2pdf.c to handle very large spooled files.  We were
+    overflowing an array (textobjects).  This is now changed to be a
+    GArray.  Also changed some integers to unsigned long that counted
+    things like the number of pages.
+
 2003-07-18 Scott Klement <klemscot@klements.com>
 - Fixed NDEBUG support (again) 
 - Applied patch from Marc-Antoine Ruel which fixes a bug in terminal.c
