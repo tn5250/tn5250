@@ -6,6 +6,17 @@
 - Fix problems reported by Scott Klement for Dup key/Field Minus key not
   advancing to the next field (hopefully ;)
 
+1999-10-24 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Implemented Help key/aid code.  (I thought we already did this... twice!)
+- Fixed some field exit/field minus strangeness with cursor position after
+  the fact.
+- Implemented the Field Minus key (Esc+M, K_FIELDMINUS) - uses same code
+  as '-' in a signed numeric field.
+- Implemented Dup key.
+- Various problems with 'curfield' in display, format table, session
+  keeping in sync.
+
 1999-10-13 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 
 - Reset key is now handled like System Request key -- that is, it will still
