@@ -1,3 +1,6 @@
+2002-11-26 Scott Klement <klemscot@klements.com>
+- Added a 'Select All' option to Win32 Edit menu
+
 2002-11-25 Scott Klement <klemscot@klements.com>
 - Make Windows version of lp5250d run in the System Tray, so that it
    works more like a 'daemon' should.

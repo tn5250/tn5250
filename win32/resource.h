@@ -27,6 +27,7 @@
 #define IDM_APP_ABOUT   40002
 #define IDM_EDIT_COPY   40003
 #define IDM_EDIT_PASTE  40004
+#define IDM_EDIT_SELECT_ALL 40005
 
 #define IDD_DIALOG_CONNECT              101
 #define IDC_EDIT_HOST                   1000

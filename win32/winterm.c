@@ -1753,6 +1753,24 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
               case IDM_EDIT_PASTE:
                   win32_terminal_queuekey(hwnd, globTerm, K_PASTE_TEXT);
                   break;
+              case IDM_EDIT_SELECT_ALL:
+                  globTerm->data->selecting = 0;
+                  globTerm->data->selstr.x = 2;
+                  globTerm->data->selstr.y = 2;
+                  globTerm->data->selend.x = 
+                            (tn5250_display_width(globDisplay) 
+                             * globTerm->data->font_width) - 2;
+                  globTerm->data->selend.y = 
+                            (tn5250_display_height(globDisplay) 
+                             * globTerm->data->font_height) - 2;
+                  globTerm->data->selected = 1;
+                  win32_expand_text_selection(globTerm);
+                  if (globTerm->data->unix_like_copy) {
+                     win32_copy_text_selection(globTerm, globDisplay);
+                  }
+                  InvalidateRect(hwnd, NULL, FALSE);
+                  UpdateWindow(hwnd);
+                  return 0;
            }
            break;
 
