@@ -118,7 +118,7 @@ static int parse_options(int argc, char *argv[])
 
 static void syntax()
 {
-   printf("Usage:  lp5250 [options] host[:port]\n"
+   printf("Usage:  lp5250d [options] host[:port]\n"
 	  "Options:\n"
 	  "\t-m map      specify translation map\n"
 	  "\t-s name     specify session name\n"
