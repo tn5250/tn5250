@@ -261,7 +261,6 @@ static void tn5250_session_handle_receive(Tn5250Session * This)
       if (!tn5250_record_is_chain_end(This->record))
 	 tn5250_session_process_stream(This);
    }
-
    tn5250_display_update (This->display);
 }
 
