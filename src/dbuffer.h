@@ -71,6 +71,9 @@ struct _Tn5250DBuffer {
     * WTD orders for save/restore screen. */
    unsigned char *			  header_data;
    int				  header_length;
+
+   /* This slot is reserved for scripting language bindings. */
+   void *			  script_slot;				  
 };
 
 typedef struct _Tn5250DBuffer Tn5250DBuffer;
