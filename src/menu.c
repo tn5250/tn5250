@@ -32,6 +32,8 @@ tn5250_menubar_new ()
   memset (This, 0, sizeof (Tn5250Menubar));
   This->next = NULL;
   This->prev = NULL;
+  This->menuitem_list = NULL;
+  This->menuitem_count = 0;
   This->table = NULL;
   This->id = -1;
   return (This);
@@ -217,4 +219,86 @@ tn5250_menubar_hit_test (Tn5250Menubar * list, int x, int y)
       while (iter != list);
     }
   return NULL;
+}
+
+
+/***** lib5250/tn5250_menu_add_menuitem
+ * NAME
+ *    tn5250_menu_add_menuitem
+ * SYNOPSIS
+ *    tn5250_menu_add_menuitem (This, menuitem);
+ * INPUTS
+ *    Tn5250Menubar *      This       -
+ *    Tn5250Menuitem *     menuitem   -
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
+void
+tn5250_menu_add_menuitem (Tn5250Menubar * This, Tn5250Menuitem * menuitem)
+{
+  menuitem->id = This->menuitem_count++;
+  menuitem->menubar = This;
+  This->menuitem_list = tn5250_menuitem_list_add (This->menuitem_list,
+						  menuitem);
+
+  TN5250_LOG (("adding menu item: menuitem->id: %d\n", menuitem->id));
+  return;
+}
+
+
+Tn5250Menuitem *
+tn5250_menuitem_new ()
+{
+  Tn5250Menuitem *This = tn5250_new (Tn5250Menuitem, 1);
+  if (This == NULL)
+    {
+      return NULL;
+    }
+  memset (This, 0, sizeof (Tn5250Menuitem));
+  This->next = NULL;
+  This->prev = NULL;
+  This->id = -1;
+  return (This);
+}
+
+
+Tn5250Menuitem *
+tn5250_menuitem_list_add (Tn5250Menuitem * list, Tn5250Menuitem * node)
+{
+  node->prev = node->next = NULL;
+
+  if (list == NULL)
+    {
+      node->next = node->prev = node;
+      return node;
+    }
+  node->next = list;
+  node->prev = list->prev;
+  node->prev->next = node;
+  node->next->prev = node;
+  return list;
+}
+
+
+Tn5250Menuitem *
+tn5250_menuitem_list_remove (Tn5250Menuitem * list, Tn5250Menuitem * node)
+{
+  if (list == NULL)
+    {
+      return NULL;
+    }
+  if ((list->next == list) && (list == node))
+    {
+      node->next = node->prev = NULL;
+      return NULL;
+    }
+  if (list == node)
+    {
+      list = list->next;
+    }
+
+  node->next->prev = node->prev;
+  node->prev->next = node->next;
+  node->prev = node->next = NULL;
+  return list;
 }

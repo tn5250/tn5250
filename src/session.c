@@ -70,6 +70,7 @@ static void tn5250_session_define_selection_field (Tn5250Session * This,
 static void tn5250_session_remove_gui_selection_field (Tn5250Session * This,
 						       int length);
 static void tn5250_session_define_selection_item (Tn5250Session * This,
+						  Tn5250Menubar * menubar,
 						  int length);
 static void tn5250_session_create_window_structured_field (Tn5250Session *
 							   This, int length);
@@ -2975,6 +2976,8 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
       unknownlength--;
     }
 
+  menubar->column = tn5250_display_cursor_x (This->display);
+  menubar->row = tn5250_display_cursor_y (This->display);
 
   tn5250_dbuffer_add_menubar (tn5250_display_dbuffer (This->display),
 			      menubar);
@@ -2991,7 +2994,8 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
 
       if (reserved == 0x10)
 	{
-	  tn5250_session_define_selection_item (This, minorlength - 2);
+	  tn5250_session_define_selection_item (This, menubar,
+						minorlength - 2);
 	  length = length - (minorlength - 2);
 	}
       else
@@ -3015,16 +3019,21 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
  *    DOCUMENT ME!!!
  *****/
 static void
-tn5250_session_define_selection_item (Tn5250Session * This, int length)
+tn5250_session_define_selection_item (Tn5250Session * This,
+				      Tn5250Menubar * menubar, int length)
 {
+  Tn5250Menuitem *menuitem;
   unsigned char flagbyte;
   unsigned char reserved;
   short offset_incl = 0;
   short aid_incl = 0;
   short selectchars_incl = 0;
+  int i;
 
   TN5250_LOG (("Entering tn5250_session_define_selection_item()\n"));
 
+
+  menuitem = tn5250_menuitem_new ();
 
   flagbyte = tn5250_record_get_byte (This->record);
   length--;
@@ -3188,14 +3197,25 @@ tn5250_session_define_selection_item (Tn5250Session * This, int length)
       TN5250_LOG (("Numeric characters: 0x%02X\n", reserved));
     }
 
-  while (length > 0)
+  menuitem->text = tn5250_new (unsigned char, menubar->itemsize + 1);
+
+  for (i = 0; (i < menubar->itemsize) && (length > 0); i++)
     {
-      reserved = tn5250_record_get_byte (This->record);
-      TN5250_LOG (("Choice text = 0x%02X (%c)\n", reserved,
-		   tn5250_char_map_to_local (tn5250_display_char_map
-					     (This->display), reserved)));
+      menuitem->text[i] = tn5250_char_map_to_local (tn5250_display_char_map
+						    (This->display),
+						    tn5250_record_get_byte
+						    (This->record));
+      TN5250_LOG (("Choice text = %c\n", menuitem->text[i]));
       length--;
     }
+  for (; (i < menubar->itemsize + 1); i++)
+    {
+      menuitem->text[i] = '\0';
+    }
+
+  tn5250_menu_add_menuitem (menubar, menuitem);
+  tn5250_terminal_create_menuitem (This->display->terminal,
+				   This->display, menuitem);
 
   return;
 }
