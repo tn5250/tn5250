@@ -178,24 +178,20 @@ typedef struct _Tn5250Terminal Tn5250Terminal;
    };
 #endif
 
-
 /* Useful macros call ``methods'' on the terminal type. */
-#define tn5250_terminal_init(This) (* ((This)->init)) ((This))
-#define tn5250_terminal_term(This) (* ((This)->term)) ((This))
-#define tn5250_terminal_destroy(This) (* ((This)->destroy)) ((This))
-#define tn5250_terminal_width(This) (* ((This)->width)) ((This))
-#define tn5250_terminal_height(This) (* ((This)->height)) ((This))
-#define tn5250_terminal_flags(This) (* ((This)->flags)) ((This))
-#define tn5250_terminal_update(This,b) (* ((This)->update)) ((This),(b))
-#define tn5250_terminal_update_indicators(This,b) \
-	(* ((This)->update_indicators)) ((This),(b))
-#define tn5250_terminal_waitevent(This) \
-	   (* ((This)->waitevent)) ((This))
-#define tn5250_terminal_getkey(This) (* ((This)->getkey)) ((This))
-#define tn5250_terminal_beep(This) (* ((This)->beep)) ((This))
-
-#define tn5250_terminal_config(This,conf) \
-   ((This)->config == NULL ? 0 : (* ((This)->config)) ((This),(conf)))
+/* For SWIG, we need actual functions - blah. */
+extern void tn5250_terminal_init (Tn5250Terminal *This);
+extern void tn5250_terminal_term (Tn5250Terminal *This);
+extern void tn5250_terminal_destroy (Tn5250Terminal *This);
+extern int tn5250_terminal_width (Tn5250Terminal *This);
+extern int tn5250_terminal_height (Tn5250Terminal *This);
+extern int tn5250_terminal_flags (Tn5250Terminal *This);
+extern void tn5250_terminal_update (Tn5250Terminal *This, struct _Tn5250Display *d);
+extern void tn5250_terminal_update_indicators (Tn5250Terminal *This, struct _Tn5250Display *d);
+extern int tn5250_terminal_waitevent (Tn5250Terminal *This);
+extern int tn5250_terminal_getkey (Tn5250Terminal *This);
+extern void tn5250_terminal_beep (Tn5250Terminal *This);
+extern int tn5250_terminal_config (Tn5250Terminal *This, struct _Tn5250Config *cfg);
 
 #ifdef __cplusplus
 }

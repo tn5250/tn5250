@@ -1,5 +1,5 @@
-/* TN5250
- * Copyright (C) 1997 Michael Madore
+/* TN5250 - An implementation of the 5250 telnet protocol.
+ * Copyright (C) 2000 Jay 'Eraserhead' Felice
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,21 +31,41 @@
  * If you write modifications of your own for TN5250, it is your choice
  * whether to permit this exception to apply to your modifications.
  * If you do not wish that, delete this exception notice. */
-#ifndef CURSESTERM_H
-#define CURSESTERM_H
+#include "tn5250-private.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#ifdef USE_CURSES
-   extern Tn5250Terminal /*@null@*/ /*@only@*/ *tn5250_curses_terminal_new(void);
-   extern void tn5250_curses_terminal_use_underscores (Tn5250Terminal *This,
-						       int use_underscores);
-#endif
-
-#ifdef __cplusplus
+void tn5250_terminal_init (Tn5250Terminal *This) {
+   (* ((This)->init)) ((This));
 }
-#endif
-
-#endif				/* CURSESTERM_H */
+void tn5250_terminal_term (Tn5250Terminal *This) {
+   (* ((This)->term)) ((This));
+}
+void tn5250_terminal_destroy (Tn5250Terminal *This) {
+   (* ((This)->destroy)) ((This));
+}
+int tn5250_terminal_width (Tn5250Terminal *This) {
+   return (* ((This)->width)) ((This));
+}
+int tn5250_terminal_height (Tn5250Terminal *This) {
+   return (* ((This)->height)) ((This));
+}
+int tn5250_terminal_flags (Tn5250Terminal *This) {
+   return (* ((This)->flags)) ((This));
+}
+void tn5250_terminal_update (Tn5250Terminal *This, Tn5250Display *d) {
+   (* ((This)->update)) ((This),(d));
+}
+void tn5250_terminal_update_indicators (Tn5250Terminal *This, Tn5250Display *d){
+   (* ((This)->update_indicators)) ((This),(d));
+}
+int tn5250_terminal_waitevent (Tn5250Terminal *This) {
+   return (* ((This)->waitevent)) ((This));
+}
+int tn5250_terminal_getkey (Tn5250Terminal *This) {
+   return (* ((This)->getkey)) ((This));
+}
+void tn5250_terminal_beep (Tn5250Terminal *This) {
+   return (* ((This)->beep)) ((This));
+}
+int tn5250_terminal_config (Tn5250Terminal *This, Tn5250Config *conf) {
+   return ((This)->config == NULL ? 0 : (* ((This)->config)) ((This),(conf)));
+}

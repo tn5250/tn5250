@@ -38,8 +38,10 @@
 extern "C" {
 #endif
 
+#ifdef USE_SLANG
    extern Tn5250Terminal /*@only@*/ *tn5250_slang_terminal_new(void);
    extern int tn5250_slang_terminal_use_underscores(Tn5250Terminal *, int f);
+#endif
 
 #ifdef __cplusplus
 }

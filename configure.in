@@ -1,6 +1,11 @@
 dnl ** Process this file with autoconf to produce a configure script.
 AC_INIT(src/tn5250.c)
 
+dnl * Checks for programs.
+AC_PROG_CC
+AC_PROG_GCC_TRADITIONAL
+AM_PROG_LIBTOOL
+
 dnl ** Automake Intialization
 AM_INIT_AUTOMAKE(tn5250, 0.17.1)
 AM_CONFIG_HEADER(src/tn5250-config.h)
@@ -26,37 +31,64 @@ GLIB_LIBS="`$GLIB_CONFIG --libs glib`"
 LIBS="$LIBS $GLIB_LIBS"
 AC_MSG_RESULT($GLIB_LIBS)
 
-dnl **
-dnl ** Check for Wine to see if we can compile the Windows port under a _real_ OS.
-dnl **
-AC_ARG_WITH(wine,[  --with-wine=path        Compile the Windows port using Wine.  'path' is
-                          the full path to the unpacked wine tarball
-                          ('path' is required).],[
-case "$with_wine" in
- 	yes)
-		AC_MSG_ERROR(You must supply the path to the unpacked Wine tarball.)
-		;;
-	no)
-		with_wine=""
-		;;
-esac
-# If we are maintaining the Windows port under Wine, here are some things we force
-# so that it's like the windows environment.
-enable_shared=no
-with_slang=yes
-CFLAGS="$CFLAGS -I$with_wine/include"
-LIBS="$CFLAGS -L$with_wine -lwine"
-])
+dnl *
+dnl * Check for SWIG
+dnl *
+AC_PATH_PROG(SWIG,swig,no)
+AC_SUBST(SWIG)
 
-  
-dnl ** Checks for programs.
-AC_PROG_CC
-AC_PROG_GCC_TRADITIONAL
-AM_PROG_LIBTOOL
+dnl **************************************************************************
+dnl * Python interface support.						     *
+dnl **************************************************************************
+
+AC_PATH_PROG(PYTHON,python,no)
+if test x$PYTHON != xno ; then
+  AC_MSG_CHECKING(for python prefix)
+changequote({,})dnl
+  PYTHON_PREFIX="`$PYTHON <<EOF
+import sys
+print sys.exec_prefix
+EOF`"
+changequote([,])dnl
+  AC_SUBST(PYTHON_PREFIX)
+  AC_MSG_RESULT($PYTHON_PREFIX)
+
+  AC_MSG_CHECKING(for python version)
+changequote({,})dnl
+  PYTHON_VERSION="`$PYTHON <<EOF
+import sys
+print sys.version[:3]
+EOF`"
+changequote([,])dnl
+  AC_SUBST(PYTHON_VERSION)
+  AC_MSG_RESULT($PYTHON_VERSION)
+fi
+
+dnl *
+dnl * Enable the python interface if we have everything we need to enable it
+dnl * or if the user has explicitly told us to.
+dnl *
+AC_ARG_ENABLE(python,
+[  --enable-python         Enable python language support.],
+[ interface_python="$enable"
+  if test x$interface_python = xyes ; then
+    if test x$PYTHON = xno ; then
+      AC_MSG_ERROR(** --enable-python specified and python binary not found **)
+    fi
+    if test x$SWIG = xno ; then
+      AC_MSG_ERROR(** --enable-python specified and swig binary not found **)
+    fi
+  fi
+],
+[ inteface_python=no
+  if test x$PYTHON != xno -a x$SWIG != xno ; then
+    interface_python=yes
+  fi
+])
+AM_CONDITIONAL(PYTHON,test x$interface_python = xyes)
 
 AC_PATH_PROG(DIALOG,dialog,no)
-if test x$DIALOG = xno
-then
+if test x$DIALOG = xno ; then
 	AC_PATH_PROG(DIALOG,whiptail,no)
 fi
 AC_SUBST(DIALOG)
