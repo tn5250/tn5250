@@ -173,13 +173,27 @@ AC_CHECK_SIZEOF(long, 4)
 dnl * True for anything other than Windoze.
 AC_DEFINE_UNQUOTED(SOCKET_TYPE,int)
 
-dnl * only do OS-specific work if we have that OS:
+dnl * Decide whether to use OS-specific directories.
 AC_CANONICAL_HOST
-case "$host_os" in
-freebsd*) SUBDIRS_ADD=freebsd ;;
-linux*) SUBDIRS_ADD=linux ;;
-*) SUBDIRS_ADD= ;;
+AC_ARG_ENABLE(os-dir,
+	[--enable-os-dir=DIR    Also install the OS-specific files in DIR.  If
+                         DIR is not given, determine it automatically.  If
+                         DIR is 'no', don't install OS-specific files.],
+	[], [enable_os_dir=yes])
+
+AC_MSG_CHECKING(for OS specific directory)
+SUBDIRS_ADD=
+case "$enable_os_dir" in
+	freebsd) SUBDIRS_ADD=freebsd ;;
+	linux) SUBDIRS_ADD=linux ;;
+	yes)
+		case "$host_os" in
+			freebsd*) SUBDIRS_ADD=freebsd ;;
+			linux*) SUBDIRS_ADD=linux ;;
+		esac
+	;;
 esac
+AC_MSG_RESULT(${SUBDIRS_ADD:-none})
 AC_SUBST(SUBDIRS_ADD)
 
 AC_OUTPUT(Makefile src/Makefile doc/Makefile linux/Makefile freebsd/Makefile tn5250-config xt5250)
