@@ -33,7 +33,6 @@
  * If you do not wish that, delete this exception notice. */
 
 #include "tn5250-private.h"
-#include "windows.h"
 #include "resource.h"
 
 #define MAXDEVNAME 64
@@ -86,11 +85,13 @@ LRESULT CALLBACK tn5250_windows_printer_wndproc(
                     UINT nMsg, 
                     WPARAM wParam, 
                     LPARAM lParam);
+int parse_cmdline(char *cmdline, char **my_argv);
 
 int WINAPI WinMain(HINSTANCE i, HINSTANCE p, PSTR cmd, int show) 
 {
 
-   char *argv[2];
+   char **argv = NULL;
+   int argc, x;
    WORD winsock_ver;
    WSADATA wsadata;
    HDC devctx;
@@ -160,18 +161,22 @@ int WINAPI WinMain(HINSTANCE i, HINSTANCE p, PSTR cmd, int show)
 	exit(1);
     }
 
+   /* parse the "cmd" variable into a seperate string for each argument */
+   argc = parse_cmdline(cmd, NULL);
+   if (argc>0) {
+       argv = (char **)malloc(argc * sizeof(char *));
+       for (x=0; x<argc; x++) argv[x]=NULL;
+       parse_cmdline(cmd, argv);
+   }
 
    /* Load TN5250 Configuration File */
-
-   argv[0] = NULL;
-   argv[1] = cmd;
 
    config = tn5250_config_new ();
    if (tn5250_config_load_default (config) == -1) {
         tn5250_config_unref(config);
         exit (1);  
    }
-   if (tn5250_config_parse_argv (config, 2, argv) == -1) {
+   if (tn5250_config_parse_argv (config, argc, argv) == -1) {
        tn5250_config_unref(config);
        syntax();  
    }
@@ -254,12 +259,12 @@ static void syntax()
 {
    msgboxf("Usage:  lp5250d [options] host[:port]\n"
 	  "Options:\n"
-	  "\ttrace=FILE                 specify FULL path to log file\n"
-	  "\tmap=NAME                   specify translation map\n"
-	  "\tenv.DEVNAME=NAME           specify session name\n"
-	  "\tenv.IBMMFRTYPMDL=NAME      specify host print transform name\n"
-	  "\toutputcommand=CMD          specify the print output command\n"
-	  "\t+/-version                 display version\n");
+	  "\ttrace=FILE			specify FULL path to log file\n"
+	  "\tmap=NAME  			specify translation map\n"
+	  "\tenv.DEVNAME=NAME		specify session name\n"
+	  "\tenv.IBMMFRTYPMDL=NAME	specify host print transform name\n"
+	  "\toutputcommand=CMD		specify the print output command\n"
+	  "\t+/-version			display version\n");
 
    exit (255);
 }
@@ -1231,4 +1236,91 @@ LRESULT CALLBACK tn5250_windows_printer_wndproc(
 
     return DefWindowProc (hwnd, nMsg, wParam, lParam);
 }
+
+
+/*
+ *  Windows passes all arguments to WinMain() as a single string.
+ *  this breaks them up to look like a typical argc, argv on
+ *  a DOS or *NIX program.
+ *
+ *  Returns the number of arguments found.
+ *  You can set my_argv to NULL if you just want a count of the arguments.
+ *
+ */
+int parse_cmdline(char *cmdline, char **my_argv) {
+
+#define MAXARG 256
+    char q;
+    int arglen, argcnt;
+    char arg[MAXARG+1];
+    int state = 0, pos = 0;
+    
+    if (my_argv!=NULL) {
+         my_argv[0] = malloc(MAXARG+1);
+         TN5250_ASSERT(my_argv[0]!=NULL);
+         GetModuleFileName(NULL, my_argv[0], MAXARG);
+    }
+
+    argcnt = 1;
+    arglen = 0;
+    pos = 0;
+
+    while (cmdline[pos]!=0) {
+        switch (state) {
+           case 0:
+              switch (cmdline[pos]) {
+                case '"':
+                case '\'':
+                   q = cmdline[pos];
+                   state=1;
+                   break;
+                case ' ':
+                   if (arglen>0 && argcnt<MAXARG) {
+                       if (my_argv!=NULL) {
+                            my_argv[argcnt] = 
+                                   (char *)malloc((arglen+1) * sizeof(char));
+                            TN5250_ASSERT(my_argv[argcnt]!=NULL);
+                            strcpy(my_argv[argcnt], arg);
+                       }
+                       argcnt++;
+                       arg[0]=0;
+                       arglen=0;
+                   }
+                   break;
+                default:
+                   if (arglen<MAXARG) {
+                       arg[arglen] = cmdline[pos];
+                       arglen++;
+                       arg[arglen] = '\0';
+                   }
+                   break;
+              }
+              break;
+           case 1:
+              if (cmdline[pos]==q) 
+                  state = 0;
+              else {
+                  if (arglen<MAXARG) {
+                      arg[arglen] = cmdline[pos];
+                      arglen++;
+                      arg[arglen] = '\0';
+                  }
+              }
+              break;
+        }
+        pos++;
+    }
+    if (arglen>0 && argcnt<MAXARG) {
+        if (my_argv!=NULL) {
+            my_argv[argcnt] = (char *)malloc((arglen+1) * sizeof(char));
+            TN5250_ASSERT(my_argv[argcnt]!=NULL);
+            strcpy(my_argv[argcnt], arg);
+        }
+        argcnt++;
+    }
+              
+    return argcnt;
+#undef MAXARG
+}
+
 /* vi:set sts=3 sw=3: */
