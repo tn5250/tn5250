@@ -57,6 +57,7 @@ static void tn5250_session_roll(Tn5250Session * This);
 static void tn5250_session_start_of_field(Tn5250Session * This);
 static void tn5250_session_start_of_header(Tn5250Session * This);
 static void tn5250_session_set_buffer_address(Tn5250Session * This);
+static void tn5250_session_write_extended_attribute(Tn5250Session * This);
 static void tn5250_session_transparent_data(Tn5250Session * This);
 static void tn5250_session_move_cursor(Tn5250Session * This);
 static void tn5250_session_insert_cursor(Tn5250Session * This);
@@ -766,9 +767,12 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
 #endif
 	 switch (cur_order) {
 
-	 case TD: /* Transparent Data order */
-	      tn5250_session_transparent_data(This);
-	      break;
+	 case WEA: 
+	   tn5250_session_write_extended_attribute(This);
+	   break;
+	 case TD: 
+	   tn5250_session_transparent_data(This);
+	   break;
 
 	 case MC:
 	   tn5250_session_move_cursor(This);
@@ -1383,6 +1387,34 @@ static void tn5250_session_set_buffer_address(Tn5250Session * This)
 
    tn5250_display_set_cursor(This->display, Y - 1, X - 1);
    TN5250_LOG(("SetBufferAddress: row = %d; col = %d\n", Y, X));
+}
+
+static void tn5250_session_write_extended_attribute(Tn5250Session * This)
+{
+  /* 
+     This order is not really implemented.  It is just here for catching data 
+     stream errors.
+  */
+  unsigned char attrtype;
+  unsigned char attr;
+  StreamHeader header;
+  unsigned long errorcode;
+
+  attrtype = tn5250_record_get_byte(This->record);
+  attr = tn5250_record_get_byte(This->record);
+
+  if(attrtype != 0x01
+     && attrtype != 0x03
+     && attrtype != 0x05)
+    {
+      errorcode = TN5250_NR_INVALID_EXT_ATTR_TYPE;
+
+      tn5250_session_send_error(This, errorcode);
+
+      tn5250_record_skip_to_end(This->record);
+
+      return;
+    }
 }
 
 static void tn5250_session_transparent_data(Tn5250Session * This)
