@@ -1020,7 +1020,7 @@ static int tn5250_session_handle_aidkey (Tn5250Session *This, int key)
 
       header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
       header.h5250.flags    = TN5250_RECORD_H_SRQ;
-      header.h5250.flags    = TN5250_RECORD_OPCODE_NO_OP;
+      header.h5250.opcode    = TN5250_RECORD_OPCODE_NO_OP;
 
       tn5250_stream_send_packet(This->stream, 0, header, NULL);
       tn5250_display_indicator_set (This->display, TN5250_DISPLAY_IND_X_SYSTEM);
