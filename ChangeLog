@@ -3,6 +3,12 @@
   indicate print session as `-P cmd' is required for a working session
   anyway.
 - Fixed typo in new key-parsing code preventing PgDn from working.
+- Added code to handle Esc+Del = Ins vt100 key mapping.
+- Added stuff to XTerm resources to turn on real underlining and turn
+  off silly color-instead-of-underline mode.
+- Throw away weird keys we get from ncurses4 after before first
+  keypress.
+- Implemented FER (Field-Exit Required) state (not tested).
 
 2000-01-20 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 - Use 'TERM' to determine if terminal is an xterm or xterm-5250, as it

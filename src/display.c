@@ -634,11 +634,12 @@ void tn5250_display_interactive_addch(Tn5250Display * This, unsigned char ch)
    /* If at the end of the field and not a fer field, advance to the
     * next field. */
    if (end_of_field) {
-      if (tn5250_field_is_fer(field))
+      if (tn5250_field_is_fer(field)) {
+	 tn5250_display_indicator_set (This, TN5250_DISPLAY_IND_FER);
 	 tn5250_display_set_cursor (This,
 				   tn5250_field_end_row(field),
 				   tn5250_field_end_col(field));
-      else {
+      } else {
 	 tn5250_display_field_adjust(This, field);
 	 if (tn5250_field_is_auto_enter(field)) {
 	    tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ENTER);
@@ -805,6 +806,28 @@ void tn5250_display_do_key(Tn5250Display *This, int key)
       }
    }
 
+   /* In the case we are in the field exit required state, we inhibit on
+    * everything except left arrow, backspace, field exit, field+, and
+    * field- */
+   if ((tn5250_display_indicators (This) & TN5250_DISPLAY_IND_FER) != 0) {
+      switch (key) {
+      case K_LEFT:
+      case K_BACKSPACE:
+	 tn5250_display_indicator_clear (This, TN5250_DISPLAY_IND_FER);
+	 return;
+
+      case K_FIELDEXIT:
+      case K_FIELDMINUS:
+      case K_FIELDPLUS:
+	 tn5250_display_indicator_clear (This, TN5250_DISPLAY_IND_FER);
+	 break;
+
+      default:
+	 tn5250_display_inhibit (This);
+	 return;
+      }
+   }
+
    switch (key) {
    case K_RESET:
       tn5250_display_uninhibit(This);
@@ -939,15 +962,18 @@ void tn5250_display_kf_field_exit(Tn5250Display * This)
 
    /* NUL out remainder of field from cursor position.  For signed numeric
     * fields, we do *not* want to null out the sign position - this is what
-    * Field+ and Field- are for. */
-   data = tn5250_display_field_data (This, field);
-   i = tn5250_field_count_left(field, tn5250_display_cursor_y(This),
-	 tn5250_display_cursor_x(This));
-   l = tn5250_field_length(field);
-   if (tn5250_field_is_signed_num(field))
-      l--;
-   for (; i < l; i++)
-      data[i] = 0;
+    * Field+ and Field- are for.  We do not do this when the FER indicator
+    * is set. */
+   if ((tn5250_display_indicators (This) & TN5250_DISPLAY_IND_FER) == 0) {
+      data = tn5250_display_field_data (This, field);
+      i = tn5250_field_count_left(field, tn5250_display_cursor_y(This),
+	    tn5250_display_cursor_x(This));
+      l = tn5250_field_length(field);
+      if (tn5250_field_is_signed_num(field))
+	 l--;
+      for (; i < l; i++)
+	 data[i] = 0;
+   }
 
    tn5250_display_field_adjust(This, field);
 
@@ -1096,11 +1122,12 @@ void tn5250_display_kf_dup(Tn5250Display * This)
    for (; i < tn5250_field_length(field); i++)
       data[i] = 0x1c;
 
-   if (tn5250_field_is_fer (field))
+   if (tn5250_field_is_fer (field)) {
+      tn5250_display_indicator_set (This, TN5250_DISPLAY_IND_FER);
       tn5250_dbuffer_cursor_set (This->display_buffers,
 	    tn5250_field_end_row (field),
 	    tn5250_field_end_col (field));
-   else {
+   } else {
       tn5250_display_field_adjust (This, field);
       if (tn5250_field_is_auto_enter (field)) {
 	 tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ENTER);
@@ -1170,7 +1197,8 @@ void tn5250_display_clear_unit (Tn5250Display *This)
    tn5250_dbuffer_set_size(This->display_buffers, 24, 80);
    tn5250_display_indicator_set(This, TN5250_DISPLAY_IND_X_SYSTEM);
    tn5250_display_indicator_clear(This,
-	 TN5250_DISPLAY_IND_INSERT | TN5250_DISPLAY_IND_INHIBIT);
+	 TN5250_DISPLAY_IND_INSERT | TN5250_DISPLAY_IND_INHIBIT
+	 | TN5250_DISPLAY_IND_FER);
    This->pending_insert = 0;
    tn5250_dbuffer_set_ic(This->display_buffers, 0, 0);
    if (This->saved_msg_line != NULL) {
@@ -1194,7 +1222,8 @@ void tn5250_display_clear_unit_alternate (Tn5250Display *This)
    tn5250_dbuffer_set_size(This->display_buffers, 27, 132);
    tn5250_display_indicator_set(This, TN5250_DISPLAY_IND_X_SYSTEM);
    tn5250_display_indicator_clear(This,
-	 TN5250_DISPLAY_IND_INSERT | TN5250_DISPLAY_IND_INHIBIT);
+	 TN5250_DISPLAY_IND_INSERT | TN5250_DISPLAY_IND_INHIBIT
+	 | TN5250_DISPLAY_IND_FER);
    This->pending_insert = 0;
    tn5250_dbuffer_set_ic(This->display_buffers, 0, 0);
    if (This->saved_msg_line != NULL) {
