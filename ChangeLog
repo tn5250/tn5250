@@ -1,3 +1,6 @@
+2000-11-10 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Apply Scott's patch for fixing behavior of `Delete' key.
+
 2000-10-31 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - Patch from Scott Klement to beep when a message is received.
 - Second patch from Dave McKenzie fixing cursor positioning issues when the

@@ -564,7 +564,7 @@ void tn5250_dbuffer_del(Tn5250DBuffer * This, int shiftcount)
       x = fwdx;
       y = fwdy;
    }
-   This->data[y * This->w + x] = 0x40;
+   This->data[y * This->w + x] = 0x00;
 
    ASSERT_VALID(This);
 }
