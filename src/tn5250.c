@@ -185,7 +185,7 @@ Syntax:\n\
   tn5250 [options] HOST[:PORT]\n");
 #ifdef HAVE_LIBSSL
    printf ("\
-   To connect using ssl prefix HOST with 'ssl:'.  Example:
+   To connect using ssl prefix HOST with 'ssl:'.  Example:\
       tn5250 +ssl_verify_server ssl:as400.example.com\n");
 #endif
    printf ("\n\
