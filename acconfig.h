@@ -12,3 +12,6 @@
 
 /* Define this to use the new key handler. */
 #undef USE_OWN_KEY_PARSING
+
+/* define this when creating a binary distribution */
+#undef BINARY_RELEASE
