@@ -71,6 +71,8 @@ int main(int argc, char *argv[])
    else if (tn5250_config_get (config, "version")) {
       printf ("tn5250 %s\n", VERSION);
       exit (0);
+   } else if (!tn5250_config_get (config, "host")) {
+      syntax ();
    }
 
 #ifndef NDEBUG

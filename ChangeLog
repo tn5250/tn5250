@@ -1,3 +1,7 @@
+2000-05-16 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Moved config sanity checks out of conf.c into tn5250.c so we can re-use the
+  argv-parsing code for gnome-5250, gtk-5250.
+
 2000-05-16 Mike Madore <mmadore@turbolinux.com>
 - Tracked down the last of the unitialized variable bugs.  The emulator now 
   runs on UnixWare 7, although the key handling isn't correct.
@@ -72,7 +76,6 @@
 - Created a tests directory and placed the DDS and RPG source file from James 
   Rich <james.rich@m.cc.utah.edu> there.
 
-	
 2000-04-03 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 - `tic' not running shouldn't make the install fail; also 5250.terminfo
   now properly referenced as being in $(srcdir) in makefile.
