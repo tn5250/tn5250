@@ -25,6 +25,7 @@
 
 static void scs2ascii_process34 (int *curpos);
 static void scs2ascii_ahpp (int *curpos);
+static void scs2ascii_avpp (int *curline);
 void scs2ascii_transparent ();
 
 unsigned char curchar;
@@ -82,6 +83,7 @@ main ()
 	  {
 	    scs_ff ();
 	    printf ("\f");
+            current_line = 1;
 	    break;
 	  }
 	case SCS_NL:
@@ -92,6 +94,7 @@ main ()
 	    printf ("\n");
 	    new_line = scs_nl ();
 	    ccp = 1;
+            current_line ++;
 	    break;
 	  }
 	case SCS_RNL:
@@ -146,7 +149,7 @@ scs2ascii_process34 (int *curpos)
     {
     case SCS_AVPP:
       {
-	scs_avpp ();
+	scs2ascii_avpp (&current_line);
 	break;
       }
     case SCS_AHPP:
@@ -200,6 +203,26 @@ scs2ascii_transparent ()
     {
       printf ("%c", fgetc (stdin));
     }
+}
+
+static void
+scs2ascii_avpp (int *curline)
+{
+  int line;
+
+  line = fgetc(stdin);
+  fprintf (stderr, "AVPP %d\n", line);
+
+  if (*curline>line) {
+       printf ("\f");
+       *curline = 1;
+  }
+
+  while (*curline<line) {
+       printf ("\n");
+       (*curline) ++;
+  }
+
 }
 
 /* vi:set sts=3 sw=3: */
