@@ -326,7 +326,7 @@ static void tn5250_wtd_context_write_field (Tn5250WTDContext *This, Tn5250Field 
    }
 
    /* Put the screen attribute. */
-   TN5250_ASSERT (tn5250_attribute (attr));
+   /* FIXME: Re-enable assert: TN5250_ASSERT (tn5250_attribute (attr)); */
    tn5250_wtd_context_putc (This, attr);
 
    /* Put the field length. */

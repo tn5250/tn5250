@@ -58,6 +58,7 @@ Tn5250Display *tn5250_display_new()
    This->session = NULL;
    This->key_queue_head = This->key_queue_tail = 0;
    This->saved_msg_line = NULL;
+   This->map = tn5250_char_map_new("en");
 
    tn5250_display_add_dbuffer(This, tn5250_dbuffer_new(80, 24));
    return This;
@@ -617,16 +618,16 @@ void tn5250_display_interactive_addch(Tn5250Display * This, unsigned char ch)
       unsigned char *data = tn5250_display_field_data (This, field);
       if (tn5250_field_is_signed_num(field))
 	 ofs--;
-      if (data[ofs] != '\0' && tn5250_ebcdic2ascii(data[ofs]) != ' ') {
+      if (data[ofs] != '\0' && tn5250_char_map_to_local (This->map, data[ofs]) != ' ') {
 	 tn5250_display_inhibit(This);
 	 return;
       }
-      tn5250_dbuffer_ins(This->display_buffers, tn5250_ascii2ebcdic(ch),
+      tn5250_dbuffer_ins(This->display_buffers, tn5250_char_map_to_host (This->map, ch),
 	    tn5250_field_count_right(field,
 	       tn5250_display_cursor_y(This),
 	       tn5250_display_cursor_x(This)));
    } else
-      tn5250_dbuffer_addch(This->display_buffers, tn5250_ascii2ebcdic(ch));
+      tn5250_dbuffer_addch(This->display_buffers, tn5250_char_map_to_host (This->map, ch));
 
    tn5250_field_set_mdt(field);
 
@@ -721,10 +722,10 @@ void tn5250_display_field_adjust(Tn5250Display * This, Tn5250Field * field)
    case TN5250_FIELD_MANDATORY_FILL:
       break;
    case TN5250_FIELD_RIGHT_ZERO:
-      tn5250_display_shift_right(This, field, tn5250_ascii2ebcdic('0'));
+      tn5250_display_shift_right(This, field, tn5250_char_map_to_host (This->map, '0'));
       break;
    case TN5250_FIELD_RIGHT_BLANK:
-      tn5250_display_shift_right(This, field, tn5250_ascii2ebcdic(' '));
+      tn5250_display_shift_right(This, field, tn5250_char_map_to_host (This->map, ' '));
       break;
    }
 
@@ -928,7 +929,7 @@ void tn5250_display_kf_field_exit(Tn5250Display * This)
 {
    Tn5250Field *field;
    unsigned char *data;
-   int i;
+   int i, l;
 
    field = tn5250_display_current_field(This);
    if (field == NULL || tn5250_field_is_bypass(field)) {
@@ -936,11 +937,16 @@ void tn5250_display_kf_field_exit(Tn5250Display * This)
       return;
    }
 
-   /* NUL out remainder of field from cursor position. */
+   /* NUL out remainder of field from cursor position.  For signed numeric
+    * fields, we do *not* want to null out the sign position - this is what
+    * Field+ and Field- are for. */
    data = tn5250_display_field_data (This, field);
    i = tn5250_field_count_left(field, tn5250_display_cursor_y(This),
 	 tn5250_display_cursor_x(This));
-   for (; i < tn5250_field_length(field); i++)
+   l = tn5250_field_length(field);
+   if (tn5250_field_is_signed_num(field))
+      l--;
+   for (; i < l; i++)
       data[i] = 0;
 
    tn5250_display_field_adjust(This, field);
@@ -1010,6 +1016,7 @@ void tn5250_display_kf_field_minus(Tn5250Display * This)
    if (field == NULL || 
 	 (tn5250_field_type(field) != TN5250_FIELD_SIGNED_NUM) &&
 	 (tn5250_field_type(field) != TN5250_FIELD_NUM_ONLY)) {
+      /* FIXME: Explain why to the user. */
       tn5250_display_inhibit(This);
       return;
    }
@@ -1028,10 +1035,10 @@ void tn5250_display_kf_field_minus(Tn5250Display * This)
 	 int i;
 	 for (i = 0; i < tn5250_field_length(field) - 1; i++)
 	    data[i] = data[i+1];
-	 data[tn5250_field_length (field) - 1] = tn5250_ascii2ebcdic('}');
+	 data[tn5250_field_length (field) - 1] = tn5250_char_map_to_host (This->map, '}');
       }
    } else
-      data[tn5250_field_length (field) - 1] = tn5250_ascii2ebcdic('-');
+      data[tn5250_field_length (field) - 1] = tn5250_char_map_to_host (This->map, '-');
 }
 
 /****f* lib5250/tn5250_display_do_aidkey
@@ -1164,6 +1171,7 @@ void tn5250_display_clear_unit (Tn5250Display *This)
    tn5250_display_indicator_set(This, TN5250_DISPLAY_IND_X_SYSTEM);
    tn5250_display_indicator_clear(This,
 	 TN5250_DISPLAY_IND_INSERT | TN5250_DISPLAY_IND_INHIBIT);
+   This->pending_insert = 0;
    tn5250_dbuffer_set_ic(This->display_buffers, 0, 0);
    if (This->saved_msg_line != NULL) {
       free(This->saved_msg_line);
@@ -1187,6 +1195,7 @@ void tn5250_display_clear_unit_alternate (Tn5250Display *This)
    tn5250_display_indicator_set(This, TN5250_DISPLAY_IND_X_SYSTEM);
    tn5250_display_indicator_clear(This,
 	 TN5250_DISPLAY_IND_INSERT | TN5250_DISPLAY_IND_INHIBIT);
+   This->pending_insert = 0;
    tn5250_dbuffer_set_ic(This->display_buffers, 0, 0);
    if (This->saved_msg_line != NULL) {
       free(This->saved_msg_line);
@@ -1385,25 +1394,23 @@ void tn5250_display_kf_home (Tn5250Display *This)
    Tn5250Field *field;
    int gx, gy;
 
-   /* FIXME: Is this how this is supposed to behave in the case of a 
-    * pending insert? */
-
-   if (This->pending_insert)
-      tn5250_display_set_cursor_home (This);
-   else {
-      field = tn5250_display_current_field (This);
+   if (This->pending_insert) {
+      gy = This->display_buffers->tcy;
+      gx = This->display_buffers->tcx;
+   } else {
+      field = tn5250_dbuffer_first_non_bypass (This->display_buffers);
       if (field != NULL) {
 	 gy = tn5250_field_start_row(field);
 	 gx = tn5250_field_start_col(field);
       } else
 	 gx = gy = 0;
-
-      if (gy == tn5250_display_cursor_y(This)
-	    && gx == tn5250_display_cursor_x(This))
-	 tn5250_display_do_aidkey (This, TN5250_SESSION_AID_RECORD_BS);
-      else
-	 tn5250_display_set_cursor(This, gy, gx);
    }
+
+   if (gy == tn5250_display_cursor_y(This)
+	 && gx == tn5250_display_cursor_x(This))
+      tn5250_display_do_aidkey (This, TN5250_SESSION_AID_RECORD_BS);
+   else
+      tn5250_display_set_cursor(This, gy, gx);
 }
 
 /****f* lib5250/tn5250_display_kf_delete
@@ -1455,3 +1462,24 @@ void tn5250_display_save_msg_line (Tn5250Display *This)
 	 tn5250_display_width (This));
 }
 
+/****f* lib5250/tn5250_display_set_char_map
+ * NAME
+ *    tn5250_display_set_char_map
+ * SYNOPSIS
+ *    tn5250_display_set_char_map (display, "en");
+ * INPUTS
+ *    Tn5250Display *      display    - Pointer to the display object.
+ *    const char *         name       - Name of translation map to use.
+ * DESCRIPTION
+ *    Save the current message line.
+ *****/
+void tn5250_display_set_char_map (Tn5250Display *This, const char *name)
+{
+   Tn5250CharMap *map = tn5250_char_map_new (name);
+   TN5250_ASSERT (map != NULL);
+   if (This->map != NULL)
+      tn5250_char_map_destroy (This->map);
+   This->map = map;
+}
+
+/* vi:set sts=3 sw=3: */

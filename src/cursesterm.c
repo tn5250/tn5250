@@ -29,6 +29,9 @@
 #else
 #include <curses.h>
 #endif
+#ifdef HAVE_TERMCAP_H
+#include <termcap.h>
+#endif
 #include <signal.h>
 #include <string.h>
 #include <ctype.h>
@@ -109,12 +112,110 @@ static int curses_terminal_getkey(Tn5250Terminal * This) /*@modifies This@*/;
 static int curses_terminal_get_esc_key(Tn5250Terminal * This, int is_esc) /*@modifies This@*/;
 static void curses_terminal_beep(Tn5250Terminal * This);
 
-struct _Tn5250TerminalPrivate {
-   int quit_flag;
-   int underscores;
-   int last_width, last_height;
-   int is_xterm;
+#ifdef USE_OWN_KEY_PARSING
+static int curses_getch (Tn5250Terminal *This);
+
+struct _Key {
+   int	       k_code;
+   char        k_str[10];
 };
+
+typedef struct _Key Key;
+#endif
+
+#define MAX_K_BUF_LEN 20
+
+struct _Tn5250TerminalPrivate {
+   int		  quit_flag;
+   int		  underscores;
+   int		  last_width, last_height;
+   int		  is_xterm;
+#ifdef USE_OWN_KEY_PARSING
+   unsigned char  k_buf[MAX_K_BUF_LEN];
+   int		  k_buf_len;
+
+   Key *	  k_map;
+   int		  k_map_len;
+#endif
+};
+
+#ifdef USE_OWN_KEY_PARSING
+/* This is an array mapping our key code to a termcap capability
+ * name. */
+static Key curses_caps[] = {
+   { K_ENTER, "@8" },
+   { K_BACKTAB, "kB" },
+   { K_F1, "k1" },
+   { K_F2, "k2" },
+   { K_F3, "k3" },
+   { K_F4, "k4" },
+   { K_F5, "k5" },
+   { K_F6, "k6" },
+   { K_F7, "k7" },
+   { K_F8, "k8" },
+   { K_F9, "k9" },
+   { K_F10, "k;" },
+   { K_F11, "F1" },
+   { K_F12, "F2" },
+   { K_F13, "F3" },
+   { K_F14, "F4" },
+   { K_F15, "F5" },
+   { K_F16, "F6" },
+   { K_F17, "F7" },
+   { K_F18, "F8" },
+   { K_F19, "F9" },
+   { K_F20, "FA" },
+   { K_F21, "FB" },
+   { K_F22, "FC" },
+   { K_F23, "FD" },
+   { K_F24, "FE" },
+   { K_LEFT, "kl" },
+   { K_RIGHT, "kr" },
+   { K_UP, "ku" },
+   { K_DOWN, "kd" },
+   { K_ROLLDN, "kP" },
+   { K_ROLLUP, "kU" },
+   { K_BACKSPACE, "kb" },
+   { K_HOME, "kh" },
+   { K_END, "@7" },
+   { K_INSERT, "kI" },
+   { K_DELETE, "kD" },
+   { K_PRINT, "%9" },
+   { K_HELP, "%1" },
+   { K_CLEAR, "kC" },
+   { K_REFRESH, "&2" },
+   { K_FIELDEXIT, "@9" },
+};
+
+/* This is an array mapping some of our vt100 sequences to our internal
+ * key names. */
+static Key curses_vt100[] = {
+   { K_F1,		"\033\061" }, /* ESC 1 */
+   { K_F2,		"\033\062" }, /* ESC 2 */
+   { K_F3,		"\033\063" }, /* ESC 3 */
+   { K_F4,		"\033\064" }, /* ESC 4 */
+   { K_F5,		"\033\065" }, /* ESC 5 */
+   { K_F6,		"\033\066" }, /* ESC 6 */
+   { K_F7,		"\033\067" }, /* ESC 7 */
+   { K_F8,		"\033\070" }, /* ESC 8 */
+   { K_F9,		"\033\071" }, /* ESC 9 */
+   { K_F10,		"\033\060" }, /* ESC 0 */
+   { K_F11,		"\033\055" }, /* ESC - */
+   { K_F12,		"\033\075" }, /* ESC = */
+   { K_F13,		"\033\041" }, /* ESC ! */
+   { K_F14,		"\033\100" }, /* ESC @ */
+   { K_F15,		"\033\043" }, /* ESC # */
+   { K_F16,		"\033\044" }, /* ESC $ */
+   { K_F17,		"\033\045" }, /* ESC % */
+   { K_F18,		"\033\136" }, /* ESC ^ */
+   { K_F19,		"\033\046" }, /* ESC & */
+   { K_F20,		"\033\052" }, /* ESC * */
+   { K_F21,		"\033\050" }, /* ESC ( */
+   { K_F22,		"\033\051" }, /* ESC ) */
+   { K_F23,		"\033\137" }, /* ESC _ */
+   { K_F24,		"\033\053" }, /* ESC + */
+};
+#endif
 
 /****f* lib5250/tn5250_curses_terminal_new
  * NAME
@@ -144,6 +245,12 @@ Tn5250Terminal *tn5250_curses_terminal_new()
    r->data->last_height = 0;
    r->data->is_xterm = 0;
 
+#ifdef USE_OWN_KEY_PARSING
+   r->data->k_buf_len = 0;
+   r->data->k_map_len = 0;
+   r->data->k_map = NULL;
+#endif
+
    r->conn_fd = -1;
    r->init = curses_terminal_init;
    r->term = curses_terminal_term;
@@ -172,13 +279,19 @@ Tn5250Terminal *tn5250_curses_terminal_new()
  *****/
 static void curses_terminal_init(Tn5250Terminal * This)
 {
-   char buf[6];
+   char buf[MAX_K_BUF_LEN];
    int i = 0, c;
    struct timeval tv;
+#ifdef USE_OWN_KEY_PARSING
+   char *str;
+#endif
 
    (void)initscr();
    raw();
+#ifndef USE_OWN_KEY_PARSING
    keypad(stdscr, 1);
+#endif
+
    nodelay(stdscr, 1);
    noecho();
 
@@ -213,6 +326,30 @@ static void curses_terminal_init(Tn5250Terminal * This)
       init_pair(COLOR_YELLOW, COLOR_YELLOW, COLOR_BLACK);
    }
    This->data->quit_flag = 0;
+
+#ifdef USE_OWN_KEY_PARSING
+   /* Allocate and populate an array of escape code => key code 
+    * mappings. */
+   This->data->k_map_len = sizeof (curses_vt100) / sizeof (Key)
+      + sizeof (curses_caps) / sizeof (Key);
+   This->data->k_map = (Key*)malloc (sizeof (Key)*This->data->k_map_len);
+
+   c = sizeof (curses_caps) / sizeof (Key);
+   for (i = 0; i < c; i++) {
+      This->data->k_map[i].k_code = curses_caps[i].k_code;
+      if ((str = tgetstr (curses_caps[i].k_str, NULL)) != NULL) {
+	 TN5250_LOG(("Found string for cap '%s': '%s'.\n",
+		  curses_caps[i].k_str, str));
+	 strcpy (This->data->k_map[i].k_str, str);
+      } else
+	 This->data->k_map[i].k_str[0] = '\0';
+   }
+
+   for (i = 0; i < sizeof (curses_vt100) / sizeof (Key); i++) {
+      This->data->k_map[i + c].k_code = curses_vt100[i].k_code;
+      strcpy (This->data->k_map[i + c].k_str, curses_vt100[i].k_str);
+   }
+#endif
 }
 
 /****i* lib5250/curses_terminal_term
@@ -242,6 +379,10 @@ static void curses_terminal_term(Tn5250Terminal /*@unused@*/ * This)
  *****/
 static void curses_terminal_destroy(Tn5250Terminal * This)
 {
+#ifdef USE_OWN_KEY_PARSING
+   if (This->data->k_map != NULL)
+      free(This->data->k_map);
+#endif
    if (This->data != NULL)
       free(This->data);
    free(This);
@@ -357,7 +498,7 @@ static void curses_terminal_update(Tn5250Terminal * This, Tn5250Display *display
 		  c = ' ';
 		  curs_attr ^= A_REVERSE;
 	       } else {
-		  c = tn5250_ebcdic2ascii(c);
+		  c = tn5250_char_map_to_local (tn5250_display_char_map (display), c);
 	       }
 	       if ((curs_attr & A_VERTICAL) != 0) {
 		  curs_attr |= A_UNDERLINE;
@@ -471,7 +612,13 @@ static int curses_terminal_waitevent(Tn5250Terminal * This)
  *****/
 static int curses_terminal_getkey(Tn5250Terminal * This)
 {
-   int key = getch();
+   int key;
+  
+#ifdef USE_OWN_KEY_PARSING
+   key = curses_getch (This);
+#else
+   key = getch();
+#endif
 
    while (1) {
       switch (key) {
@@ -768,6 +915,84 @@ int tn5250_curses_terminal_use_underscores(Tn5250Terminal * This, int v)
    This->data->underscores = v;
    return oldval;
 }
+
+#ifdef USE_OWN_KEY_PARSING
+static int curses_get_key (Tn5250Terminal *This, int rmflag)
+{
+   int i, j;
+   int have_incomplete_match = -1;
+   int have_complete_match = -1;
+   int complete_match_len;
+
+   /* Fast path */
+   if (This->data->k_buf_len == 0)
+      return -1;
+
+   /* Look up escape codes. */
+   for (i = 0; i < This->data->k_map_len; i++) {
+
+      /* Skip empty entries. */
+      if (This->data->k_map[i].k_str[0] == '\0')
+	 continue;
+
+      for (j = 0; j < MAX_K_BUF_LEN + 1; j++) {
+	 if (This->data->k_map[i].k_str[j] == '\0') {
+	    have_complete_match = i;
+	    complete_match_len = j;
+	    break;
+	 }
+	 if (j >= This->data->k_buf_len) {
+	    have_incomplete_match = i;
+	    break;
+	 }
+	 if (This->data->k_map[i].k_str[j] != This->data->k_buf[j])
+	    break; /* No match */
+      }
+
+   }
+
+   if (have_incomplete_match == -1 && have_complete_match == -1) {
+      /* At this point, we know that we don't have an escape sequence,
+       * so just return the next character. */
+      i = This->data->k_buf[0];
+      if (rmflag) {
+	 memmove (This->data->k_buf, This->data->k_buf + 1, MAX_K_BUF_LEN - 1);
+	 This->data->k_buf_len --;
+      }
+      return i;
+   }
+
+   if (have_incomplete_match != -1)
+      return -1;
+
+   if (have_complete_match != -1) {
+      if (rmflag) {
+	 if (This->data->k_buf_len - complete_match_len > 0) {
+	    memmove (This->data->k_buf, This->data->k_buf + complete_match_len,
+		  This->data->k_buf_len - complete_match_len);
+	 }
+	 This->data->k_buf_len -= complete_match_len;
+      }
+      return This->data->k_map[have_complete_match].k_code;
+   }
+
+   return -1;
+}
+
+static int curses_getch (Tn5250Terminal *This)
+{
+   int ch;
+
+   /* Retreive all keys from the keyboard buffer. */
+   while (This->data->k_buf_len < MAX_K_BUF_LEN && (ch = getch ()) != ERR) {
+      TN5250_LOG(("curses_getch: recevied 0x%02X.\n", ch));
+      This->data->k_buf[This->data->k_buf_len++] = ch;
+   }
+
+   return curses_get_key (This, 1);
+}
+#endif
+
 
 #endif /* USE_CURSES */
 

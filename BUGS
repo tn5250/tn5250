@@ -40,13 +40,44 @@
   </bug>
 
   <bug>
-    <date>99.12.19.23.13.00</date>
-    <owner email="jasonf@nacs.net">Jay 'Eraserhead' Felice</owner>
-
-    Determining which line is the message line (and setting it) is horribly
-    broken.  We should sort all this out.  I don't think we're using the right
-    line in most cases.
+    <date>2000.01.16.22.48.21</date>
+    <owner email="c.evans@clear.net.nz">Carey Evans</owner>
+    
+    In an unsigned numeric field-exit required field, the cursor remains
+    on the last character, but on pressing field exit, the last character
+    is erased.
   </bug>
 
+  <bug>
+    <date>2000.01.16.22.48.21</date>
+    <owner email="c.evans@clear.net.nz">Carey Evans</owner>
+  
+    Using Alt- or the Escape key still doesn't work right - tn5250 doesn't
+    notice the key until another key is pressed.
+  </bug>
+
+  <bug>
+    <date>2000.01.16.22.48.21</date>
+    <owner email="c.evans@clear.net.nz">Carey Evans</owner>
+  
+    A few more issues with SEU, too.  The first thing I noticed is that
+    Client Access usually doesn't process a field exit just by spacing
+    past the end of the field, but tn5250 seems to.
+  </bug>
+
+  <bug>
+    <date>2000.01.16.22.48.21</date>
+    <owner email="c.evans@clear.net.nz">Carey Evans</owner>
+
+    When editing a DDS source member, the Len field has problems.  It
+    should be possible to enter "+1" or "-1" (or +2, -10, etc.) in the
+    field, but tn5250 reuses the "+" and "-" keys which makes this
+    impossible.  I'm not sure what a good solution would be.  (I can still
+    enter the info directly, without prompting, so it's not a disaster!)
+
+    Also, field-minus in this field still does strange things, but not the
+    same strange things in tn5250 as other emulators.
+  </bug>
+    
 </bugs>
 <!-- vi:set sts=2 sw=2 autoindent: -->

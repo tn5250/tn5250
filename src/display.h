@@ -35,6 +35,7 @@ struct _Tn5250DBuffer;
 struct _Tn5250Field;
 struct _Tn5250Session;
 struct _Tn5250Buffer;
+struct _Tn5250CharMap;
 
 /****s* lib5250/Tn5250Display
  * NAME
@@ -52,6 +53,7 @@ struct _Tn5250Display {
    struct _Tn5250DBuffer * display_buffers;
    struct _Tn5250Terminal *terminal;
    struct _Tn5250Session *session;
+   struct _Tn5250CharMap *map;
    int indicators;
    int indicators_dirty : 1;
    int pending_insert : 1;
@@ -120,6 +122,8 @@ extern void	  tn5250_display_make_wtd_data        (Tn5250Display *This,
 						       struct _Tn5250Buffer *b,
 						       struct _Tn5250DBuffer *);
 extern void	  tn5250_display_save_msg_line	      (Tn5250Display *This);
+extern void	  tn5250_display_set_char_map	      (Tn5250Display *This,
+                                                       const char *name);
 
 /* Key functions */
 extern void	  tn5250_display_do_keys	      (Tn5250Display *This);
@@ -177,6 +181,8 @@ extern void	  tn5250_display_kf_delete            (Tn5250Display *This);
    (tn5250_dbuffer_field_data((This)->display_buffers,(field)))
 #define tn5250_display_msg_line(This) \
    (tn5250_dbuffer_msg_line((This)->display_buffers))
+#define tn5250_display_char_map(This) \
+   ((This)->map)
 
 #ifdef __cplusplus
 }

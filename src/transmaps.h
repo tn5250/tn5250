@@ -3281,7 +3281,7 @@ unsigned char const ibm918_to_latin1[256] =
 /* This is the translation-map index which is scanned in utility.cc
  */
 
-Tn5250TransMap transmaps[] =
+Tn5250CharMap transmaps[] =
 {
    {"en", ebcdic_to_latin1, latin1_to_ebcdic},
    {"atde", ebcdicatde_to_latin1, latin1_to_ebcdicatde},

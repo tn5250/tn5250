@@ -95,6 +95,7 @@ typedef struct _Tn5250DBuffer Tn5250DBuffer;
    extern int tn5250_dbuffer_send_data_for_aid_key(Tn5250DBuffer *This, int k);
    extern unsigned char *tn5250_dbuffer_field_data(Tn5250DBuffer *This, struct _Tn5250Field *field);
    extern int tn5250_dbuffer_msg_line(Tn5250DBuffer *This);
+   extern struct _Tn5250Field *tn5250_dbuffer_first_non_bypass(Tn5250DBuffer *This);
 
 #define tn5250_dbuffer_field_count(This) ((This)->field_count)
 #define tn5250_dbuffer_mdt(This) ((This)->master_mdt)

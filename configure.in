@@ -55,6 +55,7 @@ then
 	then
 		AC_MSG_ERROR([** Can't find ncurses.h or curses.h **])
 	fi
+	AC_CHECK_HEADERS(termcap.h)
 	
 	#
 	# Check to see if the curses implementation has attr_t defined -- some older
