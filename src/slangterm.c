@@ -632,8 +632,7 @@ static int slang_terminal_get_esc_key(Tn5250Terminal * This, int is_esc)
    y = SLsmg_get_row ();
    x = SLsmg_get_column ();
    SLsmg_normal_video ();
-   /* FIXME: This might need to be row 28 */
-   SLsmg_gotorc (24, 60);
+   SLsmg_gotorc (This->data->last_height, 60);
    if (is_esc)
       SLsmg_write_string ("Esc ");
    else
@@ -792,8 +791,7 @@ static int slang_terminal_get_esc_key(Tn5250Terminal * This, int is_esc)
       break;
    }
 
-   /* FIXME: This might need to be row 27 */
-   SLsmg_gotorc (24, 64);
+   SLsmg_gotorc (This->data->last_height, 64);
    if (key == SL_KEY_ERR)
       SLsmg_write_string ("???");
    else

@@ -18,21 +18,11 @@
 
 #include "tn5250-private.h"
 
-char *remotehost;
-char *mapname = "37";
-char *sessionname = NULL;
-char *termtype = NULL;
-#ifndef NDEBUG
-int debugpause = 1;
-#endif
-
 Tn5250Session *sess = NULL;
 Tn5250Stream *stream = NULL;
 Tn5250Terminal *term = NULL;
 Tn5250Display *display = NULL;
-int use_underscores = -1;
-
-static char sopts[] = "m:s:t:uVwy:";
+Tn5250Config *config = NULL;
 
 /* FIXME: This should be moved into session.[ch] or something. */
 static struct valid_term {
@@ -54,37 +44,77 @@ static struct valid_term {
 };
 
 static void syntax(void);
-static int parse_options(int argc, char *argv[]);
 
 int main(int argc, char *argv[])
 {
+#ifndef NDEBUG
+   const char *tracefile;
+#endif
+
 #ifdef HAVE_SETLOCALE
    setlocale (LC_ALL, "");
 #endif
 
-   if (parse_options(argc, argv) < 0)
-      syntax();
+   config = tn5250_config_new ();
+   if (tn5250_config_load_default (config) == -1) {
+      tn5250_config_unref (config);
+      exit (1);
+   }
 
-   stream = tn5250_stream_open (remotehost);
+   if (tn5250_config_parse_argv (config, argc, argv) == -1) {
+      tn5250_config_unref (config);
+      syntax ();
+   }
+
+   if (tn5250_config_get (config, "help"))
+      syntax ();
+   else if (tn5250_config_get (config, "version")) {
+      printf ("tn5250 %s\n", VERSION);
+      exit (0);
+   }
+
+#ifndef NDEBUG
+   tracefile = tn5250_config_get (config, "trace");
+   if (tracefile != NULL)
+      tn5250_log_open (tn5250_config_get (config, "trace"));
+#endif
+
+   {
+      FILE *log = fopen("/dev/tty1","w");
+      fprintf (log, "host = '%s'\r\n", tn5250_config_get (config, "host"));
+      fclose (log);
+   }
+
+   stream = tn5250_stream_open (tn5250_config_get (config, "host"));
    if (stream == NULL)
       goto bomb_out;
 
+   if (tn5250_stream_config (stream, config) == -1)
+      goto bomb_out;
+
    display = tn5250_display_new ();
-   if (mapname != NULL)
-      tn5250_display_set_char_map (display, mapname);
+   if (tn5250_display_config (display, config) == -1)
+      goto bomb_out;
 
 #ifdef USE_CURSES
-      term = tn5250_curses_terminal_new();
-      if (use_underscores != -1)
-	 tn5250_curses_terminal_use_underscores(term,use_underscores);
+   term = tn5250_curses_terminal_new();
+   if (tn5250_config_get (config, "underscores")) {
+      tn5250_curses_terminal_use_underscores(term,
+	    tn5250_config_get_bool (config, "underscores")
+	    );
+   }
 #endif
 #ifdef USE_SLANG
-      term = tn5250_slang_terminal_new();
+   term = tn5250_slang_terminal_new();
 #endif
-      if (term == NULL)
-	 goto bomb_out;
+   if (term == NULL)
+      goto bomb_out;
+   if (tn5250_terminal_config (term, config) == -1)
+      goto bomb_out;
 #ifndef NDEBUG
-      /* Shrink-wrap the terminal with the debug terminal, if appropriate. */
+   /* Shrink-wrap the terminal with the debug terminal, if appropriate. */
+   {
+      const char *remotehost = tn5250_config_get (config, "host");
       if (strlen (remotehost) >= 6
 	    && !memcmp (remotehost, "debug:", 6)) {
 	 Tn5250Terminal *dbgterm = tn5250_debug_terminal_new (term, stream);
@@ -93,39 +123,23 @@ int main(int argc, char *argv[])
 	    goto bomb_out;
 	 }
 	 term = dbgterm;
-	 tn5250_debug_terminal_set_pause (term, debugpause);
+	 if (tn5250_terminal_config (term, config) == -1)
+	    goto bomb_out;
       }
+   }
 #endif
-      tn5250_terminal_init(term);
-      tn5250_display_set_terminal(display, term);
+   tn5250_terminal_init(term);
+   tn5250_display_set_terminal(display, term);
 
-      sess = tn5250_session_new();
-      tn5250_display_set_session (display, sess);
-
-      /* Set emulation type to the user-supplied terminal/emulation type,
-       * if it exists; otherwise, make a guess based on the size of the
-       * physical tty and whether the terminal supports color. */
-      if (termtype == NULL) {
-	 if (tn5250_terminal_width(term) >= 132 && tn5250_terminal_height(term) >= 27) {
-	    if ((tn5250_terminal_flags(term) & TN5250_TERMINAL_HAS_COLOR) != 0)
-	       tn5250_stream_setenv(stream, "TERM", "IBM-3477-FC");
-	    else
-	       tn5250_stream_setenv(stream, "TERM", "IBM-3477-FG");
-	 } else {
-	    if ((tn5250_terminal_flags(term) & TN5250_TERMINAL_HAS_COLOR) != 0)
-	       tn5250_stream_setenv(stream, "TERM", "IBM-3179-2");
-	    else
-	       tn5250_stream_setenv(stream, "TERM", "IBM-5251-11");
-	 }
-      } else
-	 tn5250_stream_setenv(stream, "TERM", termtype);
-
-   tn5250_stream_setenv(stream, "DEVNAME", sessionname);
+   sess = tn5250_session_new();
+   tn5250_display_set_session (display, sess);
 
    term->conn_fd = tn5250_stream_socket_handle(stream);
    tn5250_session_set_stream(sess, stream);
-   tn5250_session_main_loop(sess);
+   if (tn5250_session_config (sess, config) == -1)
+      goto bomb_out;
 
+   tn5250_session_main_loop(sess);
    errno = 0;
 
 bomb_out:
@@ -135,6 +149,8 @@ bomb_out:
       tn5250_session_destroy(sess);
    else if (stream != NULL)
       tn5250_stream_destroy (stream);
+   if (config != NULL)
+      tn5250_config_unref (config);
 
    if (errno != 0)
       printf("Could not start session: %s\n", strerror(errno));
@@ -142,90 +158,6 @@ bomb_out:
    tn5250_log_close();
 #endif
    exit(0);
-}
-
-static int parse_options(int argc, char *argv[])
-{
-   int arg;
-   while ((arg = getopt (argc, argv, sopts)) != EOF) {
-      switch (arg) {
-      case 'm':
-	 mapname = optarg;
-	 break;
-
-      case 'u':
-	 use_underscores = 1;
-	 break;
-
-      case 's':
-	 sessionname = optarg;
-	 break;
-
-#ifndef NDEBUG
-      case 't':
-	 { 
-	    FILE *p;
-	    int n;
-
-	    tn5250_log_open(optarg);
-	    /* Log some useful information to the tracefile. */
-	    tn5250_log_printf("tn5250 version %s, built on %s\n", version_string,
-		  __DATE__);
-
-	    /* Get uname -a */
-	    if ((p = popen ("uname -a", "r")) != NULL) {
-	       char buf[256];
-	       while ((n = fread (buf, 1, sizeof (buf)-2, p)) > 0) {
-		  fwrite (buf, 1, n, tn5250_logfile);
-	       }
-	       pclose (p);
-	    }
-
-	    /* Get TERM. */
-	    tn5250_log_printf("TERM=%s\n\n", getenv("TERM") ? getenv("TERM") : "(not set)");
-
-	    for (n = 0; n < argc; n ++)
-	       tn5250_log_printf("argv[%d] = %s\n", n, argv[n]); 
-
-	    tn5250_log_printf("\n"); 
-	 }
-	 break;
-#endif
-
-      case 'V':
-	 printf("tn5250 version %s\n\n", version_string);
-	 exit(0);
-	 break;
-
-#ifndef NDEBUG
-      case 'w':
-	 debugpause = 0;
-	 break;
-#endif
-
-      case 'y':
-	 {
-	    struct valid_term *p = valid_terms;
-	    while (p->name != NULL && strcmp (p->name, optarg))
-	       p++;
-	    if (p->name == NULL)
-	       syntax ();
-	    termtype = optarg;
-	 }
-	 break;
-
-      case '?':
-      case ':':
-	 return -1;
-      }
-   }
-
-   if (optind >= argc)
-      return -1;
-   remotehost = argv[optind++];
-   if (optind != argc)
-      return -1;
-   return 0;
 }
 
 static void syntax()
@@ -239,7 +171,7 @@ Syntax:\n\
   tn5250 [options] HOST[:PORT]\n\
 \n\
 Options:\n\
-   -m NAME                 Character map (default is '37'):");
+   map=NAME                Character map (default is '37'):");
    m = tn5250_transmaps;
    while (m->name != NULL) {
       if (i % 5 == 0)
@@ -248,13 +180,14 @@ Options:\n\
       m++; i++;
    }
    printf ("\n\
-   -s NAME                 Use NAME as session name (default: none).\n"
+   session=NAME            Use NAME as session name (default: none).\n"
 #ifndef NDEBUG
-"   -t FILE                 Log session to FILE.\n"
+"   trace=FILE              Log session to FILE.\n"
 #endif
-"   -u                      Use underscores instead of underline attribute.\n\
-   -V                      Show emulator version and exit.\n\
-   -y TYPE                 Emulate IBM terminal type (default: depends)");
+"   +/-underscores          Use/don't use underscores instead of underline attribute.\n\
+   +/-version              Show emulator version and exit.\n\
+   env.NAME=VALUE          Set telnet environment string NAME to VALUE.\n\
+   env.TERM=TYPE           Emulate IBM terminal type (default: depends)");
    p = valid_terms;
    while (p->name) {
       printf ("\n                             %s (%s)", p->name, p->descr); 

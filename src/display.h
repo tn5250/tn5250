@@ -53,6 +53,7 @@ struct _Tn5250Field;
 struct _Tn5250Session;
 struct _Tn5250Buffer;
 struct _Tn5250CharMap;
+struct _Tn5250Config;
 
 /****s* lib5250/Tn5250Display
  * NAME
@@ -71,6 +72,7 @@ struct _Tn5250Display {
    struct _Tn5250Terminal *terminal;
    struct _Tn5250Session *session;
    struct _Tn5250CharMap *map;
+   struct _Tn5250Config *config;
    int indicators;
 
    unsigned char *saved_msg_line;
@@ -89,6 +91,8 @@ typedef struct _Tn5250Display Tn5250Display;
 
 extern Tn5250Display *	tn5250_display_new	      (void);
 extern void		tn5250_display_destroy	      (Tn5250Display *This);
+extern int		tn5250_display_config	      (Tn5250Display *This,
+						       struct _Tn5250Config *config);
 
 extern void		tn5250_display_set_session    (Tn5250Display *This,
 						       struct _Tn5250Session *s);

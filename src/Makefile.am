@@ -18,6 +18,7 @@ bin_PROGRAMS =		scs2ascii\
 			lp5250d
 
 lib5250_la_SOURCES =	buffer.c\
+			conf.c\
 			cursesterm.c\
 			debug.c\
 			dbuffer.c\
@@ -52,6 +53,7 @@ lp5250d_LDADD =		@with_extra_libs@ lib5250.la
 
 pkginclude_HEADERS = 	buffer.h\
 		 	codes5250.h\
+			conf.h\
 			config.h\
 		 	cursesterm.h\
 			debug.h\

@@ -390,18 +390,23 @@ static void telnet_stream_sb(Tn5250Stream * This, unsigned char *sb_buf, int sb_
       }
       This->status = This->status | TERMINAL;
    } else if (sb_buf[0] == NEW_ENVIRON) {
-      Tn5250StreamVar *iter;
+      Tn5250ConfigStr *iter;
       tn5250_buffer_append_byte(&out_buf, IAC);
       tn5250_buffer_append_byte(&out_buf, SB);
       tn5250_buffer_append_byte(&out_buf, NEW_ENVIRON);
       tn5250_buffer_append_byte(&out_buf, IS);
 
-      if ((iter = This->environ) != NULL) {
-	 do {
-	    telnet_stream_sb_var_value(&out_buf, (unsigned char *) iter->name,
-				       (unsigned char *) iter->value);
-	    iter = iter->next;
-	 } while (iter != This->environ);
+      if (This->config != NULL) {
+	 if ((iter = This->config->vars) != NULL) {
+	    do {
+	       if (strlen (iter->name) > 4 && !memcmp (iter->name, "env.", 4)) {
+		  telnet_stream_sb_var_value(&out_buf,
+			(unsigned char *) iter->name + 4,
+			(unsigned char *) iter->value);
+	       }
+	       iter = iter->next;
+	    } while (iter != This->config->vars);
+	 }
       }
       tn5250_buffer_append_byte(&out_buf, IAC);
       tn5250_buffer_append_byte(&out_buf, SE);
@@ -696,3 +701,4 @@ static void telnet_stream_escape(Tn5250Buffer * in)
    memcpy(in, &out, sizeof(Tn5250Buffer));
 }
 
+/* vi:set sts=3 sw=3: */

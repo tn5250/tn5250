@@ -64,6 +64,7 @@ extern "C" {
 #include <tn5250/debug.h>
 
 #include <tn5250/display.h>
+#include <tn5250/conf.h>
 
 #ifdef __cplusplus
 }

@@ -31,9 +31,7 @@ Cambridge, MA 02139, USA.  */
 #define _NO_PROTO
 #endif
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "tn5250-config.h"
 
 #if !defined (__STDC__) || !__STDC__
 /* This is a separate conditional since some stdc systems

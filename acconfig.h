@@ -15,3 +15,6 @@
 
 /* Define this to compile the system under WINE. */
 #undef WINE
+
+/* Define this to the system config directory. */
+#undef SYSCONFDIR
