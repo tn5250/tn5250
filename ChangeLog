@@ -1,3 +1,7 @@
+2002-03-14 Scott Klement <klemscot@klements.com>
+- Removed Jay's changes to tn5250-config.in.  We don't use glib in
+   the 0-16 branch of tn5250.
+
 2002-03-14 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - tn5250-config.in: Now reports cflags and libs from glib, too.
 
