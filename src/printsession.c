@@ -243,15 +243,19 @@ void tn5250_print_session_main_loop(Tn5250PrintSession * This)
 
    while (1) {
       if (tn5250_print_session_waitevent(This)) {
-	 tn5250_stream_handle_receive(This->stream);
-	 pcount = tn5250_stream_record_count(This->stream);
-	 if (pcount > 0) {
-	    if (This->rec != NULL)
-	       tn5250_record_destroy(This->rec);
-	    This->rec = tn5250_stream_get_record(This->stream);
-	    if (!tn5250_print_session_get_response_code(This, responsecode))
-	       exit (1);
-	    break;
+	 if( tn5250_stream_handle_receive(This->stream) ) {
+	    pcount = tn5250_stream_record_count(This->stream);
+	    if (pcount > 0) {
+	       if (This->rec != NULL)
+	          tn5250_record_destroy(This->rec);
+	       This->rec = tn5250_stream_get_record(This->stream);
+	       if (!tn5250_print_session_get_response_code(This, responsecode))
+	          exit (1);
+	       break;
+	    }
+	 }
+	 else {
+	    exit(-1);
 	 }
       }
 
@@ -261,33 +265,37 @@ void tn5250_print_session_main_loop(Tn5250PrintSession * This)
    newjob = 1;
    while (1) {
       if (tn5250_print_session_waitevent(This)) {
-	 tn5250_stream_handle_receive(This->stream);
-	 pcount = tn5250_stream_record_count(This->stream);
-	 if (pcount > 0) {
-	    if (newjob) {
-	       char *output_cmd;
-	       if ((output_cmd = This->output_cmd) == NULL)
-		  output_cmd = "scs2ascii |lpr";
-	       This->printfile = popen(output_cmd, "w");
-	       TN5250_ASSERT(This->printfile != NULL);
-	       newjob = 0;
+	 if( tn5250_stream_handle_receive(This->stream) ) {
+	    pcount = tn5250_stream_record_count(This->stream);
+	    if (pcount > 0) {
+	       if (newjob) {
+	          char *output_cmd;
+	          if ((output_cmd = This->output_cmd) == NULL)
+		     output_cmd = "scs2ascii |lpr";
+	          This->printfile = popen(output_cmd, "w");
+	          TN5250_ASSERT(This->printfile != NULL);
+	          newjob = 0;
+	       }
+	       if (This->rec != NULL)
+	          tn5250_record_destroy(This->rec);
+	       This->rec = tn5250_stream_get_record(This->stream);
+	       tn5250_stream_send_packet(This->stream, 0,
+		     TN5250_RECORD_FLOW_CLIENTO,
+		     TN5250_RECORD_H_NONE,
+		     TN5250_RECORD_OPCODE_PRINT_COMPLETE,
+		     NULL);
+	       if (tn5250_record_length(This->rec) == 0x11) {
+	          printf("Job Complete\n");
+	          pclose(This->printfile);
+	          newjob = 1;
+	       } else {
+	          while (!tn5250_record_is_chain_end(This->rec))
+		     fprintf(This->printfile, "%c", tn5250_record_get_byte(This->rec));
+	       }
 	    }
-	    if (This->rec != NULL)
-	       tn5250_record_destroy(This->rec);
-	    This->rec = tn5250_stream_get_record(This->stream);
-	    tn5250_stream_send_packet(This->stream, 0,
-		  TN5250_RECORD_FLOW_CLIENTO,
-		  TN5250_RECORD_H_NONE,
-		  TN5250_RECORD_OPCODE_PRINT_COMPLETE,
-		  NULL);
-	    if (tn5250_record_length(This->rec) == 0x11) {
-	       printf("Job Complete\n");
-	       pclose(This->printfile);
-	       newjob = 1;
-	    } else {
-	       while (!tn5250_record_is_chain_end(This->rec))
-		  fprintf(This->printfile, "%c", tn5250_record_get_byte(This->rec));
-	    }
+	 }
+	 else {
+	    exit(-1);
 	 }
       }
    }
