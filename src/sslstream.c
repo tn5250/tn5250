@@ -61,6 +61,7 @@ static void ssl_stream_send_packet(Tn5250Stream * This, int length,
 static void tn3270_ssl_stream_send_packet(Tn5250Stream * This, int length,
 				      StreamHeader header,
 				      unsigned char * data);
+int ssl_stream_passwd_cb(char *buf, int size, int rwflag, Tn5250Stream *This);
 
 
 #define SEND    1
@@ -354,6 +355,8 @@ static void ssl_log_SB_buf(unsigned char *buf, int len)
  *****/
 int tn5250_ssl_stream_init (Tn5250Stream *This)
 {
+   int len;
+
    TN5250_LOG(("tn5250_ssl_stream_init() entered.\n"));
 
 /*  initialize SSL library */
@@ -374,6 +377,41 @@ int tn5250_ssl_stream_init (Tn5250Stream *This)
    if (This->config!=NULL && tn5250_config_get (This->config, "ssl_ca_file")) {
         if (SSL_CTX_load_verify_locations(This->ssl_context, 
                   tn5250_config_get (This->config, "ssl_ca_file"), NULL)<1) {
+            DUMP_ERR_STACK ();
+            return -1;
+        }
+   }
+
+   This->userdata = NULL;
+
+/* if a PEM passphrase is defined, set things up so that it can be used */
+
+   if (This->config!=NULL && tn5250_config_get (This->config,"ssl_pem_pass")){
+        TN5250_LOG(("SSL: Setting password callback\n"));
+        len = strlen(tn5250_config_get (This->config, "ssl_pem_pass"));
+        This->userdata = g_malloc(len+1);
+        strncpy(This->userdata,
+                tn5250_config_get (This->config, "ssl_pem_pass"), len);
+        SSL_CTX_set_default_passwd_cb(This->ssl_context,
+                (pem_password_cb *)ssl_stream_passwd_cb);
+        SSL_CTX_set_default_passwd_cb_userdata(This->ssl_context, (void *)This);
+
+   }
+
+/* If a certificate file has been defined, load it into this context as well */
+
+   if (This->config!=NULL && tn5250_config_get (This->config, "ssl_cert_file")){
+        TN5250_LOG(("SSL: Loading certificates from certificate file\n"));
+        if (SSL_CTX_use_certificate_file(This->ssl_context,
+                tn5250_config_get (This->config, "ssl_cert_file"),
+                SSL_FILETYPE_PEM) <= 0) {
+            DUMP_ERR_STACK ();
+            return -1;
+        }
+        TN5250_LOG(("SSL: Loading private keys from certificate file\n"));
+        if (SSL_CTX_use_PrivateKey_file(This->ssl_context,
+                tn5250_config_get (This->config, "ssl_cert_file"),
+                SSL_FILETYPE_PEM) <= 0) {
             DUMP_ERR_STACK ();
             return -1;
         }
@@ -404,6 +442,7 @@ int tn5250_ssl_stream_init (Tn5250Stream *This)
  *****/
 int tn3270_ssl_stream_init (Tn5250Stream *This)
 {
+   int len;
 
 /* initialize SSL library */
 
@@ -423,6 +462,51 @@ int tn3270_ssl_stream_init (Tn5250Stream *This)
    if (This->config!=NULL && tn5250_config_get (This->config, "ssl_ca_file")) {
         if (SSL_CTX_load_verify_locations(This->ssl_context, 
                   tn5250_config_get (This->config, "ssl_ca_file"), NULL)<1) {
+            DUMP_ERR_STACK ();
+            return -1;
+        }
+   }
+
+/* if a certificate authority file is defined, load it into this context */
+
+   if (This->config!=NULL && tn5250_config_get (This->config, "ssl_ca_file")) {
+        if (SSL_CTX_load_verify_locations(This->ssl_context, 
+                  tn5250_config_get (This->config, "ssl_ca_file"), NULL)<1) {
+            DUMP_ERR_STACK ();
+            return -1;
+        }
+   }
+
+   This->userdata = NULL;
+
+/* if a PEM passphrase is defined, set things up so that it can be used */
+
+   if (This->config!=NULL && tn5250_config_get (This->config,"ssl_pem_pass")){
+        TN5250_LOG(("SSL: Setting password callback\n"));
+        len = strlen(tn5250_config_get (This->config, "ssl_pem_pass"));
+        This->userdata = g_malloc(len+1);
+        strncpy(This->userdata,
+                tn5250_config_get (This->config, "ssl_pem_pass"), len);
+        SSL_CTX_set_default_passwd_cb(This->ssl_context,
+                (pem_password_cb *)ssl_stream_passwd_cb);
+        SSL_CTX_set_default_passwd_cb_userdata(This->ssl_context, (void *)This);
+
+   }
+
+/* If a certificate file has been defined, load it into this context as well */
+
+   if (This->config!=NULL && tn5250_config_get (This->config, "ssl_cert_file")){
+        TN5250_LOG(("SSL: Loading certificates from certificate file\n"));
+        if (SSL_CTX_use_certificate_file(This->ssl_context,
+                tn5250_config_get (This->config, "ssl_cert_file"),
+                SSL_FILETYPE_PEM) <= 0) {
+            DUMP_ERR_STACK ();
+            return -1;
+        }
+        TN5250_LOG(("SSL: Loading private keys from certificate file\n"));
+        if (SSL_CTX_use_PrivateKey_file(This->ssl_context,
+                tn5250_config_get (This->config, "ssl_cert_file"),
+                SSL_FILETYPE_PEM) <= 0) {
             DUMP_ERR_STACK ();
             return -1;
         }
@@ -466,7 +550,7 @@ static int ssl_stream_connect(Tn5250Stream * This, const char *to)
    serv_addr.sin_family = AF_INET;
 
    /* Figure out the internet address. */
-   address = (char *)malloc (strlen (to)+1);
+   address = (char *)g_malloc (strlen (to)+1);
    strcpy (address, to);
    if (strchr (address, ':'))
       *strchr (address, ':') = '\0';
@@ -1492,6 +1576,33 @@ static void ssl_stream_escape(Tn5250Buffer * in)
    tn5250_buffer_free(in);
    memcpy(in, &out, sizeof(Tn5250Buffer));
 }
+
+/****i* lib5250/ssl_stream_passwd_cb
+ * NAME
+ *    ssl_stream_passwd_cb
+ * SYNOPSIS
+ *    ssl_stream_passwd_cb (buf, sizeof(buf), rwflag, userdata);
+ * INPUTS
+ *    char  *              buf        -
+ *    int                  size       -
+ *    int                  rwflag     -
+ *    void  *              userdata   -
+ * DESCRIPTION
+ *    This is a callback function that's passed to OpenSSL.  When
+ *    OpenSSL needs a password for a Private Key file, it will call
+ *    this function.
+ *****/
+int ssl_stream_passwd_cb(char *buf, int size, int rwflag, Tn5250Stream *This) {
+
+/** FIXME:  There might be situations when we want to ask the user for
+    the passphrase rather than have it supplied by a config option?  **/
+
+    strncpy(buf, This->userdata, size);
+    buf[size - 1] = '\0';
+    return(strlen(buf));
+
+}
+
 
 #endif /* HAVE_LIBSSL */
 
