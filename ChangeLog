@@ -1,3 +1,7 @@
+2002-06-13 Scott Klement <klemscot@klements.com>
+- Added tn5250_setenv() function to utility.c to act like setenv(3).
+  setenv doesn't appear to exist on all systems.
+
 2002-05-28 Scott Klement <klemscot@klements.com>
 - Added ssl_method config option so you can specify an ssl method
   of ssl2, ssl3 or auto.  (Problems connecting were reported in
