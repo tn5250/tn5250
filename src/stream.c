@@ -271,6 +271,7 @@ Tn5250Record *tn5250_stream_get_record(Tn5250Stream * This)
 
    TN5250_LOG(("tn5250_stream_get_record: offset = %d\n", offset));
    tn5250_record_set_cur_pos(record, offset);
+
    return record;
 }
 
