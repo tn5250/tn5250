@@ -211,7 +211,9 @@ Options:\n\
    ssl_cert_file=FILE      File containing SSL certificate in PEM format to\n\
                            use if the AS/400 requires client authentication.\n\
    ssl_pem_pass=PHRASE     Passphrase to use when decrypting a PEM private\n\
-                           key.  Used in conjunction with ssl_cert_file\n");
+                           key.  Used in conjunction with ssl_cert_file\n\
+   ssl_check_exp[=SECS]    Check if SSL certificate is expired, or if it\n\
+                           will be expired in SECS seconds.\n");
 #endif
    printf ("\
    +/-underscores          Use/don't use underscores instead of underline\n\
