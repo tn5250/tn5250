@@ -18,67 +18,8 @@
 
 #include "tn5250-private.h"
 
-#define TCP_PORT 8888
-
 static void syntax(void);
 static int parse_options(int argc, char *argv[]);
-void closeall(int fd);
-int daemon(int nochdir, int noclose);
-
-/* closeall() -- close all FDs >= a specified value */
-
-void closeall(int fd)
-{
-    int fdlimit = sysconf(_SC_OPEN_MAX);
-
-    while (fd < fdlimit)
-      close(fd++);
-}
-
-/* daemon() - detach process from user and disappear into the background
- * returns -1 on failure, but you can't do much except exit in that case
- * since we may already have forked. This is based on the BSD version,
- * so the caller is responsible for things like the umask, etc.
- */
-
-/* believed to work on all Posix systems */
-
-int daemon(int nochdir, int noclose)
-{
-    switch (fork())
-    {
-        case 0:  break;
-        case -1: return -1;
-        default: _exit(0);          /* exit the original process */
-    }
-
-    if (setsid() < 0)               /* shoudn't fail */
-      return -1;
-
-    /* dyke out this switch if you want to acquire a control tty in */
-    /* the future -- not normally advisable for daemons */
-
-    switch (fork())
-    {
-        case 0:  break;
-        case -1: return -1;
-        default: _exit(0);
-    }
-
-    if (!nochdir)
-      chdir("/");
-
-    if (!noclose)
-    {
-        closeall(0);
-        open("/dev/null",O_RDWR);
-        dup(0); dup(0);
-    }
-
-    umask(0);
-
-    return 0;
-}
 
 extern char *version_string;
 
@@ -99,9 +40,9 @@ int main(int argc, char *argv[])
    if (parse_options(argc, argv) < 0)
       syntax();
 
-    if (daemon(0,0) < 0)
+    if (tn5250_daemon(0,0) < 0)
     {
-        perror("daemon");
+        perror("tn5250_daemon");
         exit(2);
     }
 
@@ -178,8 +119,7 @@ static int parse_options(int argc, char *argv[])
 
 static void syntax()
 {
-   struct valid_term *p;
-   printf("Usage:  tn5250 [options] host[:port]\n"
+   printf("Usage:  lp5250 [options] host[:port]\n"
 	  "Options:\n"
 	  "\t-m map      specify translation map\n"
 	  "\t-s name     specify session name\n"

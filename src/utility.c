@@ -18,6 +18,75 @@
 #include "tn5250-private.h"
 #include "transmaps.h"
 
+/****f* lp5250d/tn5250_closeall
+ * NAME
+ *    tn5250_closeall
+ * SYNOPSIS
+ *    tn5250_closeall (fd);
+ * INPUTS
+ *    int fd	- The starting file descriptor.
+ * DESCRIPTION
+ *    Closes all file descriptors >= a specified value.
+ *****/
+void tn5250_closeall(int fd)
+{
+    int fdlimit = sysconf(_SC_OPEN_MAX);
+
+    while (fd < fdlimit)
+      close(fd++);
+}
+
+/****f* lp5250d/tn5250_daemon
+ * NAME
+ *    tn5250_daemon
+ * SYNOPSIS
+ *    ret = tn5250_daemon (nochdir, noclose);
+ * INPUTS
+ *    int nochdir	- 0 to perform chdir.
+ *    int noclose	- 0 to close all file handles.
+ * DESCRIPTION
+ *    Detach process from user and disappear into the background
+ *    returns -1 on failure, but you can't do much except exit in that 
+ *    case since we may already have forked. Believed to work on all 
+ *    Posix systems.
+ *****/
+int tn5250_daemon(int nochdir, int noclose)
+{
+    switch (fork())
+    {
+        case 0:  break;
+        case -1: return -1;
+        default: _exit(0);          /* exit the original process */
+    }
+
+    if (setsid() < 0)               /* shoudn't fail */
+      return -1;
+
+    /* dyke out this switch if you want to acquire a control tty in */
+    /* the future -- not normally advisable for daemons */
+
+    switch (fork())
+    {
+        case 0:  break;
+        case -1: return -1;
+        default: _exit(0);
+    }
+
+    if (!nochdir)
+      chdir("/");
+
+    if (!noclose)
+    {
+        tn5250_closeall(0);
+        open("/dev/null",O_RDWR);
+        dup(0); dup(0);
+    }
+
+    umask(0);
+
+    return 0;
+}
+
 /****f* lib5250/tn5250_char_map_to_host
  * NAME
  *    tn5250_char_map_to_host
