@@ -1,3 +1,8 @@
+1999-12-20 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Attention and System Request keys now transmit appropriate requests to the
+  host again.
+
 1999-12-19 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 
 - CC1/CC2 bytes processed for Read MDT Fields and Read Input Fields commands

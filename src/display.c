@@ -680,11 +680,11 @@ void tn5250_display_do_key(Tn5250Display *This, int key)
       break;
 
    case K_SYSREQ:
-      tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ATTN);
+      tn5250_display_do_aidkey (This, TN5250_SESSION_AID_SYSREQ);
       break;
 
    case K_ATTENTION:
-      tn5250_display_do_aidkey (This, TN5250_SESSION_AID_SYSREQ);
+      tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ATTN);
       break;
 
    case K_PRINT:
