@@ -31,6 +31,9 @@ void tn5250_display_set_cursor_next_progression_field (Tn5250Display *
 void tn5250_display_set_cursor_prev_progression_field (Tn5250Display *
 						       This,
 						       int currentfield);
+void tn5250_display_wordwrap_delete (Tn5250Display * This);
+void tn5250_display_wordwrap (Tn5250Display * This, unsigned char *text,
+			      int totallen, int fieldlen);
 
 
 /****f* lib5250/tn5250_display_new
@@ -959,132 +962,148 @@ tn5250_display_make_wtd_data (Tn5250Display * This, Tn5250Buffer * buf,
 void
 tn5250_display_interactive_addch (Tn5250Display * This, unsigned char ch)
 {
-   Tn5250Field *field = tn5250_display_current_field (This);
-   Tn5250Field *contfield;
-   int end_of_field = 0;
-   int nextfieldprogressionid = 0;
+  Tn5250Field *field = tn5250_display_current_field (This);
+  Tn5250Field *contfield;
+  int end_of_field = 0;
+  int nextfieldprogressionid = 0;
 
-   if (field == NULL || tn5250_field_is_bypass (field)) {
+  if (field == NULL || tn5250_field_is_bypass (field))
+    {
       This->keystate = TN5250_KEYSTATE_PREHELP;
       This->keySRC = TN5250_KBDSRC_PROTECT;
       tn5250_display_inhibit (This);
       return;
-   }
-   /* Upcase the character if this is a monocase field. */
-   if (tn5250_field_is_monocase (field) && isalpha (ch)) {
+    }
+  /* Upcase the character if this is a monocase field. */
+  if (tn5250_field_is_monocase (field) && isalpha (ch))
+    {
       ch = toupper (ch);
-   }
+    }
 
-   /* '+' and '-' keys activate field exit/field minus for numeric fields. */
-   if (This->sign_key_hack && (tn5250_field_is_num_only (field)
-			       || tn5250_field_is_signed_num (field))) {
+  /* '+' and '-' keys activate field exit/field minus for numeric fields. */
+  if (This->sign_key_hack && (tn5250_field_is_num_only (field)
+			      || tn5250_field_is_signed_num (field)))
+    {
       switch (ch) {
       case '+':
-	 tn5250_display_kf_field_plus (This);
-	 return;
+	tn5250_display_kf_field_plus (This);
+	return;
 
       case '-':
-	 tn5250_display_kf_field_minus (This);
-	 return;
+	tn5250_display_kf_field_minus (This);
+	return;
       }
-   }
+    }
 
-   /* Make sure this is a valid data character for this field type. */
-   if (!tn5250_field_valid_char (field, ch, &(This->keySRC))) {
+  /* Make sure this is a valid data character for this field type. */
+  if (!tn5250_field_valid_char (field, ch, &(This->keySRC)))
+    {
       TN5250_LOG (("Inhibiting: invalid character for field type.\n"));
       This->keystate = TN5250_KEYSTATE_PREHELP;
       tn5250_display_inhibit (This);
       return;
-   }
-   /* Are we at the last character of the field? */
-   if (tn5250_display_cursor_y (This) == tn5250_field_end_row (field) &&
-       tn5250_display_cursor_x (This) == tn5250_field_end_col (field)) {
+    }
+  /* Are we at the last character of the field? */
+  if (tn5250_display_cursor_y (This) == tn5250_field_end_row (field) &&
+      tn5250_display_cursor_x (This) == tn5250_field_end_col (field))
+    {
       end_of_field = 1;
 
-      if (field->nextfieldprogressionid != 0) {
-	 nextfieldprogressionid = field->nextfieldprogressionid;
-      }
-   }
+      if (field->nextfieldprogressionid != 0)
+	{
+	  nextfieldprogressionid = field->nextfieldprogressionid;
+	}
+    }
 
-   /* Don't allow the user to enter data in the sign portion of a signed
-    * number field. */
-   if (end_of_field && tn5250_field_is_signed_num (field)) {
+  /* Don't allow the user to enter data in the sign portion of a signed
+   * number field. */
+  if (end_of_field && tn5250_field_is_signed_num (field))
+    {
       TN5250_LOG (("Inhibiting: last character of signed num field.\n"));
       This->keystate = TN5250_KEYSTATE_PREHELP;
       This->keySRC = TN5250_KBDSRC_SIGNPOS;
       tn5250_display_inhibit (This);
       return;
-   }
-   /* Add or insert the character (depending on whether insert mode is on). */
-   if ((tn5250_display_indicators (This) & TN5250_DISPLAY_IND_INSERT) != 0)
-     {
-       int ofs = tn5250_field_length (field) - 1;
-       unsigned char *data = tn5250_display_field_data (This, field);
+    }
 
-       if (tn5250_field_is_continued (field))
-	 {
-	   contfield = field;
-	   while (!tn5250_field_is_continued_last (contfield))
-	     {
-	       contfield = contfield->next;
-	     }
-	   ofs = tn5250_field_length (contfield) - 1;
-	   data = tn5250_display_field_data (This, contfield);
-	 }
+  /* Add or insert the character (depending on whether insert mode is on). */
+  if ((tn5250_display_indicators (This) & TN5250_DISPLAY_IND_INSERT) != 0)
+    {
+      int ofs = tn5250_field_length (field) - 1;
+      unsigned char *data = tn5250_display_field_data (This, field);
 
-       if (tn5250_field_is_signed_num (field))
-	 {
-	   ofs--;
-	 }
+      if (tn5250_field_is_continued (field))
+	{
+	  contfield = field;
+	  while (!tn5250_field_is_continued_last (contfield))
+	    {
+	      contfield = contfield->next;
+	    }
+	  ofs = tn5250_field_length (contfield) - 1;
+	  data = tn5250_display_field_data (This, contfield);
+	}
 
-       if (data[ofs] != '\0'
-	   && tn5250_char_map_to_local (This->map, data[ofs]) != ' ')
-	 {
-	   This->keystate = TN5250_KEYSTATE_PREHELP;
-	   This->keySRC = TN5250_KBDSRC_NOROOM;
-	   tn5250_display_inhibit (This);
-	   return;
-	 }
+      if (tn5250_field_is_signed_num (field))
+	{
+	  ofs--;
+	}
 
-       tn5250_dbuffer_ins (This->display_buffers, field->id,
-			   tn5250_char_map_to_remote (This->map, ch),
-			   tn5250_field_count_right (field,
-						     tn5250_display_cursor_y
-						     (This),
-						     tn5250_display_cursor_x
-						     (This)));
-     }
-   else
-     {
-       tn5250_dbuffer_addch (This->display_buffers,
-			     tn5250_char_map_to_remote (This->map, ch));
-     }
+      if (data[ofs] != '\0'
+	  && tn5250_char_map_to_local (This->map, data[ofs]) != ' ')
+	{
+	  This->keystate = TN5250_KEYSTATE_PREHELP;
+	  This->keySRC = TN5250_KBDSRC_NOROOM;
+	  tn5250_display_inhibit (This);
+	  return;
+	}
 
-   tn5250_field_set_mdt (field);
+      tn5250_dbuffer_ins (This->display_buffers, field->id,
+			  tn5250_char_map_to_remote (This->map, ch),
+			  tn5250_field_count_right (field,
+						    tn5250_display_cursor_y
+						    (This),
+						    tn5250_display_cursor_x
+						    (This)));
+    }
+  else
+    {
+      tn5250_dbuffer_addch (This->display_buffers,
+			    tn5250_char_map_to_remote (This->map, ch));
+    }
 
-   /* If at the end of the field and not a fer field, advance to the
-    * next field. */
-   if (end_of_field) {
-      if (tn5250_field_is_fer (field)) {
-	 tn5250_display_indicator_set (This, TN5250_DISPLAY_IND_FER);
-	 tn5250_display_set_cursor (This,
-				    tn5250_field_end_row (field),
-				    tn5250_field_end_col (field));
-      } else {
-	 tn5250_display_field_adjust (This, field);
-	 if (tn5250_field_is_auto_enter (field)) {
-	    tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ENTER);
-	    return;
-	 }
-	 if (nextfieldprogressionid != 0) {
-	    tn5250_display_set_cursor_next_progression_field (This,
-							      nextfieldprogressionid);
-	 } else {
-	    tn5250_display_set_cursor_next_field (This);
-	 }
-      }
-   }
-   return;
+  tn5250_field_set_mdt (field);
+
+  /* If at the end of the field and not a fer field, advance to the
+   * next field. */
+  if (end_of_field)
+    {
+      if (tn5250_field_is_fer (field))
+	{
+	  tn5250_display_indicator_set (This, TN5250_DISPLAY_IND_FER);
+	  tn5250_display_set_cursor (This,
+				     tn5250_field_end_row (field),
+				     tn5250_field_end_col (field));
+	}
+      else
+	{
+	  tn5250_display_field_adjust (This, field);
+	  if (tn5250_field_is_auto_enter (field))
+	    {
+	      tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ENTER);
+	      return;
+	    }
+	  if (nextfieldprogressionid != 0)
+	    {
+	      tn5250_display_set_cursor_next_progression_field (This,
+								nextfieldprogressionid);
+	    }
+	  else
+	    {
+	      tn5250_display_set_cursor_next_field (This);
+	    }
+	}
+    }
+  return;
 }
 
 
@@ -2293,6 +2312,14 @@ void tn5250_display_kf_delete (Tn5250Display * This)
   else
     {
       tn5250_field_set_mdt (field);
+
+      /* If this field is word wrap handle it differently */
+      if (tn5250_field_is_wordwrap (field))
+	{
+	  tn5250_display_wordwrap_delete (This);
+	  return;
+	}
+
       tn5250_dbuffer_del (This->display_buffers, field->id,
 			  tn5250_field_count_right (field,
 						    tn5250_display_cursor_y
@@ -2701,5 +2728,173 @@ tn5250_display_erase_region (Tn5250Display * This, unsigned int startrow,
 	    }
 	}
     }
+  return;
+}
+
+
+/****f* lib5250/tn5250_display_wordwrap_delete
+ * NAME
+ *    tn5250_display_wordwrap_delete
+ * SYNOPSIS
+ *    tn5250_display_wordwrap_delete (This);
+ * INPUTS
+ *    Tn5250Display *      This       - 
+ * DESCRIPTION
+ *    Delete key function.
+ *****/
+void
+tn5250_display_wordwrap_delete (Tn5250Display * This)
+{
+  Tn5250Field *field = tn5250_display_current_field (This);
+  Tn5250Field *iter;
+  int buflen;
+  unsigned char *text, *ptr;
+  unsigned char *data;
+  unsigned char espace = tn5250_char_map_to_remote (This->map, ' ');
+
+
+  /* Use code from x5250 (with permission).  The basic idea here is to
+   * copy all the fields starting with the field we are currently in
+   * until the last field in this wordwrap group (the last field isn't
+   * marked continuous - but will always be the next field, or so say
+   * the docs).  Delete the character at the current cursor location for
+   * only the current field.  Then copy the result and concatenate the
+   * remaining fields into a single buffer.  Once that is done, word wrap
+   * the result and copy it back into the field buffers.
+   */
+
+  tn5250_dbuffer_del_this_field_only (This->display_buffers,
+				      tn5250_field_count_right (field,
+						tn5250_display_cursor_y
+						(This),
+						tn5250_display_cursor_x
+						(This)));
+
+  /* First allocate enough space to do the copying.  This will be sum of
+   * the lengths of the word wrap fields in this group starting from the
+   * current field.
+   */
+
+  /* Find out how much to allocate (do this separately so we can do the
+   * actual allocation in one step).
+   */
+  buflen = 0;
+  for (iter = field; tn5250_field_is_wordwrap (iter); iter = iter->next)
+    {
+      buflen = buflen + tn5250_field_length (iter) + 1;
+    }
+  buflen = buflen + tn5250_field_length (iter);
+
+  /* Now allocate */
+  text = (unsigned char *) malloc (buflen * sizeof (unsigned char));
+  ptr = text;
+
+  /* Now repeat the loop above and this time copy the data over.  Insert
+   * a space after the end of each field since spaces are implied at the
+   * ends of word wrap fields.
+   */
+  for (iter = field; tn5250_field_is_wordwrap (iter); iter = iter->next)
+    {
+      data = tn5250_display_field_data (This, iter);
+      memcpy (ptr, data, tn5250_field_length (iter) * sizeof (unsigned char));
+      ptr = ptr + (tn5250_field_length (iter) * sizeof (unsigned char));
+      memcpy (ptr, &espace, sizeof (unsigned char));
+      ptr = ptr + sizeof (unsigned char);
+    }
+  data = tn5250_display_field_data (This, iter);
+  memcpy (ptr, data, tn5250_field_length (iter) * sizeof (unsigned char));
+  tn5250_display_wordwrap (This, text, buflen, tn5250_field_length (field));
+
+  free (text);
+  return;
+}
+
+
+void
+tn5250_display_wordwrap (Tn5250Display * This, unsigned char *text,
+			 int totallen, int fieldlen)
+{
+  Tn5250Field *field = tn5250_display_current_field (This);
+  int origcursorrow = tn5250_dbuffer_cursor_y (This->display_buffers);
+  int origcursorcol = tn5250_dbuffer_cursor_x (This->display_buffers);
+  int i, j;
+  char c;
+  int curlinelength = 0;
+  int wordlength = 0;
+  char word[132 + 1] = {'\0'};
+  char line[132 + 1] = {'\0'};
+
+  for (i = 0; i < totallen; i++)
+    {
+      c = tn5250_char_map_to_local (This->map, text[i]);
+
+      if (c != ' ')
+	{
+	  word[wordlength] = c;
+	  wordlength++;
+	  word[wordlength] = '\0';
+	  curlinelength ++;
+	}
+      else
+	{
+	  if (strlen (line) == 0)
+	    {
+	      sprintf (line, "%s", word);
+	    }
+	  else
+	    {
+	      if ((curlinelength + 1) > fieldlen)
+		{
+		  tn5250_dbuffer_cursor_set (This->display_buffers,
+					     tn5250_field_start_row (field),
+					     tn5250_field_start_col (field));
+		  for (j = 0; j < strlen (line); j++)
+		    {
+		      tn5250_dbuffer_addch (This->display_buffers,
+					    tn5250_char_map_to_remote (This->map,
+								       line[j]));
+		    }
+		  for (; j < tn5250_field_length (field); j++)
+		    {
+		      tn5250_dbuffer_addch (This->display_buffers,
+					    tn5250_char_map_to_remote (This->map,
+								       ' '));
+		    }
+		  if (tn5250_field_is_wordwrap (field))
+		    {
+		      field = field->next;
+		    }
+		  memset (line, '\0', 133);
+		  sprintf (line, "%s", word);
+		  curlinelength = strlen (line);
+		}
+	      else if (strlen (word) > 0)
+		{
+		  sprintf (line, "%s %s", line, word);
+		  curlinelength = strlen (line);
+		}
+	    }
+	  memset (word, '\0', 133);
+	  wordlength = 0;
+	}
+    }
+
+  /* Add or clear any trailing text */
+  tn5250_dbuffer_cursor_set (This->display_buffers,
+			     tn5250_field_start_row (field),
+			     tn5250_field_start_col (field));
+  for (j = 0; j < strlen (line); j++)
+    {
+      tn5250_dbuffer_addch (This->display_buffers,
+			    tn5250_char_map_to_remote (This->map, line[j]));
+    }
+  for (; j < tn5250_field_length (field); j++)
+    {
+      tn5250_dbuffer_addch (This->display_buffers,
+			    tn5250_char_map_to_remote (This->map, ' '));
+    }
+
+  tn5250_dbuffer_cursor_set (This->display_buffers, origcursorrow,
+			     origcursorcol);
   return;
 }

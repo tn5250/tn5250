@@ -96,6 +96,8 @@ extern "C"
   extern void tn5250_dbuffer_addch (Tn5250DBuffer * This, unsigned char c);
   extern void tn5250_dbuffer_del (Tn5250DBuffer * This, int fieldid,
 				  int shiftcount);
+  extern void tn5250_dbuffer_del_this_field_only (Tn5250DBuffer * This,
+						  int shiftcount);
   extern void tn5250_dbuffer_ins (Tn5250DBuffer * This, int fieldid,
 				  unsigned char c, int shiftcount);
   extern void tn5250_dbuffer_set_ic (Tn5250DBuffer * This, int y, int x);
