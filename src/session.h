@@ -38,6 +38,10 @@
 extern "C" {
 #endif
 
+/* Negative response codes */
+#define TN5250_NR_INVALID_SOH_LENGTH    0x1005012B
+#define TN5250_NR_INVALID_ROW_COL_ADDR  0x10050122
+
 #define TN5250_SESSION_AID_F1		0x31
 #define TN5250_SESSION_AID_F2		0x32
 #define TN5250_SESSION_AID_F3		0x33

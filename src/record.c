@@ -124,6 +124,21 @@ int tn5250_record_is_chain_end(Tn5250Record * This)
    return tn5250_record_length(This) == This->cur_pos;
 }
 
+/****f* lib5250/tn5250_record_is_chain_end
+ * NAME
+ *    tn5250_record_skip_to_end
+ * SYNOPSIS
+ *    ret = tn5250_record_skip_to_end (This);
+ * INPUTS
+ *    Tn5250Record *       This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
+void tn5250_record_skip_to_end(Tn5250Record * This)
+{
+   This->cur_pos = tn5250_record_length(This);
+}
+
 /****f* lib5250/tn5250_record_dump
  * NAME
  *    tn5250_record_dump

@@ -367,19 +367,11 @@ int tn5250_char_map_printable_p(Tn5250CharMap *map, Tn5250Char data)
    switch (data) {
    case 0x0e: /* Ideographic Shift-In. */
    case 0x0f: /* Ideographic Shift-Out. */
-      TN5250_ASSERT(0); /* FIXME: Not implemented. */
-      return 0;
-   case 0x01:  /* These chars "cause an RNQ1251" on an IBM 3179-2 */
-   case 0x02:  
-   case 0x03:
+     /* These should cause an RX1251 on the AS/400 */
    case 0x04:
    case 0x10:
-   case 0x11:
    case 0x12:
-   case 0x13:
-   case 0x14:
    case 0x15:
-   case 0x1d:
       return 0;                                                               
    }
    return 1;
