@@ -21,3 +21,6 @@
 
 /* Define this if your system already has a def for UCHAR. */
 #undef HAVE_UCHAR
+
+/* define this when creating a binary distribution */
+#undef BINARY_RELEASE
