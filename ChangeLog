@@ -1,4 +1,8 @@
-2000-07-28 Mike Madore <mmadore@turbolinux.com>
+2000-07-11 Mike Madore <mmadore@turbolinux.com>
+- Preliminary fix for emulator hang when pressing sys-request from the 
+  sysrequest menu.
+	
+2000-07-08 Mike Madore <mmadore@turbolinux.com>
 - Updated version of development code to 0.17.0
 - Applied Scott Klement's patch to use the config file system for lp5250d
 	
