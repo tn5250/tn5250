@@ -224,6 +224,7 @@ struct _Tn5250TerminalPrivate {
    int		  unix_like_copy: 1;
    int            resize_fonts: 1;
    int            local_print: 1;
+   int            always_ask: 1;
 };
 
 
@@ -399,6 +400,7 @@ Tn5250Terminal *tn5250_win32_terminal_new(HINSTANCE hInst,
    r->data->unix_like_copy = 0;
    r->data->resize_fonts = 0;
    r->data->local_print = 0;
+   r->data->always_ask = 0;
    r->data->caret_style = CARETSTYLE_NOBLINK;
    r->data->pd = NULL;
 
@@ -461,6 +463,9 @@ static void win32_terminal_init(Tn5250Terminal * This)
 
       if (tn5250_config_get_bool(This->data->config, "local_print_key"))
           This->data->local_print = 1;
+
+      if (tn5250_config_get_bool(This->data->config, "always_ask"))
+          This->data->always_ask = 1;
 
       if (tn5250_config_get(This->data->config, "copymode")) {
           if (!strcasecmp(tn5250_config_get(This->data->config,"copymode"), 
@@ -2734,6 +2739,9 @@ void win32_print_screen(Tn5250Terminal *This, Tn5250Display *display) {
 
     MessageBox(This->data->hwndMain, "Print screen successful!",  "TN5250",
               MB_OK|MB_ICONINFORMATION);
+
+    if (This->data->always_ask)
+       win32_destroy_printer_info(This);
 }
     
 
