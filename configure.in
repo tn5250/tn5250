@@ -9,6 +9,23 @@ AC_ARG_ENABLE(old-keys,
                           but might be more complete.],,[
   AC_DEFINE_UNQUOTED(USE_OWN_KEY_PARSING,1)
 ])
+
+dnl *
+dnl * Not using gnome, so look for glib and GTK+ instead.
+dnl *
+AC_PATH_PROG(GLIB_CONFIG,glib-config,no)
+if test x$GLIB_CONFIG = xno ; then
+	AC_MSG_ERROR(** Can't find glib-config.  Is glib installed? **)
+fi
+AC_MSG_CHECKING(for glib C flags)
+GLIB_CFLAGS="`$GLIB_CONFIG --cflags glib`"
+CFLAGS="$CFLAGS $GLIB_CFLAGS"
+AC_MSG_RESULT($GLIB_CFLAGS)
+AC_MSG_CHECKING(for glib libs)
+GLIB_LIBS="`$GLIB_CONFIG --libs glib`"
+LIBS="$LIBS $GLIB_LIBS"
+AC_MSG_RESULT($GLIB_LIBS)
+
 dnl **
 dnl ** Check for Wine to see if we can compile the Windows port under a _real_ OS.
 dnl **

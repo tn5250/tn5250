@@ -22,23 +22,25 @@
 extern "C" {
 #endif
 
+#define CONFIG_STRING 1
+#define CONFIG_LIST   2
+
 struct _Tn5250ConfigStr {
-   struct _Tn5250ConfigStr *next;
-   struct _Tn5250ConfigStr *prev;
-   char *      name;
-   char *      value;
+  char * name;
+  int    type;
+  gpointer value;
 };
 
 typedef struct _Tn5250ConfigStr Tn5250ConfigStr;
 
 struct _Tn5250Config {
-   int			ref;
-   Tn5250ConfigStr *	vars;
+  int	   ref;
+  GSList * vars;
 };
 
 typedef struct _Tn5250Config Tn5250Config;
 
-extern Tn5250Config *	      tn5250_config_new		 (void);
+extern Tn5250Config *         tn5250_config_new		 (void);
 extern Tn5250Config *	      tn5250_config_ref		 (Tn5250Config *This);
 extern void		      tn5250_config_unref  	 (Tn5250Config *This);
 
@@ -53,9 +55,12 @@ extern const char *	      tn5250_config_get		 (Tn5250Config *This,
 							  const char *name);
 extern int		      tn5250_config_get_bool	 (Tn5250Config *This,
 						          const char *name);
+extern int                    tn5250_config_get_int      (Tn5250Config *This,
+							  const char *name);
 extern void		      tn5250_config_set		 (Tn5250Config *This,
 							  const char *name,
-							  const char *value);
+							  const int  type,
+							  const gpointer value);
 extern void		      tn5250_config_unset	 (Tn5250Config *This,
 							  const char *name);
 

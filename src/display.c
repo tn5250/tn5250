@@ -124,14 +124,14 @@ int tn5250_display_config(Tn5250Display *This, Tn5250Config *config)
    termtype = tn5250_config_get(config, "env.TERM");
 
    if(termtype == NULL) {
-       tn5250_config_set(config, "env.TERM", "IBM-3179-2");
+       tn5250_config_set(config, "env.TERM", CONFIG_STRING, "IBM-3179-2");
    }
 
    /* Set the new character map. */
    if (This->map != NULL)
       tn5250_char_map_destroy (This->map);
    if ((v = tn5250_config_get (config, "map")) == NULL) {
-     tn5250_config_set(config, "map", "37");
+     tn5250_config_set(config, "map", CONFIG_STRING, "37");
      v = tn5250_config_get(config, "map");
    }
 
