@@ -52,6 +52,11 @@ void tn5250_closeall(int fd)
       close(fd++);
 }
 
+/*
+  Signal handler for SIGCHLD.  We use waitpid instead of wait, since there
+  is no way to tell wait not to block if there are still non-terminated child
+  processes.
+*/
 void
 sig_child(int signum)
 {
@@ -60,6 +65,7 @@ sig_child(int signum)
 
   while( pid = waitpid(-1, &status, WNOHANG) > 0);
 
+  return;
 }
 
 /****f* lp5250d/tn5250_daemon

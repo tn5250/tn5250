@@ -12,6 +12,8 @@
   standard defines on UnixWare.
 - Changed library order in tn5250-config.in.  gtk-5250 now compiles and runs
   on UnixWare 7.
+- Switched to select scheme instead of bare accept so we can handle both
+  a client socket and a daemon management socket.
 	
 2000-05-25 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - Fixed syntax usage message in tn5250.c

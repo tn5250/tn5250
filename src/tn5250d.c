@@ -30,9 +30,12 @@
  * 
  * If you write modifications of your own for TN5250, it is your choice
  * whether to permit this exception to apply to your modifications.
- * If you do not wish that, delete this exception notice. */
+ * If you do not wish that, delete this exception notice. 
+ */
+
 #include "tn5250-private.h"
 #include "host5250.h"
+#include "tn5250d.h"
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -43,12 +46,13 @@ make_socket (unsigned short int port)
   int sock;
   int on = 1;
   struct sockaddr_in name;
+  u_long ioctlarg = 0;
 
   /* Create the socket. */
   sock = socket (PF_INET, SOCK_STREAM, 0);
   if (sock < 0)
     {
-      perror ("socket");
+      syslog(LOG_INFO, "socket: %s\n", strerror(errno));
       exit (EXIT_FAILURE);
     }
 
@@ -57,9 +61,10 @@ make_socket (unsigned short int port)
   name.sin_port = htons (port);
   name.sin_addr.s_addr = htonl (INADDR_ANY);
   setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+  TN_IOCTL(sock, FIONBIO, &ioctlarg);
   if (bind (sock, (struct sockaddr *) &name, sizeof (name)) < 0)
     {
-      perror ("bind");
+      syslog(LOG_INFO, "bind: %s\n", strerror(errno));
       exit (EXIT_FAILURE);
     }
 
@@ -90,55 +95,75 @@ process_client(int sockfd)
 
 int childpid;
 int sock;
+int mgr_sock;
 int sockfd;
 int snsize;
 struct sockaddr_in sn = { AF_INET };
-fd_set active_fd_set, read_fd_set;
 int i;
 struct sockaddr_in clientname;
 size_t size;
-int connected;
-
-#define PORT 2023
+fd_set rset;
 
 int
 main(void)
 {
-  printf("Starting server...\n");
+  int rc;
 
+  printf("Starting tn5250d server...\n");
+  
   tn5250_daemon(0,0,1);
 
-  sock = make_socket (PORT);
+  sock = make_socket (CLIENT_PORT);
+  mgr_sock = make_socket(MANAGE_PORT);
 
-  /* Create the socket and set it up to accept connections. */
+  /* Create the client socket and set it up to accept connections. */
   if (listen (sock, 1) < 0)
     {
-      perror ("listen");
+      syslog(LOG_INFO, "listen (CLIENT_PORT): %s\n", strerror(errno));
       exit (EXIT_FAILURE);
     }
-  
-  connected = 0;
 
+  /* Create the manager socket and set it up to accept connections. */
+  if (listen (mgr_sock, 1) < 0)
+    {
+      syslog(LOG_INFO, "listen (MANAGER_PORT): %s\n", strerror(errno));
+      exit(EXIT_FAILURE);
+    }
+
+  syslog(LOG_INFO, "tn5250d server started\n");
+  
   while(1) 
     {
+      FD_ZERO(&rset);
+      FD_SET(sock,&rset);
+
+      if( select(sock+1, &rset, NULL, NULL, NULL) < 0 ) {
+	if( errno == EINTR ) {
+	  continue;
+	} else {
+	  syslog(LOG_INFO, "select: %s\n", strerror(errno));
+	  exit(1);
+	}
+      }
+
       snsize = sizeof(sn);
       
-      do {
-	sockfd = accept(sock, (struct sockaddr *)&sn, &snsize);
+      sockfd = accept(sock, (struct sockaddr *)&sn, &snsize);
 
-	if(sockfd < 0) {
-	  if(errno == EINTR) {
-	    connected = 0;
-	  } else {
-	    syslog(LOG_INFO, "accept: %s\n", strerror(errno));
-	    exit(1);
-	  }
-	} else {
-	  connected = 1;
+      if(sockfd < 0) {
+	switch(errno) {
+	case EINTR:
+	case EWOULDBLOCK:
+	case ECONNABORTED:
+	case EPROTO:
+	  continue;
+	default:
+	  syslog(LOG_INFO, "accept: %s\n", strerror(errno));
+	  exit(1);
 	}
-      } while(!connected);
+      } 
 
-      printf("Incoming connection...\n");
+      syslog(LOG_INFO, "Incoming connection...\n");
       
       if( (childpid = fork()) < 0) {
 	perror("fork");
