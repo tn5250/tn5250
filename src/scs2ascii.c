@@ -21,29 +21,27 @@
  */
 
 #include "tn5250-private.h"
-#include "scs.h"
 
-static void scs2ascii_process34 (int *curpos);
+/*
+#define DEBUG
+*/
+
+
+static void scs2ascii_pp (Tn5250SCS * This);
 static void scs2ascii_ahpp (int *curpos);
 static void scs2ascii_avpp (int *curline);
-void scs2ascii_transparent ();
+void scs2ascii_transparent (Tn5250SCS * This);
+void scs2ascii_ff (Tn5250SCS * This);
+void scs2ascii_nl (Tn5250SCS * This);
+void scs2ascii_default (Tn5250SCS * This);
+Tn5250SCS *tn5250_scs2ascii_new ();
 
-unsigned char curchar;
-unsigned char nextchar;
-int current_line;
-int mpp;
+Tn5250CharMap *map;
 
 int
 main ()
 {
-  Tn5250CharMap *map;
-  int new_line = 1;
-  int ccp = 1;
-  int width;
-  int length;
-  int cpi;  /* This is unused */
-  current_line = 1;
-  mpp = 132;
+  Tn5250SCS *scs = NULL;
 
   if ((getenv ("TN5250_CCSIDMAP")) != NULL)
     {
@@ -54,107 +52,135 @@ main ()
       map = tn5250_char_map_new ("37");
     }
 
-  while (!feof (stdin))
-    {
-      curchar = fgetc (stdin);
-      switch (curchar)
-	{
-	case SCS_TRANSPARENT:
-	  {
-	    scs2ascii_transparent ();
-	    break;
-	  }
-	case SCS_RFF:
-	  {
-	    scs_rff ();
-	    break;
-	  }
-	case SCS_NOOP:
-	  {
-	    scs_noop ();
-	    break;
-	  }
-	case SCS_CR:
-	  {
-	    scs_cr ();
-	    break;
-	  }
-	case SCS_FF:
-	  {
-	    scs_ff ();
-	    printf ("\f");
-            current_line = 1;
-	    break;
-	  }
-	case SCS_NL:
-	  {
-	    if (!new_line)
-	      {
-	      }
-	    printf ("\n");
-	    new_line = scs_nl ();
-	    ccp = 1;
-            current_line ++;
-	    break;
-	  }
-	case SCS_RNL:
-	  {
-	    scs_rnl ();
-	    break;
-	  }
-	case SCS_HT:
-	  {
-	    scs_ht ();
-	    break;
-	  }
-	case 0x34:
-	  {
-	    scs2ascii_process34 (&ccp);
-	    break;
-	  }
-	case 0x2B:
-	  {
-	    scs_process2b (&width, &length, &cpi);
-	    break;
-	  }
-	case 0xFF:
-	  {
-	    /* This is a hack */
-	    /* Don't know where the 0xFF is coming from */
-	    break;
-	  }
-	default:
-	  {
-	    if (new_line)
-	      {
-		new_line = 0;
-	      }
-	    printf ("%c", tn5250_char_map_to_local (map, curchar));
-	    ccp++;
-	    fprintf (stderr, ">%x\n", curchar);
-	  }
-	}
 
+  /* Initialize the scs toolkit */
+  scs = tn5250_scs2ascii_new ();
+
+  if (scs == NULL)
+    {
+      return (-1);
     }
+
+  /* And now set up our callbacks */
+  scs->column = 1;
+  scs->row = 1;
+
+
+  /* Turn control over to the SCS toolkit and run the event loop */
+  scs_main (scs);
+
   tn5250_char_map_destroy (map);
+  g_free (scs);
   return (0);
 }
 
-static void
-scs2ascii_process34 (int *curpos)
-{
 
+
+
+/* This initializes the scs callbacks
+ */
+Tn5250SCS *
+tn5250_scs2ascii_new ()
+{
+  Tn5250SCS *scs = tn5250_scs_new ();
+
+  if (scs == NULL)
+    {
+      fprintf (stderr,
+	       "Unable to allocate memory in tn5250_scs2ascii_new ()!\n");
+      return NULL;
+    }
+
+  /*
+     scs->data = tn5250_new(struct _Tn5250SCSPrivate, 1);
+     if (scs->data == NULL) {
+     g_free(scs);
+     return;
+     }
+   */
+
+  /* And now set up our callbacks */
+  scs->transparent = scs2ascii_transparent;
+  scs->ff = scs2ascii_ff;
+  scs->rff = scs2ascii_ff;
+  scs->nl = scs2ascii_nl;
+  scs->rnl = scs2ascii_nl;
+  scs->pp = scs2ascii_pp;
+  scs->scsdefault = scs2ascii_default;
+  return scs;
+}
+
+
+
+void
+scs2ascii_default (Tn5250SCS * This)
+{
+#ifdef DEBUG
+#ifdef VERBOSE
+  fprintf (stderr, "doing scs2ascii_default()\n");
+#endif
+#endif
+  printf ("%c", tn5250_char_map_to_local (map, This->curchar));
+  This->column++;
+#ifdef DEBUG
+#ifdef VERBOSE
+  fprintf (stderr, "%c (%x)\n",
+	   tn5250_char_map_to_local (map, This->curchar), This->curchar);
+#endif
+#endif
+  return;
+}
+
+void
+scs2ascii_ff (Tn5250SCS * This)
+{
+#ifdef DEBUG
+#ifdef VERBOSE
+  fprintf (stderr, "doing scs2ascii_ff()\n");
+#endif
+#endif
+  scs_ff (This);
+  printf ("\f");
+  This->row = 1;
+  return;
+}
+
+void
+scs2ascii_nl (Tn5250SCS * This)
+{
+#ifdef DEBUG
+#ifdef VERBOSE
+  fprintf (stderr, "doing scs2ascii_nl()\n");
+#endif
+#endif
+  scs_nl (This);
+  printf ("\n");
+  This->column = 1;
+  This->row = This->row + 1;
+  return;
+}
+
+static void
+scs2ascii_pp (Tn5250SCS * This)
+{
+  unsigned char curchar;
+
+#ifdef DEBUG
+#ifdef VERBOSE
+  fprintf (stderr, "doing scs2ascii_pp()\n");
+#endif
+#endif
   curchar = fgetc (stdin);
   switch (curchar)
     {
     case SCS_AVPP:
       {
-	scs2ascii_avpp (&current_line);
+	scs2ascii_avpp (&(This->row));
 	break;
       }
     case SCS_AHPP:
       {
-	scs2ascii_ahpp (curpos);
+	scs2ascii_ahpp (&(This->column));
 	break;
       }
     default:
@@ -170,7 +196,16 @@ scs2ascii_ahpp (int *curpos)
   int position;
   int loop;
 
+#ifdef DEBUG
+#ifdef VERBOSE
+  fprintf (stderr, "doing scs2ascii_ahpp()\n");
+#endif
+#endif
   position = fgetc (stdin);
+#ifdef DEBUG
+  fprintf (stderr, "AHPP %d (current position: %d)\n", position, *curpos);
+#endif
+
   if (*curpos > position)
     {
       printf ("\r");
@@ -187,18 +222,26 @@ scs2ascii_ahpp (int *curpos)
 	}
     }
   *curpos = position;
-  fprintf (stderr, "AHPP %d\n", position);
+  return;
 }
 
 void
-scs2ascii_transparent ()
+scs2ascii_transparent (Tn5250SCS * This)
 {
 
   int bytecount;
   int loop;
 
+#ifdef DEBUG
+#ifdef VERBOSE
+  fprintf (stderr, "doing scs2ascii_transparent()\n");
+#endif
+#endif
   bytecount = fgetc (stdin);
+#ifdef DEBUG
   fprintf (stderr, "TRANSPARENT (%x) = ", bytecount);
+#endif
+
   for (loop = 0; loop < bytecount; loop++)
     {
       printf ("%c", fgetc (stdin));
@@ -210,18 +253,27 @@ scs2ascii_avpp (int *curline)
 {
   int line;
 
-  line = fgetc(stdin);
+#ifdef DEBUG
+#ifdef VERBOSE
+  fprintf (stderr, "doing scs2ascii_avpp()\n");
+#endif
+#endif
+  line = fgetc (stdin);
+#ifdef DEBUG
   fprintf (stderr, "AVPP %d\n", line);
+#endif
 
-  if (*curline>line) {
-       printf ("\f");
-       *curline = 1;
-  }
+  if (*curline > line)
+    {
+      printf ("\f");
+      *curline = 1;
+    }
 
-  while (*curline<line) {
-       printf ("\n");
-       (*curline) ++;
-  }
+  while (*curline < line)
+    {
+      printf ("\n");
+      (*curline)++;
+    }
 
 }
 
