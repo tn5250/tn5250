@@ -372,7 +372,6 @@ int tn5250_char_map_printable_p(Tn5250CharMap *map, Tn5250Char data)
 	  case 0x0f: 
        */
      default:
-       return 0;                                                               
        break;
      }
    return 1;
