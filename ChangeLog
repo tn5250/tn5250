@@ -1,3 +1,7 @@
+2003-07-18 Scott Klement <klemscot@klements.com>
+- Added $prefix variable in freebsd/Makefile.am so keyboard mapping
+    items could be installed in alternate locations
+
 2003-04-27 Scott Klement <klemscot@klements.com>
 - Added local print key support to the curses terminal.  Activate it by
     specifying +local_print_key in your config file.   The output is
