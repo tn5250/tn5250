@@ -38,6 +38,10 @@
 
     Elaboration: We want some sort of `toolkit' for translating from SCS to
     whatever (PostScript, PDF, ASCII, groff, PCL ...)
+
+    This is now partway done.  The library functions are in scs.c and scs.c
+    becomes part of the library, but we don't include scs.h from tn5250.h
+    Plus we don't really have a toolkit yet.
   </item>
 
   <item>
