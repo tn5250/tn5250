@@ -392,6 +392,9 @@ static int telnet_stream_accept(Tn5250Stream * This, int masterfd)
 {
    int i, len, retCode;
    struct sockaddr_in serv_addr;
+   fd_set fdr;
+   struct timeval tv;
+
 #ifndef WINELIB
    u_long ioctlarg=1L;
 #endif
@@ -423,9 +426,20 @@ static int telnet_stream_accept(Tn5250Stream * This, int masterfd)
 	perror("telnetstr");
 	 return LAST_ERROR;
       }
-      if (!telnet_stream_handle_receive(This)) {
-         retCode = LAST_ERROR;
-         return retCode ? retCode : -1;
+
+      FD_ZERO(&fdr);
+      FD_SET(This->sockfd, &fdr);
+      tv.tv_sec = 5;
+      tv.tv_usec = 0;
+      TN_SELECT(This->sockfd + 1, &fdr, NULL, NULL, &tv);
+      if (FD_ISSET(This->sockfd, &fdr)) {
+
+	if (!telnet_stream_handle_receive(This)) {
+	  retCode = LAST_ERROR;
+	  return retCode ? retCode : -1;
+	}
+      } else {
+	return -1;
       }
    }
 
