@@ -83,6 +83,9 @@ static int curses_terminal_get_esc_key(Tn5250Terminal * This, int is_esc) /*@mod
 static void curses_terminal_beep(Tn5250Terminal * This);
 static int curses_terminal_is_ruler(Tn5250Terminal *This, Tn5250Display *display, int x, int y);
 int curses_rgb_to_color(int r, int g, int b, int *rclr, int *rbold);
+int curses_terminal_config(Tn5250Terminal *This, Tn5250Config *config);
+void curses_terminal_print_screen(Tn5250Terminal *This, Tn5250Display *display);
+void curses_postscript_print(FILE *out, int x, int y, char *string, attr_t attr);
 
 #ifdef USE_OWN_KEY_PARSING
 struct _Key {
@@ -106,11 +109,14 @@ struct _Tn5250TerminalPrivate {
 #endif
    char *         font_80;
    char *         font_132;
+   Tn5250Display  *display;
+   Tn5250Config   *config;
    int		  quit_flag : 1;
    int		  have_underscores : 1;
    int		  underscores : 1;
    int		  is_xterm : 1;
    int		  display_ruler : 1;
+   int            local_print : 1;
 };
 
 #ifdef USE_OWN_KEY_PARSING
@@ -269,6 +275,9 @@ Tn5250Terminal *tn5250_curses_terminal_new()
    r->data->font_80 = NULL;
    r->data->font_132 = NULL;
    r->data->display_ruler = 0;
+   r->data->local_print = 0;
+   r->data->display = NULL;
+   r->data->config = NULL;
 
 #ifdef USE_OWN_KEY_PARSING
    r->data->k_buf_len = 0;
@@ -288,7 +297,7 @@ Tn5250Terminal *tn5250_curses_terminal_new()
    r->waitevent = curses_terminal_waitevent;
    r->getkey = curses_terminal_getkey;
    r->beep = curses_terminal_beep;
-   r->config = NULL;
+   r->config = curses_terminal_config;
    return r;
 }
 
@@ -620,6 +629,8 @@ static void curses_terminal_update(Tn5250Terminal * This, Tn5250Display *display
    int y, x;
    attr_t curs_attr;
    unsigned char a = 0x20, c;
+
+   This->data->display = display;
 
    if (This->data->last_width != tn5250_display_width(display)
        || This->data->last_height != tn5250_display_height(display)) {
@@ -1233,6 +1244,12 @@ static int curses_terminal_getkey (Tn5250Terminal *This)
       return -1;
    case 0x0a:
       return 0x0d;
+   case K_PRINT:
+      if (This->data->local_print) {
+         curses_terminal_print_screen(This, This->data->display);
+         ch = K_RESET;
+      }
+      break;
    }
    return ch;
 }
@@ -1359,6 +1376,295 @@ void tn5250_curses_terminal_load_colorlist(Tn5250Config *config) {
    }
 
 }
+
+
+/****i* lib5250/curses_terminal_config
+ * NAME
+ *    curses_terminal_config
+ * SYNOPSIS
+ *    curses_terminal_config(This, config);
+ * INPUTS
+ *    Tn5250Terminal *     This       -
+ *    Tn5250Display  *     config     -
+ * DESCRIPTION
+ *    Assign a set of configuration data to the terminal
+ *****/
+int curses_terminal_config(Tn5250Terminal *This, Tn5250Config *config) {
+    This->data->config = config;
+    if (tn5250_config_get_bool(config, "local_print_key"))
+          This->data->local_print = 1;
+    return 0;
+}
+
+
+/****i* lib5250/curses_terminal_print_screen
+ * NAME
+ *    curses_terminal_print_screen
+ * SYNOPSIS
+ *    curses_terminal_print_screen(This, This->data->display);
+ * INPUTS
+ *    Tn5250Terminal *     This       -
+ *    Tn5250Display  *     display    -
+ * DESCRIPTION
+ *    Generate PostScript output of current screen image.
+ *****/
+void curses_terminal_print_screen(Tn5250Terminal *This, Tn5250Display *display) {
+
+   int x, y, c, a;
+   attr_t curs_attr;
+   int px, py;
+   int leftmar, topmar;
+   FILE *out;
+   const char *outcmd;
+   double pgwid, pglen;
+   double colwidth, rowheight, fontsize;
+   int textlen;
+   char *prttext;
+
+   if (display==NULL)
+       return;
+
+   /* default values for printing screens are: */
+
+   outcmd = "lpr";
+   pglen = 11 * 72;
+   pgwid = 8.5 * 72;
+   leftmar = 18;
+   topmar = 36;
+   if (tn5250_display_width(display) == 132)
+        fontsize = 7.0;
+   else
+        fontsize = 10.0;
+
+   /* override defaults with values from config if available */
+       
+   if (This->data->config != NULL) {
+       int fs80=0, fs132=0;
+       if (tn5250_config_get(This->data->config, "outputcommand"))
+           outcmd = tn5250_config_get(This->data->config, "outputcommand");
+       if (tn5250_config_get(This->data->config, "pagewidth"))
+           pgwid = atoi(tn5250_config_get(This->data->config, "pagewidth"));
+       if (tn5250_config_get(This->data->config, "pagelength"))
+           pglen = atoi(tn5250_config_get(This->data->config, "pagelength"));
+       if (tn5250_config_get(This->data->config, "leftmargin"))
+           leftmar = atoi(tn5250_config_get(This->data->config, "leftmargin"));
+       if (tn5250_config_get(This->data->config, "topmargin"))
+           topmar = atoi(tn5250_config_get(This->data->config, "topmargin"));
+       if (tn5250_config_get(This->data->config, "psfontsize_80"))
+           fs80 = atoi(tn5250_config_get(This->data->config, "psfontsize_80"));
+       if (tn5250_config_get(This->data->config, "psfontsize_80"))
+           fs132 =atoi(tn5250_config_get(This->data->config, "psfontsize_132"));
+       if (tn5250_display_width(display)==132 && fs132!=0)
+           fontsize = fs132;
+       if (tn5250_display_width(display)==80 && fs80!=0)
+           fontsize = fs80;
+   }
+        
+   colwidth  = (pgwid - leftmar*2) / tn5250_display_width(display);
+   rowheight = (pglen  - topmar*2) / 66;
+
+ 
+   /* allocate enough memory to store the largest possible string that we
+      could output.   Note that it could be twice the size of the screen
+      if every single character needs to be escaped... */
+   prttext = g_malloc((2 * tn5250_display_width(display) *
+                         tn5250_display_height(display)) + 1);
+
+   out = popen(outcmd, "w");
+   if (out == NULL)
+       return;
+
+   fprintf(out, "%%!PS-Adobe-3.0\n");
+   fprintf(out, "%%%%Pages: 1\n");
+   fprintf(out, "%%%%Title: TN5250 Print Screen\n");
+   fprintf(out, "%%%%BoundingBox: 0 0 %.0f %.0f\n", pgwid, pglen);
+   fprintf(out, "%%%%LanguageLevel: 2\n");
+   fprintf(out, "%%%%EndCommends\n\n");
+   fprintf(out, "%%%%BeginProlog\n");
+   fprintf(out, "%%%%BeginResource: procset general 1.0.0\n");
+   fprintf(out, "%%%%Title: (General Procedures)\n");
+   fprintf(out, "%%%%Version: 1.0\n");
+   fprintf(out, "%% Courier is a fixed-pitch font, so one character is as\n");
+   fprintf(out, "%%   good as another for determining the height/width\n");
+   fprintf(out, "/Courier %.2f selectfont\n", fontsize);
+   fprintf(out, "/chrwid (W) stringwidth pop def\n");
+   fprintf(out, "/pglen %.2f def\n", pglen);
+   fprintf(out, "/pgwid %.2f def\n", pgwid);
+   fprintf(out, "/chrhgt %.2f def\n", rowheight);
+   fprintf(out, "/leftmar %d def\n", leftmar + 2);
+   fprintf(out, "/topmar %d def\n", topmar);
+   fprintf(out, "/exploc {           %% expand x y to dot positions\n"
+                "   chrhgt mul\n"
+                "   topmar add\n"
+                "   3 add\n"
+                "   pglen exch sub\n"
+                "   exch\n"
+                "   chrwid mul\n"
+                "   leftmar add\n"
+                "   3 add\n"
+                "   exch\n"
+                "} bind def\n");
+   fprintf(out, "/prtnorm {          %% print text normally (text) x y color\n"
+                "   setgray\n"
+                "   exploc moveto\n"
+                "   show\n"
+                "} bind def\n");
+   fprintf(out, "/drawunderline  { %% draw underline: (string) x y color\n"
+                "   gsave\n"
+                "   0 setlinewidth\n"
+                "   setgray\n"
+                "   exploc\n"
+                "   2 sub\n"
+                "   moveto\n"
+                "   stringwidth pop 0\n"
+                "   rlineto\n"
+                "   stroke\n"
+                "   grestore\n"
+                "} bind def\n");
+   fprintf(out, "/blkbox {       %% draw a black box behind the text\n"
+                "   gsave\n"
+                "   newpath\n"
+                "   0 setgray\n"
+                "   exploc\n"
+                "   3 sub\n"
+                "   moveto\n"
+                "   0 chrhgt rlineto\n"
+                "   stringwidth pop 0 rlineto\n"
+                "   0 0 chrhgt sub rlineto\n"
+                "   closepath\n"
+                "   fill\n"
+                "   grestore\n"
+                "} bind def\n");
+   fprintf(out, "/borderbox { %% Print a border around screen dump\n"
+                "   gsave\n"
+                "   newpath\n"
+                "   0 setlinewidth\n"
+                "   0 setgray\n"
+                "   leftmar\n"
+                "   topmar chrhgt sub pglen exch sub\n"
+                "   moveto\n"
+                "   chrwid %d mul 6 add 0 rlineto\n"
+                "   0 0 chrhgt %d mul 6 add sub rlineto\n"
+                "   0 chrwid %d mul 6 add sub 0 rlineto\n"
+                "   closepath\n"
+                "   stroke\n"
+                "   grestore\n"
+                "} bind def\n", 
+                tn5250_display_width(display),
+                tn5250_display_height(display)+1,
+                tn5250_display_width(display));
+   fprintf(out, "%%%%EndResource\n");
+   fprintf(out, "%%%%EndProlog\n\n");
+   fprintf(out, "%%%%Page 1 1\n");
+   fprintf(out, "%%%%BeginPageSetup\n");
+   fprintf(out, "/pgsave save def\n");
+   fprintf(out, "%%%%EndPageSetup\n");
+   
+   curs_attr =  0x00;
+   textlen = 0;
+   px = -1;
+
+   for (y = 0; y < tn5250_display_height(display); y++) {
+
+      for (x = 0; x < tn5250_display_width(display); x++) {
+
+	 c = tn5250_display_char_at(display, y, x);
+	 if ((c & 0xe0) == 0x20) {
+            if (textlen > 0) {
+                curses_postscript_print(out, px, py, prttext, curs_attr);
+                textlen = 0;
+            }
+	    a = (c & 0xff);
+            curs_attr = attribute_map[a - 0x20];
+            px = -1;
+         } else { 
+            if (px == -1) {
+                px = x;
+                py = y;
+            }
+	    if ((c < 0x40 && c > 0x00) || c == 0xff) { 
+	       c = ' ';
+	    } else {
+	       c = tn5250_char_map_to_local (
+                      tn5250_display_char_map (display), c);
+	    }
+            if (c == '\\' || c == '(' || c == ')') {
+                 prttext[textlen] = '\\';
+                 textlen++;
+            }
+            prttext[textlen] = c;
+            textlen++;
+            prttext[textlen] = '\0';
+         }
+      }
+      if (textlen > 0) {
+          curses_postscript_print(out, px, py, prttext, curs_attr);
+          textlen = 0;
+      }
+      px = -1;
+   }
+
+   fprintf(out, "borderbox\n");
+   fprintf(out, "pgsave restore\n");
+   fprintf(out, "showpage\n");
+   fprintf(out, "%%%%PageTrailer\n");
+   fprintf(out, "%%%%Trailer\n");
+   fprintf(out, "%%%%Pages: 1\n");
+   fprintf(out, "%%%%EOF\n");
+
+   pclose(out);
+
+   g_free(prttext);
+
+   attrset(attribute_map[0]);
+   clear();
+   mvprintw(0, 0, "Print Screen Successful!");
+   mvprintw(1, 0, "Press ENTER to continue.");
+   refresh();
+
+   while (curses_terminal_getkey(This)!=K_ENTER) { /* wait */ }
+
+   curses_terminal_update(This, display);
+}
+
+
+/****i* lib5250/curses_postscript_print
+ * NAME
+ *    curses_postscript_print
+ * SYNOPSIS
+ *    curses_postscript_print(out, px, py, "Print this", A_NORMAL);
+ * INPUTS
+ *    FILE           *     out        -
+ *    int                  x          -
+ *    int                  y          -
+ *    char           *     string     -
+ *    attr_t               attr       -
+ * DESCRIPTION
+ *    Adds a printed string to the postscript output generated by 
+ *    curses_terminal_print_screen.   Converts the curses attributes
+ *    to attributes understood by postscript (using the procedures
+ *    we put in the prolog of the ps document)
+ *****/
+
+void curses_postscript_print(FILE *out, int x, int y, char *string, attr_t attr) {
+    int color;
+
+    if (attr == 0x00)    /* NONDISPLAY */
+        return;
+
+    color = 0;
+    if (attr & A_REVERSE) {   /* Print white text on black background */
+        color = 1;
+        fprintf(out, "(%s) %d %d blkbox\n", string, x, y);
+    } 
+
+    fprintf(out, "(%s) %d %d %d prtnorm\n", string, x, y, color);
+
+    if (attr & A_UNDERLINE)    /* draw underline below text */
+        fprintf(out, "(%s) %d %d %d drawunderline\n", string, x, y, color);
+
+}
+
 
 #endif /* USE_CURSES */
 

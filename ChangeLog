@@ -1,3 +1,18 @@
+2003-04-27 Scott Klement <klemscot@klements.com>
+- Added local print key support to the curses terminal.  Activate it by
+    specifying +local_print_key in your config file.   The output is
+    in PostScript format.   It is sent to lpr by default.
+- Added config options "outputcommand", "pagelength", "pagewidth",
+    "leftmargin", "topmargin", "psfontsize_80", "psfontsize_132"
+    to cursesterminal to allow you to customize the print key.
+- Added config option "local_print_key" to Win32 terminal so that
+    you can enable local printouts when Ctrl-P or the Print Key is
+    pressed.
+     
+2003-04-25 Scott Klement <klemscot@klements.com>
+- Added a local print key support in the Win32 terminal
+    activate it by clicking File/Print
+
 2003-04-18 Scott Klement <klemscot@klements.com>
 - Added configure.in code to check alternate directories for OpenSSL files
 - Added configure.in code to check if OpenSSL is compiled with Kerberos

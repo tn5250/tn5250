@@ -157,7 +157,7 @@ void win32_terminal_clear_screenbuf(HWND hwnd,int width,int height,
 void tn5250_win32_set_beep (Tn5250Terminal *This, const char *beepfile);
 void tn5250_win32_terminal_display_ruler (Tn5250Terminal *This, int f);
 static void win32_terminal_beep(Tn5250Terminal * This);
-void win32_terminal_draw_text(HDC hdc, int attr, const char *text, int len, int x, int y, int *spacing);
+void win32_terminal_draw_text(HDC hdc, int attr, const char *text, int len, int x, int y, int *spacing, Tn5250Win32Attribute *map, int ox, int oy);
 LRESULT CALLBACK 
 win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 void win32_make_new_caret(Tn5250Terminal *This);
@@ -167,6 +167,12 @@ void win32_expand_text_selection(Tn5250Terminal *This);
 void win32_copy_text_selection(Tn5250Terminal *This, Tn5250Display *display);
 void win32_paste_text_selection(HWND hwnd, Tn5250Terminal *term, 
                                            Tn5250Display *display);
+PRINTDLG * win32_get_printer_info(Tn5250Terminal *This);
+void win32_destroy_printer_info(Tn5250Terminal *This);
+void win32_print_screen(Tn5250Terminal *This, Tn5250Display *display);
+static void win32_do_terminal_update(HDC hdc, Tn5250Terminal *This, 
+                          Tn5250Display *display, Tn5250Win32Attribute *map,
+                          int ox, int oy);
 
 extern void msgboxf(const char *fmt, ...);
 
@@ -206,6 +212,7 @@ struct _Tn5250TerminalPrivate {
    Tn5250Config * config;
    BYTE           copymode;
    BYTE		  caret_style;
+   PRINTDLG	* pd;
    int            resized : 1;
    int		  quit_flag : 1;
    int            display_ruler : 1;
@@ -216,6 +223,7 @@ struct _Tn5250TerminalPrivate {
    int            dont_auto_size: 1;
    int		  unix_like_copy: 1;
    int            resize_fonts: 1;
+   int            local_print: 1;
 };
 
 
@@ -392,6 +400,7 @@ Tn5250Terminal *tn5250_win32_terminal_new(HINSTANCE hInst,
    r->data->unix_like_copy = 0;
    r->data->resize_fonts = 0;
    r->data->caret_style = CARETSTYLE_NOBLINK;
+   r->data->pd = NULL;
 
    r->conn_fd = -1;
    r->init = win32_terminal_init;
@@ -445,9 +454,13 @@ static void win32_terminal_init(Tn5250Terminal * This)
    This->data->quit_flag = 0;
    This->data->k_buf_len = 0;
    This->data->copymode = 0;
+   This->data->pd = NULL;
    globTerm = This;
 
    if (This->data->config != NULL) {
+
+      if (tn5250_config_get_bool(This->data->config, "local_print_key"))
+          This->data->local_print = 1;
 
       if (tn5250_config_get(This->data->config, "copymode")) {
           if (!strcasecmp(tn5250_config_get(This->data->config,"copymode"), 
@@ -760,8 +773,7 @@ void tn5250_win32_init_fonts (Tn5250Terminal *This,
    } else {
        This->data->font_132 = NULL;
        if (This->data->font_80!=NULL) {
-           This->data->font_132 =  malloc(strlen(This->data->font_80)+1);
-           TN5250_ASSERT (This->data->font_132 != NULL);
+           This->data->font_132 = g_malloc(strlen(This->data->font_80)+1);
            strcpy(This->data->font_132, This->data->font_80);
        }
        This->data->font_132_h = This->data->font_80_h;
@@ -1045,6 +1057,8 @@ static void win32_terminal_destroy(Tn5250Terminal * This)
       g_free(This->data->font_132);
    if (This->data->beepfile != NULL)
       g_free(This->data->beepfile);
+   if (This->data->pd != NULL)
+      win32_destroy_printer_info(This);
    if (This->data != NULL)
       g_free(This->data);
    g_free(This);
@@ -1115,16 +1129,7 @@ static int win32_terminal_flags(Tn5250Terminal /*@unused@*/ * This)
  *****/
 static void win32_terminal_update(Tn5250Terminal * This, Tn5250Display *display)
 {
-   int y, x;
-   int mx, my;
-   HDC hdc;
-   unsigned char attr, c;
-   unsigned char text[132*27];
    RECT cr;
-   HBRUSH oldbrush;
-   HPEN oldpen;
-   int len;
-   TEXTMETRIC tm;
 
    /* we do all drawing to the screen buffer, then bitblt that to the
       actual window when WM_PAINT occurs */
@@ -1136,6 +1141,43 @@ static void win32_terminal_update(Tn5250Terminal * This, Tn5250Display *display)
    GetClientRect(This->data->hwndMain, &cr);
    win32_terminal_clear_screenbuf(This->data->hwndMain, cr.right+1,
           cr.bottom+1, 0, 0);
+
+   win32_do_terminal_update(bmphdc, This, display, attribute_map, 0, 0);
+
+   This->data->caretok = 0;
+   win32_terminal_update_indicators(This, display);
+
+   return;
+}
+
+/****i* lib5250/win32_do_terminal_update
+ * NAME
+ *    win32_do_terminal_update
+ * SYNOPSIS
+ *    win32_do_terminal_update (This, display);
+ * INPUTS
+ *    HDC                  hdc        -
+ *    Tn5250Terminal *     This       - 
+ *    Tn5250Display *      display    - 
+ *    Tn5250Win32Attribute *map       -
+ *    int 		   ox         - text offset on x axis
+ *    int                  oy         - text offset on y axis
+ * DESCRIPTION
+ *    draw the screen to the specified device context, using the
+ *    specified attribute map.
+ *****/
+static void win32_do_terminal_update(HDC hdc, Tn5250Terminal *This, 
+                       Tn5250Display *display, Tn5250Win32Attribute *map,
+                       int ox, int oy) {
+   int y, x;
+   int mx, my;
+   unsigned char attr, c;
+   unsigned char text[132*27];
+   HBRUSH oldbrush;
+   HPEN oldpen;
+   int len;
+   TEXTMETRIC tm;
+
 
    if (This->data->resized ||
        This->data->last_height != tn5250_display_height(display)  ||
@@ -1158,8 +1200,8 @@ static void win32_terminal_update(Tn5250Terminal * This, Tn5250Display *display)
           This->data->resized = 0;
    }
 
-   SelectObject(bmphdc, This->data->font);
-   SetTextAlign(bmphdc, TA_TOP|TA_LEFT|TA_NOUPDATECP);
+   SelectObject(hdc, This->data->font);
+   SetTextAlign(hdc, TA_TOP|TA_LEFT|TA_NOUPDATECP);
 
    attr = 0x20;
    len = 0;
@@ -1170,8 +1212,8 @@ static void win32_terminal_update(Tn5250Terminal * This, Tn5250Display *display)
 	 c = tn5250_display_char_at(display, y, x);
 	 if ((c & 0xe0) == 0x20) {	/* ATTRIBUTE */
             if (len>0) 
-                win32_terminal_draw_text(bmphdc, attr, text, len, mx, my, 
-                  This->data->spacing);
+                win32_terminal_draw_text(hdc, attr, text, len, mx, my, 
+                  This->data->spacing, map, ox, oy);
             len = 0;
 	    attr = (c & 0xff);
 	 } else {                       /* DATA */
@@ -1181,12 +1223,12 @@ static void win32_terminal_update(Tn5250Terminal * This, Tn5250Display *display)
             }
             if ((c==0x1f) || (c==0x3F)) {
                 if (len>0)
-                     win32_terminal_draw_text(bmphdc, attr, text, len, mx, my,
-                       This->data->spacing);
+                     win32_terminal_draw_text(hdc, attr, text, len, mx,
+                       my, This->data->spacing, map, ox, oy);
                 len = 0;
                 c = ' ';
-                win32_terminal_draw_text(bmphdc, 0x21, &c, 1, x, y, 
-                  This->data->spacing);
+                win32_terminal_draw_text(hdc, 0x21, &c, 1, x, y, 
+                  This->data->spacing, map, ox, oy);
             } else if ((c < 0x40 && c > 0x00) || (c == 0xff)) {
                 text[len] = ' ';
                 len++;
@@ -1224,15 +1266,18 @@ static void win32_terminal_update(Tn5250Terminal * This, Tn5250Display *display)
  *    int               x            - position to start (along x axis)
  *    int               y            - position to start (along y axis)
  *    int        *      spacing      - pointer to array specifying char spacing
+ *    Tn5250Win32Attribute *map      - attribute map
+ *    int               ox           - offset text by (along x axis)
+ *    int               oy           - offset text by (along y axis)
  * DESCRIPTION
  *    This draws text on the terminal in the specified attribute
  *****/
-void win32_terminal_draw_text(HDC hdc, int attr, const char *text, int len, int x, int y, int *spacing) {
+void win32_terminal_draw_text(HDC hdc, int attr, const char *text, int len, int x, int y, int *spacing, Tn5250Win32Attribute *map, int ox, int oy) {
  
     static UINT flags;
     static RECT rect;
 
-    flags = attribute_map[attr-0x20].flags;
+    flags = map[attr-0x20].flags;
     
     /* hmm..  how _do_ you draw something that's invisible? */
     if (flags&A_NONDISPLAY) 
@@ -1241,9 +1286,9 @@ void win32_terminal_draw_text(HDC hdc, int attr, const char *text, int len, int 
     /* create a rect to "opaque" our text.  (defines the background area
        that the text is painted on) */
 
-    rect.top = y * globTerm->data->font_height;
+    rect.top = y * globTerm->data->font_height + oy;
     rect.bottom = rect.top + globTerm->data->font_height;
-    rect.left = x * globTerm->data->font_width;
+    rect.left = x * globTerm->data->font_width + ox;
     rect.right = rect.left + (globTerm->data->font_width * len);
 
     /* this builds an array telling Windows how to space the text.
@@ -1256,11 +1301,11 @@ void win32_terminal_draw_text(HDC hdc, int attr, const char *text, int len, int 
 
     SetBkMode(hdc, OPAQUE);
     if (flags&A_REVERSE) {
-         SetBkColor(hdc, attribute_map[attr-0x20].fg);
-         SetTextColor(hdc, colorlist[A_5250_BLACK].ref);
+         SetBkColor(hdc, map[attr-0x20].fg);
+         SetTextColor(hdc, map[7].fg);
     } else {
-         SetBkColor(hdc, colorlist[A_5250_BLACK].ref);
-         SetTextColor(hdc, attribute_map[attr-0x20].fg);
+         SetBkColor(hdc, map[7].fg);
+         SetTextColor(hdc, map[attr-0x20].fg);
     }
 
 
@@ -1296,7 +1341,7 @@ void win32_terminal_draw_text(HDC hdc, int attr, const char *text, int len, int 
     if (flags&A_UNDERLINE) {
        HPEN savepen;
        savepen = SelectObject(hdc, 
-                   CreatePen(PS_SOLID, 0, attribute_map[attr-0x20].fg));
+                   CreatePen(PS_SOLID, 0, map[attr-0x20].fg));
        MoveToEx(hdc, rect.left, rect.bottom-1, NULL);
        LineTo(hdc, rect.right, rect.bottom-1);
        savepen = SelectObject(hdc, savepen);
@@ -1309,7 +1354,7 @@ void win32_terminal_draw_text(HDC hdc, int attr, const char *text, int len, int 
                                                colorlist[A_5250_BLACK].ref));
        else
            savepen = SelectObject(hdc, CreatePen(PS_SOLID, 0, 
-                                               attribute_map[attr-0x20].fg));
+                                               map[attr-0x20].fg));
        for (x=rect.left; x<=rect.right; x+=spacing[0]) {
            MoveToEx(hdc, x, rect.top, NULL);
            LineTo  (hdc, x, rect.bottom);
@@ -1326,7 +1371,7 @@ void win32_terminal_draw_text(HDC hdc, int attr, const char *text, int len, int 
                                                colorlist[A_5250_BLACK].ref));
        else
            savepen = SelectObject(hdc, CreatePen(PS_SOLID, 0, 
-                                               attribute_map[attr-0x20].fg));
+                                               map[attr-0x20].fg));
        for (x=rect.left; x<=rect.right; x+=spacing[0]) {
            MoveToEx(hdc, x, rect.bottom-2, NULL);
            LineTo  (hdc, x, rect.bottom);
@@ -1383,7 +1428,8 @@ static void win32_terminal_update_indicators(Tn5250Terminal *This, Tn5250Display
       tn5250_display_cursor_y(display)+1);
 
    win32_terminal_draw_text(bmphdc, 0x22, ind_buf, 79, 0, 
-               tn5250_display_height(display), This->data->spacing);
+         tn5250_display_height(display), This->data->spacing, attribute_map, 
+         0, 0);
 
    This->data->caretx=tn5250_display_cursor_x(display)*This->data->font_width;
    This->data->carety=tn5250_display_cursor_y(display)*This->data->font_height;
@@ -1563,6 +1609,12 @@ static int win32_terminal_getkey (Tn5250Terminal *This)
    case K_CTRL('Q'):
       This->data->quit_flag = 1;
       return -1;
+   case K_PRINT:
+      if (This->data->local_print) {
+         win32_print_screen(This, globDisplay);
+         ch = K_RESET;
+      }
+      break;
    case 0x0a:
       return 0x0d;
    }
@@ -1696,6 +1748,10 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
               case IDM_APP_EXIT:
 		  SendMessage(hwnd, WM_CLOSE, 0, 0);
 		  return 0;
+                  break;
+              case IDM_APP_PRINT:
+                  win32_print_screen(globTerm, globDisplay);
+                  return 0;
                   break;
               case IDM_APP_ABOUT:
                   msgboxf("%s version %s:\n"
@@ -2411,3 +2467,256 @@ void win32_paste_text_selection(HWND hwnd, Tn5250Terminal *term,
     }
 
 }
+
+
+/****i* lib5250/win32_get_printer_info
+ * NAME
+ *    win32_get_printer_info
+ * SYNOPSIS
+ *    win32_get_printer_info (globTerm);
+ * INPUTS
+ *    Tn5250Terminal  *          This    -
+ * DESCRIPTION
+ *    This displays a standard Windows printer dialog allowing
+ *    the user to choose which printer he would like to print to
+ *    and stores a pointer to the resulting PRINTDLG structure 
+ *    in This->data->pd.
+ *
+ *    If you call this again without first calling the
+ *    win32_destroy_printer_info function, no dialog is displayed, 
+ *    and the same pointer is returned. 
+ *****/
+PRINTDLG * win32_get_printer_info(Tn5250Terminal *This) {
+
+    PRINTDLG *pd; 
+
+    if (This->data->pd != NULL) 
+        return This->data->pd;
+
+    This->data->pd = (PRINTDLG *) g_malloc(sizeof(PRINTDLG));
+
+    pd = This->data->pd;  /* save a little typing */
+
+    memset(pd, 0, sizeof(PRINTDLG));
+    pd->lStructSize = sizeof(PRINTDLG);
+    pd->hwndOwner   = This->data->hwndMain;
+    pd->hDevMode    = NULL;   /* windows will make one. */
+    pd->hDevNames   = NULL;   /* windows will make one. */
+    pd->Flags       = PD_USEDEVMODECOPIESANDCOLLATE | PD_RETURNDC
+                     | PD_NOPAGENUMS | PD_NOSELECTION | PD_ALLPAGES;
+    pd->nCopies     = 1;
+    pd->nMinPage    = 1;
+    pd->nMaxPage    = 1;
+
+    if (PrintDlg(This->data->pd) == 0) {
+        TN5250_LOG (("PrintDlg() error %d\n", CommDlgExtendedError()));
+        g_free(This->data->pd);
+        This->data->pd = NULL;
+        return NULL;
+    }
+
+    if (!(GetDeviceCaps(pd->hDC, RASTERCAPS) & RC_STRETCHBLT)) {
+        win32_destroy_printer_info(This);
+        TN5250_LOG (("WIN32: StretchBlt not available for this printer.\n"));
+        msgboxf("This printer does not support the StretchBlt function.\r\n"
+                "Printing cancelled.");
+    }
+
+    return This->data->pd;
+}
+
+
+/****i* lib5250/win32_destroy_printer_info
+ * NAME
+ *    win32_destroy_printer_info
+ * SYNOPSIS
+ *    win32_destroy_printer_info (globTerm);
+ * INPUTS
+ *    Tn5250Terminal  *          This    -
+ * DESCRIPTION 
+ *    This frees up the data allocated by the function 
+ *    win32_get_printer_info()
+ *****/
+void win32_destroy_printer_info(Tn5250Terminal *This) {
+
+    if (This->data->pd->hDC != NULL)
+        DeleteDC(This->data->pd->hDC);
+    if (This->data->pd->hDevMode != NULL)
+        g_free(This->data->pd->hDevMode);
+    if (This->data->pd->hDevNames != NULL)
+        g_free(This->data->pd->hDevNames);
+    g_free(This->data->pd);
+    This->data->pd = NULL;
+
+    return;
+}
+
+      
+    
+/****i* lib5250/win32_print_screen
+ * NAME
+ *    win32_print_screen
+ * SYNOPSIS
+ *    win32_print_screen(globTerm, globDisplay);
+ * INPUTS
+ *    Tn5250Display   *          This    -  TN5250 terminal object
+ *    Tn5250Display   *          display -  TN5250 display object
+ * DESCRIPTION
+ *    This builds a B&W bitmap of our current display buffer, and
+ *    sends it to the printer.
+ *****/
+void win32_print_screen(Tn5250Terminal *This, Tn5250Display *display) {
+
+    PRINTDLG *pd;
+    DOCINFO di;
+    HBITMAP bmap;
+    HDC screenDC, hdc;
+    float pelsX1, pelsX2;
+    float scaleX, pixMax;
+    int rc;
+    int x, y, h, w, h2, w2;
+    int i, size;
+    RECT rect;
+    LOGBRUSH lb;
+    HBRUSH oldbrush;
+    HPEN oldpen;
+    Tn5250Win32Attribute *mymap;
+
+ /* get info about the printer.   The GDI device context will
+    be in pd->hDC.  We need this to print.  */
+
+    if ((pd = win32_get_printer_info(This)) == NULL) {
+       return;
+    }
+    TN5250_ASSERT ( pd->hDC != NULL );
+
+
+ /* Get screen size & horizontal resolution.   We need this to
+    scale the screen output so that it looks good on the printer. */
+
+    GetClientRect(This->data->hwndMain, &rect);
+    x = rect.left;
+    y = rect.top;
+    h = (rect.bottom - rect.top) + 7;
+    w = (rect.right - rect.left) + 7;
+    screenDC = GetDC(This->data->hwndMain);
+    pelsX1 = (float) GetDeviceCaps(screenDC, LOGPIXELSX);
+
+
+ /* create a bitmap to draw the screen into.   We want to redraw the
+    screen in black & white and put a border around it */
+    
+    bmap = CreateCompatibleBitmap(screenDC, w+6, h+6);
+    hdc  = CreateCompatibleDC(NULL);
+    SelectObject(hdc, bmap);
+
+
+ /* fill the bitmap by making a white rectangle with a black border */
+
+    lb.lbStyle = BS_SOLID;
+    lb.lbColor = RGB(255,255,255);
+    lb.lbHatch = 0;
+    
+    oldbrush = SelectObject(hdc, CreateBrushIndirect(&lb));
+    oldpen = SelectObject(hdc, CreatePen(PS_SOLID, 0, RGB(0,0,0)));
+    Rectangle(hdc, 0, 0, w, h);
+    SelectObject(hdc, oldbrush);
+    oldpen = SelectObject(hdc, oldpen);
+    DeleteObject(oldpen);
+    oldbrush = SelectObject(hdc, oldbrush);
+    DeleteObject(oldbrush);
+
+/* create a black on white attribute map, so that win32_do_terminal_update
+   will paint the screen in our colors. */
+
+    i = 0;
+    while (attribute_map[i].colorindex != -1)
+        i++;
+    size = (i+1) * sizeof(Tn5250Win32Attribute);
+    mymap = (Tn5250Win32Attribute *) g_malloc(size);
+    memcpy(mymap, attribute_map, size);
+    for (i=0; mymap[i].colorindex != -1; i++) {
+        if ( mymap[i].colorindex == A_5250_BLACK )
+           mymap[i].fg = RGB(255,255,255);
+        else
+           mymap[i].fg = RGB(0,0,0);
+    }
+
+/* re-draw the screen into our new bitmap */
+    
+    win32_do_terminal_update(hdc, This, display, mymap, 3, 3);
+    
+
+/* start a new printer document */
+
+    memset(&di, 0, sizeof(DOCINFO));
+    di.cbSize = sizeof(DOCINFO);
+    di.lpszDocName = "TN5250 Print Screen";
+    di.lpszOutput  = (LPTSTR) NULL;
+    di.lpszDatatype= (LPTSTR) NULL;
+    di.fwType = 0;
+
+    rc = StartDoc(pd->hDC, &di);
+    if (rc == SP_ERROR) {
+        msgboxf("StartDoc() ended in error.\r\n");
+        win32_destroy_printer_info(This);       
+        return;
+    }
+
+    rc = StartPage(pd->hDC);
+    if (rc <= 0) {
+        msgboxf("StartPage() ended in error.\r\n");
+        win32_destroy_printer_info(This);       
+        return;
+    }
+
+
+/* calculate the scaling factor:
+      a) If possible, scale the screen image so that it uses the same
+           number of logical inches on the printout as it did on the screen.
+           (we do this by dividing the printer's logical pixels per inch
+            by the screen's logical pixels per inch)
+      b) If that doesn't fit on the page, then just scale it to the width
+           of the page.
+*/
+
+    pelsX2 = (float) GetDeviceCaps(pd->hDC, LOGPIXELSX);
+    pixMax = (float) GetDeviceCaps(pd->hDC, HORZRES);
+
+    TN5250_LOG (("WIN32: PrintKey: Screen is %f pix/in, Printer is %f pix/in"
+                 " and %f pix wide\n", pelsX1, pelsX2, pixMax));
+
+    if (pelsX1 > pelsX2)
+        scaleX = (pelsX1 / pelsX2);
+    else
+        scaleX = (pelsX2 / pelsX1);   
+
+    w2 = w * scaleX;
+    if (w2 > pixMax) 
+          scaleX = pixMax / w;
+    w2 = w * scaleX;
+    h2 = h * scaleX;
+
+    TN5250_LOG (("WIN32: PrintKey: Since Window is %d pixels wide, we'll "
+                 "make the printer image %d by %d\n", w, w2, h2));
+
+/* This will stretch the bitmap to the new height & width while (at the
+    same time) copying it to the printer */
+
+    if (StretchBlt(pd->hDC, 0, 0, w2, h2, hdc, x, y, w, h, SRCCOPY)==0) {
+       TN5250_LOG (("StretchBlt error %d\n", GetLastError ));
+       TN5250_ASSERT( FALSE );
+    }
+ 
+/* close printer document */
+
+    EndPage(pd->hDC);
+    EndDoc(pd->hDC);
+
+/* notify user */
+
+    MessageBox(This->data->hwndMain, "Print screen successful!",  "TN5250",
+              MB_OK|MB_ICONINFORMATION);
+}
+    
+
