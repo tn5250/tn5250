@@ -1320,8 +1320,10 @@ int telnet_stream_handle_receive(Tn5250Stream * This)
 
       if (c == -END_OF_RECORD && This->current_record != NULL) {
 	 /* End of current packet. */
+#ifndef NDEBUG
          if (tn5250_logfile!=NULL) 
              tn5250_record_dump(This->current_record);
+#endif
 	 This->records = tn5250_record_list_add(This->records, This->current_record);
 	 This->current_record = NULL;
 	 This->record_count++;

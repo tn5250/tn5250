@@ -558,6 +558,7 @@ void tn5250_log_assert(int val, char const *expr, char const *file, int line)
       abort ();
    }
 }
+#endif				/* NDEBUG */
 
 
 /****f* lib5250/tn5250_parse_color
@@ -634,7 +635,6 @@ int tn5250_parse_color(Tn5250Config *config, const char *colorname,
     *blue = b;
     return 0;
 }
-#endif				/* NDEBUG */
 
 
 /****f* lib5250/tn5250_setenv

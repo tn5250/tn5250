@@ -79,6 +79,7 @@ void tn5250_field_destroy(Tn5250Field * This)
    free(This);
 }
 
+#ifndef NDEBUG
 /****f* lib5250/tn5250_field_dump
  * NAME
  *    tn5250_field_dump
@@ -114,6 +115,7 @@ void tn5250_field_dump(Tn5250Field * This)
    
    TN5250_LOG(("\n"));
 }
+#endif
 
 /****f* lib5250/tn5250_field_hit_test
  * NAME

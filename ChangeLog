@@ -1,4 +1,9 @@
 2003-07-18 Scott Klement <klemscot@klements.com>
+- Fixed NDEBUG support (again) 
+- Applied patch from Marc-Antoine Ruel which fixes a bug in terminal.c
+    where we were returning a value from a void function.
+
+2003-07-18 Scott Klement <klemscot@klements.com>
 - Added $prefix variable in freebsd/Makefile.am so keyboard mapping
     items could be installed in alternate locations
 

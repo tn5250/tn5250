@@ -52,7 +52,7 @@ int tn5250_terminal_getkey (Tn5250Terminal *This) {
    return (* ((This)->getkey)) ((This));
 }
 void tn5250_terminal_beep (Tn5250Terminal *This) {
-   return (* ((This)->beep)) ((This));
+   (* ((This)->beep)) ((This));
 }
 int tn5250_terminal_config (Tn5250Terminal *This, Tn5250Config *conf) {
    return ((This)->config == NULL ? 0 : (* ((This)->config)) ((This),(conf)));
