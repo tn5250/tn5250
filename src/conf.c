@@ -109,7 +109,11 @@ int tn5250_config_load (Tn5250Config *This, const char *filename)
    int len;
    int prefix_stack_size = 0;
    char *prefix_stack[MAX_PREFIX_STACK];
-  
+   char * list[100]; 
+   int done;
+   int curitem;
+   int loop;
+
    /* It is not an error for a config file not to exist. */
    if ((f = fopen (filename, "r")) == NULL)
       return errno == ENOENT ? 0 : -1;
@@ -183,15 +187,45 @@ int tn5250_config_load (Tn5250Config *This, const char *filename)
 	 scan++;
 
 	 while (*scan && isspace (*scan))
-	    scan++;
+	   scan++;
 
-	 len = strlen (scan) - 1;
-	 while (len > 0 && isspace (scan[len]))
-	    scan[len--] = '\0';
+	 if(*scan == '[') {
+	   done = 0;
+	   curitem = 0;
+	   while(!done) {
+	     fgets (buf, sizeof(buf)-1, f);
+	     buf[sizeof (buf)-1] = '\0';
+	     if (strchr (buf, '\n'))
+	       *strchr (buf, '\n') = '\0';
+	     
+	     scan = buf;
 
-	 tn5250_config_set (This, name, scan);
-	 free (name);
+	     while(*scan && isspace(*scan))
+	       scan++;
 
+	     if(*scan == ']') {
+	       done = 1;
+	     } else {
+		list[curitem] = malloc(strlen(scan)+1);
+		strcpy(list[curitem],scan);
+		curitem++;
+	     }
+	
+	   }
+	   for(loop=0;loop < curitem; loop++) {
+	     printf("%s\n", list[loop]);
+	   }
+
+
+	 } else {
+
+	   len = strlen (scan) - 1;
+	   while (len > 0 && isspace (scan[len]))
+	     scan[len--] = '\0';
+
+	   tn5250_config_set (This, name, scan);
+	   free (name);
+	 }
       } else if (strchr (scan, '{')) {
 
 	 /* Push level. */
