@@ -430,6 +430,10 @@ scs2pdf_ahpp (int *curpos, int *boldchars)
        * This is gives a bold effect on real SCS printers.  This ought to
        * be handled a better way to get bold.
        */
+
+      /* make columncount count columns only once */
+      columncount=0;
+
       *boldchars = *curpos - position;
       bytes += pdf_process_char ('\0', 1);
       fprintf (outfile, "0 0 Td\n");
