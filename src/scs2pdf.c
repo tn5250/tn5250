@@ -41,20 +41,23 @@
  */
 #define MAX_COLUMNS 80
 
-int scs2pdf_process34 (int *curpos);
-int scs2pdf_ahpp (int *curpos);
+#define COURIER 1
+#define COURIER_BOLD 2
+
+int scs2pdf_process34 (int *curpos, int *boldchars);
+int scs2pdf_ahpp (int *curpos, int *boldchars);
 
 int pdf_header ();
 int pdf_catalog (int objnum, int outlinesobject, int pageobject);
 int pdf_outlines (int objnum);
-int pdf_begin_stream (int objnum);
+int pdf_begin_stream (int objnum, int fontname);
 int pdf_end_stream ();
 int pdf_stream_length (int objnum, int objlength);
 int pdf_pages (int objnum, int pagechildren, int pages);
 int pdf_page (int objnum, int parent, int contents, int procset, int font,
-	      int pagewidth, int pagelength);
+	      int boldfont, int pagewidth, int pagelength);
 int pdf_procset (int objnum);
-int pdf_font (int objnum);
+int pdf_font (int objnum, int fontname);
 void pdf_xreftable (int objnum);
 void pdf_trailer (int offset, int size, int root);
 int pdf_process_char (char character, int flush);
@@ -78,12 +81,14 @@ main ()
   int streamsize = 0;
   int pagenumber;
   int textobjects[10000];
-  int pageparent, procsetobject, fontobject, rootobject;
+  int pageparent, procsetobject, fontobject, boldfontobject, rootobject;
   int i;
   int newpage = 0;
   int column;
   int new_line = 1;
   int columncheck = 0;
+  int boldchars, do_bold;
+  char text[255];
   ObjectList = g_array_new (FALSE, FALSE, sizeof (int));
   columncount = 0;
 
@@ -114,13 +119,15 @@ main ()
 
   g_array_append_val (ObjectList, filesize);
   objcount++;
-  filesize += pdf_begin_stream (objcount);
+  filesize += pdf_begin_stream (objcount, COURIER);
 #ifdef DEBUG
   fprintf (stderr, "objcount = %d\n", objcount);
 #endif
 
   pagenumber = 1;
   column = 0;
+  boldchars = 0;
+  do_bold = 0;
 
   while (!feof (stdin))
     {
@@ -156,6 +163,7 @@ main ()
 	case SCS_NL:
 	  {
 	    new_line = scs_nl ();
+	    column = 0;
 	    if (columncount > columncheck)
 	      {
 		columncheck = columncount;
@@ -175,7 +183,17 @@ main ()
 	  }
 	case 0x34:
 	  {
-	    streamsize += scs2pdf_process34 (&column);
+	    boldchars = 0;
+	    streamsize += scs2pdf_process34 (&column, &boldchars);
+	    if ((boldchars > 0) && (do_bold == 0))
+	      {
+		do_bold = 1;
+		fprintf (stderr, "Starting bold font\n");
+		streamsize += pdf_process_char ('\0', 1);
+		sprintf (text, "\t\t/F%d 10 Tf\n", COURIER_BOLD);
+		fprintf (outfile, "%s", text);
+		streamsize += strlen (text);
+	      }
 	    break;
 	  }
 	case 0x2B:
@@ -209,7 +227,7 @@ main ()
 
 		g_array_append_val (ObjectList, filesize);
 		objcount++;
-		filesize += pdf_begin_stream (objcount);
+		filesize += pdf_begin_stream (objcount, COURIER);
 #ifdef DEBUG
 		fprintf (stderr, "objcount = %d\n", objcount);
 #endif
@@ -233,6 +251,19 @@ main ()
 					    0);
 	    /*streamsize += pdf_process_char(curchar, 0); */
 	    column++;
+	    if (boldchars > 0)
+	      {
+		boldchars--;
+		if (boldchars == 0)
+		  {
+		    fprintf (stderr, "Ending bold font\n");
+		    do_bold = 0;
+		    streamsize += pdf_process_char ('\0', 1);
+		    sprintf (text, "\t\t/F%d 10 Tf\n", COURIER);
+		    fprintf (outfile, "%s", text);
+		    streamsize += strlen (text);
+		  }
+	      }
 	  }
 	}
 
@@ -251,7 +282,7 @@ main ()
 
   g_array_append_val (ObjectList, filesize);
   objcount++;
-  filesize += pdf_catalog (objcount, objcount + 1, objcount + 4);
+  filesize += pdf_catalog (objcount, objcount + 1, objcount + 5);
   rootobject = objcount;
 #ifdef DEBUG
   fprintf (stderr, "catalog objcount = %d\n", objcount);
@@ -274,10 +305,18 @@ main ()
 
   g_array_append_val (ObjectList, filesize);
   objcount++;
-  filesize += pdf_font (objcount);
+  filesize += pdf_font (objcount, COURIER);
   fontobject = objcount;
 #ifdef DEBUG
   fprintf (stderr, "font objcount = %d\n", objcount);
+#endif
+
+  g_array_append_val (ObjectList, filesize);
+  objcount++;
+  filesize += pdf_font (objcount, COURIER_BOLD);
+  boldfontobject = objcount;
+#ifdef DEBUG
+  fprintf (stderr, "bold font objcount = %d\n", objcount);
 #endif
 
   if ((pagewidth == 0) && (columncheck > MAX_COLUMNS))
@@ -311,7 +350,7 @@ main ()
       filesize += pdf_page (objcount,
 			    pageparent,
 			    textobjects[i], procsetobject, fontobject,
-			    pagewidth, pagelength);
+			    boldfontobject, pagewidth, pagelength);
 #ifdef DEBUG
       fprintf (stderr, "page objcount = %d\n", objcount);
 #endif
@@ -326,7 +365,7 @@ main ()
 }
 
 int
-scs2pdf_process34 (int *curpos)
+scs2pdf_process34 (int *curpos, int *boldchars)
 {
   int bytes;
 
@@ -341,7 +380,7 @@ scs2pdf_process34 (int *curpos)
       }
     case SCS_AHPP:
       {
-	bytes = scs2pdf_ahpp (curpos);
+	bytes = scs2pdf_ahpp (curpos, boldchars);
 	break;
       }
     default:
@@ -353,7 +392,7 @@ scs2pdf_process34 (int *curpos)
 }
 
 int
-scs2pdf_ahpp (int *curpos)
+scs2pdf_ahpp (int *curpos, int *boldchars)
 {
   int position, bytes;
   int i;
@@ -363,14 +402,20 @@ scs2pdf_ahpp (int *curpos)
 
   if (*curpos > position)
     {
-      /* I think we should be writing a new line here but the output is
-       * all screwed up when we do.  Since it looks correct without the
-       * new line I'm going to leave it out. */
-      /*
-         bytes += pdf_process_char ('\0', 1);
-         fprintf (outfile, "0 -12 Td\n");
-         bytes += 9;
+      /* Frank Richter <frichter@esda.com> noticed that we should be
+       * going back and printing over the same line if *curpos is greater
+       * than position.  Without this his reports were wrong.  His patch
+       * fixes the printouts.  What this does now is to go back to the
+       * beginning of the line and print blanks over what is already there
+       * up to position.  At that point we will receive the same text that
+       * is already at position, which we will print over the top of itself.
+       * This is gives a bold effect on real SCS printers.  This ought to
+       * be handled a better way to get bold.
        */
+      *boldchars = *curpos - position;
+      bytes += pdf_process_char ('\0', 1);
+      fprintf (outfile, "0 0 Td\n");
+      bytes += 7;
 
       for (i = 0; i < position; i++)
 	{
@@ -437,7 +482,7 @@ pdf_outlines (int objnum)
 }
 
 int
-pdf_begin_stream (int objnum)
+pdf_begin_stream (int objnum, int fontname)
 {
   char text[255];
 
@@ -447,7 +492,8 @@ pdf_begin_stream (int objnum)
 	   "\t\t/Length %d 0 R\n"
 	   "\t>>\n"
 	   "stream\n"
-	   "\tBT\n" "\t\t/F1 10 Tf\n" "\t\t36 756 Td\n", objnum, objnum + 1);
+	   "\tBT\n" "\t\t/F%d 10 Tf\n" "\t\t36 756 Td\n",
+	   objnum, objnum + 1, fontname);
 
   fprintf (outfile, "%s", text);
 
@@ -511,7 +557,7 @@ pdf_pages (int objnum, int pagechildren, int pages)
 
 int
 pdf_page (int objnum, int parent, int contents, int procset, int font,
-	  int pagewidth, int pagelength)
+	  int boldfont, int pagewidth, int pagelength)
 {
   char text[255];
   float width, length;
@@ -550,12 +596,13 @@ pdf_page (int objnum, int parent, int contents, int procset, int font,
 	   "\t\t\t<<\n"
 	   "\t\t\t\t/ProcSet %d 0 R\n"
 	   "\t\t\t\t/Font\n"
-	   "\t\t\t\t\t<< /F1 %d 0 R >>\n"
+	   "\t\t\t\t\t<< /F%d %d 0 R\n"
+	   "\t\t\t\t\t   /F%d %d 0 R >>\n"
 	   "\t\t\t>>\n"
 	   "\t>>\n"
 	   "endobj\n\n",
 	   objnum, parent, (int) width, (int) length,
-	   contents, procset, font);
+	   contents, procset, COURIER, font, COURIER_BOLD, boldfont);
 
   fprintf (outfile, "%s", text);
 
@@ -575,18 +622,52 @@ pdf_procset (int objnum)
 }
 
 int
-pdf_font (int objnum)
+pdf_font (int objnum, int fontname)
 {
   char text[255];
 
-  sprintf (text,
-	   "%d 0 obj\n"
-	   "\t<<\n"
-	   "\t\t/Type /Font\n"
-	   "\t\t/Subtype /Type1\n"
-	   "\t\t/Name /F1\n"
-	   "\t\t/BaseFont /Courier\n"
-	   "\t\t/Encoding /MacRomanEncoding\n" "\t>>\n" "endobj\n\n", objnum);
+  switch (fontname)
+    {
+    case COURIER:
+      {
+	sprintf (text,
+		 "%d 0 obj\n"
+		 "\t<<\n"
+		 "\t\t/Type /Font\n"
+		 "\t\t/Subtype /Type1\n"
+		 "\t\t/Name /F%d\n"
+		 "\t\t/BaseFont /Courier\n"
+		 "\t\t/Encoding /WinAnsiEncoding\n" "\t>>\n" "endobj\n\n",
+		 objnum, fontname);
+	break;
+      }
+    case COURIER_BOLD:
+      {
+	sprintf (text,
+		 "%d 0 obj\n"
+		 "\t<<\n"
+		 "\t\t/Type /Font\n"
+		 "\t\t/Subtype /Type1\n"
+		 "\t\t/Name /F%d\n"
+		 "\t\t/BaseFont /Courier-Bold\n"
+		 "\t\t/Encoding /WinAnsiEncoding\n" "\t>>\n" "endobj\n\n",
+		 objnum, fontname);
+	break;
+      }
+    default:
+      {
+	sprintf (text,
+		 "%d 0 obj\n"
+		 "\t<<\n"
+		 "\t\t/Type /Font\n"
+		 "\t\t/Subtype /Type1\n"
+		 "\t\t/Name /F%d\n"
+		 "\t\t/BaseFont /Courier\n"
+		 "\t\t/Encoding /WinAnsiEncoding\n" "\t>>\n" "endobj\n\n",
+		 objnum, fontname);
+	break;
+      }
+    }
 
   fprintf (outfile, "%s", text);
 
