@@ -1,0 +1,14 @@
++unixlib
++matchanyintegral
++trytorecover
+-retvalbool
+-retvalint
++charintliteral
+-observertrans
+-statictrans
+-external-prefix "tn5250_"
+-type-prefix "Tn5250"
+-predboolint
++boolint
++charint
+-redef
