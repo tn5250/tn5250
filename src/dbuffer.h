@@ -33,7 +33,6 @@ extern "C" {
       /* How we keep track of multiple saved display buffers */
       struct _Tn5250DBuffer *	next;
       struct _Tn5250DBuffer *	prev;
-      unsigned char		id;	/* Saved buffer id */
 
       int w, h;
       int cx, cy;		/* Cursor Position */
@@ -59,8 +58,6 @@ extern "C" {
    extern void tn5250_dbuffer_goto_ic(Tn5250DBuffer * This);
 
    extern void tn5250_dbuffer_addch(Tn5250DBuffer * This, unsigned char c);
-   extern void tn5250_dbuffer_mvaddnstr(Tn5250DBuffer * This, int y, int x,
-					const unsigned char *str, int n);
    extern void tn5250_dbuffer_del(Tn5250DBuffer * This, int shiftcount);
    extern void tn5250_dbuffer_ins(Tn5250DBuffer * This, unsigned char c, int shiftcount);
    extern void tn5250_dbuffer_set_temp_ic(Tn5250DBuffer * This, int y, int x);

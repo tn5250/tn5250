@@ -50,7 +50,6 @@ Tn5250Table *tn5250_table_copy(Tn5250Table *table)
       return NULL;
    memcpy(This,table,sizeof(Tn5250Table));
    This->next = This->prev = NULL;
-   This->id = 0;
    This->field_list = tn5250_field_list_copy (table->field_list);
    return This;
 }

@@ -45,12 +45,12 @@ extern Tn5250Display *	tn5250_display_new	      (int width,
 						       int height);
 extern void		tn5250_display_destroy	      (Tn5250Display *This);
 
-extern unsigned char	tn5250_display_push_dbuffer   (Tn5250Display *This);
-extern unsigned char	tn5250_display_push_table     (Tn5250Display *This);
+extern Tn5250DBuffer *  tn5250_display_push_dbuffer   (Tn5250Display *This);
+extern Tn5250Table *	tn5250_display_push_table     (Tn5250Display *This);
 extern void		tn5250_display_restore_dbuffer(Tn5250Display *This,
-						       unsigned char id);
+						       Tn5250DBuffer *display);
 extern void             tn5250_display_restore_table  (Tn5250Display *This,
-                                                       unsigned char id);
+                                                       Tn5250Table *table);
 
 extern void             tn5250_display_set_terminal   (Tn5250Display *This,
                                                        struct _Tn5250Terminal*);
@@ -82,6 +82,8 @@ extern void	  tn5250_display_dup		      (Tn5250Display *This);
 extern void	  tn5250_display_interactive_addch    (Tn5250Display *This,
                                                        unsigned char ch);
 extern void	  tn5250_display_beep		      (Tn5250Display *This);
+extern void	  tn5250_display_q_aidcode	      (Tn5250Display *This,
+                                                       int aidcode);
 
 #define tn5250_display_cursor_x(This) \
    (tn5250_dbuffer_cursor_x ((This)->display_buffers))

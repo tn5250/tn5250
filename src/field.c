@@ -185,14 +185,6 @@ const char *tn5250_field_adjust_description (Tn5250Field * This)
    }
 }
 
-/* FIXME: Reimplement on display or something.
- * int tn5250_field_is_full(Tn5250Field *This)
-{
-   if (This->data == NULL)
-      return 1;
-   return (This->data[This->length - 1] != 0);
-} */
-
 /*
  *    Return the number of characters in the this field which
  *    are to the left oof the specified cursor position.  Used
@@ -221,28 +213,6 @@ int tn5250_field_count_right (Tn5250Field *This, int y, int x)
    TN5250_ASSERT(tn5250_field_hit_test(This, y, x));
    return tn5250_field_end_pos (This) - (y * This->w + x);
 }
-
-/* FIXME: Reimplement elsewhere.
- *    Not sure if this works, but I fixed two typos. -JMF
-void tn5250_field_set_minus_zone(Tn5250Field *This)
-{
-   unsigned char lastchar;
-
-   TN5250_ASSERT(This->length >= 2);
-   TN5250_LOG(("tn5250_field_set_minus_zone: id = %d\n", This->id));
-
-   lastchar = This->data[This->length - 2];
-   if (tn5250_ebcdic2ascii(lastchar) >= '0' && tn5250_ebcdic2ascii(lastchar) <= '9')
-      lastchar = 0xD0 | (lastchar & 0x0F);
-   else {
-      TN5250_LOG(("Error: Tried to set Zone field for Negative number on non digit.\n"));
-   }
-   This->data[This->length - 2] = lastchar;
-
-   tn5250_dbuffer_cursor_set(This->display, tn5250_field_end_row(This) - 1,
-	 tn5250_field_end_col(This) - 1);
-   tn5250_dbuffer_addch(This->display, tn5250_ascii2ebcdic('-')); 
-} */
 
 /*
  *    Determine if the supplied character is a valid data character
