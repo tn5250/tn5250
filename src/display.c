@@ -1166,8 +1166,11 @@ void tn5250_display_do_aidkey (Tn5250Display *This, int aidcode)
 {
    TN5250_LOG (("tn5250_display_do_aidkey (0x%02X) called.\n", aidcode));
 
-   /* FIXME: If this returns zero, we need to stop processing. */
-   ( *(This->session->handle_aidkey)) (This->session, aidcode);
+   /* Aidcodes less than zero are pseudo-aid-codes (see session.h) */
+   if (This->session->read_opcode || aidcode < 0) {
+      /* FIXME: If this returns zero, we need to stop processing. */
+      ( *(This->session->handle_aidkey)) (This->session, aidcode);
+   }
 }
 
 /****f* lib5250/tn5250_display_kf_dup

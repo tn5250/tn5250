@@ -1,3 +1,7 @@
+2000-06-01 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Applied Scott Klement's fix (slightly modified) for accepting appropriate
+  aidcodes when there is no read, etc.  (Crashing issues).
+
 2000-05-31 Mike Madore <mmadore@turbolinux.com>
 - Big changes to the configuration code.  Now uses glib everywhere.
 	
