@@ -70,7 +70,7 @@ main ()
 	{
 	case SCS_TRANSPARENT:
 	  {
-	    scs_transparent ();
+	    scs2ascii_transparent ();
 	    break;
 	  }
 	case SCS_RFF:
@@ -195,6 +195,21 @@ scs2ascii_ahpp (int *curpos)
     }
   *curpos = position;
   fprintf (stderr, "AHPP %d\n", position);
+}
+
+void
+scs2ascii_transparent ()
+{
+
+  int bytecount;
+  int loop;
+
+  bytecount = fgetc (stdin);
+  fprintf (stderr, "TRANSPARENT (%x) = ", bytecount);
+  for (loop = 0; loop < bytecount; loop++)
+    {
+      printf ("%c", fgetc (stdin));
+    }
 }
 
 /* vi:set sts=3 sw=3: */
