@@ -3639,7 +3639,7 @@ tn5250_session_write_data_structured_field (Tn5250Session * This, int length)
   if ((flagbyte1 & 0x80) && (tn5250_field_is_wordwrap (field)))
     {
       tn5250_display_wordwrap (This->display, data, datalength,
-			       tn5250_field_length (field));
+			       tn5250_field_length (field), field);
     }
 
   free (data);

@@ -180,7 +180,7 @@ void tn5250_display_erase_region (Tn5250Display * This,
 				  unsigned int endcol, unsigned int leftedge,
 				  unsigned int rightedge);
 void tn5250_display_wordwrap (Tn5250Display * This, unsigned char *text,
-			      int totallen, int fieldlen);
+			      int totallen, int fieldlen, Tn5250Field *field);
 
 
 #define tn5250_display_dbuffer(This) \
