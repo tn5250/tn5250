@@ -713,7 +713,7 @@ tn5250_dbuffer_addch (Tn5250DBuffer * This, unsigned char c)
  * NAME
  *    tn5250_dbuffer_del
  * SYNOPSIS
- *    tn5250_dbuffer_del (This, shiftcount);
+ *    tn5250_dbuffer_del (This, fieldid, shiftcount);
  * INPUTS
  *    Tn5250DBuffer *      This       - 
  *    int                  shiftcount - 
@@ -721,9 +721,28 @@ tn5250_dbuffer_addch (Tn5250DBuffer * This, unsigned char c)
  *    DOCUMENT ME!!!
  *****/
 void
-tn5250_dbuffer_del (Tn5250DBuffer * This, int shiftcount)
+tn5250_dbuffer_del (Tn5250DBuffer * This, int fieldid, int shiftcount)
 {
+  Tn5250Field *iter, *field;
   int x = This->cx, y = This->cy, fwdx, fwdy, i;
+
+  field = tn5250_field_list_find_by_id (This->field_list, fieldid);
+  iter = field;
+
+  while (tn5250_field_is_continued (iter))
+    {
+      if (tn5250_field_is_continued_last (iter))
+	{
+	  break;
+	}
+      iter = iter->next;
+      shiftcount =
+	shiftcount + tn5250_field_count_right (iter,
+					       tn5250_field_start_row (iter),
+					       tn5250_field_start_col (iter));
+    }
+
+  iter = field;
 
   for (i = 0; i < shiftcount; i++)
     {
@@ -734,6 +753,17 @@ tn5250_dbuffer_del (Tn5250DBuffer * This, int shiftcount)
 	  fwdx = 0;
 	  fwdy++;
 	}
+
+      if (tn5250_field_is_continued (iter)
+	  && (!tn5250_field_is_continued_last (iter))
+	  && (fwdx > tn5250_field_end_col (iter)))
+	{
+	  iter = iter->next;
+	  fwdx = tn5250_field_start_col (iter);
+	  fwdy = tn5250_field_start_row (iter);
+	  i--;
+	}
+
       This->data[y * This->w + x] = This->data[fwdy * This->w + fwdx];
       x = fwdx;
       y = fwdy;
@@ -749,9 +779,10 @@ tn5250_dbuffer_del (Tn5250DBuffer * This, int shiftcount)
  * NAME
  *    tn5250_dbuffer_ins
  * SYNOPSIS
- *    tn5250_dbuffer_ins (This, c, shiftcount);
+ *    tn5250_dbuffer_ins (This, fieldid, c, shiftcount);
  * INPUTS
  *    Tn5250DBuffer *      This       - 
+ *    int                  fieldid    -
  *    unsigned char        c          - 
  *    int                  shiftcount - 
  * DESCRIPTION

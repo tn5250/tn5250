@@ -2130,21 +2130,25 @@ void tn5250_display_kf_home (Tn5250Display * This)
  *****/
 void tn5250_display_kf_delete (Tn5250Display * This)
 {
-   Tn5250Field *field = tn5250_display_current_field (This);
-   if (field == NULL || tn5250_field_is_bypass (field)) {
+  Tn5250Field *field = tn5250_display_current_field (This);
+
+  if (field == NULL || tn5250_field_is_bypass (field))
+    {
       This->keystate = TN5250_KEYSTATE_PREHELP;
       This->keySRC = TN5250_KBDSRC_PROTECT;
       tn5250_display_inhibit (This);
-   } else {
+    }
+  else
+    {
       tn5250_field_set_mdt (field);
-      tn5250_dbuffer_del (This->display_buffers,
+      tn5250_dbuffer_del (This->display_buffers, field->id,
 			  tn5250_field_count_right (field,
 						    tn5250_display_cursor_y
 						    (This),
 						    tn5250_display_cursor_x
 						    (This)));
-   }
-   return;
+    }
+  return;
 }
 
 
