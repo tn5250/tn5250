@@ -980,6 +980,10 @@ void tn5250_display_do_key(Tn5250Display *This, int key)
       tn5250_display_kf_field_exit (This);
       break;
 
+   case K_FIELDPLUS:
+      tn5250_display_kf_field_plus (This);
+      break;
+
    case K_FIELDMINUS:
       tn5250_display_kf_field_minus (This);
       break;
