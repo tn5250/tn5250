@@ -36,3 +36,40 @@
 #define SCS_FF		0x0C
 
 #endif
+
+void scs_sic ();
+void scs_sil ();
+void scs_sls ();
+void scs_process34 (int *curpos);
+void scs_process2b (int *pagewidth, int *pagelength, int *cpi);
+void scs_rff ();
+void scs_noop ();
+void scs_transparent ();
+void scs_processd2 (int *pagewidth, int *pagelength, int *cpi);
+void scs_process03 (unsigned char nextchar, unsigned char curchar);
+void scs_scs (int *cpi);
+void scs_ssld ();
+void scs_process04 (unsigned char nextchar, unsigned char curchar, int *cpi);
+void scs_processd1 ();
+void scs_process06 ();
+void scs_process07 ();
+void scs_processd103 ();
+void scs_stab (unsigned char curchar);
+void scs_jtf (unsigned char curchar);
+void scs_sjm (unsigned char curchar);
+void scs_spps (int *pagewidth, int *pagelength);
+void scs_ppm (unsigned char curchar);
+void scs_svm (unsigned char curchar);
+void scs_spsu (unsigned char curchar);
+void scs_sea (unsigned char curchar);
+void scs_shm (unsigned char curchar);
+void scs_sgea ();
+void scs_cr ();
+int scs_nl ();
+void scs_rnl ();
+void scs_ht ();
+void scs_ahpp (int *curpos);
+void scs_avpp ();
+void scs_processd3 ();
+void scs_sto (unsigned char curchar);
+void scs_ff ();

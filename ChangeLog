@@ -10,10 +10,24 @@
 - Changed the win32_terminal_waitevent func so that it's compatible
   with the debug.c code.
 
+2002-03-20 James Rich <james@eaerich.com>
+- Cleaned up scs2pdf.c and added comments to explain how it works.
+- Added more CPI mappings to scs.c
+
 2002-03-20 Scott Klement <klemscot@klements.com>
 - Changed the GPL license to the LGPL license, after gaining permission
   from the various copyright holders.  This will allow us to create
   binary releases that link with the OpenSSL library.
+
+2002-03-18 James Rich <james@eaerich.com>
+- Changed scs.c to return the CPI value given.  Added the ability to change
+  CPI in scs2pdf.c.  Modified scs2ascii.c and scs2ps.c to use new function
+  arguments to scs_process2b().
+
+2002-03-18 Scott Klement <klemscot@klements.com>
+- Overrode the TRANSPARENT order in scs2ascii to use it's own routine
+  instead of the one in scs.c.  The one in scs.c was writing data to
+  stderr instead of stdout, which breaks Host Print Transform.
 
 2002-03-18 Scott Klement <klemscot@klements.com>
 - Removed unnecessary/unused getopt.[ch]
@@ -37,6 +51,54 @@
 
 2002-03-14 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - tn5250-config.in: Now reports cflags and libs from glib, too.
+
+2002-03-13 James Rich <james@eaerich.com>
+- Changed scs2pdf.c to correctly handle AHPP commands with guidance from
+  Frank Richter <frichter@esda.com>.  AHPP can be to cause some characters
+  to be bold if it overwrites previously written text.  In this case scs2pdf
+  now causes those characters to be in bold (i.e. Courier-Bold).
+- Also from Frank Richter suggestion changed scs2pdf.c to use WinAnsiEncoding
+  instead of MacRomanEncoding.  It should handle international fonts better
+  now.
+
+2002-03-13 Scott Klement <klemscot@klements.com>
+- Changed lp5250d to set the TN5250_CCSIDMAP variable in the environment
+  to match the "map" entry from the config.  (It does not overwrite an
+  existing value, if one is already set)
+
+2002-03-12 James Rich <james@eaerich.com>
+- Removed common functions from scs2ps.c that are in scs.c.
+- Changed scs2ascii.c, scs2pdf.c, and scs2ps.c to check environment
+  variable TN5250_CCSIDMAP for the character map to use for EBCDIC -> ASCII
+  translation.   *** Need to check that an overflow cannot occur because
+  of environment variable weirdness ***
+- Got closer to nailing down continuing issues with unspecified page sizes.
+  Changed scs2pdf.c to count characters printed per line and increase the
+  page size if the character count goes beyond the default size.
+
+2002-03-12 James Rich <james@eaerich.com>
+- Fixed bug with unspecified page sizes in scs2pdf.  Occasionally the page 
+  size is specified and we were defaulting to a bad value.  We also would 
+  compute incorrect values for unusual page sizes.
+
+2002-03-11 James Rich <james@eaerich.com>
+- Removed all common functions in scs2ascii.c and scs2pdf.c and put them
+  in scs.c.  Expanded scs.h to have the appropriate definitions.  Updated
+  the TODO file appropriately.  Added scs.c to Makefile.am so it is part
+  of the build.
+- As a consequence of this the solution to the page size problem became
+  evident.  Updated scs2pdf.c to fix the page sizes.
+
+2002-03-09 James Rich <james@eaerich.com>
+- Changed scs2pdf.c to use environment variable TN5250_PDF to determine
+  where to write it's output.  If this environment variable is not set, 
+  scs2pdf uses stdout (default).
+	
+2002-03-09 Scott Klement <klemscot@klements.com>
+- Applied more updates to scs2pdf from James Rich.
+
+2002-03-07 Scott Klement <klemscot@klements.com>
+- Applied preliminary patches from James Rich to get scs2pdf working.
 
 2002-03-01 Scott Klement <klemscot@klements.com>
 - Found/fixed bug in telnetstr.c, where TN5250_LOG was being called

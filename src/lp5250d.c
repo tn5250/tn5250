@@ -94,8 +94,10 @@ int main(int argc, char *argv[])
     if (tn5250_config_get (config, "map")) {
          tn5250_print_session_set_char_map(printsess, 
                   tn5250_config_get (config, "map"));
+         setenv("TN5250_CCSIDMAP", tn5250_config_get (config, "map"), 0);
     } else {
          tn5250_print_session_set_char_map(printsess, "37");
+         setenv("TN5250_CCSIDMAP", "37", 0);
     }
     if (tn5250_config_get (config, "outputcommand")) 
          tn5250_print_session_set_output_command(printsess, 

@@ -3,7 +3,8 @@
 lib_LTLIBRARIES =	lib5250.la
 
 bin_PROGRAMS =		scs2ascii\
-			 scs2ps\
+			scs2pdf\
+                        scs2ps\
 			tn5250\
 			lp5250d\
 			tn5250d\
@@ -18,6 +19,7 @@ lib5250_la_SOURCES =	buffer.c\
 			field.c\
 			printsession.c\
 			record.c\
+			scs.c\
 			session.c\
 			slangterm.c\
 			sslstream.c\
@@ -52,8 +54,13 @@ tn3270d_SOURCES = 	tn3270d.c\
 
 tn3270d_LDADD =		@with_extra_libs@ lib5250.la
 
-scs2ps_SOURCES =	scs2ps.c
-scs2ps_LDADD =		@with_extra_libs@ lib5250.la
+scs2pdf_SOURCES =	scs2pdf.c
+
+scs2pdf_LDADD =		@with_extra_libs@ lib5250.la
+
+scs2ps_SOURCES = 	scs2ps.c
+
+scs2ps_LDADD = 		@with_extra_libs@ lib5250.la
 
 pkginclude_HEADERS = 	buffer.h\
 			codes3270.h\

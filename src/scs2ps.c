@@ -23,42 +23,12 @@
  */
 
 #include "tn5250-private.h"
+#include "scs.h"
 
-static void scs2ps_sic();
-static void scs2ps_sil();
-static void scs2ps_sls();
 static void scs2ps_process34();
-static void scs2ps_process2b();
-static void scs2ps_rff();
-static void scs2ps_noop();
-static void scs2ps_transparent();
-static void scs2ps_processd2();
-static void scs2ps_process03();
-static void scs2ps_scs();
-static void scs2ps_ssld();
-static void scs2ps_process04();
-static void scs2ps_processd1();
-static void scs2ps_process06();
-static void scs2ps_process07();
-static void scs2ps_processd103();
-static void scs2ps_stab();
-static void scs2ps_jtf();
-static void scs2ps_sjm();
-static void scs2ps_spps();
-static void scs2ps_ppm();
-static void scs2ps_svm();
-static void scs2ps_spsu();
-static void scs2ps_sea();
-static void scs2ps_shm();
-static void scs2ps_sgea();
 static void scs2ps_cr();
 static void scs2ps_nl();
-static void scs2ps_rnl();
-static void scs2ps_ht();
 static void scs2ps_ahpp();
-static void scs2ps_avpp();
-static void scs2ps_processd3();
-static void scs2ps_sto();
 static void scs2ps_ff();
 
 static void scs2ps_jobheader();
@@ -98,7 +68,8 @@ Tn5250CharMap *map;
 
 int main()
 {
-   map = tn5250_char_map_new ("37");
+  int pagewidth, pagelength;  /* These are unused for now */
+  int cpi;  /* This is unused for now */
    current_line = 1;
    new_line = 1;
    new_page = 1;
@@ -106,6 +77,15 @@ int main()
    mlp = 66;
    ccp = 1;
    page = 0;
+
+  if ((getenv ("TN5250_CCSIDMAP")) != NULL)
+    {
+      map = tn5250_char_map_new (getenv ("TN5250_CCSIDMAP"));
+    }
+  else
+    {
+      map = tn5250_char_map_new ("37");
+    }
 
    tm = 36;  /* top margin in points */
    lm = 36;  /* left margin in points */
@@ -136,15 +116,15 @@ int main()
       curchar = fgetc(stdin);
       switch (curchar) {
       case SCS_TRANSPARENT:{
-	    scs2ps_transparent();
+	    scs_transparent();
 	    break;
 	 }
       case SCS_RFF:{
-	    scs2ps_rff();
+	    scs_rff();
 	    break;
 	 }
       case SCS_NOOP:{
-	    scs2ps_noop();
+	    scs_noop();
 	    break;
 	 }
       case SCS_CR:{
@@ -160,11 +140,11 @@ int main()
 	    break;
 	 }
       case SCS_RNL:{
-	    scs2ps_rnl();
+	    scs_rnl();
 	    break;
 	 }
       case SCS_HT:{
-	    scs2ps_ht();
+	    scs_ht();
 	    break;
 	 }
       case 0x34:{
@@ -172,7 +152,7 @@ int main()
 	    break;
 	 }
       case 0x2B:{
-	    scs2ps_process2b();
+	    scs_process2b(&pagewidth, &pagelength, &cpi);
 	    break;
 	 }
       case 0xFF:{
@@ -276,16 +256,6 @@ scs2ps_gety()
   return pl - (tm + (current_line * charheight));
 }
 
-static void scs2ps_ht()
-{
-   fprintf(stderr, "HT\n");
-}
-
-static void scs2ps_rnl()
-{
-   fprintf(stderr, "RNL\n");
-}
-
 static void scs2ps_nl()
 {
    new_line = 1;
@@ -309,36 +279,13 @@ static void scs2ps_cr()
    ccp = 1;
 }
 
-static void scs2ps_transparent()
-{
-
-   int bytecount;
-   int loop;
-
-   bytecount = fgetc(stdin);
-   fprintf(stderr, "TRANSPARENT (%x) = ", bytecount);
-   for (loop = 0; loop < bytecount; loop++) {
-      printf("%c", fgetc(stdin));
-   }
-}
-
-static void scs2ps_rff()
-{
-   fprintf(stderr, "RFF\n");
-}
-
-static void scs2ps_noop()
-{
-   fprintf(stderr, "NOOP\n");
-}
-
 static void scs2ps_process34()
 {
 
    curchar = fgetc(stdin);
    switch (curchar) {
    case SCS_AVPP:{
-	 scs2ps_avpp();
+	 scs_avpp();
 	 break;
       }
    case SCS_AHPP:{
@@ -349,11 +296,6 @@ static void scs2ps_process34()
 	 fprintf(stderr, "ERROR: Unknown 0x34 command %x\n", curchar);
       }
    }
-}
-
-static void scs2ps_avpp()
-{
-   fprintf(stderr, "AVPP %d\n", fgetc(stdin));
 }
 
 static void scs2ps_ahpp()
@@ -375,366 +317,6 @@ static void scs2ps_ahpp()
       }
    } */
    fprintf(stderr, "AHPP %d\n", ccp);
-}
-
-static void scs2ps_process2b()
-{
-
-   curchar = fgetc(stdin);
-   switch (curchar) {
-   case 0xD1:{
-	 scs2ps_processd1();
-	 break;
-      }
-   case 0xD2:{
-	 scs2ps_processd2();
-	 break;
-      }
-   case 0xD3:{
-	 scs2ps_processd3();
-	 break;
-      }
-   case 0xC8:{
-	 scs2ps_sgea();
-	 break;
-      }
-   default:{
-	 fprintf(stderr, "ERROR: Unknown 0x2B command %x\n", curchar);
-      }
-   }
-}
-
-static void scs2ps_processd3()
-{
-   curchar = fgetc(stdin);
-   nextchar = fgetc(stdin);
-
-   if (nextchar == 0xF6) {
-      scs2ps_sto();
-   } else {
-      fprintf(stderr, "ERROR: Unknown 0x2BD3 %x %x", curchar, nextchar);
-   }
-}
-
-static void scs2ps_sto()
-{
-   int loop;
-
-   fprintf(stderr, "STO = ");
-   for (loop = 0; loop < curchar - 2; loop++) {
-      nextchar = fgetc(stdin);
-      fprintf(stderr, " %x", nextchar);
-   }
-   fprintf(stderr, "\n");
-}
-
-static void scs2ps_sgea()
-{
-   fprintf(stderr, "SGEA = %x %x %x\n", fgetc(stdin), fgetc(stdin), fgetc(stdin));
-}
-
-static void scs2ps_processd1()
-{
-   curchar = fgetc(stdin);
-   switch (curchar) {
-   case 0x06:{
-	 scs2ps_process06();
-	 break;
-      }
-   case 0x07:{
-	 scs2ps_process07();
-	 break;
-      }
-   case 0x03:{
-	 scs2ps_processd103();
-	 break;
-      }
-   default:{
-	 fprintf(stderr, "ERROR: Unknown 0x2BD1 command %x\n", curchar);
-      }
-   }
-}
-
-static void scs2ps_process06()
-{
-   curchar = fgetc(stdin);
-   if (curchar == 0x01) {
-      fprintf(stderr, "GCGID = %x %x %x %x\n", fgetc(stdin), fgetc(stdin),
-	      fgetc(stdin), fgetc(stdin));
-   } else {
-      fprintf(stderr, "ERROR: Unknown 0x2BD106 command %x\n", curchar);
-   }
-}
-
-static void scs2ps_process07()
-{
-   curchar = fgetc(stdin);
-   if (curchar == 0x05) {
-      fprintf(stderr, "FID = %x %x %x %x %x\n", fgetc(stdin), fgetc(stdin),
-	      fgetc(stdin), fgetc(stdin), fgetc(stdin));
-   } else {
-      fprintf(stderr, "ERROR: Unknown 0x2BD107 command %x\n", curchar);
-   }
-}
-
-static void scs2ps_processd103()
-{
-   curchar = fgetc(stdin);
-   if (curchar == 0x81) {
-      fprintf(stderr, "SCGL = %x\n", fgetc(stdin));
-   } else {
-      fprintf(stderr, "ERROR: Unknown 0x2BD103 command %x\n", curchar);
-   }
-}
-
-static void scs2ps_processd2()
-{
-   curchar = fgetc(stdin);
-   nextchar = fgetc(stdin);
-
-
-   switch (nextchar) {
-   case 0x01:{
-	 scs2ps_stab();
-	 break;
-      }
-   case 0x03:{
-	 scs2ps_jtf();
-	 break;
-      }
-   case 0x0D:{
-	 scs2ps_sjm();
-	 break;
-      }
-   case 0x40:{
-	 scs2ps_spps();
-	 break;
-      }
-   case 0x48:{
-	 scs2ps_ppm();
-	 break;
-      }
-   case 0x49:{
-	 scs2ps_svm();
-	 break;
-      }
-   case 0x4c:{
-	 scs2ps_spsu();
-	 break;
-      }
-   case 0x85:{
-	 scs2ps_sea();
-	 break;
-      }
-   case 0x11:{
-	 scs2ps_shm();
-	 break;
-      }
-   default:{
-	 switch (curchar) {
-	 case 0x03:{
-	       scs2ps_process03();
-	       break;
-	    }
-	 case 0x04:{
-	       scs2ps_process04();
-	       break;
-	    }
-	 default:{
-	       fprintf(stderr, "ERROR: Unknown 0x2BD2 command %x\n", curchar);
-	    }
-	 }
-      }
-   }
-
-}
-
-static void scs2ps_stab()
-{
-   int loop;
-
-   fprintf(stderr, "STAB = ");
-   for (loop = 0; loop < curchar - 2; loop++) {
-      nextchar = fgetc(stdin);
-      fprintf(stderr, " %x", nextchar);
-   }
-   fprintf(stderr, "\n");
-}
-
-static void scs2ps_jtf()
-{
-   int loop;
-
-   fprintf(stderr, "JTF = ");
-   for (loop = 0; loop < curchar - 2; loop++) {
-      nextchar = fgetc(stdin);
-      fprintf(stderr, " %x", nextchar);
-   }
-   fprintf(stderr, "\n");
-}
-
-static void scs2ps_sjm()
-{
-   int loop;
-
-   fprintf(stderr, "SJM = ");
-   for (loop = 0; loop < curchar - 2; loop++) {
-      nextchar = fgetc(stdin);
-      fprintf(stderr, " %x", nextchar);
-   }
-   fprintf(stderr, "\n");
-}
-
-static void scs2ps_spps()
-{
-   int width;
-   int length;
-
-   fprintf(stderr, "SPPS = ");
-
-   width = fgetc(stdin);
-   width = (width << 8) + fgetc(stdin);
-
-   length = fgetc(stdin);
-   length = (length << 8) + fgetc(stdin);
-
-   fprintf(stderr, "SPPS (width = %d) (length = %d)\n", width, length);
-
-}
-
-static void scs2ps_ppm()
-{
-   int loop;
-
-   fprintf(stderr, "PPM = ");
-   for (loop = 0; loop < curchar - 2; loop++) {
-      nextchar = fgetc(stdin);
-      fprintf(stderr, " %x", nextchar);
-   }
-   fprintf(stderr, "\n");
-}
-
-
-static void scs2ps_svm()
-{
-   int loop;
-
-   fprintf(stderr, "SVM = ");
-   for (loop = 0; loop < curchar - 2; loop++) {
-      nextchar = fgetc(stdin);
-      fprintf(stderr, " %x", nextchar);
-   }
-   fprintf(stderr, "\n");
-}
-
-static void scs2ps_spsu()
-{
-   int loop;
-
-   fprintf(stderr, "SPSU (%x) = ", curchar);
-   for (loop = 0; loop < curchar - 2; loop++) {
-      nextchar = fgetc(stdin);
-      fprintf(stderr, " %x", nextchar);
-   }
-   fprintf(stderr, "\n");
-}
-
-static void scs2ps_sea()
-{
-   int loop;
-
-   fprintf(stderr, "SEA (%x) = ", curchar);
-   for (loop = 0; loop < curchar - 2; loop++) {
-      nextchar = fgetc(stdin);
-      fprintf(stderr, " %x", nextchar);
-   }
-   fprintf(stderr, "\n");
-}
-
-static void scs2ps_shm()
-{
-   int loop;
-
-   fprintf(stderr, "SHM = ");
-   for (loop = 0; loop < curchar - 2; loop++) {
-      nextchar = fgetc(stdin);
-      fprintf(stderr, " %x", nextchar);
-   }
-   fprintf(stderr, "\n");
-}
-
-static void scs2ps_process03()
-{
-   switch (nextchar) {
-   case 0x45:{
-	 scs2ps_sic();
-	 break;
-      }
-   case 0x07:{
-	 scs2ps_sil();
-	 break;
-      }
-   case 0x09:{
-	 scs2ps_sls();
-	 break;
-      }
-   default:{
-	 fprintf(stderr, "ERROR: Unknown 0x2BD203 command %x\n", curchar);
-      }
-   }
-}
-
-static void scs2ps_sic()
-{
-   curchar = fgetc(stdin);
-   fprintf(stderr, "SIC = %x\n", curchar);
-}
-
-static void scs2ps_sil()
-{
-   curchar = fgetc(stdin);
-   fprintf(stderr, "SIL = %d", curchar);
-}
-
-static void scs2ps_sls()
-{
-   curchar = fgetc(stdin);
-   fprintf(stderr, "SLS = %d\n", curchar);
-}
-
-static void scs2ps_process04()
-{
-   switch (nextchar) {
-   case 0x15:{
-	 scs2ps_ssld();
-	 break;
-      }
-   case 0x29:{
-	 scs2ps_scs();
-	 break;
-      }
-   default:{
-	 fprintf(stderr, "ERROR: Unknown 0x2BD204 command %x\n", curchar);
-      }
-   }
-}
-
-static void scs2ps_ssld()
-{
-   curchar = fgetc(stdin);
-   nextchar = fgetc(stdin);
-   fprintf(stderr, "SSLD = %d %d \n", curchar, nextchar);
-}
-
-static void scs2ps_scs()
-{
-   curchar = fgetc(stdin);
-   if (curchar == 0x00) {
-      curchar = fgetc(stdin);
-      fprintf(stderr, "SCS = %d", curchar);
-   } else {
-      fprintf(stderr, "ERROR: Unknown 0x2BD20429 command %x\n", curchar);
-   }
 }
 
 /* vi:set sts=3 sw=3: */
