@@ -31,7 +31,7 @@ char sessionname[20];
 char transformname[20];
 char outputcommand[30];
 char *mapname = "37";
-char logname[20];
+char logname[20] = "";
 
 int main(int argc, char *argv[])
 {
@@ -47,9 +47,11 @@ int main(int argc, char *argv[])
     }
 
 #ifndef NDEBUG
-    tn5250_log_open(logname);
-    TN5250_LOG(("lp5250d version %s, built on %s\n", version_string, 
-          __DATE__));
+   if(strlen(logname) > 0) {
+      tn5250_log_open(logname);
+      TN5250_LOG(("lp5250d version %s, built on %s\n", version_string, 
+            __DATE__));
+   }
 #endif 
 
     openlog("lp5250d", LOG_PID, LOG_DAEMON);
@@ -64,7 +66,7 @@ int main(int argc, char *argv[])
     tn5250_stream_setenv(stream, "DEVNAME", sessionname);
     tn5250_stream_setenv(stream, "IBMFONT", "12");
     syslog(LOG_INFO, "DEVNAME = %s", sessionname);
-    if (transformname != NULL) {
+    if (strlen(transformname) > 0) {
        syslog(LOG_INFO, "TRANSFORM = %s", transformname);
        tn5250_stream_setenv(stream, "IBMTRANSFORM", "1");
        tn5250_stream_setenv(stream, "IBMMFRTYPMDL", transformname);

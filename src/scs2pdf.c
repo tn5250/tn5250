@@ -17,6 +17,10 @@
  */
 
 #include "tn5250-private.h"
+#include <glib.h>
+
+#define MAXROWS 51
+#define MAXCOLS 165
 
 static void scs2ascii_sic();
 static void scs2ascii_sil();
@@ -56,14 +60,15 @@ static void scs2ascii_sto();
 static void scs2ascii_ff();
 
 int pdf_header();
-void pdf_trailer(int offset);
+void pdf_trailer(int offset, int size);
 void pdf_xreftable();
 int pdf_catalog();
 int pdf_outlines();
-int pdf_pages();
-int pdf_page();
+int pdf_pages(int objnum);
+int pdf_page(int objnum, int parent, int contents);
 int pdf_font();
 int pdf_contents(int objnum);
+int pdf_procset();
 
 unsigned char curchar;
 unsigned char nextchar;
@@ -71,16 +76,48 @@ int current_line;
 int new_line;
 int mpp;
 int ccp;
+char page[MAXROWS][MAXCOLS];
+int filesize;
+int currow;
+int maxrows;
+int pagewidth, pagelength;
+
+GArray * ObjectList;
+int objcount;
 
 int main()
 {
    Tn5250CharMap *map = tn5250_char_map_new ("37");
+   ObjectList = g_array_new(FALSE, FALSE, sizeof(int));
    current_line = 1;
    new_line = 1;
    mpp = 132;
+   maxrows = 51;
    ccp = 1;
+   filesize = 0;
+   objcount = 0;
 
-   printf("\%PDF-1.0\n");   
+   memset(page, ' ', sizeof(page));
+   for(currow = 0; currow < MAXROWS; currow++) {
+      page[currow][0] = '\0';
+   }
+   
+   filesize += pdf_header();
+   g_array_append_val(ObjectList, filesize);
+   objcount++;
+   filesize += pdf_catalog();
+   g_array_append_val(ObjectList, filesize);
+   objcount++;
+   filesize += pdf_outlines();
+   g_array_append_val(ObjectList, filesize);
+   objcount++;
+   filesize += pdf_font();
+   g_array_append_val(ObjectList, filesize);
+   objcount++;
+   filesize += pdf_procset();      
+   g_array_append_val(ObjectList, filesize);
+   objcount++;
+
    while (!feof(stdin)) {
       curchar = fgetc(stdin);
       switch (curchar) {
@@ -133,13 +170,23 @@ int main()
 	    if (new_line) {
 	       new_line = 0;
 	    }
-	    printf("%c", tn5250_char_map_to_local(map, curchar));
+	    page[current_line-1][ccp-1] = tn5250_char_map_to_local(map, curchar);
 	    ccp++;
 	    fprintf(stderr, ">%x\n", curchar);
 	 }
       }
 
    }
+   filesize += pdf_page(6, 5, 7);
+   g_array_append_val(ObjectList, filesize);
+   objcount++;
+   filesize += pdf_pages(5);
+   g_array_append_val(ObjectList, filesize);
+   objcount++;
+   pdf_xreftable();
+   pdf_trailer(filesize, 8);
+   
+   g_array_free(ObjectList, TRUE);
    tn5250_char_map_destroy (map);
    return (0);
 }
@@ -158,16 +205,29 @@ static void scs2ascii_nl()
 {
    if (!new_line) {
    }
-   printf("\n");
    new_line = 1;
+   page[current_line-1][ccp-1] = '\0';
    ccp = 1;
+   current_line++;
    fprintf(stderr, "NL\n");
 }
 
 static void scs2ascii_ff()
 {
-   printf("\f");
+   int row;
+   char *currow;
+   int junk;
+   int loop;
+   
    fprintf(stderr, "FF\n");
+   filesize += pdf_contents(7);
+   g_array_append_val(ObjectList, filesize);
+   objcount++;
+   current_line = 1;
+   memset(page, ' ', sizeof(page));
+   for(loop   = 0; loop   < MAXROWS; loop  ++) {
+      page[loop  ][0] = '\0';
+   }
 }
 
 static void scs2ascii_cr()
@@ -230,12 +290,15 @@ static void scs2ascii_ahpp()
    position = fgetc(stdin);
    if (ccp > position) {
       printf("\r");
+      current_line++;
       for (loop = 0; loop < position; loop++) {
-	 printf(" ");
+	 page[current_line-1][ccp-1] = ' ';
+	 ccp++;
       }
    } else {
       for (loop = 0; loop < position - ccp; loop++) {
-	 printf(" ");
+	 page[current_line-1][ccp-1] = ' ';
+	 ccp++;
       }
    }
    fprintf(stderr, "AHPP %d\n", position);
@@ -451,16 +514,17 @@ static void scs2ascii_sjm()
 
 static void scs2ascii_spps()
 {
-   int width;
-   int length;
+   int width, length;
 
    fprintf(stderr, "SPPS = ");
 
    width = fgetc(stdin);
    width = (width << 8) + fgetc(stdin);
+   pagewidth = width/1440*72;
 
    length = fgetc(stdin);
    length = (length << 8) + fgetc(stdin);
+   pagelength = length/1440*72;
 
    fprintf(stderr, "SPPS (width = %d) (length = %d)\n", width, length);
 
@@ -610,23 +674,42 @@ int pdf_header()
    return(strlen(text));
 }
 
-void pdf_trailer(int offset)
+void pdf_trailer(int offset, int size)
 {
-   printf("startxref\n");
-   printf("%i\n", offset);
-   printf("%%EOF\n");
+   char text[255];
+   
+   sprintf(text,
+           "trailer\n" \
+           "<<\n" \
+           "/Size %d\n" \
+           "/Root 1 0 R\n" \
+           ">>\n" \
+           "startxref\n" \
+           "%d\n" \
+           "%%%%EOF\n", size, offset);
+           
+   printf("%s", text);
 }
 
 void pdf_xreftable()
 {
+   int curobj, value;
+
    printf("xref\n");
+   printf("0 8\n");
+   printf("0000000000 65535 f\n");
+   for(curobj = 0; curobj < objcount-1; curobj++) {
+      value = g_array_index(ObjectList, int, curobj);
+      printf("%010d 00000 n\n", value);
+   }      
 }
 
 int pdf_catalog()
 {
    char *text = "1 0 obj\n" \
+                "<<\n" \
                 "/Type /Catalog\n" \
-                "/Pages 3 0 R\n" \
+                "/Pages 5 0 R\n" \
                 "/Outlines 2 0 R\n" \
                 ">>\n" \
                 "endobj\n";
@@ -649,9 +732,22 @@ int pdf_outlines()
    return(strlen(text));
 }
 
-int pdf_pages()
+int pdf_pages(int objnum)
 {
-
+   char text[255];
+   
+   sprintf(text,
+           "%d 0 obj\n" \
+           "<<\n" \
+           "/Type /Pages\n" \
+           "/Count 1\n" \
+           "/Kids [6 0 R]\n" \
+           ">>\n" \
+           "endobj\n", objnum);
+           
+   printf("%s", text);
+   
+   return(strlen(text));
 }
 
 int pdf_font()
@@ -673,15 +769,87 @@ int pdf_font()
 
 int pdf_contents(int objnum)
 {
-   char objtxt[12];
-   char text[255] = "";
+   int row, length, streamlength;
+   char temp[255];
+    
+   length = 0;
+   streamlength = 0;
+   for(row = 0; row < MAXROWS       ; row++) {
+      sprintf(temp, "%d %d Td (%s) Tj\n", 0, 10, &(page[row][0]));
+      streamlength += strlen(temp);
+   }
+   length += streamlength;
+
+   sprintf(temp, "%i 0 obj\n", objnum);
+   printf("%s", temp);
+   length += strlen(temp);
+
+   sprintf(temp, "<< /Length %i >>\n", streamlength+16);
+   printf("%s", temp);
+   length += strlen(temp);
    
-   sprintf(objtxt, "%i 0 obj\n");
+   sprintf(temp, 
+           "stream\n" \
+           "BT\n" \
+           "/F1 10 Tf\n");
+   printf("%s", temp);
+   length += strlen(temp);
+   
+   for(row = MAXROWS-1      ; row >=0; row--) {
+      printf("%d %d Td (%s) Tj\n", 0, 10, &(page[row][0]));
+   }
+   
+   sprintf(temp,
+           "ET\n" \
+           "endstream\n" \
+           "endobj\n");
+           
+   printf("%s", temp);
+   length += strlen(temp);
+      
+   return(length);
+
 }
 
-int pdf_page()
+int pdf_page(int objnum, int parent, int contents)
 {
-
+   char text[255];
+   
+   sprintf(text,
+           "%d 0 obj\n" \
+           "<<\n" \
+           "/Type /Page\n" \
+           "/Parent %d 0 R\n" \
+           "/Resources << /Font << /F1 3 0 R >> /ProcSet 4 0 R >>\n" \
+           "/MediaBox [0 0 %d %d]\n" \
+           "/Contents %d 0 R\n" \
+           ">>\n" \
+           "endobj\n", objnum, parent, pagewidth, pagelength, contents);
+           
+   printf("%s", text);
+   
+   return(strlen(text));
 }
 
+int pdf_procset()
+{
+   char *text = "4 0 obj\n" \
+                "[/PDF /Text]\n" \
+                "endobj\n";
+                
+   printf("%s", text);
+   
+   return(strlen(text));
+}
 /* vi:set sts=3 sw=3: */
+
+
+
+
+
+
+
+
+
+
+
