@@ -1,3 +1,7 @@
+2000-02-11 Mike Madore <mmadore@blarg.net>
+- First pass at creating a 5250 print daemon.  Look in lp5250d.c for
+  details.
+
 2000-02-11 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 - Removed all tn5250_display_update calls which occur during the processing
   of the data stream, placed one at the end of the handling of the data
