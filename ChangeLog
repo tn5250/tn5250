@@ -1,4 +1,7 @@
 2000-10-30 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Fix for install-exec-local bug when python bindings not enabled.
+
+2000-10-30 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - Applied patch from Dave McKenzie fixing cursor positioning issues when the
   screen is sent in more than one WTD.
 - Added makefile rules and support files for building python language bindings
