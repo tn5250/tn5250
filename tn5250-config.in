@@ -43,7 +43,7 @@ case "$1" in
   --cflags)
     echo "-I$includedir";;
   --libs)
-    echo "$LIBS -L$libdir -l5250";;
+    echo "-L$libdir -l5250 $LIBS";;
   --version)
     echo "$VERSION";;
   *)
