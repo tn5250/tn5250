@@ -39,10 +39,20 @@ for most recent versions of OS/400, but is only supplied with V4R3 and
 later versions.  For V3R2, V3R7, V4R1 and V4R2, please see informational APAR
 II10918.
 .SH OPTIONS
+Additional
 .B lp5250d
 options are described in the
 .BR tn5250rc (5)
 man page.
+.TP
+\fB\-u\fR, \fB\-\-user=\fIUSER\fR
+run lp5250d as \fIUSER
+.TP
+\fB\-H\fR, \fB\-\-help\fR
+display this help and exit
+.TP
+\fB\-v\fR, \fB\-\-version\fR
+output version information and exit
 .SH EXAMPLES
 .TP
 .I "lp5250d env.DEVNAME=LINPRT1 env.IBMMFRTYPMDL='*HP4' as400sys"
