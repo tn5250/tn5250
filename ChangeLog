@@ -1,3 +1,9 @@
+1999-11-16 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Fixed insert cursor handling.
+- Started the move of the keyboard handling functionality into Tn5250Display.
+- Packaged up for 0.15.1 release.
+
 1999-11-15 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 
 - Created tn5250_field_valid_char() predicate which determines whether a the
@@ -7,6 +13,8 @@
 - The death of `curfield' in the format table.
 - The death of storing field data in the format table (only stored on the
   display buffer).
+- Move code which handles normal data characters entered at keyboard into
+  a function in display.c: tn5250_display_interactive_addch
 
 1999-11-09 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 

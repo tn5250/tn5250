@@ -26,6 +26,10 @@
 #include "formattable.h"
 #include "display.h"
 #include "terminal.h"
+#include "buffer.h"
+#include "record.h"
+#include "stream.h"
+#include "session.h"
 
 static void tn5250_display_add_dbuffer(Tn5250Display * display,
 				       Tn5250DBuffer * dbuffer);
