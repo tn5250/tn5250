@@ -176,7 +176,7 @@ static Key curses_caps[] = {
    { K_UP, "ku" },
    { K_DOWN, "kd" },
    { K_ROLLDN, "kP" },
-   { K_ROLLUP, "kU" },
+   { K_ROLLUP, "kN" },
    { K_BACKSPACE, "kb" },
    { K_HOME, "kh" },
    { K_END, "@7" },
