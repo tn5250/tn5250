@@ -1,3 +1,7 @@
+2001-02-19 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Rewrote python support, removed SWIG dependency for python support, deleted
+  some configure.in baggage.
+
 2001-01-23 Scott Klement <klemscot@klements.com>
 - Wired Field+ to C-x in cursesterm.c
 - Made keys to exit FER state match those on an IBM 3487
