@@ -29,6 +29,11 @@
 #define A_VERTICAL ((1UL) << ((22) + 8))
 #endif				/* A_VERTICAL */
 
+/* Some older versions of ncurses don't define NCURSES_COLOR_T */
+#ifndef NCURSES_COLOR_T
+#define NCURSES_COLOR_T short
+#endif
+
 /* Mapping of 5250 colors to curses colors */
 struct _curses_color_map {
    char *name;
