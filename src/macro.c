@@ -35,7 +35,7 @@ struct _MacroKey {
 typedef struct _MacroKey MacroKey ;
 
 /* Table based on terminal.h */
-static MacroKey MKey[] = {
+static const MacroKey MKey[] = {
 	{K_ENTER ,	"ENTER" },
 	{K_NEWLINE ,	"NEWLINE" },
 	{K_TAB ,	"TAB" },

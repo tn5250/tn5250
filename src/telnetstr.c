@@ -119,14 +119,14 @@ static void tn3270_stream_send_packet(Tn5250Stream * This, int length,
 typedef unsigned char UCHAR;
 #endif
 
-static UCHAR hostInitStr[] = {IAC,DO,NEW_ENVIRON,IAC,DO,TERMINAL_TYPE};
-static UCHAR hostDoEOR[] = {IAC,DO,END_OF_RECORD};
-static UCHAR hostDoBinary[] = {IAC,DO,TRANSMIT_BINARY};
-static UCHAR hostDoTN3270E[] = {IAC,DO,TN3270E};
-static UCHAR hostSBDevice[] = {IAC,SB,TN3270E,TN3270E_SEND,TN3270E_DEVICE_TYPE,
+static const UCHAR hostInitStr[] = {IAC,DO,NEW_ENVIRON,IAC,DO,TERMINAL_TYPE};
+static const UCHAR hostDoEOR[] = {IAC,DO,END_OF_RECORD};
+static const UCHAR hostDoBinary[] = {IAC,DO,TRANSMIT_BINARY};
+static const UCHAR hostDoTN3270E[] = {IAC,DO,TN3270E};
+static const UCHAR hostSBDevice[] = {IAC,SB,TN3270E,TN3270E_SEND,TN3270E_DEVICE_TYPE,
 			       IAC,SE};
 typedef struct doTable_t {
-   UCHAR	*cmd;
+   const UCHAR	*cmd;
    unsigned	len;
 } DOTABLE;
 
@@ -650,9 +650,7 @@ static int telnet_stream_get_next(Tn5250Stream * This, unsigned char *buf, int s
 
 static int sendWill(SOCKET_TYPE sock, unsigned char what)
 {
-   static UCHAR buff[3]={IAC,WILL};
-
-   buff[2] = what;
+   UCHAR buff[3]={IAC,WILL, what};
    return send(sock, buff, 3, 0);
 }
 

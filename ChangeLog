@@ -1,3 +1,8 @@
+2003-07-23 Marc-Antoine Ruel <maruel@pyxis.com>
+- Changed the definition of some global variables to const type.
+- Added tn5250_display_kf_macro prototype.
+- Removed some function local static variable.
+
 2003-07-22 James Rich <james@eaerich.com>
 - Fixed scs2pdf.c to handle very large spooled files.  We were
     overflowing an array (textobjects).  This is now changed to be a
