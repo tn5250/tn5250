@@ -74,8 +74,10 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, PSTR cmdLine, int iCmdShow)
    int ccsid;
    FILE *tn5250rc;
    char *fn;
+   char *quesfmt, *ques;
    struct stat discard;
    int screenwidth, screenheight;
+   int replace;
 
  /* setup program will pass an arg of the pathname to the install dir */
 
@@ -93,11 +95,21 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, PSTR cmdLine, int iCmdShow)
    sprintf(fn, "%s\\tn5250rc", cmdLine);
 
 
- /* if the file exists, we won't mess with it */
+ /* if the file exists, should we mess with it? */
 
    if (stat(fn, &discard)==0) {
-       free(fn);
-       exit(0);
+       quesfmt = "You already have a TN5250 configuration file called\r\n"
+                 "%s\r\n\r\n"
+                 "Would you like to replace it?";
+       ques = malloc(strlen(quesfmt) + strlen(fn) + 1);
+       sprintf(ques, quesfmt, fn);
+       replace = MessageBox(NULL, ques, "Setup",
+                            MB_YESNO|MB_ICONQUESTION|MB_DEFBUTTON2);
+       free(ques);
+       if (replace != IDYES) {
+           free(fn);
+           exit(0);
+       }
    }
 
 
@@ -115,6 +127,8 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, PSTR cmdLine, int iCmdShow)
    tn5250rc = fopen(fn, "w");
    if (tn5250rc != NULL) {
        fprintf(tn5250rc, "map=%d\n", ccsid);
+       if (ccsid == 37) 
+           fprintf(tn5250rc, "font_80=Terminal\n");
        fclose(tn5250rc);
    }
 
