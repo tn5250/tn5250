@@ -1,6 +1,7 @@
 
 man_MANS =		scs2ascii.1\
- 			scs2pdf.1\
+			scs2pdf.1\
+			scs2ps.1\
 			tn5250.1\
 			lp5250d.1
 
