@@ -1098,6 +1098,10 @@ void tn5250_display_do_key(Tn5250Display *This, int key)
       tn5250_display_kf_field_minus (This);
       break;
 
+   case K_TESTREQ:
+      tn5250_display_do_aidkey (This, TN5250_SESSION_AID_TESTREQ);
+      break;
+
    case K_SYSREQ:
       tn5250_display_do_aidkey (This, TN5250_SESSION_AID_SYSREQ);
       break;
