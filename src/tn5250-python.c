@@ -56,29 +56,119 @@ static void
 tn5250_Config_dealloc (self)
     Tn5250_Config *self;
 {
-    tn5250_config_unref (self->conf);
+    if (self->conf != NULL) {
+	tn5250_config_unref (self->conf);
+	self->conf = NULL;
+    }
     /* PyObject_Del(self); */
 }
 
-static PyObject *
-tn5250_Config_load (self, args)
-    PyObject *self;
+static PyObject*
+tn5250_Config_load (obj, args)
+    PyObject *obj;
     PyObject *args;
 {
     char *filename;
+    Tn5250_Config* self = (Tn5250_Config*)obj;
     if (self == NULL || !Tn5250_ConfigCheck (self))
 	return NULL;
     if (!PyArg_ParseTuple(args, "s:Config.load", &filename))
 	return NULL;
-    if (tn5250_config_load (((Tn5250_Config*)self)->conf, filename) == -1)
-	; /* XXX: Throw an IOError. */
+    if (tn5250_config_load (self->conf, filename) == -1)
+	return NULL; /* XXX: Throw an IOError. */
+    Py_INCREF(Py_None);
     return Py_None;
 }
 
+static PyObject*
+tn5250_Config_load_default (obj, args)
+    PyObject *obj;
+    PyObject *args;
+{
+    Tn5250_Config* self = (Tn5250_Config*)obj;
+    if (self == NULL || !Tn5250_ConfigCheck (self))
+	return NULL;
+    if (!PyArg_ParseTuple(args, ":Config.load_default"))
+	return NULL;
+    if (tn5250_config_load_default (self->conf) == -1)
+	return NULL;
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+static PyObject*
+tn5250_Config_parse_argv (obj, args)
+    PyObject* obj;
+    PyObject* args;
+{
+    Tn5250_Config* self = (Tn5250_Config*)obj;
+    PyObject* list;
+    char **argv;
+    int i, argc;
+
+    if (self == NULL || !Tn5250_ConfigCheck (self))
+	return NULL;
+    if (!PyArg_ParseTuple(args, "L:Config.parse_argv", &list))
+	return NULL;
+    /* Convert to a C-style argv list. */
+    argc = PySequence_Length(list);
+    argv = (char**)malloc (sizeof (char*)*argc);
+    if (argv == NULL)
+	return NULL;
+    for (i = 0; i < argc; i++) {
+	PyObject* str;
+	char *data;
+	str = PySequence_GetItem (list, i);
+	Py_INCREF(str);
+	data = PyString_AsString (str);
+	argv[i] = (char*)malloc (strlen(data)+1);
+	strcpy (argv[i], data);
+	Py_DECREF(str);
+    }
+    if (tn5250_config_parse_argv (self->conf, argc, argv) == -1)
+	return NULL;
+    for (i = 0; i < argc; i++)
+	free (argv[i]);
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+static PyObject*
+tn5250_Config_get (obj, args)
+    PyObject* obj;
+    PyObject* args;
+{
+    Tn5250_Config* self = (Tn5250_Config*)obj;
+    char *name;
+    const char *ret;
+
+    if (self == NULL || !Tn5250_ConfigCheck (self))
+	return NULL;
+    if (!PyArg_ParseTuple(args, "s:Config.get", &name))
+	return NULL;
+    ret = tn5250_config_get (self->conf, name);
+    if (ret == NULL) {
+	Py_INCREF(Py_None);
+	return Py_None;
+    }
+    return PyString_FromString (ret);
+}
+
 static PyMethodDef Tn5250_ConfigMethods[] = {
-    { "load",	    tn5250_Config_load,		METH_VARARGS },
+    { "load",		tn5250_Config_load,		METH_VARARGS },
+    { "load_default",	tn5250_Config_load_default,	METH_VARARGS },
+    { "parse_argv",	tn5250_Config_parse_argv,	METH_VARARGS },
+    { "get",		tn5250_Config_get,		METH_VARARGS },
     {NULL, NULL}
 };
+
+static PyObject*
+tn5250_Config_getattr (self, name)
+    Tn5250_Config* self;
+    char *name;
+{
+    return Py_FindMethod (Tn5250_ConfigMethods, (PyObject*)self, name);
+}
 
 statichere PyTypeObject Tn5250_ConfigType = {
 	PyObject_HEAD_INIT(NULL)
@@ -89,7 +179,7 @@ statichere PyTypeObject Tn5250_ConfigType = {
 	/* methods */
 	(destructor)tn5250_Config_dealloc,	/* tp_dealloc */
 	0,					/* tp_print */
-	0,					/* tp_getattr */
+	(getattrfunc)tn5250_Config_getattr,	/* tp_getattr */
 	0,					/* tp_setattr */
 	0,					/* tp_compare */
 	0,					/* tp_repr */

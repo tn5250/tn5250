@@ -96,8 +96,7 @@ include_HEADERS =	tn5250.h
 
 noinst_HEADERS =	getopt.h\
 			transmaps.h\
-			tn5250-private.h\
-			swig-5250.h
+			tn5250-private.h
 
 EXTRA_DIST =		.lclintrc\
 			transmaps\
