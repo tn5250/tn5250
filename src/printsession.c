@@ -258,6 +258,7 @@ void tn5250_print_session_main_loop(Tn5250PrintSession * This)
    int pcount;
    int newjob;
    char responsecode[5];
+   StreamHeader header;
 
    while (1) {
       if (tn5250_print_session_waitevent(This)) {
@@ -298,27 +299,30 @@ void tn5250_print_session_main_loop(Tn5250PrintSession * This)
 	       if (This->rec != NULL)
 	          tn5250_record_destroy(This->rec);
 	       This->rec = tn5250_stream_get_record(This->stream);
+
+	       if(tn5250_record_opcode(This->rec)
+		  == TN5250_RECORD_OPCODE_CLEAR) 
+		 {
+		   syslog(LOG_INFO, "Clearing print buffers");
+		   continue;
+		 }
+
+	       header.h5250.flowtype = TN5250_RECORD_FLOW_CLIENTO;
+	       header.h5250.flags    = TN5250_RECORD_H_NONE;
+	       header.h5250.opcode   = TN5250_RECORD_OPCODE_PRINT_COMPLETE;
+
 	       tn5250_stream_send_packet(This->stream, 0,
-		     TN5250_RECORD_FLOW_CLIENTO,
-		     TN5250_RECORD_H_NONE,
-		     TN5250_RECORD_OPCODE_PRINT_COMPLETE,
-		     NULL);
-	       if ( (tn5250_record_length(This->rec) == 0x11) 
-		    || (tn5250_record_length(This->rec) == 0x10) ) {
-		 if(tn5250_record_opcode(This->rec) 
-		    == TN5250_RECORD_OPCODE_CLEAR) 
-		   {
-		     syslog(LOG_INFO, "Clearing Buffers");
-		   }
-		 else 
-		   {
-		     syslog(LOG_INFO, "Job Complete\n");
-		     pclose(This->printfile);
-		     newjob = 1;
-		   }
+					 header,
+					 NULL);
+
+	       if (tn5250_record_length(This->rec) == 0x11) {
+		 syslog(LOG_INFO, "Job Complete\n");
+		 pclose(This->printfile);
+		 newjob = 1;
 	       } else {
-	          while (!tn5250_record_is_chain_end(This->rec))
-		     fprintf(This->printfile, "%c", tn5250_record_get_byte(This->rec));
+		 while (!tn5250_record_is_chain_end(This->rec))
+		   fprintf(This->printfile, "%c", 
+			   tn5250_record_get_byte(This->rec));
 	       }
 	    }
 	 }

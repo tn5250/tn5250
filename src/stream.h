@@ -47,6 +47,26 @@ extern "C" {
 
 struct _Tn5250Config;
 
+struct Tn5250Header {
+  int flowtype;
+  unsigned char flags;
+  unsigned char opcode;
+};
+
+struct Tn3270Header {
+  int flowtype;
+  unsigned char flags;
+  unsigned char opcode;
+};
+
+union _StreamHeader {
+  struct Tn5250Header h5250;
+  struct Tn3270Header h3270;
+};  
+  
+typedef union _StreamHeader StreamHeader;
+
+
 /****s* lib5250/Tn5250Stream
  * NAME
  *    Tn5250Stream
@@ -69,8 +89,8 @@ struct _Tn5250Stream {
   int (* accept) (struct _Tn5250Stream *This, SOCKET_TYPE masterSock);
    void (* disconnect) (struct _Tn5250Stream *This);
    int (* handle_receive) (struct _Tn5250Stream *This);
-   void (* send_packet) (struct _Tn5250Stream *This, int length, int flowtype, unsigned char flags,
-	 unsigned char opcode, unsigned char *data);
+   void (* send_packet) (struct _Tn5250Stream *This, int length, 
+			 StreamHeader header, unsigned char *data);
    void (/*@null@*/ * destroy) (struct _Tn5250Stream /*@only@*/ *This);
 
    struct _Tn5250Config *config; 
@@ -95,6 +115,7 @@ struct _Tn5250Stream {
 typedef struct _Tn5250Stream Tn5250Stream;
 /******/
 
+
 extern Tn5250Stream /*@only@*/ /*@null@*/ *tn5250_stream_open (const char *to);
 extern int tn5250_stream_config (Tn5250Stream *This, struct _Tn5250Config *config);
 extern void tn5250_stream_destroy(Tn5250Stream /*@only@*/ * This);
@@ -108,8 +129,8 @@ extern Tn5250Stream *tn5250_stream_host(SOCKET_TYPE masterSock, long timeout,
    (* (This->disconnect)) ((This))
 #define tn5250_stream_handle_receive(This) \
    (* (This->handle_receive)) ((This))
-#define tn5250_stream_send_packet(This,len,flow,flags,opcode,data) \
-   (* (This->send_packet)) ((This),(len),(flow),(flags),(opcode),(data))
+#define tn5250_stream_send_packet(This,len,header,data) \
+   (* (This->send_packet)) ((This),(len),(header),(data))
 
 /* This should be a more flexible replacement for different NEW_ENVIRON
  * strings. */
