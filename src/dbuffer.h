@@ -23,7 +23,8 @@
 #define DBUFFER_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /****s* lib5250/Tn5250DBuffer
@@ -38,75 +39,100 @@ extern "C" {
  *    Modified Data Tag (MDT).
  * SOURCE
  */
-struct _Tn5250DBuffer {
+  struct _Tn5250DBuffer
+  {
+    /* How we keep track of multiple saved display buffers */
+    struct _Tn5250DBuffer *next;
+    struct _Tn5250DBuffer *prev;
 
-   /* How we keep track of multiple saved display buffers */
-   struct _Tn5250DBuffer *	next;
-   struct _Tn5250DBuffer *	prev;
+    int w, h;
+    int cx, cy;			/* Cursor Position */
+    int tcx, tcy;		/* for set_new_ic */
+    unsigned char /*@notnull@ */ *data;
 
-   int w, h;
-   int cx, cy;		/* Cursor Position */
-   int tcx, tcy;		/* for set_new_ic */
-   unsigned char /*@notnull@*/ *	  data;
+    /* Stuff from the old Tn5250Table structure. */
+    struct _Tn5250Field /*@null@ */ *field_list;
+    struct _Tn5250Window *window_list;
+    struct _Tn5250Scrollbar *scrollbar_list;
+    int field_count;
+    int entry_field_count;
+    int window_count;
+    int scrollbar_count;
+    int master_mdt;
 
-   /* Stuff from the old Tn5250Table structure. */
-   struct _Tn5250Field /*@null@*/ *	  field_list;
-   int				  field_count;
-   int				  master_mdt;
+    /* Header data (from SOH order) is saved here.  We even save data that
+     * we don't understand here so we can insert that into our generated
+     * WTD orders for save/restore screen. */
+    unsigned char *header_data;
+    int header_length;
 
-   /* Header data (from SOH order) is saved here.  We even save data that
-    * we don't understand here so we can insert that into our generated
-    * WTD orders for save/restore screen. */
-   unsigned char *			  header_data;
-   int				  header_length;
+    /* This slot is reserved for scripting language bindings. */
+    void *script_slot;
+  };
 
-   /* This slot is reserved for scripting language bindings. */
-   void *			  script_slot;				  
-};
-
-typedef struct _Tn5250DBuffer Tn5250DBuffer;
+  typedef struct _Tn5250DBuffer Tn5250DBuffer;
 /*******/
 
 /* Displays */
-   extern Tn5250DBuffer /*@only@*/ /*@null@*/ *tn5250_dbuffer_new(int width, int height);
-   extern Tn5250DBuffer /*@only@*/ /*@null@*/ *tn5250_dbuffer_copy(Tn5250DBuffer *);
-   extern void tn5250_dbuffer_destroy(Tn5250DBuffer /*@only@*/ * This);
+  extern Tn5250DBuffer /*@only@ *//*@null@ */  *
+    tn5250_dbuffer_new (int width, int height);
+  extern Tn5250DBuffer /*@only@ *//*@null@ */  *
+    tn5250_dbuffer_copy (Tn5250DBuffer *);
+  extern void tn5250_dbuffer_destroy (Tn5250DBuffer /*@only@ */  * This);
 
-   extern void tn5250_dbuffer_set_size(Tn5250DBuffer * This, int rows, int cols);
-   extern void tn5250_dbuffer_cursor_set(Tn5250DBuffer * This, int y, int x);
-   extern void tn5250_dbuffer_clear(Tn5250DBuffer * This) /*@modifies This@*/;
-   extern void tn5250_dbuffer_right(Tn5250DBuffer * This, int n);
-   extern void tn5250_dbuffer_left(Tn5250DBuffer * This);
-   extern void tn5250_dbuffer_up(Tn5250DBuffer * This);
-   extern void tn5250_dbuffer_down(Tn5250DBuffer * This);
-   extern void tn5250_dbuffer_goto_ic(Tn5250DBuffer * This);
+  extern void tn5250_dbuffer_set_size (Tn5250DBuffer * This, int rows,
+				       int cols);
+  extern void tn5250_dbuffer_cursor_set (Tn5250DBuffer * This, int y, int x);
+  extern void tn5250_dbuffer_clear (Tn5250DBuffer *
+				    This) /*@modifies This@ */ ;
+  extern void tn5250_dbuffer_right (Tn5250DBuffer * This, int n);
+  extern void tn5250_dbuffer_left (Tn5250DBuffer * This);
+  extern void tn5250_dbuffer_up (Tn5250DBuffer * This);
+  extern void tn5250_dbuffer_down (Tn5250DBuffer * This);
+  extern void tn5250_dbuffer_goto_ic (Tn5250DBuffer * This);
 
-   extern void tn5250_dbuffer_addch(Tn5250DBuffer * This, unsigned char c);
-   extern void tn5250_dbuffer_del(Tn5250DBuffer * This, int shiftcount);
-   extern void tn5250_dbuffer_ins(Tn5250DBuffer * This, unsigned char c, int shiftcount);
-   extern void tn5250_dbuffer_set_ic(Tn5250DBuffer * This, int y, int x);
-   extern void tn5250_dbuffer_roll(Tn5250DBuffer * This, int top, int bot, int lines);
+  extern void tn5250_dbuffer_addch (Tn5250DBuffer * This, unsigned char c);
+  extern void tn5250_dbuffer_del (Tn5250DBuffer * This, int shiftcount);
+  extern void tn5250_dbuffer_ins (Tn5250DBuffer * This, unsigned char c,
+				  int shiftcount);
+  extern void tn5250_dbuffer_set_ic (Tn5250DBuffer * This, int y, int x);
+  extern void tn5250_dbuffer_roll (Tn5250DBuffer * This, int top, int bot,
+				   int lines);
 
-   extern unsigned char tn5250_dbuffer_char_at(Tn5250DBuffer * This, int y, int x);
-   extern void tn5250_dbuffer_prevword(Tn5250DBuffer * This);
-   extern void tn5250_dbuffer_nextword(Tn5250DBuffer * This);
+  extern unsigned char tn5250_dbuffer_char_at (Tn5250DBuffer * This, int y,
+					       int x);
+  extern void tn5250_dbuffer_prevword (Tn5250DBuffer * This);
+  extern void tn5250_dbuffer_nextword (Tn5250DBuffer * This);
 
 #define tn5250_dbuffer_width(This) ((This)->w)
 #define tn5250_dbuffer_height(This) ((This)->h)
 #define tn5250_dbuffer_cursor_x(This) ((This)->cx)
 #define tn5250_dbuffer_cursor_y(This) ((This)->cy)
 
-   /* Format table manipulation. */
-   extern void tn5250_dbuffer_add_field(Tn5250DBuffer *This, struct _Tn5250Field *field);
-   extern void tn5250_dbuffer_clear_table(Tn5250DBuffer *This);
-   extern struct _Tn5250Field *tn5250_dbuffer_field_yx(Tn5250DBuffer *This, int y, int x);
-   extern void tn5250_dbuffer_set_header_data(Tn5250DBuffer *This, unsigned char *data, int len);
-   extern int tn5250_dbuffer_send_data_for_aid_key(Tn5250DBuffer *This, int k);
-   extern unsigned char *tn5250_dbuffer_field_data(Tn5250DBuffer *This, struct _Tn5250Field *field);
-   extern int tn5250_dbuffer_msg_line(Tn5250DBuffer *This);
-   extern struct _Tn5250Field *tn5250_dbuffer_first_non_bypass(Tn5250DBuffer *This);
+  /* Format table manipulation. */
+  extern void tn5250_dbuffer_add_field (Tn5250DBuffer * This,
+					struct _Tn5250Field *field);
+  extern void tn5250_dbuffer_clear_table (Tn5250DBuffer * This);
+  extern struct _Tn5250Field *tn5250_dbuffer_field_yx (Tn5250DBuffer * This,
+						       int y, int x);
+  extern void tn5250_dbuffer_set_header_data (Tn5250DBuffer * This,
+					      unsigned char *data, int len);
+  extern int tn5250_dbuffer_send_data_for_aid_key (Tn5250DBuffer * This,
+						   int k);
+  extern unsigned char *tn5250_dbuffer_field_data (Tn5250DBuffer * This,
+						   struct _Tn5250Field
+						   *field);
+  extern int tn5250_dbuffer_msg_line (Tn5250DBuffer * This);
+  extern struct _Tn5250Field *tn5250_dbuffer_first_non_bypass (Tn5250DBuffer *
+							       This);
+  extern void tn5250_dbuffer_add_window (Tn5250DBuffer * This,
+					 struct _Tn5250Window *window);
+  extern void tn5250_dbuffer_add_scrollbar (Tn5250DBuffer * This,
+					    struct _Tn5250Scrollbar
+					    *scrollbar);
 
 #define tn5250_dbuffer_field_count(This) ((This)->field_count)
+#define tn5250_dbuffer_window_count(This) ((This)->window_count)
 #define tn5250_dbuffer_mdt(This) ((This)->master_mdt)
 #define tn5250_dbuffer_set_mdt(This) ((This)->master_mdt = 1)
 
