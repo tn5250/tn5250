@@ -1,0 +1,360 @@
+'\" t
+.ig
+Man page for tn5250rc.
+
+Copyright (C) 2001 Carey Evans.
+
+You can redistribute and/or modify this document under the terms of 
+the GNU General Public License as published by the Free Software
+Foundation; either version 2 of the License, or (at your option)
+any later version.
+
+This document is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+..
+.TH TN5250RC 5 "12 November 2001"
+.SH NAME
+tn5250rc \- tn5250 and lp5250d configuration file
+.SH DESCRIPTION
+The
+.B tn5250rc
+file contains groups of options for
+.B tn5250
+and
+.BR lp5250d .
+When a hostname is passed to one of these programs, the named group is
+looked up in
+.BR tn5250rc ,
+and any options given in that group are processed.
+.PP
+If a named group is found, and defines a
+.B host
+option, that option specifies the server. Otherwise, the host
+parameter to the program is used.
+.PP
+A group of options looks like this:
+.PP
+    \fIgroupname\fR {
+        +\fIboolean\fR
+        \fIoption\fR=\fIvalue\fR
+        \fI...\fR
+    }
+.PP
+Each group of options starts with the group name, followed by a left
+brace (curly bracket) character. Following lines should have one
+option on each line. The last line of the group has a single right
+brace.
+.PP
+The global
+.B tn5250rc
+file may be overridden by the user's
+.B ~/.tn5250rc
+file.
+.SH OPTIONS
+The options given here may be used inside a section of the
+configuration file, or on the
+.B tn5250
+or
+.B lp5250d
+command line.  Most options take the form
+.IR OPTION = VALUE .
+Options listed with a leading
+.BR + / \-
+can be either turned on
+.RI ( +OPTION )
+or off
+.RI ( \-OPTION ).
+.SS Common Options
+These options apply to both printer and display emulation sessions.
+.TP
+.BI host= URL
+Set the host to connect to.  The
+.I URL
+is of the form
+.RI [\| PROTOCOL :\|]\| HOSTNAME \|[\|: PORT \|].
+The default protocol, if not supplied, is
+.BR tn5250 .
+See
+.B Protocols
+below for descriptions of the available protocols.
+.TP
+.BI map= CCSID
+Set the translation table between ASCII and EBCDIC.  This should match
+the CCSID of the interactive job.  The default is
+.BR 37 .
+See
+.B "Translation Maps"
+below for more information.
+.TP
+.BI env.DEVNAME= NAME
+Set the device name for the AS/400 to assign to the 5250 session.
+This should be up to ten characters long and consist of only letters
+and numbers.  It will be converted to uppercase and used as the name
+of the 5250-compatible device on the AS/400.  There may only be one
+session active with any given name at one time.
+.TP
+.BI trace= TRACEFILE
+Log all actions to
+.IR TRACEFILE .
+This file will get very large, and may contain sensitive information
+such as the password used to log in.
+.TP
+.BR + / \-ssl_verify_server
+If set, then verify that the server's certificate was issued by a CA
+in the file given by the
+.B ssl_ca_file
+option. If the certificate's issuer cannot be verified, do not connect
+to the server.
+.TP
+.BI ssl_ca_file= CAFILE
+Specify the file containing the certificate for the CA that issued the
+server's certificate. If the server certificate is self-signed,
+.I CAFILE
+should contain the certificate displayed by the
+.B "Digital Certificate Manager"
+option
+.IR "Copy and paste certificate" .
+.TP
+.BI ssl_cert_file= CERTFILE
+Specify the file containing the personal certificate, in PEM
+format. This must be a certificate associated with your user profile
+on the AS/400 by
+.BR DCM .
+.TP
+.BI ssl_pem_pass= PASSWORD
+If the personal certificate given by
+.B ssl_cert_file
+is password protected, the password may be given here to bypass the
+password prompt.
+.SS Display Options
+These options are specific to
+.B tn5250
+and
+.BR xt5250 .
+.TP
+.BR + / \-underscores
+Force or disable the use of underscore characters instead of the underline
+attribute, for terminals that do not support underlining but where
+.B tn5250
+does not work this out itself.
+.TP
+.BR + / \-ruler
+Turn the ruler feature on or off.  When enabled, the row and column of
+the cursor will be highlighted.
+.TP
+.BI env.TERM= MODEL
+Set the terminal model name for the emulation session to use.  The
+default depends on whether the terminal supports colour, and whether
+it is large enough to support the large terminal size.  See
+.B "Display Types"
+below for valid model names.
+.IP
+The default model emulated is an
+.BR IBM-3179-2 ,
+a 24x80 colour terminal.
+.TP
+.BI font_80= FONT
+If
+.B tn5250
+is running in an xterm, sets the font to change to when the terminal
+is in 80 column mode.  This should be a valid X font name, such as can
+be chosen with
+.BR xfontsel .
+.TP
+.BI font_132= FONT
+If the emulated terminal has a size of 27x132, set the font to use in
+132 column mode, as for the
+.B font_80
+option.
+.TP
+.BI env. VARIABLE = VALUE
+Set any other environment variables controlling the terminal session.
+A list of relevant variables is given in section 5 of
+.BR RFC2877 .
+.SS "Printer Options"
+.TP
+.BI outputcommand= COMMAND
+Set the command that will be run to receive printer output.  The
+default command is
+.RB ` "scs2ascii |lpr" '.
+.TP
+.BI env.IBMMFRTYPMDL= NAME
+Set the name of the host print transform description to use on the
+AS/400.  This is the same as the MFRTYPMDL parameter on the CRTDEVPRT
+command.  See the CL Reference or the online help for a list of valid
+values.
+.TP
+.BI env. VARIABLE = VALUE
+Set any other environment variables controlling the printer session.
+A list of relevant variables is given in section 7 of
+.BR RFC2877 .
+More generally, the variables are the parameters of the
+.B CRTDEVPRT
+command, with a prefix of
+.BR IBM .
+.SH "OPTION VALUES"
+.SS "Protocols"
+The supported protocols for the emulation session are listed below.
+.TP
+.B telnet
+Connect to the AS/400 using a normal unencrypted telnet connection.
+.B tn5250
+is an alias for
+.BR telnet .
+.TP
+.B ssl
+Connect securely using an encrypted SSL session. This option is only
+available if
+.B tn5250
+was compiled with SSL support.
+.TP
+.B debug
+Instead of connecting to a server, replay the trace generated by the
+.B trace
+option.  The path to the trace file should be given instead of the
+hostname.
+.SS "Translation Maps"
+CCSIDs on the AS/400 are listed in Appendix G of IBM manual
+SC41-5101-01, AS/400 National Language Support.  This manual is
+available on the web at
+.RI < http://publib.boulder.ibm.com/cgi\-bin/bookmgr/BOOKS/QB3AWC01/G.2 >.
+.PP
+Currently recognised values for the translation map are: 37, 256, 273,
+277, 278, 280, 284, 285, 290, 297, 420, 424, 500, 870, 871, 875, 880, 905,
+and 1026.  Most of these are translated to ISO-8859-1, also known as
+Latin 1.  Some of them contain characters only present in another
+encoding, which is used instead.  The valid CCSID values, and the Unix
+encoding used, are listed below.
+.PP
+.TS
+tab (:);
+l l l
+___
+rB l l.
+CCSID:Unix encoding:Description
+37:ISO-8859-1:US, Canada, Netherlands,
+::Portugal, Brazil, Australia,
+::New Zealand
+256:ISO-8859-1:Netherlands
+273:ISO-8859-1:Austria, Germany
+277:ISO-8859-1:Denmark, Norway
+278:ISO-8859-1:Finland, Sweden
+280:ISO-8859-1:Italy
+284:ISO-8859-1:Spanish, Latin America
+285:ISO-8859-1:United Kingdom
+290:JIS_X0201:Katakana Extended
+297:ISO-8859-1:France
+420:ISO-8859-6:Arabic
+424:ISO-8859-8:Hebrew
+500:ISO-8859-1:Belgium, Canada, Switzerland
+870:ISO-8859-2:Eastern Europe
+871:ISO-8859-1:Iceland
+875:ISO-8859-7:Greek
+880:ISO-8859-5:Cyrillic
+905:ISO-8859-3:Turkey \- Latin3
+1026:ISO-8859-9:Turkey \- Latin5
+.TE
+.PP
+If possible, configure your terminal to use the appropriate encoding
+if your AS/400 uses any of these CCSIDs.
+.SS "Display Types"
+The following values are valid for the
+.B env.TERM
+option.
+.PP
+.TS
+tab (@);
+l l l
+___
+lB l lB.
+Name@Description
+IBM-3179-2@24x80 color
+IBM-3180-2@27x132 monochrome
+IBM-3196-A1@24x80 monochrome
+IBM-3477-FC@27x132 color
+IBM-3477-FG@27x132 monochrome
+IBM-5251-11@24x80 monochrome
+IBM-5291-1@24x80 monochrome
+IBM-5292-2@24x80 color
+.TE
+.ig
+IBM-5555-C01@DBCS color
+IBM-5555-B01@DBCS monochrome
+..
+.SH EXAMPLES
+Define a connection named
+.B dsp01
+that connects to the machine
+.BR iseries.example.com ,
+using the German CCSID, a 132 column terminal, and printing underscore
+characters instead of using underlines.
+.PP
+    disp01 {
+        host = iseries.example.com
+        map = 273
+        env.TERM = IBM-3477-FC
+        +underscores
+    }
+.PP
+Define a printer connection, using host print transform to produce PCL
+output for an HP Laserjet compatible printer.
+.PP
+    print01 {
+        host = iseries.example.com
+        env.DEVNAME = HPLJ01
+        env.IBMMFRTYPMDL = *HP4
+    }
+.PP
+Define a secure SSL session, checking the server's certificate against
+the CA certificare stored in
+.BR cacert.pem ,
+and using the client certificate in
+.B jbloggs.pem
+to sign on automatically.
+.PP
+    secure01 {
+        host = iseries.example.com
+        +ssl_verify_server
+        ssl_ca_file = cacert.pem
+        ssl_cert_file = jbloggs.pem
+    }
+.SH "SEE ALSO"
+.BR tn5250 (1),
+.BR lp5250d (1),
+.BR http://tn5250.sourceforge.net/ ,
+.BR RFC1205 ,
+.BR RFC2877 ,
+.BR II10918 .
+.SH COPYRIGHT
+.B tn5250
+is copyright
+.if t \(co
+1997 \- 2001 Michael Madore.  This manpage is copyright
+.if t \(co
+2001 Carey Evans.
+.PP
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+.PP
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+.PP
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+.SH AUTHORS
+.B tn5250
+was written by Michael Madore, Jay Felice
+and others; see the AUTHORS file for details.
+This manual page was written by Carey Evans.
+.ig
+Local variables:
+mode: nroff
+End:
+..

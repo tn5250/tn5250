@@ -14,17 +14,17 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 ..
-.TH TN5250 1 "30 Jul 2001"
+.TH TN5250 1 "12 November 2001"
 .SH NAME
 tn5250 \- an implementation of the 5250 telnet protocol
 .SH SYNOPSIS
 .B tn5250
 .RI [\| OPTIONS \|]
-.IR host [\|: port \|]
+.I HOSTNAME
 .br
 .B xt5250
 .RI [\| OPTIONS \|]
-.RI [\| host [\|: port \|]\|]
+.I HOSTNAME
 .br
 .B tn5250 \-version
 .SH "DESCRIPTION"
@@ -33,22 +33,6 @@ emulates IBM's 5250 compatible terminals to connect over TCP/IP to an
 IBM AS/400.  The terminal emulation works on any local terminal
 supported by curses, and provides 132x27 and full colour support where
 possible.
-.PP
-.B tn5250
-will connect to the given
-.IR host 's
-telnet port, or a different
-.I port
-if specified.  The host name may be preceded by a
-.IR protocol :
-which specifies either to use telnet to the host, if omitted or set to
-.I telnet
-or
-.IR tn5250 ,
-or to replay a session dumped using the
-.B trace
-option if set to
-.IR debug .
 .PP
 An IBM 5250 terminal supports a number of special keys, and does a lot 
 of processing itself before sending data to the host system.  Because
@@ -62,75 +46,10 @@ option) is available for most versions of OS/400, but is only supplied
 with V4R3 and later versions.  For V3R2, V3R7, V4R1 and V4R2, please
 see informational APAR II10918.
 .SH OPTIONS
-.TP
-.BI trace= FILE
-Log all
 .B tn5250
-actions to
-.IR tracefile .
-This file will get very large, and may contain sensitive information
-such as the password used to log in.
-.TP
-.BI map= CCSID
-Set the translation table between ASCII and EBCDIC.  This should match
-the CCSID of the interactive job.  The default for
-.B tn5250
-is
-.BR 37 .
-See
-.B Translation Maps
-below for more information.
-.TP
-.BI env.DEVNAME= NAME
-Set the device name for the AS/400 to assign to the 5250 session.
-This should be up to ten characters long and consist of only letters
-and numbers.  It will be converted to uppercase and used as the name
-of the 5250-compatible device on the AS/400.  There may only be one
-session active with any given name at one time.
-.TP
-.BI env.TERM= TYPE
-Set the terminal model name for the emulation session to use.  The
-default depends on whether the terminal supports colour, and whether
-it is large enough to support the large terminal size.  See
-.B Display Types
-below for valid model names.
-.TP
-.BI env. VARIABLE = VALUE
-Set any other environment variables controlling the terminal session.
-A list of relevant variables is given in section 5 of
-.BR RFC2877 .
-.TP
-.B +/\-underscores
-Force or disable the use of underscore characters instead of the underline
-attribute, for terminals that do not support underlining but where
-.B tn5250
-does not work this out itself.
-.TP
-.B +/\-ruler
-Turn the ruler feature on or off.  When enabled, the row and column of
-the cursor will be highlighted.
-.TP
-.B \-version
-Display the version of
-.B tn5250
-and exit.
-.SH EXAMPLES
-These are some examples of the use of
-.BR tn5250 :
-.TP
-.I "tn5250 as400sys"
-Connect to the system
-.IR as400sys ,
-using the default translation map (37)
-and a generated session name
-.RI (QPADEV #### ).
-.TP
-.I "tn5250 map=870 env.DEVNAME=session1 env.TERM=IBM-3477-FC as400sys"
-Connect to
-.I as400sys
-using the translation map for CCSID 870 (Eastern Europe), the session
-name SESSION1 and with a terminal supporting colour and a 132x27
-display.
+options are described in the
+.BR tn5250rc (5)
+man page.
 .SH USAGE
 This manual assumes that the user is familiar with a real 5250
 terminal, or another 5250 emulator, and only describes features
@@ -211,10 +130,10 @@ _
 Refresh@C-l, M-l
 Quit@C-q
 .TE
-.IP [1]
+.IP 1. 3
 Which keys generate f11-f24, backtab, backspace and delete is very
 dependent on the configuration of the terminal.
-.IP [2]
+.IP 2.
 .B +
 and
 .B -
@@ -223,94 +142,44 @@ only work as Field+ and Field- in signed numeric fields.
 .SS Display
 The screen display tries to be the same as a colour 5250 terminal.
 There are some unavoidable differences though:
-.RS
-.PP
+.IP \(bu 3
 ASCII terminals (and curses) do not support the 5250 column
 separators.
-.PP
+.IP \(bu
 Some terminals (mostly ones based on the VGA text mode) do not support
 underlining.  If this is the case and
 .B tn5250
 does not detect it automatically, you should pass the
 .B \-u
 option.
-.PP
+.IP \(bu
 Some terminals (such as
 .BR xterm )
 do not support blinking text.
-.RE
-.SS "Display Types"
-The following values are valid for the terminal name option.
-The default terminal, if none is specified, is selected from the first
-listed below that supports both terminal size and colour support.
-.PP
-.TS
-tab (@);
-l l l
-___
-lB l lB.
-Name@Description@Default
-IBM-5555-C01@DBCS color (not supported)
-IBM-5555-B01@DBCS monochrome (not supported)
-IBM-3477-FC@27x132 color@Yes
-IBM-3477-FG@27x132 monochrome@Yes
-IBM-3180-2@27x132 monochrome
-IBM-3179-2@24x80 color@Yes
-IBM-3196-A1@24x80 monochrome
-IBM-5292-2@24x80 color
-IBM-5291-1@24x80 monochrome
-IBM-5251-11@24x80 monochrome@Yes
-.TE
-.SS "Translation Maps"
-CCSIDs on the AS/400 are listed in Appendix G of IBM manual
-SC41-5101-01, AS/400 National Language Support.  This manual is
-available on the web at
-.RI < http://publib.boulder.ibm.com/cgi-bin/bookmgr/BOOKS/QB3AWC01/G.2 >.
-.PP
-Currently recognised values for the translation map are: 37, 256, 273,
-277, 278, 280, 284, 285, 290, 297, 420, 424, 500, 870, 871, 875, 880, 905,
-and 1026.  Most of these are translated to ISO-8859-1, also known as
-Latin 1.  Some of them contain characters only present in another
-encoding, which is used instead.  The valid CCSID values, and the Unix
-encoding used, are listed below.
-.PP
-.TS
-tab (:);
-l l l
-___
-rB l l.
-CCSID:Unix encoding:Description
-37:ISO-8859-1:US, Canada, Netherlands,
-::Portugal, Brazil, Australia,
-::New Zealand
-256:ISO-8859-1:Netherlands
-273:ISO-8859-1:Austria, Germany
-277:ISO-8859-1:Denmark, Norway
-278:ISO-8859-1:Finland, Sweden
-280:ISO-8859-1:Italy
-284:ISO-8859-1:Spanish, Latin America
-285:ISO-8859-1:United Kingdom
-290:JIS_X0201:Katakana Extended
-297:ISO-8859-1:France
-420:ISO-8859-6:Arabic
-424:ISO-8859-8:Hebrew
-500:ISO-8859-1:Belgium, Canada, Switzerland
-870:ISO-8859-2:Eastern Europe
-871:ISO-8859-1:Iceland
-875:ISO-8859-7:Greek
-880:ISO-8859-5:Cyrillic
-905:ISO-8859-3:Turkey \- Latin3
-1026:ISO-8859-9:Turkey \- Latin5
-.TE
-.PP
-If possible, configure your terminal to use the appropriate encoding
-if your AS/400 uses any of these CCSIDs.
+.SH EXAMPLES
+These are some examples of the use of
+.BR tn5250 :
+.TP
+.I "tn5250 as400sys"
+Connect to the system
+.IR as400sys ,
+using the default translation map (37)
+and a generated session name
+.RI (QPADEV #### ).
+.TP
+.I "tn5250 map=870 env.DEVNAME=session1 env.TERM=IBM-3477-FC as400sys"
+Connect to
+.I as400sys
+using the translation map for CCSID 870 (Eastern Europe), the session
+name SESSION1 and with a terminal supporting colour and a 132x27
+display.
 .SH BUGS
 Please report any bugs you find to the bug tracker or to the linux5250
 mailing list.  See the
 .B tn5250
 web site for more details.
 .SH "SEE ALSO"
+.BR tn5250rc (5),
 .BR lp5250d (1),
 .BR http://tn5250.sourceforge.net/ ,
 .BR RFC1205 ,
