@@ -1,3 +1,7 @@
+2002-05-07 Scott Klement <klemscot@klements.com>
+- Applied patch from Frank Richter to fix undefined NCURSES_COLOR_T
+    on some versions of Debian
+
 2002-04-29 Scott Klement <klemscot@klements.com>
 - Fixed garbage pixels at edge of screen in Win32 terminal
 - Added some performance tweaks to telnetstr.c,sslstream.c
