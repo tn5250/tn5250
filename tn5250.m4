@@ -2,36 +2,24 @@ dnl   Automake macros for working with lib5250.
 dnl  
 dnl     Copyright (C) 2000 Jason M. Felice
 dnl   
-dnl   This program is free software; you can redistribute it and/or modify
-dnl   it under the terms of the GNU General Public License as published by
-dnl   the Free Software Foundation; either version 2, or (at your option)
-dnl   any later version.
+dnl   This file is part of Tn5250.
 dnl   
-dnl   This program is distributed in the hope that it will be useful,
+dnl   TN5250 is free software; you can redistribute it and/or modify
+dnl   it under the terms of the GNU Lesser General Public License as 
+dnl   published by dnl the Free Software Foundation; either version 2.1,
+dnl   or (at your option) any later version.
+dnl   
+dnl   TN5250 is distributed in the hope that it will be useful,
 dnl   but WITHOUT ANY WARRANTY; without even the implied warranty of
 dnl   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-dnl   GNU General Public License for more details.
+dnl   GNU Lesser General Public License for more details.
 dnl   
-dnl   You should have received a copy of the GNU General Public License
-dnl   along with this software; see the file COPYING.  If not, write to
+dnl   You should have received a copy of the GNU Lesser General Public 
+dnl   License along with TN5250; see the file COPYING.  If not, write to
 dnl   the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
 dnl   Boston, MA 02111-1307 USA
 dnl   
-dnl   As a special exception, the Free Software Foundation gives permission
-dnl   for additional uses of the text contained in its release of TN5250.
-dnl   
-dnl   The exception is that, if you link the TN5250 library with other files
-dnl   to produce an executable, this does not by itself cause the
-dnl   resulting executable to be covered by the GNU General Public License.
-dnl   Your use of that executable is in no way restricted on account of
-dnl   linking the TN5250 library code into it.
-dnl   
-dnl   This exception does not however invalidate any other reasons why
-dnl   the executable file might be covered by the GNU General Public License.
-dnl   
-dnl   If you write modifications of your own for TN5250, it is your choice
-dnl   whether to permit this exception to apply to your modifications.
-dnl   If you do not wish that, delete this exception notice.
+dnl
 
 # We might eventually want to provide a --with-tn5250-prefix option like
 # GTK+ does.  This will eliminate some confusion when there are multiple
