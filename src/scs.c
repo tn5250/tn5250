@@ -636,6 +636,11 @@ scs_scs (int *cpi)
        */
       switch (curchar)
 	{
+	case 5:
+	  {
+	    *cpi = 14;
+	    break;
+	  }
 	case 10:
 	  {
 	    *cpi = 10;
@@ -643,12 +648,32 @@ scs_scs (int *cpi)
 	  }
 	case 12:
 	  {
+	    *cpi = 9;
+	    break;
+	  }
+	case 13:
+	  {
 	    *cpi = 8;
+	    break;
+	  }
+	case 15:
+	  {
+	    *cpi = 7;
 	    break;
 	  }
 	case 16:
 	  {
 	    *cpi = 6;
+	    break;
+	  }
+	case 18:
+	  {
+	    *cpi = 5;
+	    break;
+	  }
+	case 20:
+	  {
+	    *cpi = 4;
 	    break;
 	  }
 	default:
