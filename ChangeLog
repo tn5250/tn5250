@@ -1,3 +1,7 @@
+1999-10-12 Carey Evans <c.evans@clear.net.nz>
+
+- field.c: Fix for processing right blank fill fields.
+
 1999-10-04 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 
 - tn5250_session_handle_cc1 was counting bits from the wrong end of the byte.

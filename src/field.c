@@ -308,7 +308,7 @@ void tn5250_field_process_adjust (Tn5250Field *This, int y, int x)
       break;
    case TN5250_FIELD_RIGHT_BLANK:
       TN5250_LOG(("Processing Adjust/Edit: Right Blank Fill\n"));
-      count_left = tn5250_field_count_right (This, y, x);
+      count_left = tn5250_field_count_left (This, y, x);
       tn5250_field_shift_right_fill(This,
 	    count_left, tn5250_ascii2ebcdic(' '));
       break;
