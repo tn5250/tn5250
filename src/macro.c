@@ -488,7 +488,7 @@ void tn5250_macro_exit(Tn5250Macro * This)
 
       for (i=0;i<24;i++)
 	 g_free (This->BuffM[i]) ;
-      g_free (This) ;
+      free (This) ;
    }
 }
 

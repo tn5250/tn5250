@@ -235,7 +235,7 @@ void tn5250_stream_destroy(Tn5250Stream * This)
       tn5250_config_unref (This->config);
    tn5250_buffer_free(&(This->sb_buf));
    tn5250_record_list_destroy(This->records);
-   g_free(This);
+   free(This);
 }
 
 /****f* lib5250/tn5250_stream_get_record
