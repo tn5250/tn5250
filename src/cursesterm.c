@@ -199,6 +199,8 @@ static Key curses_vt100[] = {
     * termcaps */
    /* But it is backspace in some termcaps... */
    /* { K_DELETE,		"\177" }, /* ASCII DEL */
+   { K_DELETE,		"\033\133\063\176" }, /* ASCII DEL Sequence: \E[3~ */
+   
 
    /* ESC strings */
    { K_F1,		"\033\061" }, /* ESC 1 */
