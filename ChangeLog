@@ -1,3 +1,6 @@
+2000-02-22 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+- Fixed `curses-compatibale' spelling error in configure script.
+
 2000-02-19 Mike Madore <mmadore@blarg.net>
 - Added more syslog calls in printer session code.
 - Documented some printer session functions.
