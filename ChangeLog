@@ -1,3 +1,9 @@
+2000-04-03 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+- `tic' not running shouldn't make the install fail; also 5250.terminfo
+  now properly referenced as being in $(srcdir) in makefile.
+- Don't build/distribute transmaps.h.html
+- Put tn5250.m4 in $(datdir)/aclocal, not /usr/share/aclocal.
+
 2000-03-26 Mike Madore <mmadore@turbolinux.com>
 - Added documentation to tn5250_stream_open function
 

@@ -35,7 +35,6 @@ HTMLDOCS =		buffer.c.html\
 			stream.h.html\
 			telnetstr.c.html\
 			terminal.h.html\
-			transmaps.h.html\
 			utility.c.html\
 			utility.h.html\
 			version.c.html\
