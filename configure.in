@@ -178,7 +178,7 @@ dnl *	 default config file.
 dnl *
 eval SYSCONFDIR="$sysconfdir"
 eval SYSCONFDIR="$SYSCONFDIR"
-SYSCONFDIR="`echo "$sysconfdir" |sed 's/^NONE/\/usr\/local/'`"
+SYSCONFDIR="`echo "$SYSCONFDIR" |sed 's/^NONE/\/usr\/local/'`"
 AC_DEFINE_UNQUOTED(SYSCONFDIR,"$SYSCONFDIR")
 
 AC_OUTPUT(Makefile src/Makefile doc/Makefile linux/Makefile freebsd/Makefile tn5250-config xt5250)
