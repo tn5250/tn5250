@@ -36,13 +36,15 @@ lib5250_la_SOURCES =	buffer.c\
 			version.c\
 			wtd.c
 
-lib5250_la_LIBADD =	@with_extra_libs@
+lib5250_la_LIBADD =	@with_extra_libs@ @GLIB_LIBS@
+
+INCLUDES = @GLIB_CFLAGS@ @PYTHON_CFLAGS@ \
+	-DSYSCONFDIR=\"$(sysconfdir)\"
 
 # Here's where we build the python module.
 if PYTHON
 pysodir =		@PYTHON_PREFIX@/lib/python@PYTHON_VERSION@/lib-dynload
 pyso_LTLIBRARIES =	libtn5250module.la
-INCLUDES +=		-I@PYTHON_PREFIX@/include/python@PYTHON_VERSION@
 
 # For some icky reason, automake or libtool pukes on the below line.  So we
 # just add all the SOURCES (sigh).

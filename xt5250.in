@@ -46,6 +46,10 @@ if [ "$1" = "-BOOT" ] ; then
   #
   if [ -z "$XT5250_HOST" ] ; then
     if [ "$DIALOG" != "no" ] ; then
+      #
+      # we have dialog, but does it support backtitle?
+      #
+      $DIALOG --help 2>&1 | grep -q backtitle && bt_arg="--backtitle xt5250"
       # 
       # We have a copy of `dialog', so use it.
       #
@@ -55,7 +59,7 @@ if [ "$1" = "-BOOT" ] ; then
       fi
       while [ -z "$XT5250_HOST" ] ; do
         exec 3>&1
-	XT5250_HOST="`$DIALOG --backtitle "xt5250" --title "Connect to Host" \
+	XT5250_HOST="`$DIALOG $bt_arg --title "Connect to Host" \
 	  --inputbox "Enter the name or IP address of the host to connect to:" \
 	  7 60 2>&1 1>&3`"
 	ret=$?

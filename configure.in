@@ -19,8 +19,6 @@ dnl *
 dnl * Not using gnome, so look for glib and GTK+ instead.
 dnl *
 AM_PATH_GLIB
-CFLAGS="$CFLAGS $GLIB_CFLAGS"
-LIBS="$LIBS $GLIB_LIBS"
 
 dnl **************************************************************************
 dnl * Python interface support.						     *
@@ -50,9 +48,12 @@ AC_ARG_ENABLE(python,
       AC_MSG_ERROR(** --enable-python specified and python binary not found **)
     fi
   fi
+  PYTHON_CFLAGS="-I$PYTHON_PREFIX/include/python$PYTHON_VERSION"
 ],[
   enable_python=no
+  PYTHON_CFLAGS=" "
 ])
+AC_SUBST(PYTHON_CFLAGS)
 AC_MSG_CHECKING(for whether to enable python support)
 AM_CONDITIONAL(PYTHON, test x$enable_python = xyes)
 AC_MSG_RESULT($enable_python)
@@ -172,13 +173,13 @@ AC_CHECK_SIZEOF(long, 4)
 dnl * True for anything other than Windoze.
 AC_DEFINE_UNQUOTED(SOCKET_TYPE,int)
 
-dnl *
-dnl *	 Export $sysconfdir as @SYSCONFDIR@ so tn5250 can find it's
-dnl *	 default config file.
-dnl *
-eval SYSCONFDIR="$sysconfdir"
-eval SYSCONFDIR="$SYSCONFDIR"
-SYSCONFDIR="`echo "$SYSCONFDIR" |sed 's/^NONE/\/usr\/local/'`"
-AC_DEFINE_UNQUOTED(SYSCONFDIR,"$SYSCONFDIR")
+dnl * only do OS-specific work if we have that OS:
+AC_CANONICAL_HOST
+case "$host_os" in
+freebsd*) SUBDIRS_ADD=freebsd ;;
+linux*) SUBDIRS_ADD=linux ;;
+*) SUBDIRS_ADD= ;;
+esac
+AC_SUBST(SUBDIRS_ADD)
 
 AC_OUTPUT(Makefile src/Makefile doc/Makefile linux/Makefile freebsd/Makefile tn5250-config xt5250)

@@ -1,3 +1,11 @@
+2001-06-02 Scott Klement <klemscot@klements.com>
+- Applied Carey Evans' patch to clean up configure.in and use 
+   sysconfdir properly.
+- Installed a termcap-neutral version of XTerm for BSD compatability
+- Changed configure.in to install linux dir for linux and freebsd 
+   diredtory for freebsd.
+- Misc other fixes for FreeBSD compatability
+
 2001-06-02  Carey Evans  <carey@paradise.net.nz>
 - Add variant of LaMont Jones' patch from Debian bug #97380, removing
   preprocessor conditionals from within printf() for usage message, to
