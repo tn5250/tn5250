@@ -46,6 +46,7 @@ struct _Tn5250Printer {
      HANDLE devh;
      int state;
      int ccp;
+     int curline;
      int count;
      FILE *fileh;
      unsigned char prevchar;
@@ -342,6 +343,7 @@ int GetDefaultPrinter(char *dftprt, int size) {
 #define SCS_STATE_2BD3_2       14
 #define SCS_STATE_AHPP         15
 #define SCS_STATE_SCS          16
+#define SCS_STATE_AVPP         17
 
 /*
  *  Start a new document to be printed
@@ -396,6 +398,7 @@ Tn5250Printer * tn5250_windows_printer_startdoc(void) {
     This->openpg=0;
     This->state = SCS_STATE_NORMAL;
     This->ccp = 1;
+    This->curline = 1;
     This->prevchar = 0;
     This->count = 0;
 
@@ -445,7 +448,8 @@ int tn5250_windows_printer_writechar(Tn5250Printer *This, unsigned char c) {
          }
     } 
     else if (This->fileh!=NULL) {
-         fputc(c, This->fileh);
+         if (c!='\r')
+             fputc(c, This->fileh);
          written = 1;
     }
 
@@ -515,10 +519,12 @@ int tn5250_windows_printer_scs2ascii(Tn5250Printer *This, unsigned char ch) {
                    case SCS_FF:
                        tn5250_windows_printer_writechar(This, '\f');
                        This->openpg=0;
+                       This->curline=1;
                        break;
                    case SCS_NL:
                        tn5250_windows_printer_writechar(This, '\r');
                        tn5250_windows_printer_writechar(This, '\n');
+                       This->curline ++;
                        This->ccp = 1;
                        break;
                    case 0x34:
@@ -561,8 +567,8 @@ int tn5250_windows_printer_scs2ascii(Tn5250Printer *This, unsigned char ch) {
                 switch (ch) {
                    case SCS_AVPP:
                       TN5250_LOG(("AVPP "));
+                      This->state = SCS_STATE_AVPP;
                       This->count = 1;
-                      This->state = SCS_STATE_GOBBLE;
                       break;
                    case SCS_AHPP:
                       This->state = SCS_STATE_AHPP;
@@ -584,6 +590,24 @@ int tn5250_windows_printer_scs2ascii(Tn5250Printer *This, unsigned char ch) {
                     for (loop = 0; loop < (ch - This->ccp); loop++)  {
                        tn5250_windows_printer_writechar(This, ' ');
                     }
+                }
+                This->state = SCS_STATE_NORMAL;
+                break;         
+            case SCS_STATE_AVPP:
+                TN5250_LOG(("AVPP %d\n", ch));
+                if (This->curline > ch) {
+                    tn5250_windows_printer_writechar(This, '\f');
+                    if (This->devh != NULL) {
+                        StartPagePrinter(This->devh);
+                        This->openpg = 1;
+                    }
+                    This->curline = 1;
+                }
+                while (This->curline < ch) {
+                    tn5250_windows_printer_writechar(This, '\r');
+                    tn5250_windows_printer_writechar(This, '\n');
+                    This->ccp = 1;
+                    This->curline ++;
                 }
                 This->state = SCS_STATE_NORMAL;
                 break;         

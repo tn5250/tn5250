@@ -1,3 +1,6 @@
+2002-07-29 Scott Klement <klemscot@klements.com>
+- Added some code to handle the AVPP SCS op-code in scs2ascii. 
+
 2002-06-13 Scott Klement <klemscot@klements.com>
 - Added tn5250_setenv() function to utility.c to act like setenv(3).
   setenv doesn't appear to exist on all systems.
