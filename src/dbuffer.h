@@ -60,6 +60,7 @@ extern "C"
     int entry_field_count;
     int window_count;
     int scrollbar_count;
+    int menubar_count;
     int master_mdt;
 
     /* Header data (from SOH order) is saved here.  We even save data that
@@ -135,9 +136,12 @@ extern "C"
   extern void tn5250_dbuffer_add_scrollbar (Tn5250DBuffer * This,
 					    struct _Tn5250Scrollbar
 					    *scrollbar);
+  extern void tn5250_dbuffer_add_menubar (Tn5250DBuffer * This,
+					  struct _Tn5250Menubar *menubar);
 
 #define tn5250_dbuffer_field_count(This) ((This)->field_count)
 #define tn5250_dbuffer_window_count(This) ((This)->window_count)
+#define tn5250_dbuffer_menubar_count(This) ((This)->menubar_count)
 #define tn5250_dbuffer_mdt(This) ((This)->master_mdt)
 #define tn5250_dbuffer_set_mdt(This) ((This)->master_mdt = 1)
 

@@ -67,6 +67,8 @@ static void tn5250_session_handle_cc2 (Tn5250Session * This,
 static void tn5250_session_query_reply (Tn5250Session * This);
 static void tn5250_session_define_selection_field (Tn5250Session * This,
 						   int length);
+static void tn5250_session_remove_gui_selection_field (Tn5250Session * This,
+						       int length);
 static void tn5250_session_define_selection_item (Tn5250Session * This,
 						  int length);
 static void tn5250_session_create_window_structured_field (Tn5250Session *
@@ -1177,6 +1179,16 @@ tn5250_session_clear_unit (Tn5250Session * This)
       This->display->display_buffers->window_count = 0;
     }
 
+  if (This->display->display_buffers->menubar_count > 0)
+    {
+      tn5250_terminal_destroy_menubar (This->display->terminal,
+				       This->display);
+      This->display->display_buffers->menubar_list =
+	tn5250_menubar_list_destroy (This->display->display_buffers->
+				     menubar_list);
+      This->display->display_buffers->menubar_count = 0;
+    }
+
   if (This->display->display_buffers->scrollbar_count > 0)
     {
       tn5250_terminal_destroy_scrollbar (This->display->terminal,
@@ -2044,12 +2056,8 @@ tn5250_session_write_display_structured_field (Tn5250Session * This)
 
   switch (type)
     {
-    case DEFINE_SELECTION_FIELD:
-      tn5250_session_define_selection_field (This, len);
-      break;
     case UNREST_WIN_CURS_MOVE:
     case PROGRAMMABLE_MOUSE_BUT:
-    case REM_GUI_SEL_FIELD:
     case REM_GUI_SCROLL_BAR_FIELD:
     case DRAW_ERASE_GRID_LINES:
     case CLEAR_GRID_LINE_BUFFER:
@@ -2060,6 +2068,12 @@ tn5250_session_write_display_structured_field (Tn5250Session * This)
 	  len--;
 	}
       TN5250_LOG (("\n"));
+      break;
+    case DEFINE_SELECTION_FIELD:
+      tn5250_session_define_selection_field (This, len);
+      break;
+    case REM_GUI_SEL_FIELD:
+      tn5250_session_remove_gui_selection_field (This, len);
       break;
     case WRITE_DATA:
       tn5250_session_write_data_structured_field (This, len);
@@ -2755,9 +2769,6 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
   Tn5250Menubar *menubar;
   unsigned char flagbyte;
   unsigned char fieldtype;
-  unsigned char textsize;
-  unsigned char rows;
-  unsigned char choices;
   unsigned char padding;
   unsigned char separator;
   unsigned char selectionchar;
@@ -2920,12 +2931,13 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
   reserved = tn5250_record_get_byte (This->record);
   reserved = tn5250_record_get_byte (This->record);
   reserved = tn5250_record_get_byte (This->record);
-  textsize = tn5250_record_get_byte (This->record);
-  TN5250_LOG (("textsize = 0x%02X (%d)\n", textsize, (int) textsize));
-  rows = tn5250_record_get_byte (This->record);
-  TN5250_LOG (("rows = 0x%02X (%d)\n", rows, (int) rows));
-  choices = tn5250_record_get_byte (This->record);
-  TN5250_LOG (("choices = 0x%02X (%d)\n", choices, (int) choices));
+  menubar->itemsize = tn5250_record_get_byte (This->record);
+  TN5250_LOG (("textsize = 0x%02X (%d)\n", menubar->itemsize,
+	       menubar->itemsize));
+  menubar->height = tn5250_record_get_byte (This->record);
+  TN5250_LOG (("rows = 0x%02X (%d)\n", menubar->height, menubar->height));
+  menubar->items = tn5250_record_get_byte (This->record);
+  TN5250_LOG (("choices = 0x%02X (%d)\n", menubar->items, menubar->items));
   padding = tn5250_record_get_byte (This->record);
   TN5250_LOG (("padding = 0x%02X (%d)\n", padding, (int) padding));
   separator = tn5250_record_get_byte (This->record);
@@ -2947,6 +2959,9 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
       TN5250_LOG (("Scroll bars not supported in selection fields\n"));
     }
 
+  /* Now we always seem to get some data that doesn't show up in the docs.
+   * I have no idea what it is, so retrieve it and report it.
+   */
   unknownlength = tn5250_record_get_byte (This->record);
   TN5250_LOG (("length of unknown data = 0x%02X\n", unknownlength));
   length--;
@@ -2959,6 +2974,13 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
       length--;
       unknownlength--;
     }
+
+
+  tn5250_dbuffer_add_menubar (tn5250_display_dbuffer (This->display),
+			      menubar);
+  tn5250_terminal_create_menubar (This->display->terminal,
+				  This->display, menubar);
+
 
   minorlength = 0;
   while (length > 0)
@@ -3173,6 +3195,42 @@ tn5250_session_define_selection_item (Tn5250Session * This, int length)
 		   tn5250_char_map_to_local (tn5250_display_char_map
 					     (This->display), reserved)));
       length--;
+    }
+
+  return;
+}
+
+
+/****i* lib5250/tn5250_session_remove_gui_selection_field
+ * NAME
+ *    tn5250_session_remove_gui_selection_field
+ * SYNOPSIS
+ *    tn5250_session_remove_gui_selection_field (This, len)
+ * INPUTS
+ *    Tn5250Session *      This       -
+ *    int                  length     -
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
+static void
+tn5250_session_remove_gui_selection_field (Tn5250Session * This, int length)
+{
+  unsigned char flagbyte1;
+  unsigned char reserved;
+
+  TN5250_LOG (("Entering tn5250_session_remove_gui_selection_field()\n"));
+
+  flagbyte1 = tn5250_record_get_byte (This->record);
+  reserved = tn5250_record_get_byte (This->record);
+
+  if (tn5250_dbuffer_menubar_count (This->display->display_buffers) > 0)
+    {
+      tn5250_terminal_destroy_menubar (This->display->terminal,
+				       This->display);
+      This->display->display_buffers->menubar_list =
+	tn5250_menubar_list_destroy (This->display->display_buffers->
+				     menubar_list);
+      This->display->display_buffers->menubar_count = 0;
     }
 
   return;

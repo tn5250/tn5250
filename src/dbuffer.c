@@ -1155,3 +1155,26 @@ tn5250_dbuffer_add_scrollbar (Tn5250DBuffer * This,
   TN5250_LOG (("adding scrollbar: scrollbar->id: %d\n", scrollbar->id));
   return;
 }
+
+
+/***** lib5250/tn5250_dbuffer_add_menubar
+ * NAME
+ *    tn5250_dbuffer_add_menubar
+ * SYNOPSIS
+ *    tn5250_dbuffer_add_menubar (This, menubar);
+ * INPUTS
+ *    Tn5250DBuffer *      This       -
+ *    Tn5250Menubar *      menubar    -
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
+void
+tn5250_dbuffer_add_menubar (Tn5250DBuffer * This, Tn5250Menubar * menubar)
+{
+  menubar->id = This->menubar_count++;
+  menubar->table = This;
+  This->menubar_list = tn5250_menubar_list_add (This->menubar_list, menubar);
+
+  TN5250_LOG (("adding selection field: menubar->id: %d\n", menubar->id));
+  return;
+}

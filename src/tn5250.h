@@ -36,6 +36,7 @@ extern "C" {
 #include <tn5250/codes5250.h>
 #include <tn5250/dbuffer.h>
 #include <tn5250/field.h>
+#include <tn5250/menu.h>
 #include <tn5250/record.h>
 #include <tn5250/stream.h>
 #include <tn5250/scrollbar.h>
