@@ -32,6 +32,8 @@ void tn5250_display_set_cursor_prev_progression_field (Tn5250Display *
 						       This,
 						       int currentfield);
 void tn5250_display_wordwrap_delete (Tn5250Display * This);
+void tn5250_display_wordwrap_insert (Tn5250Display * This, unsigned char c,
+				     int shiftcount);
 
 
 /****f* lib5250/tn5250_display_new
@@ -1056,13 +1058,27 @@ tn5250_display_interactive_addch (Tn5250Display * This, unsigned char ch)
 	  return;
 	}
 
-      tn5250_dbuffer_ins (This->display_buffers, field->id,
-			  tn5250_char_map_to_remote (This->map, ch),
-			  tn5250_field_count_right (field,
-						    tn5250_display_cursor_y
-						    (This),
-						    tn5250_display_cursor_x
-						    (This)));
+      if (tn5250_field_is_wordwrap (field))
+	{
+	  tn5250_display_wordwrap_insert (This,
+					  tn5250_char_map_to_remote (This->map,
+								     ch),
+					  tn5250_field_count_right (field,
+								    tn5250_display_cursor_y
+								    (This),
+								    tn5250_display_cursor_x
+								    (This)));
+	}
+      else
+	{
+	  tn5250_dbuffer_ins (This->display_buffers, field->id,
+			      tn5250_char_map_to_remote (This->map, ch),
+			      tn5250_field_count_right (field,
+							tn5250_display_cursor_y
+							(This),
+							tn5250_display_cursor_x
+							(This)));
+	}
     }
   else
     {
@@ -2816,8 +2832,152 @@ tn5250_display_wordwrap_delete (Tn5250Display * This)
     }
   data = tn5250_display_field_data (This, iter);
   memcpy (ptr, data, tn5250_field_length (iter) * sizeof (unsigned char));
-  tn5250_display_wordwrap (This, text, buflen, tn5250_field_length (field));
+  tn5250_display_wordwrap (This, text, buflen, tn5250_field_length (field),
+			   field);
 
+  free (text);
+  return;
+}
+
+
+/****f* lib5250/tn5250_display_wordwrap_insert
+ * NAME
+ *    tn5250_display_wordwrap_insert
+ * SYNOPSIS
+ *    tn5250_display_wordwrap_insert (This);
+ * INPUTS
+ *    Tn5250Display *      This       - 
+ * DESCRIPTION
+ *    Insert key function.
+ *****/
+void
+tn5250_display_wordwrap_insert (Tn5250Display * This, unsigned char c,
+				int shiftcount)
+{
+  Tn5250Field *field = tn5250_display_current_field (This);
+  Tn5250Field *iter;
+  int x, y, i;
+  unsigned char c2;
+  int buflen;
+  unsigned char *text, *ptr;
+  unsigned char *data;
+  unsigned char espace = TN5250_DISPLAY_WORD_WRAP_SPACE;
+
+  /* First allocate enough space to do the copying.  This will be sum of
+   * the lengths of the word wrap fields in this group starting from the
+   * current field.
+   */
+
+  /* Find out how much to allocate (do this separately so we can do the
+   * actual allocation in one step).
+   */
+  buflen = 0;
+
+  /* If we just inserted a space near the beginning of a word wrap field
+   * that is not the first of a group, we may need to word wrap the prior
+   * field as well since we may have just made a word short enough that it
+   * should be on the previous line.  All word wrap fields are continuous
+   * fields so a check to see if the previous field is a middle field
+   * should do the trick.
+   */
+  if (!tn5250_field_is_continued_first (field))
+    {
+      iter = field->prev;
+    }
+  else
+    {
+      iter = field;
+    }
+  for (; tn5250_field_is_wordwrap (iter); iter = iter->next)
+    {
+      buflen = buflen + tn5250_field_length (iter) + 1;
+    }
+  buflen = buflen + tn5250_field_length (iter);
+
+  /* Now allocate */
+  text = (unsigned char *) malloc (buflen * sizeof (unsigned char));
+  ptr = text;
+
+  if (!tn5250_field_is_continued_first (field))
+    {
+      iter = field->prev;
+      data = tn5250_display_field_data (This, iter);
+      memcpy (ptr, data, tn5250_field_length (iter) * sizeof (unsigned char));
+      ptr = ptr + (tn5250_field_length (iter) * sizeof (unsigned char));
+      memcpy (ptr, &espace, sizeof (unsigned char));
+      ptr = ptr + sizeof (unsigned char);
+    }
+
+  /* Use our own version of tn5250_dbuffer_ins().  We can't use the real
+   * version because the insert may cause the current field data to be
+   * wider than the field.  That's ok because we're going to word wrap it
+   * and that will fit the data to the field(s).
+   *
+   * We need to put the entire field into the buffer, so start at the
+   * beginning of the field, then copy the inserted data.
+   */
+  x = tn5250_field_start_col (field);
+  y = tn5250_field_start_row (field);
+
+  for (i = 0; i < tn5250_field_length (field) - shiftcount - 1; i++)
+    {
+      c2 = This->display_buffers->data[y * This->display_buffers->w + x];
+      memcpy (ptr, &c2, sizeof (unsigned char));
+      ptr = ptr + sizeof (unsigned char);
+      if (++x == This->display_buffers->w)
+	{
+	  x = 0;
+	  y++;
+	}
+    }
+
+  x = This->display_buffers->cx;
+  y = This->display_buffers->cy;
+
+  for (; i < tn5250_field_length (field); i++)
+    {
+      c2 = This->display_buffers->data[y * This->display_buffers->w + x];
+      memcpy (ptr, &c, sizeof (unsigned char));
+      ptr = ptr + sizeof (unsigned char);
+      c = c2;
+      if (++x == This->display_buffers->w)
+	{
+	  x = 0;
+	  y++;
+	}
+    }
+  memcpy (ptr, &c, sizeof (unsigned char));
+  ptr = ptr + sizeof (unsigned char);
+  memcpy (ptr, &espace, sizeof (unsigned char));
+  ptr = ptr + sizeof (unsigned char);
+
+  /* Now repeat the loop above starting with the next field and this time
+   * copy the data over.  Insert a space after the end of each field since
+   * spaces are implied at the ends of word wrap fields.
+   */
+  for (iter = field->next; tn5250_field_is_wordwrap (iter); iter = iter->next)
+    {
+      data = tn5250_display_field_data (This, iter);
+      memcpy (ptr, data, tn5250_field_length (iter) * sizeof (unsigned char));
+      ptr = ptr + (tn5250_field_length (iter) * sizeof (unsigned char));
+      memcpy (ptr, &espace, sizeof (unsigned char));
+      ptr = ptr + sizeof (unsigned char);
+    }
+  data = tn5250_display_field_data (This, iter);
+  memcpy (ptr, data, tn5250_field_length (iter) * sizeof (unsigned char));
+
+  if (!tn5250_field_is_continued_first (field))
+    {
+      tn5250_display_wordwrap (This, text, buflen,
+			       tn5250_field_length (field), field->prev);
+    }
+  else
+    {
+      tn5250_display_wordwrap (This, text, buflen,
+			       tn5250_field_length (field), field);
+    }
+
+  tn5250_dbuffer_right (This->display_buffers, 1);
   free (text);
   return;
 }
@@ -2825,21 +2985,20 @@ tn5250_display_wordwrap_delete (Tn5250Display * This)
 
 void
 tn5250_display_wordwrap (Tn5250Display * This, unsigned char *text,
-			 int totallen, int fieldlen)
+			 int totallen, int fieldlen, Tn5250Field *field)
 {
-  Tn5250Field *field = tn5250_display_current_field (This);
   int origcursorrow = tn5250_dbuffer_cursor_y (This->display_buffers);
   int origcursorcol = tn5250_dbuffer_cursor_x (This->display_buffers);
   int i, j;
   unsigned char c, c2;
   int curlinelength = 0;
   int wordlength = 0;
-  char word[132 + 1] = {'\0'};
-  char line[132 + 1] = {'\0'};
+  char word[3564 + 1] = {'\0'};
+  char line[3564 + 1] = {'\0'};
 
   /* After playing a bit with a real IBM terminal I discovered that it
-   * every space as a word.  Thus everytime we encounter a space complete
-   * the current word and add it and a space to the buffer.
+   * treats every space as a word.  Thus everytime we encounter a space
+   * complete the current word and add it and a space to the buffer.
    */
 
   /* We need to be able to distinguish between spaces the user typed in
