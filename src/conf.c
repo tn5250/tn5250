@@ -72,8 +72,8 @@ Tn5250Config *tn5250_config_new ()
 
    /* Set some default values. */
    /* FIXME: Move this to a better place, like in display.c */
-   tn5250_config_set (This, "env.TERM", "IBM-3179-2");
-   tn5250_config_set (This, "map", "37");
+   /*   tn5250_config_set (This, "env.TERM", "IBM-3179-2");  */
+   /*   tn5250_config_set (This, "map", "37"); */
 
    return This;
 }
@@ -413,3 +413,4 @@ static Tn5250ConfigStr *tn5250_config_get_str (Tn5250Config *This, const char *n
 }
 
 /* vi:set sts=3 sw=3: */
+

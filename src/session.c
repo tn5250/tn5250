@@ -1500,10 +1500,13 @@ static void tn5250_session_query_reply(Tn5250Session * This)
 
    /* Retreive the device type from the stream, parse out the device
     * type and model, convert it to EBCDIC, and put it in the packet. */
+
    scan = tn5250_config_get (This->config, "env.TERM");
    TN5250_ASSERT (scan != NULL);
    TN5250_ASSERT (strchr (scan, '-') != NULL);
+
    scan = strchr (scan, '-') + 1;
+
    dev_type = atoi (scan);
    if (strchr (scan, '-'))
       dev_model = atoi (strchr (scan, '-') + 1);
@@ -1512,6 +1515,7 @@ static void tn5250_session_query_reply(Tn5250Session * This)
 
    sprintf ((char*)temp + 30, "%04d", dev_type);
    sprintf ((char*)temp + 35, "%02d", dev_model);
+
    for (i = 30; i <= 36; i++)
       temp[i] = tn5250_char_map_to_remote (
 	    tn5250_display_char_map (This->display), temp[i]);
