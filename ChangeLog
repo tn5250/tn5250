@@ -1,3 +1,18 @@
+2000-01-06 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Extensively modified xt5250 script to prompt for hostname if not given,
+  automagically use xrdb to load the keyboard mappings.  Inspired by Henri
+  (Thanks!)
+- Renamed Xdefaults to xt5250.keys, installs in $pkgdatadir, also
+  installs Linux keyboard maps there.
+- Removed smacs, rmacs, and acsc from 5250.terminfo - we don't use them and
+  they don't seem to work under an xterm.  Makes 'dialog' draw all sorts of
+  funny looking characters.
+- If installing on Linux system, automatically 'tic 5250.terminfo' if
+  tic command is found (and user is root).
+- Fixed bit-ordering issue causing beeps/screen flashes all the time
+  (hopefully).
+
 2000-01-04 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 
 - Happy Y2K!

@@ -1,2 +1,0 @@
-#!/bin/sh
-xterm  -name "xt5250" -bg black -fg white -tn xterm-5250 -e tn5250 "$@"  &

@@ -680,8 +680,6 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
    }
 
    tn5250_session_handle_cc2 (This, CC2);
-
-
    tn5250_display_update(This->display);
 }
 

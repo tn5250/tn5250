@@ -1,0 +1,95 @@
+#!/bin/sh
+# vi:set sts=2 sw=2 autoindent:
+#
+# xt5250 - Run tn5250 in an xterm, and set up the X resources to make it
+#          as painless as possible.
+#
+
+# These variables are set at ./configure time.
+prefix="@prefix@"
+exec_prefix="@exec_prefix@"
+bindir="@bindir@"
+datadir="@datadir@"
+pkgdatadir="$datadir/tn5250"
+
+if [ "$1" = "-BOOT" ]
+then
+  shift
+  #
+  # Figure out if we've got a host name to connect to, if not, and if we
+  # can find a copy of `dialog', use it to prompt for the host name.
+  #
+
+  while [ $# -ne 0 ]
+  do
+    case "$1" in
+      -m|-s|-t|-y)
+	args="$args $1 $2"
+	shift
+	;;
+      -*)
+	args="$args $1"
+	;;
+      *)
+	host="$1"
+	;;
+    esac
+    shift
+  done
+
+  #
+  # If the host wasn't provided, prompt for it.
+  #
+  if [ "$host" = "" ]
+  then
+    if which dialog >/dev/null 2>&1
+    then
+      # 
+      # We have a copy of `dialog', so use it.
+      #
+      if [ -f "$pkgdatadir/dialogrc" ]
+      then
+	export DIALOGRC="$pkgdatadir/dialogrc"
+      fi
+      while [ "$host" = "" ]
+      do
+	dialog --backtitle "xt5250" --title "Connect to Host" \
+	  --inputbox "Enter the name or IP address of the host to connect to:" \
+	  7 60 2>/tmp/xt5250.$$ || {
+	  rm -f /tmp/xt5250.$$
+	  exit 1
+	}
+	host="`cat /tmp/xt5250.$$`"
+	rm -f /tmp/xt5250.$$
+      done
+    else
+      #
+      # We don't have a copy of `dialog', so we must use the
+      # shell's `read' function.  Oh, well.
+      #
+      while [ "$host" = "" ]
+      do
+	echo "Enter name of host to connect to (Ctrl+C to cancel):"
+	read host
+      done
+    fi
+  fi
+
+  exec "$bindir/tn5250" $args "$host"
+  # If the exec fails:
+  echo "$(basename $0): Can't exec $bindir/tn5250." >&2
+  exit 1
+fi
+
+#
+# Load the required X resources.
+#
+if [ -f "$pkgdatadir/xt5250.keys" ]
+then
+  xrdb "$pkgdatadir/xt5250.keys"
+fi
+
+#
+# Start the xterm, and run us again so we can setup inside the xterm.
+#
+exec xterm -name "xt5250" -bg black -fg white -tn xterm-5250 -e "$0" -BOOT "$@"
