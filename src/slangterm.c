@@ -15,33 +15,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include "tn5250-config.h"
+#define _TN5250_TERMINAL_PRIVATE_DEFINED
+#include "tn5250-private.h"
 
 #if USE_SLANG
-#define _TN5250_TERMINAL_PRIVATE_DEFINED
-
-#include <stdio.h>
-#include <sys/time.h>
-#include <signal.h>
-#include <string.h>
-#include <ctype.h>
-#include <malloc.h>
-#ifdef HAVE_SLANG_H
-#include <slang.h>
-#else
-#ifdef HAVE_SLANG_SLANG_H
-#include <slang/slang.h>
-#endif
-#endif
-#include "utility.h"
-#include "dbuffer.h"
-#include "buffer.h"
-#include "record.h"
-#include "stream.h"
-#include "field.h"
-#include "display.h"
-#include "terminal.h"
-#include "slangterm.h"
 
 /* Mapping of 5250 colors to curses colors */
 #define A_5250_WHITE    0x100
@@ -408,6 +385,7 @@ static void slang_terminal_update_indicators(Tn5250Terminal * This, Tn5250Displa
  *****/
 static int slang_terminal_waitevent(Tn5250Terminal * This)
 {
+#if !defined(WIN32) && !defined(WINE)
    fd_set fdr;
    int result = 0;
    int sm;
@@ -434,6 +412,9 @@ static int slang_terminal_waitevent(Tn5250Terminal * This)
       result |= TN5250_TERMINAL_EVENT_DATA;
 
    return result;
+#else
+   /* XXX: WIN32/WINE - need to do this using WaitForMultipleObjects */
+#endif
 }
 
 /****i* lib5250/slang_terminal_getkey
@@ -631,7 +612,6 @@ static void slang_terminal_beep (Tn5250Terminal * This)
 static int slang_terminal_get_esc_key(Tn5250Terminal * This, int is_esc)
 {
    int y, x, key, display_key;
-   fd_set fdr;
 
    y = SLsmg_get_row ();
    x = SLsmg_get_column ();
@@ -645,9 +625,16 @@ static int slang_terminal_get_esc_key(Tn5250Terminal * This, int is_esc)
    SLsmg_gotorc (y, x);
    SLsmg_refresh();
 
-   FD_ZERO(&fdr);
-   FD_SET(0, &fdr);
-   select(1, &fdr, NULL, NULL, NULL);
+#if !defined(WIN32) && !defined(WINE)
+   {
+      fd_set fdr;
+      FD_ZERO(&fdr);
+      FD_SET(0, &fdr);
+      select(1, &fdr, NULL, NULL, NULL);
+   }
+#else
+   /* XXX: What do we need that for? */
+#endif
    key = SLkp_getkey ();
 
    if (isalpha(key))

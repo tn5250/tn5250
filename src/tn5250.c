@@ -16,42 +16,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "tn5250-config.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_GETOPT_H
-#include <getopt.h>
-#endif
-#include <errno.h>
-
-#ifdef HAVE_LOCALE_H
-#include <locale.h>
-#endif
-
-#include "buffer.h"
-#include "record.h"
-#include "stream.h"
-#include "utility.h"
-#include "dbuffer.h"
-#include "field.h"
-#include "codes5250.h"
-#include "terminal.h"
-#include "session.h"
-#include "printsession.h"
-#include "display.h"
-#if USE_CURSES
-#include "cursesterm.h"
-#endif
-#if USE_SLANG
-#include "slangterm.h"
-#endif
-#include "debug.h"
-
-extern char *version_string;
+#include "tn5250-private.h"
 
 char *remotehost;
 char *mapname = "37";
@@ -72,6 +37,12 @@ Tn5250Session *sess = NULL;
 Tn5250Stream *stream = NULL;
 Tn5250Terminal *term = NULL;
 Tn5250Display *display = NULL;
+
+#ifdef USE_CURSES
+static char sopts[] = "m:s:t:T:P:uVwy:";
+#else
+static char sopts[] = "m:s:t:T:P:Vwy:";
+#endif
 
 /* FIXME: This should be moved into session.[ch] or something. */
 static struct valid_term {
@@ -215,7 +186,7 @@ bomb_out:
 static int parse_options(int argc, char *argv[])
 {
    int arg;
-   while ((arg = getopt(argc, argv, "m:s:t:T:P:uVwy:")) != EOF) {
+   while ((arg = getopt (argc, argv, sopts)) != EOF) {
       switch (arg) {
       case 'm':
 	 mapname = optarg;
@@ -310,30 +281,41 @@ static int parse_options(int argc, char *argv[])
 static void syntax()
 {
    struct valid_term *p;
-   printf("Usage:  tn5250 [options] host[:port]\n"
-	  "Options:\n"
-	  "\t-m map      specify translation map\n"
-	  "\t-s name     specify session name\n"
-	  "\t-P cmd      Indicate this is a printer session and specify the\n"
-	  "\t            print output command.\n"
-#ifndef NDEBUG
-	  "\t-t file     specify trace file\n"
-#endif
-#if USE_CURSES
-	  "\t-u          use underscores instead of underline attribute\n"
-#endif
-	  "\t-V          display version\n"
-#ifndef NDEBUG
-	  "\t-w          don't wait for input when debugging\n"
-#endif
-	  "\t-y type     specify IBM terminal type to emulate.\n");
+   Tn5250CharMap *m;
+   int i = 0;
 
+   printf ("tn5250 - TCP/IP 5250 emulator\n\
+Syntax:\n\
+  tn5250 [options] HOST[:PORT]\n\
+\n\
+Options:\n\
+   -m NAME                 Character map (default is 'en'):");
+   m = tn5250_transmaps;
+   while (m->name != NULL) {
+      if (i % 5 == 0)
+	 printf ("\n                             "); 
+      printf ("%s, ", m->name);
+      m++; i++;
+   }
+   printf ("\n\
+   -s NAME                 Use NAME as session name (default: none).\n\
+   -P COMMAND              Use COMMAND to send output to printer.\n\
+   -T NAME                 Use NAME as print transformation.\n"
+#ifndef NDEBUG
+"   -t FILE                 Log session to FILE.\n"
+#endif
+#ifdef USE_CURSES
+"   -u                      Use underscores instead of terminal underline\n\
+                           attribute.\n"
+#endif
+"   -V                      Show emulator version and exit.\n\
+   -y TYPE                 Emulate IBM terminal type (default: depends)");
    p = valid_terms;
    while (p->name) {
-      printf ("\t\t%s\t%s\n", p->name, p->descr);
+      printf ("\n                             %s (%s)", p->name, p->descr); 
       p++;
    }
-   printf ("\n");
+   printf ("\n\n");
    exit (255);
 }
 

@@ -15,23 +15,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include "tn5250-config.h"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <ctype.h>
-#include <string.h>
-
-#include "utility.h"
-#include "buffer.h"
-#include "dbuffer.h"
-#include "record.h"
-#include "stream.h"
-#include "field.h"
-#include "terminal.h"
-#include "session.h"
-#include "codes5250.h"
-#include "display.h"
+#include "tn5250-private.h"
 
 static void tn5250_session_handle_receive(Tn5250Session * This);
 static void tn5250_session_invite(Tn5250Session * This);
@@ -781,26 +766,13 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
    TN5250_LOG(("\n"));
 
    /* If we've gotten an MC or IC order, set the cursor to that position.
-    * Otherwise set the cursor to the first non-bypass field, if there is
-    * one.  If not, set the cursor position to 0,0. */
+    * Otherwise set the cursor to the home position (which could be the IC
+    * position from a prior IC if the unit hasn't been cleared since then,
+    * but is probably the first position of the first non-bypass field). */
    if (end_y != 0xff && end_x != 0xff) 
       tn5250_display_set_cursor(This->display, end_y, end_x);
-   else {
-      Tn5250Field *field = This->display->display_buffers->field_list;
-      done = 0;
-      if (field != NULL) {
-	 do {
-	    if (!tn5250_field_is_bypass (field)) {
-	       tn5250_display_set_cursor_field (This->display, field);
-	       done = 1;
-	       break;
-	    }
-	    field = field->next;
-	 } while (field != This->display->display_buffers->field_list);
-      }
-      if (!done)
-	 tn5250_display_set_cursor(This->display, 0, 0);
-   }
+   else
+      tn5250_display_set_cursor_home (This->display);
 
    tn5250_session_handle_cc2 (This, CC2);
 }

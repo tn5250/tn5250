@@ -9,6 +9,28 @@ AC_ARG_ENABLE(old-keys,
                           but might be more complete.],,[
   AC_DEFINE_UNQUOTED(USE_OWN_KEY_PARSING,1)
 ])
+dnl **
+dnl ** Check for Wine to see if we can compile the Windows port under a _real_ OS.
+dnl **
+AC_ARG_WITH(wine,[  --with-wine=path        Compile the Windows port using Wine.  'path' is
+                          the full path to the unpacked wine tarball
+                          ('path' is required).],[
+case "$with_wine" in
+ 	yes)
+		AC_MSG_ERROR(You must supply the path to the unpacked Wine tarball.)
+		;;
+	no)
+		with_wine=""
+		;;
+esac
+# If we are maintaining the Windows port under Wine, here are some things we force
+# so that it's like the windows environment.
+enable_shared=no
+with_slang=yes
+CFLAGS="$CFLAGS -I$with_wine/include"
+LIBS="$CFLAGS -L$with_wine -lwine"
+])
+
   
 dnl ** Checks for programs.
 AC_PROG_CC
@@ -89,6 +111,43 @@ else
 	fi
 fi
 
+if test x$with_wine != x
+then
+	WINEPREFIX="$with_wine"
+	AC_SUBST(WINEPREFIX)
+	if test ! -f $WINEPREFIX/include/windows.h
+	then
+		AC_MSG_ERROR([ACK! THPTHT!  windows.h not found in $WINPREFIX/include/ ...
+please read README.nt before attempting to compile with Wine.])
+	fi
+	AC_PATH_X
+	CFLAGS="$CFLAGS -I$x_includes"
+	LDFLAGS="$LDFLAGS -L$x_libraries"
+
+	# Check for libraries needed by Wine
+	AC_CHECK_LIB(X11, XOpenDisplay)
+	AC_CHECK_LIB(Xext, main)
+	AC_CHECK_LIB(Xpm, main)
+	AC_CHECK_LIB(Xxf86dga, main)
+	AC_CHECK_LIB(Xxf86vm, main)
+	AC_CHECK_LIB(Xxf86misc, main)
+	AC_CHECK_LIB(m, main)
+	AC_CHECK_LIB(dl, dlopen)
+	AC_CHECK_LIB(util, openpty)
+	AC_CHECK_LIB(ncurses, endwin)
+	if test x$ac_cv_lib_ncurses_endwin = xno
+	then
+		AC_CHECK_LIB(curses, endwin)
+	fi
+
+	AM_CONDITIONAL(WINE, true)
+	AC_DEFINE(SOCKET_TYPE,SOCKET)
+	AC_DEFINE(WINE,1)
+else
+	AM_CONDITIONAL(WINE, false)
+	AC_DEFINE(SOCKET_TYPE,int)
+fi
+
 dnl ** Check for libraries
 AC_CHECK_LIB(socket, main)
 AC_CHECK_LIB(nsl, main)
@@ -113,17 +172,17 @@ AC_PATH_XTRA
 
 dnl ** Checks for header files.
 AC_HEADER_STDC
-AC_CHECK_HEADERS(sys/ioctl.h sys/filio.h sys/time.h unistd.h getopt.h slang/slang.h slang.h locale.h)
-AC_CHECK_HEADERS(netinet/in.h)
+AC_CHECK_HEADERS(sys/ioctl.h sys/filio.h sys/time.h unistd.h slang/slang.h slang.h locale.h)
+AC_CHECK_HEADERS(netinet/in.h sys/wait.h fcntl.h syslog.h)
 
-dnl ** If you ain't using windows, this is true.
-AC_DEFINE(SOCKET_TYPE,int)
 AC_TYPE_SIGNAL
 
 dnl ** Checks for library functions.
 AC_FUNC_MEMCMP
 AC_TYPE_SIGNAL
-AC_CHECK_FUNCS(setlocale select socket strerror resizeterm)
+AC_CHECK_FUNCS(setlocale select socket strerror resizeterm getopt_long)
+AM_CONDITIONAL(LIB_GETOPT, test x$ac_cv_func_getopt_long = xno)
+
 AC_CHECK_SIZEOF(short, 2)
 AC_CHECK_SIZEOF(int, 4)
 AC_CHECK_SIZEOF(long, 4)

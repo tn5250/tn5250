@@ -15,20 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include "tn5250-config.h"
-
-#ifdef WIN32
-#include <windows.h>
-#endif
-
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include "utility.h"
-
+#include "tn5250-private.h"
 #include "transmaps.h"
 
 /****f* lib5250/tn5250_char_map_to_host
@@ -84,7 +71,7 @@ Tn5250Char tn5250_char_map_to_local(Tn5250CharMap *map, Tn5250Char ebcdic)
 Tn5250CharMap *tn5250_char_map_new (const char *map)
 {
    Tn5250CharMap *t;
-   for (t = transmaps; t->name; t++) {
+   for (t = tn5250_transmaps; t->name; t++) {
       if (strcmp(t->name, map) == 0)
 	 return t;
    }

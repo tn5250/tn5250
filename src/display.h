@@ -130,6 +130,7 @@ extern void	  tn5250_display_set_char_map	      (Tn5250Display *This,
 /* Key functions */
 extern void	  tn5250_display_do_keys	      (Tn5250Display *This);
 extern void	  tn5250_display_do_key               (Tn5250Display *This,int);
+extern void	  tn5250_display_kf_backspace	      (Tn5250Display *This);
 extern void	  tn5250_display_kf_up                (Tn5250Display *This);
 extern void	  tn5250_display_kf_down	      (Tn5250Display *This);
 extern void       tn5250_display_kf_left	      (Tn5250Display *This);

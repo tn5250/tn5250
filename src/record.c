@@ -15,16 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include "tn5250-config.h"
-
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-#include <malloc.h>
-
-#include "utility.h"
-#include "buffer.h"
-#include "record.h"
+#include "tn5250-private.h"
 
 /****f* lib5250/tn5250_record_new
  * NAME

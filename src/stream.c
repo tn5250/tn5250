@@ -15,16 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include "tn5250-config.h"
-#include <stddef.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <malloc.h>
-#include <string.h>
-#include "buffer.h"
-#include "record.h"
-#include "stream.h"
-#include "utility.h"
+#include "tn5250-private.h"
 
 /* External declarations of initializers for each type of stream. */
 extern int tn5250_telnet_stream_init (Tn5250Stream *This);

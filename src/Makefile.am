@@ -1,5 +1,16 @@
 ## Process this file with automake to produce Makefile.in
 
+#
+# LIBSOURCES are sources which implement functions which might be missing
+# on this system, but we don't want to include them in the built libs. We
+# also need to put them in EXTRA_DIST.
+#
+if LIB_GETOPT
+LIBSOURCES =		getopt.c
+else
+LIBSOURCES =		
+endif
+
 lib_LTLIBRARIES =	lib5250.la
 
 bin_PROGRAMS =		scs2ascii\
@@ -24,15 +35,18 @@ lib5250_la_SOURCES =	buffer.c\
 
 lib5250_la_LIBADD =	@with_extra_libs@
 
-tn5250_SOURCES = 	tn5250.c
+tn5250_SOURCES = 	tn5250.c\
+		        $(LIBSOURCES)
 
 tn5250_LDADD = 		@with_extra_libs@ lib5250.la
 
-scs2ascii_SOURCES =	scs2ascii.c
+scs2ascii_SOURCES =	scs2ascii.c\
+			$(LIBSOURCES)
 
 scs2ascii_LDADD =	@with_extra_libs@ lib5250.la
 
-lp5250d_SOURCES =	lp5250d.c
+lp5250d_SOURCES =	lp5250d.c\
+			$(LIBSOURCES)
 
 lp5250d_LDADD =		@with_extra_libs@ lib5250.la
 
@@ -51,14 +65,18 @@ pkginclude_HEADERS = 	buffer.h\
 			slangterm.h\
 			stream.h\
 			terminal.h\
-			transmaps.h\
 			utility.h\
 			wtd.h
 
 include_HEADERS =	tn5250.h
 
+noinst_HEADERS =	getopt.h\
+			transmaps.h\
+			tn5250-private.h
+
 EXTRA_DIST =		.lclintrc\
-			transmaps
+			transmaps\
+			getopt.c
 
 lclint:
 	@echo "lint checking with lclint... "
