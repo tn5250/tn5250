@@ -108,6 +108,7 @@ static Tn5250Terminal *globTerm = NULL;
 static Tn5250Display *globDisplay = NULL;
 static HDC bmphdc;
 static HBITMAP caretbm;
+static HACCEL globAccel;
 
 static void win32_terminal_init(Tn5250Terminal * This);
 static void win32_terminal_term(Tn5250Terminal * This);
@@ -137,6 +138,7 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 void win32_make_new_caret(Tn5250Terminal *This);
 void win32_move_caret(HDC hdc, Tn5250Terminal *This);
 void win32_hide_caret(HDC hdc, Tn5250Terminal *This);
+void win32_expand_text_selection(Tn5250Terminal *This);
 void win32_copy_text_selection(Tn5250Terminal *This, Tn5250Display *display);
 void win32_paste_text_selection(HWND hwnd, Tn5250Terminal *term, 
                                            Tn5250Display *display);
@@ -182,6 +184,7 @@ struct _Tn5250TerminalPrivate {
    int            selected: 1;
    int            maximized: 1;
    int            dont_auto_size: 1;
+   int		  unix_like_copy: 1;
 };
 
 
@@ -342,6 +345,7 @@ Tn5250Terminal *tn5250_win32_terminal_new(HINSTANCE hInst,
    r->data->config = NULL;
    r->data->maximized = 0;
    r->data->dont_auto_size = 0;
+   r->data->unix_like_copy = 0;
 
    r->conn_fd = -1;
    r->init = win32_terminal_init;
@@ -416,6 +420,11 @@ static void win32_terminal_init(Tn5250Terminal * This)
           tn5250_win32_set_beep(This, 
                tn5250_config_get (This->data->config, "beepfile"));
 
+      if ( tn5250_config_get (This->data->config, "unix_like_copy")) {
+            This->data->unix_like_copy = 
+               tn5250_config_get_bool(This->data->config, "unix_like_copy");
+      }
+
    }
 
    
@@ -449,6 +458,7 @@ static void win32_terminal_init(Tn5250Terminal * This)
 
    memset (&wndclass, 0, sizeof(WNDCLASSEX));
    wndclass.lpszClassName = TN5250_WNDCLASS;
+   wndclass.lpszMenuName = "tn5250-win32-menu";
    wndclass.cbSize = sizeof(WNDCLASSEX);
    wndclass.style = CS_HREDRAW | CS_VREDRAW;
    wndclass.lpfnWndProc = win32_terminal_wndproc;
@@ -492,6 +502,8 @@ static void win32_terminal_init(Tn5250Terminal * This)
 
    ShowWindow (This->data->hwndMain, This->data->show);
    UpdateWindow (This->data->hwndMain);
+
+   globAccel = LoadAccelerators (This->data->hInst, "tn5250-win32-menu");
 
    /* FIXME: This might be a nice place to load the keyboard map */
 
@@ -1135,7 +1147,8 @@ static int win32_terminal_waitevent(Tn5250Terminal * This)
 
    result = TN5250_TERMINAL_EVENT_QUIT;
    while ( GetMessage(&msg, NULL, 0, 0) ) {
-      DispatchMessage(&msg);
+      if (!TranslateAccelerator (This->data->hwndMain, globAccel, &msg))
+           DispatchMessage(&msg);
       if (msg.message == WM_TN5250_STREAM_DATA) {
          result = TN5250_TERMINAL_EVENT_DATA;
          break;
@@ -1335,6 +1348,7 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
      MSG m;
      int ctx, ext;
      static int handledkey=0;
+     HMENU	hMenu;
 
      switch (msg) {
         case WM_CREATE:
@@ -1344,6 +1358,56 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         case WM_DESTROY:
            PostQuitMessage(0);
            return 0;
+           break;
+
+        case WM_COMMAND:
+	   hMenu = GetMenu(hwnd);
+           switch (LOWORD(wParam)) {
+              case IDM_APP_EXIT:
+		  SendMessage(hwnd, WM_CLOSE, 0, 0);
+		  return 0;
+                  break;
+              case IDM_APP_ABOUT:
+                  msgboxf("%s version %s:\n"
+                          "Copyright (C) 1997-2002 by Michael Madore,"
+                          " Jason M. Felice, and Scott Klement\n"
+                          "\n"
+                          "Portions of this software were contributed "
+                          "by many people.  See the AUTHORS file for\n"
+                          "details.\n"
+                          "\n"
+                          "For license information, see the LICENSE file "
+                          "that was installed with this software.\n"
+#ifdef HAVE_LIBSSL
+                          "\n"
+                          "OpenSSL:\n"
+                          "This product includes software developed by the "
+                          "OpenSSL Toolkit (http://www.openssl.org/)\n"
+                          "This product includes cryptographic software "
+                          "written by Eric Young (eay@crypsoft.com).\n"
+                          "This product includes software written by Tim "
+                          "Hudson (tjh@cryptsoft.com).\n"
+                          "\n"
+                          "For OpenSSL license information, see the LICENSE "
+                          "file that was included in the OpenSSL package.\n"
+#endif
+                          ,PACKAGE, VERSION);
+                  return 0;
+                  break;
+              case IDM_EDIT_COPY:
+                  if (globTerm->data->selected) {
+                       win32_expand_text_selection(globTerm);
+                       win32_copy_text_selection(globTerm, globDisplay);
+		       globTerm->data->selected = 0;
+                       InvalidateRect(hwnd, NULL, FALSE);
+                       UpdateWindow(hwnd);
+                       return 0;
+                  }
+	          break;
+              case IDM_EDIT_PASTE:
+                  win32_paste_text_selection(hwnd, globTerm, globDisplay);
+                  break;
+           }
            break;
 
         case WM_SIZE:
@@ -1500,7 +1564,10 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
            break;
 
         case WM_RBUTTONDOWN:
-           win32_paste_text_selection(hwnd, globTerm, globDisplay);
+           if (globTerm->data->unix_like_copy) {
+                win32_paste_text_selection(hwnd, globTerm, globDisplay);
+                return 0;
+           }
            break;
 
         case WM_LBUTTONDOWN:
@@ -1538,7 +1605,10 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 globTerm->data->selend.y = (short)HIWORD(lParam);
                 ReleaseCapture();
                 SetCursor (LoadCursor (NULL, IDC_ARROW));
-                win32_copy_text_selection(globTerm, globDisplay);
+                win32_expand_text_selection(globTerm);
+                if (globTerm->data->unix_like_copy) {
+                     win32_copy_text_selection(globTerm, globDisplay);
+                }
                 InvalidateRect(hwnd, NULL, FALSE);
                 UpdateWindow(hwnd);
                 return 0;
@@ -1740,40 +1810,27 @@ void win32_hide_caret(HDC hdc, Tn5250Terminal *This) {
     return;
 }
 
-/****i* lib5250/win32_copy_text_selection
+
+/****i* lib5250/win32_expand_text_selection
  * NAME
- *    win32_copy_text_selection
+ *    win32_expand_text_selection
  * SYNOPSIS
- *    win32_copy_text_selection (globTerm, globDisplay);
+ *    win32_expand_text_selection (globTerm);
  * INPUTS
  *    Tn5250Terminal  *          This    -
- *    Tn5250Display   *          display -
  * DESCRIPTION
  *    This converts the mouse selection points (defined by
  *    This->data->selstr & This->data->selend) to a rectangle of
  *    selected text (by aligning the points with the text start/end pos)
- *    Then, it retrieves the text in those areas and copies it to
- *    the global Windows clipboard.
  *****/
-void win32_copy_text_selection(Tn5250Terminal *This, Tn5250Display *display)
-{
+void win32_expand_text_selection(Tn5250Terminal *This) {
 
-      int x, y;
-      int cx, cy;
-      int sx, sy, ex, ey;
-      unsigned char c;
-      unsigned char *buf;
-      int bp;
-      int bufsize;
       RECT cr;
-      HGLOBAL hBuf;
-      HBITMAP hBm;
-      HDC hdc;
+      int cx, cy;
+      int x;
 
       TN5250_ASSERT(This!=NULL);
-      TN5250_ASSERT(display!=NULL);
       TN5250_ASSERT(This->data->font_width>0);
-
 
    /* change the points so that selstr is the upper left corner 
       and selend is the lower right corner.                      */
@@ -1791,6 +1848,11 @@ void win32_copy_text_selection(Tn5250Terminal *This, Tn5250Display *display)
       if (This->data->selend.x > cr.right) This->data->selend.x = cr.right;
       if (This->data->selend.y < cr.top) This->data->selend.y = cr.top;
       if (This->data->selend.y > cr.bottom) This->data->selend.y = cr.bottom;
+
+      if (This->data->selstr.x < cr.left) This->data->selstr.x = cr.left;
+      if (This->data->selstr.x > cr.right) This->data->selstr.x = cr.right;
+      if (This->data->selstr.y < cr.top) This->data->selstr.y = cr.top;
+      if (This->data->selstr.y > cr.bottom) This->data->selstr.y = cr.bottom;
 
 
    /* move selection start position to nearest character */
@@ -1812,6 +1874,37 @@ void win32_copy_text_selection(Tn5250Terminal *This, Tn5250Display *display)
           cy++;
       This->data->selend.y = cy * This->data->font_height;
 
+}
+
+
+/****i* lib5250/win32_copy_text_selection
+ * NAME
+ *    win32_copy_text_selection
+ * SYNOPSIS
+ *    win32_copy_text_selection (globTerm, globDisplay);
+ * INPUTS
+ *    Tn5250Terminal  *          This    -
+ *    Tn5250Display   *          display -
+ * DESCRIPTION
+ *    This retrieves the text in the selected area and copies it to
+ *    the global Windows clipboard.
+ *****/
+void win32_copy_text_selection(Tn5250Terminal *This, Tn5250Display *display)
+{
+      int x, y;
+      int cx, cy;
+      int sx, sy, ex, ey;
+      unsigned char c;
+      unsigned char *buf;
+      int bp;
+      int bufsize;
+      HGLOBAL hBuf;
+      HBITMAP hBm;
+      HDC hdc;
+
+      TN5250_ASSERT(This!=NULL);
+      TN5250_ASSERT(display!=NULL);
+      TN5250_ASSERT(This->data->font_width>0);
 
    /* figure out the dimensions (in text chars) and make a global buffer */
 

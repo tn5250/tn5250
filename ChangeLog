@@ -1,3 +1,8 @@
+2002-03-17 Scott Klement <klemscot@klements.com>
+- Added a menu to the Windows terminal.  
+- Made copy/paste in the Windows terminal work more like other Windows apps.
+- Created option +unix_like_copy to re-enable old behavior
+
 2002-03-15 Scott Klement <klemscot@klements.com>
 - Added sun subdir, contributed by Peter Turczak
 
