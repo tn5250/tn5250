@@ -1,3 +1,9 @@
+2000-05-26 Mike Madore <mmadore@turbolinux.com>
+- Fixed bug where fields starting in column 0 were not being saved during save
+  screen.
+- Removed EPROTO when checking accept errors.  Posix says check for 
+  ECONNABORTED instead.
+	
 2000-05-25 Mike Madore <mmadore@turbolinux.com>
 - Started adding logic to conf.c to handle lists.  A list looks like:
   mylist = [

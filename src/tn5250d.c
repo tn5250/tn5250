@@ -155,7 +155,6 @@ main(void)
 	case EINTR:
 	case EWOULDBLOCK:
 	case ECONNABORTED:
-	case EPROTO:
 	  continue;
 	default:
 	  syslog(LOG_INFO, "accept: %s\n", strerror(errno));
