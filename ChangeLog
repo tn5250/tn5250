@@ -1,3 +1,6 @@
+2002-08-16 Scott Klement <klemscot@klements.com>
+- Added some extra configuration for Netshare400 in the Win32 version
+
 2002-08-05 Scott Klement <klemscot@klements.com>
 - Added macro.c/macro.h and macro support which were contributed by
   Jean-Marie Guenebaud <jmg@photim.com>

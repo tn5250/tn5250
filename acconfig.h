@@ -15,3 +15,6 @@
 
 /* define this when creating a binary distribution */
 #undef BINARY_RELEASE
+
+/* define this when building the special Netshare400 edition */
+#undef NETSHARE400
