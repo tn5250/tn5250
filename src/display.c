@@ -1048,8 +1048,9 @@ tn5250_display_interactive_addch (Tn5250Display * This, unsigned char ch)
 	  ofs--;
 	}
 
-      if (data[ofs] != '\0'
-	  && tn5250_char_map_to_local (This->map, data[ofs]) != ' ')
+      if ((data[ofs] != '\0')
+	  && (tn5250_char_map_to_local (This->map, data[ofs]) != ' ')
+	  && (data[ofs] != TN5250_DISPLAY_WORD_WRAP_SPACE))
 	{
 	  This->keystate = TN5250_KEYSTATE_PREHELP;
 	  This->keySRC = TN5250_KBDSRC_NOROOM;
@@ -1099,6 +1100,20 @@ tn5250_display_interactive_addch (Tn5250Display * This, unsigned char ch)
 	    }
 	  else
 	    {
+	      /* If we are at the end of the field tn5250_dbuffer_addch()
+	       * above may have moved the cursor beyond the end of the
+	       * field.  That screws us up in the case of continuous fields
+	       * because each individual field does not have a progression
+	       * ID set.  Since continuous fields may not be the next
+	       * field to the right we need to be sure that the cursor
+	       * is currently in the field, not to the right of it.  Doing
+	       * so will ensure that the following call puts us in the
+	       * next continuous field.  This has the side effect that
+	       * inserting into a single character field does not move
+	       * the cursor to the next field.  Maybe that's a bug, maybe
+	       * that's a feature  :)
+	       */
+	      tn5250_dbuffer_left (This->display_buffers);
 	      tn5250_display_set_cursor_next_field (This);
 	    }
 	}
