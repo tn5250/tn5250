@@ -2,7 +2,7 @@
 .ig
 Man page for lp5250d.
 
-Copyright (C) 1999, 2000 Carey Evans.
+Copyright (C) 1999 - 2001 Carey Evans.
 
 You can redistribute and/or modify this document under the terms of 
 the GNU General Public License as published by the Free Software
@@ -14,7 +14,7 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 ..
-.TH LP5250D 1 "6 Dec 2000"
+.TH LP5250D 1 "17 Jun 2001"
 .SH NAME
 lp5250d \- start an AS/400 printer session
 .SH SYNOPSIS
@@ -110,13 +110,15 @@ Print to an Okidata Microline 184 Turbo on the local print queue named
 .I "lp5250d env.DEVNAME=PDFPRT outputcommand='scs2pdf > scs$$.pdf' as400sys"
 Convert spooled files info PDF files.
 .SH BUGS
-Please report any bugs you find to the tn5250 mailing list at
-.RI < linux5250@midrange.com >.
+Please report any bugs you find to the bug tracker or to the linux5250
+mailing list.  See the
+.B tn5250
+web site for more details.
 .SH "SEE ALSO"
 .BR tn5250 (1),
 .BR scs2ascii (1),
 .BR scs2pdf (1),
-.BR http://www.linux-sna.org/software/5250/ ,
+.BR http://tn5250.sourceforge.net/ ,
 .BR RFC1205 ,
 .BR RFC2877 ,
 .BR II10918 .
@@ -124,9 +126,9 @@ Please report any bugs you find to the tn5250 mailing list at
 .B tn5250
 is copyright
 .if t \(co
-1997 - 2000 Michael Madore.  This manpage is copyright
+1997 \- 2001 Michael Madore.  This manpage is copyright
 .if t \(co
-1999, 2000 Carey Evans.
+1999 \- 2001 Carey Evans.
 .PP
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -143,10 +145,6 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 .SH AUTHORS
 .B tn5250
-was written by Michael Madore
-.RI < mmadore@blarg.net >,
-Jay Felice
-.RI < jasonf@nacs.net >
+was written by Michael Madore, Jay Felice
 and others; see the AUTHORS file for details.
-This manual page was written by Carey Evans
-.RI < c.evans@clear.net.nz >.
+This manual page was written by Carey Evans.
