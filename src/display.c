@@ -1019,6 +1019,10 @@ void tn5250_display_do_key(Tn5250Display *This, int key)
       tn5250_display_kf_fieldhome(This);
       break;
 
+   case K_NEWLINE:
+      tn5250_display_kf_newline(This);
+      break;
+
    default:
       /* Handle function/command keys. */
       if (key >= K_F1 && key <= K_F24) {
@@ -1701,6 +1705,28 @@ void tn5250_display_kf_fieldhome (Tn5250Display *This)
       tn5250_display_set_cursor (This, y, x);
    } else
       tn5250_display_inhibit(This);
+}
+
+
+/****f* lib5250/tn5250_display_kf_newline
+ * NAME
+ *    tn5250_display_kf_newline
+ * SYNOPSIS
+ *    tn5250_display_kf_newline (This);
+ * INPUTS
+ *    Tn5250Display *      This       - 
+ * DESCRIPTION
+ *    Move cursor to the first field on the next line.
+ *****/
+void tn5250_display_kf_newline (Tn5250Display *This)
+{
+   int y, x;
+
+   y = tn5250_display_cursor_y(This);
+   tn5250_display_set_cursor (This, y, 0);
+   tn5250_dbuffer_down (This->display_buffers);
+   tn5250_display_set_cursor_next_field (This);
+
 }
 
 /****f* lib5250/tn5250_display_save_msg_line

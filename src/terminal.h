@@ -57,7 +57,7 @@ extern "C" {
 #define K_FIRST_SPECIAL	0400	/* Coincides with first Curses key. */
 
 #define K_ENTER		0x0d
-#define K_NEWLINE	0x0a
+#define K_NEWLINE	0x200
 #define K_TAB		0x09
 #define K_BACKTAB	0541
 #define K_F1		(0410+1)
