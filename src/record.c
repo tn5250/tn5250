@@ -40,7 +40,6 @@ Tn5250Record *tn5250_record_new()
    This->data = NULL;
    This->prev = NULL;
    This->next = NULL;
-   This->header_length = 0;
    return This;
 }
 
@@ -71,7 +70,7 @@ void tn5250_record_append_byte(Tn5250Record * This, unsigned char b)
 unsigned char tn5250_record_get_byte(Tn5250Record * This)
 {
    This->cur_pos++;
-   TN5250_ASSERT(This->cur_pos <= (This->length - This->header_length));
+   TN5250_ASSERT(This->cur_pos <= This->length);
    return This->data[This->cur_pos - 1];
 }
 
@@ -90,7 +89,7 @@ void tn5250_record_set_flow_type(Tn5250Record * This, unsigned char byte1, unsig
 
 int tn5250_record_is_chain_end(Tn5250Record * This)
 {
-   return (This->length - This->header_length) == This->cur_pos;
+   return This->length == This->cur_pos;
 }
 
 #ifndef NDEBUG
@@ -102,11 +101,11 @@ void tn5250_record_dump(Tn5250Record * This)
    unsigned char a;
    int n;
 
-   for (pos = 0; pos < This->length - This->header_length;) {
+   for (pos = 0; pos < This->length;) {
       memset(t, 0, sizeof(t));
       TN5250_LOG(("@record +%4.4X ", pos));
       for (n = 0; n < 16; n++) {
-	 if (pos < This->length - This->header_length) {
+	 if (pos < This->length) {
 	    c = This->data[pos];
 	    a = tn5250_ebcdic2ascii(c);
 	    TN5250_LOG(("%02x", c));

@@ -1,3 +1,50 @@
+1999-11-15 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Created tn5250_field_valid_char() predicate which determines whether a the
+  supplied character is allowed in the field.  Removed code from session.c
+  key handler and call tn5250_field_valid_char() instead.
+- Remove more code which places data in the format table.
+- The death of `curfield' in the format table.
+- The death of storing field data in the format table (only stored on the
+  display buffer).
+
+1999-11-09 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- tn5250_field_start_row() and tn5250_field_start_col() return zero-based
+  answers and are *finally* consistent with the rest of the code.
+- Implemented destroy method for debug stream, destroy method for debug
+  terminal now frees data structures appropriately.
+- Removed Tn5250Table::next_save_id - not used.
+- Remove tn5250_field_count_eof, only called from one place anyway, where
+  using tn5250_field_end_(row|col) was a better choice.
+- If 'End' key is pressed, but not in a field, inhibit the display.
+- Removed 'too many options on SysRequest' bug ... that's apparently what
+  other emulators do as well.
+- The stream implementation no longer moves the record back 10 bytes (for no
+  good reason).  References to the header data are no longer moved back by
+  header_length; indeed, header_length no longer exists.
+- Changed Tn5250DisplayBuffer so that the display buffer is an array of
+  unsigned chars as opposed to an array of arrays of unsigned chars.  This
+  is a step along the way of removing the `data' field on the Tn5250Field
+  structure.
+
+1999-11-08 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Created tn5250_display_cursor_x()/tn5250_display_cursor_y().  These return
+  the cursor position on the current display buffer.
+- session.c: replaced all occurences of tn5250_dbuffer_cursor_?(This->dsp)
+  with tn5250_display_cursor_?(This->display).
+
+1999-11-07 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Create Tn5250Display structure, which manages format tables and display
+  buffers (hopefully somewhat transparently).  Removed:
+    Tn5250TableSaveBuffer
+    tn5250_table_save()
+    tn5250_table_restore()
+    Tn5250Table::saved_bufs
+    Tn5250Display::saved_bufs
+
 1999-11-01 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 
 - Removed Tn5250Session::inhibited - no longer used.

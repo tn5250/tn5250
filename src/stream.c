@@ -152,12 +152,7 @@ Tn5250Record *tn5250_stream_get_record(Tn5250Stream * This)
    offset = 6 + record->data[6];
 
    TN5250_LOG(("tn5250_stream_get_record: offset = %d\n", offset));
-   tn5250_record_set_header_length(record, offset);
-
-   /* FIXME: This is rather silly.  We should just keep those
-    * 10 bytes in the record, adjust how the record is accessed.
-    */
-   memmove(record->data, record->data + offset, record->length - offset);
+   tn5250_record_set_cur_pos(record, offset);
    return record;
 }
 

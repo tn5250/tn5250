@@ -32,7 +32,6 @@ extern "C" {
       unsigned char flags;
       unsigned char opcode;
       int cur_pos;
-      int header_length;
    };
 
    typedef struct _Tn5250Record Tn5250Record;
@@ -77,10 +76,13 @@ extern "C" {
 #define tn5250_record_length(This) ((This)->length)
 
 /* Should these be hidden? */
-#define tn5250_record_set_opcode(This,newop) (void)((This)->opcode = (newop))
-#define tn5250_record_set_header_length(This,newlen) (void)((This)->header_length = (newlen))
+#define tn5250_record_set_opcode(This,newop) \
+   (void)((This)->opcode = (newop))
+#define tn5250_record_set_cur_pos(This,newpos) \
+   (void)((This)->cur_pos = (newpos))
 #define tn5250_record_opcode(This) ((This)->opcode)
-#define tn5250_record_flow_type(This) (((This)->flowtype[0] << 8) | This->flowtype[1])
+#define tn5250_record_flow_type(This) \
+   (((This)->flowtype[0] << 8) | This->flowtype[1])
    extern int tn5250_record_is_chain_end(Tn5250Record * This);
 #define tn5250_record_sys_request(This) (((This)->flags & TN5250_RECORD_H_SRQ) != 0)
 #define tn5250_record_attention(This) (((This)->flags & TN5250_RECORD_H_ATN) != 0)

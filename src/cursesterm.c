@@ -239,7 +239,7 @@ static void curses_terminal_update(Tn5250Terminal * This, Tn5250DBuffer * dsp)
    if (This->data->last_width != tn5250_dbuffer_width(dsp)
        || This->data->last_height != tn5250_dbuffer_height(dsp)) {
       clear();
-        if(1) {
+      if(1) {
 /*      if (This->data->is_xterm) {   */
 	 refresh ();
 	 printf ("\x1b[8;%d;%dt", tn5250_dbuffer_height (dsp)+1,

@@ -32,6 +32,7 @@
 #include "terminal.h"
 #include "session.h"
 #include "codes5250.h"
+#include "display.h"
 
 static void tn5250_session_handle_keys(Tn5250Session * This);
 static void tn5250_session_handle_key(Tn5250Session * This, int cur_key);
@@ -65,9 +66,6 @@ static void tn5250_session_write_structured_field(Tn5250Session * This);
 static void tn5250_session_read_screen_immediate(Tn5250Session * This);
 static void tn5250_session_read_input_fields(Tn5250Session * This);
 static void tn5250_session_read_mdt_fields(Tn5250Session * This);
-static void tn5250_session_dup(Tn5250Session * This);
-static int tn5250_session_field_minus (Tn5250Session *This);
-static int tn5250_session_field_exit (Tn5250Session *This);
 static int tn5250_session_valid_wtd_data_char (unsigned char c);
 
 Tn5250Session *tn5250_session_new()
@@ -79,36 +77,23 @@ Tn5250Session *tn5250_session_new()
    if (This == NULL)
       return NULL;
 
-   This->dsp = tn5250_dbuffer_new(80, 24);
-   if (This->dsp == NULL) {
-      free (This);
-      return NULL;
-   }
+   This->display = tn5250_display_new (80,24);
+   This->dsp = This->display->display_buffers;
+   This->table = This->display->format_tables;
 
    This->record = tn5250_record_new();
    if (This->record == NULL) {
-      tn5250_dbuffer_destroy(This->dsp);
+      tn5250_display_destroy(This->display);
       free (This);
       return NULL;
    }
 
-   This->term = NULL;
+
    This->stream = NULL;
-   This->table = tn5250_table_new(This->dsp);
-   if (This->table == NULL) {
-      tn5250_dbuffer_destroy (This->dsp);
-      tn5250_record_destroy (This->record);
-      free (This);
-      return NULL;
-   }
-
    This->invited = 1;
    This->pending_insert = 0;
    This->read_opcode = 0;
    This->key_queue_head = This->key_queue_tail = 0;
-
-   for (n = 0; n < sizeof(This->saved_bufs) / sizeof(Tn5250DBuffer *); n++)
-      This->saved_bufs[n] = NULL;
 
    return This;
 }
@@ -117,36 +102,25 @@ void tn5250_session_destroy(Tn5250Session * This)
 {
    int n;
 
-   for (n = 0; n < sizeof(This->saved_bufs) / sizeof(Tn5250DBuffer *); n++) {
-      if (This->saved_bufs[n] != NULL)
-	 tn5250_dbuffer_destroy(This->saved_bufs[n]);
-   }
-
    if (This->stream != NULL)
       tn5250_stream_destroy(This->stream);
    if (This->record != NULL)
       tn5250_record_destroy(This->record);
-   if (This->table != NULL)
-      tn5250_table_destroy(This->table);
-   if (This->term != NULL)
-      tn5250_terminal_destroy(This->term);
-   if (This->dsp != NULL)
-      tn5250_dbuffer_destroy(This->dsp);
+   if (This->display != NULL)
+      tn5250_display_destroy (This->display);
 
    free (This);
 }
 
 void tn5250_session_set_terminal(Tn5250Session * This, Tn5250Terminal * newterminal)
 {
-   This->term = newterminal;
+   tn5250_display_set_terminal(This->display, newterminal);
 }
 
 void tn5250_session_set_stream(Tn5250Session * This, Tn5250Stream * newstream)
 {
-   if ((This->stream = newstream) != NULL && This->term != NULL) {
-      tn5250_terminal_update(This->term, This->dsp);
-      tn5250_terminal_update_indicators(This->term, This->dsp);
-   }
+   if ((This->stream = newstream) != NULL)
+      tn5250_display_update(This->display);
 }
 
 void tn5250_session_main_loop(Tn5250Session * This)
@@ -166,7 +140,7 @@ void tn5250_session_main_loop(Tn5250Session * This)
 	 continue;
       }
 
-      r = tn5250_terminal_waitevent(This->term);
+      r = tn5250_display_waitevent(This->display);
       if ((r & TN5250_TERMINAL_EVENT_KEY) != 0)
 	 tn5250_session_handle_keys(This);
       if ((r & TN5250_TERMINAL_EVENT_QUIT) != 0)
@@ -188,7 +162,7 @@ static void tn5250_session_handle_keys(Tn5250Session *This)
    int cur_key;
 
    do {
-      cur_key = tn5250_terminal_getkey (This->term);
+      cur_key = tn5250_display_getkey (This->display);
 
       if (cur_key != -1) {
 	 if ((tn5250_dbuffer_indicators(This->dsp) & TN5250_DISPLAY_IND_X_SYSTEM) != 0) {
@@ -203,7 +177,7 @@ static void tn5250_session_handle_keys(Tn5250Session *This)
 	    if ((This->key_queue_tail + 1 == This->key_queue_head) ||
 		  (This->key_queue_head == 0 &&
 		   This->key_queue_tail == TN5250_SESSION_KEY_QUEUE_SIZE - 1)) {
-	       /* FIXME: Keyboard buffer is full, beep. */
+	       tn5250_display_beep (This->display);
 	    }
 	    This->key_queue[This->key_queue_tail] = cur_key;
 	    if (++ This->key_queue_tail == TN5250_SESSION_KEY_QUEUE_SIZE)
@@ -216,34 +190,25 @@ static void tn5250_session_handle_keys(Tn5250Session *This)
       }
    } while (cur_key != -1);
 
-   tn5250_terminal_update(This->term, This->dsp);
-   tn5250_terminal_update_indicators(This->term, This->dsp);
+   tn5250_display_update(This->display);
 }
 
 static void tn5250_session_handle_key(Tn5250Session * This, int cur_key)
 {
-   int curfield;
-   int shiftcount;
    int send = 0;
    unsigned char aidcode;
-   int fieldtype;
-   int valid_char;
    int X, Y;
    Tn5250Field *field;
 
    TN5250_LOG(("HandleKey: entered.\n"));
 
-   TN5250_ASSERT(This->term != NULL);
-
-   curfield = tn5250_table_current_field(This->table);
-
    TN5250_LOG(("@key %d\n", cur_key));
-   X = tn5250_dbuffer_cursor_x(This->dsp);
-   Y = tn5250_dbuffer_cursor_y(This->dsp);
+   X = tn5250_display_cursor_x(This->display);
+   Y = tn5250_display_cursor_y(This->display);
 
    if (tn5250_dbuffer_inhibited(This->dsp)) {
       if (cur_key != K_SYSREQ && cur_key != K_RESET) {
-	 /* FIXME: Terminal should beep at this point. */
+	 tn5250_display_beep (This->display);
 	 return;
       }
    }
@@ -255,29 +220,15 @@ static void tn5250_session_handle_key(Tn5250Session * This, int cur_key)
    case K_BACKSPACE:
    case K_LEFT:
       tn5250_dbuffer_left(This->dsp);
-      curfield = tn5250_table_field_number(This->table,
-				  tn5250_dbuffer_cursor_y(This->dsp),
-				   tn5250_dbuffer_cursor_x(This->dsp));
-      tn5250_table_set_current_field(This->table, curfield);
       break;
    case K_RIGHT:
       tn5250_dbuffer_right(This->dsp, 1);
-      curfield = tn5250_table_field_number(This->table,
-				   tn5250_dbuffer_cursor_y(This->dsp),
-				  tn5250_dbuffer_cursor_x(This->dsp));
-      tn5250_table_set_current_field(This->table, curfield);
       break;
    case K_UP:
       tn5250_dbuffer_up(This->dsp);
-      curfield = tn5250_table_field_number(This->table, tn5250_dbuffer_cursor_y(This->dsp),
-				  tn5250_dbuffer_cursor_x(This->dsp));
-      tn5250_table_set_current_field(This->table, curfield);
       break;
    case K_DOWN:
       tn5250_dbuffer_down(This->dsp);
-      curfield = tn5250_table_field_number(This->table, tn5250_dbuffer_cursor_y(This->dsp),
-				  tn5250_dbuffer_cursor_x(This->dsp));
-      tn5250_table_set_current_field(This->table, curfield);
       break;
    case (K_F1):
       send = 1;
@@ -381,46 +332,44 @@ static void tn5250_session_handle_key(Tn5250Session * This, int cur_key)
       break;
 
    case (K_HOME):
-      if (This->pending_insert) {
+      if (This->pending_insert)
 	 tn5250_dbuffer_goto_ic(This->dsp);
-      } else {
+      else {
 	 int gx, gy;
-	 curfield = tn5250_table_first_field(This->table);
-	 field = tn5250_table_field_n(This->table, curfield);
+	 field = tn5250_display_current_field (This->display);
 	 if (field != NULL) {
-	    gy = tn5250_field_start_row(field) - 1;
-	    gx = tn5250_field_start_col(field) - 1;
+	    gy = tn5250_field_start_row(field);
+	    gx = tn5250_field_start_col(field);
 	 } else
 	    gx = gy = 0;
-	 if (gy == tn5250_dbuffer_cursor_y (This->dsp)
-	       && gx == tn5250_dbuffer_cursor_x (This->dsp))
+	 if (gy == tn5250_display_cursor_y(This->display)
+	       && gx == tn5250_display_cursor_x(This->display))
 	    tn5250_session_home (This);
 	 else
 	    tn5250_dbuffer_cursor_set(This->dsp, gy, gx);
       }
       break;
+
    case (K_END):
-      curfield = tn5250_table_field_number(This->table, Y, X);
-      field = tn5250_table_field_n(This->table, curfield);
+      field = tn5250_display_current_field(This->display);
       if (field != NULL && !tn5250_field_is_bypass(field)) {
-	 tn5250_dbuffer_cursor_set(This->dsp,
-				   tn5250_field_start_row(field) - 1,
-				   tn5250_field_start_col(field) - 1);
-	 tn5250_dbuffer_right(This->dsp,
-		       tn5250_field_count_eof (field));
-      }
+	 tn5250_display_set_cursor (This->display,
+	       tn5250_field_end_row (field),
+	       tn5250_field_end_col (field));
+      } else
+	 tn5250_dbuffer_inhibit (This->dsp);
       break;
+
    case (K_DELETE):
-      curfield = tn5250_table_field_number(This->table, Y, X);
-      field = tn5250_table_field_n(This->table, curfield);
-      if (field == NULL || tn5250_field_is_bypass(field)) {
+      field = tn5250_display_current_field (This->display);
+      if (field == NULL || tn5250_field_is_bypass(field))
 	 tn5250_dbuffer_inhibit(This->dsp);
-      } else {
-	 tn5250_table_del_char(This->table, Y, X);
-	 shiftcount = tn5250_field_count_right(field, Y, X);
+      else {
+	 int shiftcount = tn5250_field_count_right(field, Y, X);
 	 tn5250_dbuffer_del(This->dsp, shiftcount);
       }
       break;
+
    case (K_INSERT):
       if ((tn5250_dbuffer_indicators(This->dsp) & TN5250_DISPLAY_IND_INSERT)
 	  != 0)
@@ -428,36 +377,20 @@ static void tn5250_session_handle_key(Tn5250Session * This, int cur_key)
       else
 	 tn5250_dbuffer_indicator_set(This->dsp, TN5250_DISPLAY_IND_INSERT);
       break;
+
    case (K_TAB):
-      TN5250_LOG(("HandleKey: (K_TAB) curfield = %d\n", curfield));
-      curfield = tn5250_table_next_field2(This->table,
-				   tn5250_dbuffer_cursor_y(This->dsp),
-				  tn5250_dbuffer_cursor_x(This->dsp));
-      field = tn5250_table_field_n(This->table, curfield);
-      tn5250_dbuffer_cursor_set(This->dsp,
-				tn5250_field_start_row(field) - 1,
-				tn5250_field_start_col(field) - 1);
+      tn5250_display_set_cursor_next_field (This->display);
       break;
 
    case (K_BACKTAB):
       /* Backtab: Move to start of this field, or start of 
        * previous field if already there. */
-      TN5250_LOG(("HandleKey: (K_BACKTAB) curfield = %d\n", curfield));
-      curfield = tn5250_table_field_number (This->table,
-				   tn5250_dbuffer_cursor_y(This->dsp),
-				  tn5250_dbuffer_cursor_x(This->dsp));
-      field = tn5250_table_field_n (This->table, curfield);
-
+      field = tn5250_display_current_field (This->display);
       if (field == NULL || tn5250_field_count_left(field,
-	       tn5250_dbuffer_cursor_y(This->dsp),
-	       tn5250_dbuffer_cursor_x(This->dsp)) == 0) {
-	 curfield = tn5250_table_prev_field2(This->table,
-				   tn5250_dbuffer_cursor_y(This->dsp),
-				  tn5250_dbuffer_cursor_x(This->dsp));
-      }
-      if ((field = tn5250_table_field_n(This->table, curfield)) != NULL)
-	 tn5250_dbuffer_cursor_set(This->dsp, tn5250_field_start_row(field) - 1,
-	       tn5250_field_start_col(field) - 1);
+	       tn5250_display_cursor_y(This->display),
+	       tn5250_display_cursor_x(This->display)) == 0)
+	 field = tn5250_display_prev_field (This->display);
+      tn5250_display_set_cursor_field (This->display, field);
       break;
 
    case (K_ENTER):
@@ -475,19 +408,11 @@ static void tn5250_session_handle_key(Tn5250Session * This, int cur_key)
       break;
 
    case (K_FIELDEXIT):
-      if (tn5250_session_field_exit (This)) {
-	 /* This is an auto-enter field */
-	 send = 1;
-	 aidcode = TN5250_SESSION_AID_ENTER;
-      }
+      tn5250_display_field_exit (This->display);
       break;
 
    case K_FIELDMINUS:
-      if (tn5250_session_field_minus (This)) {
-	 /* This is an auto-enter field */
-	 send = 1;
-	 aidcode = TN5250_SESSION_AID_ENTER;
-      }
+      tn5250_display_field_minus (This->display);
       break;
 
    case K_SYSREQ:
@@ -503,145 +428,17 @@ static void tn5250_session_handle_key(Tn5250Session * This, int cur_key)
       break;
 
    case K_DUPLICATE:
-      tn5250_session_dup(This);
+      tn5250_display_dup(This->display);
       break;
 
    default:
       TN5250_LOG(("HandleKey: cur_key = %c\n", cur_key));
-
-      curfield = tn5250_table_field_number(This->table, Y, X);
-      tn5250_table_set_current_field(This->table, curfield);
-      field = tn5250_table_field_n(This->table, curfield);
-
-      if (field == NULL || tn5250_field_is_bypass(field)) {
-	 tn5250_dbuffer_inhibit(This->dsp);
-	 break;
-      }
-
-      /* Field Exit driven by '-' and '+', for Numeric Only and Signed Numbers */
-      if (tn5250_field_is_num_only(field) || tn5250_field_is_signed_num(field)) {
-	 int do_break = 0;
-	 switch(cur_key) {
-	 case '+':
-	    if (tn5250_session_field_exit(This)) {
-	       send = 1;
-	       aidcode = TN5250_SESSION_AID_ENTER;
-	    }
-	    do_break = 1;
-	    break;
-
-	 case '-':
-	    if (tn5250_session_field_minus(This)) {
-	       send = 1;
-	       aidcode = TN5250_SESSION_AID_ENTER;
-	    }
-	    do_break = 1;
-	    break;
-	 }
-	 if (do_break)
-	    break;
-      }
-
-      if (cur_key >= K_FIRST_SPECIAL || cur_key < ' ')
-	 break;
-
-      fieldtype = tn5250_field_type(field);
-
-      valid_char = 0;
-      TN5250_LOG(("HandleKey: fieldtype = %d\n", fieldtype));
-      switch (fieldtype) {
-      case TN5250_FIELD_ALPHA_SHIFT:
-	 valid_char = 1;
-	 break;
-
-      case TN5250_FIELD_ALPHA_ONLY:
-	 if (isalpha(cur_key) ||
-	     cur_key == ',' ||
-	     cur_key == '.' ||
-	     cur_key == '-' ||
-	     cur_key == ' ') {
-	    valid_char = 1;
-	 }
-	 break;
-
-      case TN5250_FIELD_NUM_SHIFT:
-	 valid_char = 1;
-	 break;
-
-      case TN5250_FIELD_NUM_ONLY:
-	 if (tn5250_isnumeric(cur_key) ||
-	     cur_key == '+' ||
-	     cur_key == ',' ||
-	     cur_key == '.' ||
-	     cur_key == '-' ||
-	     cur_key == ' ') {
-	    valid_char = 1;
-	 } else
-	    tn5250_dbuffer_inhibit(This->dsp);
-	 break;
-
-      case TN5250_FIELD_KATA_SHIFT:
-	 TN5250_LOG(("KATAKANA not implemneted.\n"));
-	 valid_char = 1;
-	 break;
-
-      case TN5250_FIELD_DIGIT_ONLY:
-	 if (isdigit(cur_key)) {
-	    valid_char = 1;
-	 }
-	 break;
-
-      case TN5250_FIELD_MAG_READER:
-	 TN5250_LOG(("MAG_READER not implemneted.\n"));
-	 valid_char = 1;
-	 break;
-
-      case TN5250_FIELD_SIGNED_NUM:
-	 if (isdigit(cur_key) ||
-	     cur_key == '+' ||
-	     cur_key == '-') {
-	    valid_char = 1;
-	 }
-      }
-
-      if (valid_char) {
-	 if (tn5250_field_is_monocase(field)) {
-	    cur_key = toupper(cur_key);
-	 }
-	 if ((tn5250_dbuffer_indicators(This->dsp) & TN5250_DISPLAY_IND_INSERT) != 0) {
-	    if (tn5250_field_is_full(field)) {
-	       tn5250_dbuffer_inhibit(This->dsp);
-	       break;
-	    }
-	    tn5250_table_ins_char(This->table, Y, X, tn5250_ascii2ebcdic(cur_key));
-	 } else {
-	    tn5250_table_add_char(This->table, Y, X, tn5250_ascii2ebcdic(cur_key));
-	    TN5250_LOG(("HandleKey: curfield = %d\n", curfield));
-	 }
-
-	 if ((tn5250_dbuffer_indicators(This->dsp) & TN5250_DISPLAY_IND_INSERT) != 0) {
-	    shiftcount = tn5250_field_count_right(field, Y, X);
-	    tn5250_dbuffer_ins(This->dsp, tn5250_ascii2ebcdic(cur_key), shiftcount);
-	 } else
-	    tn5250_dbuffer_addch(This->dsp, tn5250_ascii2ebcdic(cur_key));
-
-	 if ((X + 1 == tn5250_field_end_col(field))
-	     && (Y + 1 == tn5250_field_end_row(field))) {
-	    curfield = tn5250_table_next_field(This->table);
-	    field = tn5250_table_field_n(This->table, curfield);
-	    tn5250_dbuffer_cursor_set(This->dsp,
-			      tn5250_field_start_row(field) - 1,
-				tn5250_field_start_col(field) - 1);
-	 }
-	 break;
-      } else {
-	 tn5250_dbuffer_inhibit(This->dsp);
-	 break;
-      }
+      tn5250_display_interactive_addch (This->display,
+	    tn5250_ascii2ebcdic(cur_key));
    }
    if (send) {
       tn5250_dbuffer_indicator_set(This->dsp, TN5250_DISPLAY_IND_X_SYSTEM);
-      tn5250_terminal_update_indicators(This->term, This->dsp);
+      tn5250_display_update(This->display);
       tn5250_session_send_fields(This, aidcode);
       send = 0;
    }
@@ -711,16 +508,14 @@ static void tn5250_session_invite(Tn5250Session * This)
    TN5250_LOG(("Invite: entered.\n"));
    This->invited = 1;
    tn5250_dbuffer_indicator_clear(This->dsp, TN5250_DISPLAY_IND_X_CLOCK);
-   if (This->term != NULL)
-      tn5250_terminal_update_indicators(This->term, This->dsp);
+   tn5250_display_update(This->display);
 }
 
 static void tn5250_session_cancel_invite(Tn5250Session * This)
 {
    TN5250_LOG(("CancelInvite: entered.\n"));
    tn5250_dbuffer_indicator_set(This->dsp, TN5250_DISPLAY_IND_X_CLOCK);
-   if (This->term != NULL)
-      tn5250_terminal_update_indicators(This->term, This->dsp);
+   tn5250_display_update(This->display);
    tn5250_stream_send_packet(This->stream, 0, TN5250_RECORD_FLOW_DISPLAY, TN5250_RECORD_H_NONE,
 			     TN5250_RECORD_OPCODE_CANCEL_INVITE, NULL);
    This->invited = 0;
@@ -731,11 +526,11 @@ static void tn5250_session_send_fields(Tn5250Session * This, int aidcode)
    int temp;
    Tn5250Buffer field_buf;
    Tn5250Field *field;
-   unsigned char c;
+   unsigned char *field_data;
    int X, Y, size;
 
-   X = tn5250_dbuffer_cursor_x(This->dsp);
-   Y = tn5250_dbuffer_cursor_y(This->dsp);
+   X = tn5250_display_cursor_x(This->display);
+   Y = tn5250_display_cursor_y(This->display);
 
    TN5250_LOG(("SendFields: Number of fields: %d\n", tn5250_table_field_count(This->table)));
 
@@ -759,10 +554,10 @@ static void tn5250_session_send_fields(Tn5250Session * This, int aidcode)
 	 if (field != NULL) {
 	    do {
 	       size = tn5250_field_length(field);
-	       for (temp = 0; temp < size; temp++) {
-		  c = tn5250_field_get_char(field, temp);
-		  tn5250_buffer_append_byte(&field_buf, c == 0 ? 0x40 : c);
-	       }
+	       field_data = tn5250_display_field_data (This->display, field);
+	       for (temp = 0; temp < size; temp++)
+		  tn5250_buffer_append_byte(&field_buf,
+			field_data[temp] == 0 ? 0x40 : field_data[temp]);
 	       field = field->next;
 	    } while (field != This->table->field_list);
 	 }
@@ -775,10 +570,10 @@ static void tn5250_session_send_fields(Tn5250Session * This, int aidcode)
 	 if (field != NULL) {
 	    do {
 	       size = tn5250_field_length(field);
-	       for (temp = 0; temp < size; temp++) {
-		  c = tn5250_field_get_char(field, temp);
-		  tn5250_buffer_append_byte(&field_buf, c == 0 ? 0x40 : c);
-	       }
+	       field_data = tn5250_display_field_data (This->display, field);
+	       for (temp = 0; temp < size; temp++)
+		  tn5250_buffer_append_byte(&field_buf,
+			field_data[temp] == 0 ? 0x40 : field_data[temp]);
 	       field = field->next;
 	    } while (field != This->table->field_list);
 	 }
@@ -795,19 +590,21 @@ static void tn5250_session_send_fields(Tn5250Session * This, int aidcode)
 	       tn5250_field_dump(field);
 	       tn5250_buffer_append_byte(&field_buf, SBA);
 	       tn5250_buffer_append_byte(&field_buf,
-					 tn5250_field_start_row(field));
+					 tn5250_field_start_row(field) + 1);
 	       tn5250_buffer_append_byte(&field_buf,
-					 tn5250_field_start_col(field));
+					 tn5250_field_start_col(field) + 1);
+
 	       size = tn5250_field_length(field);
+	       field_data = tn5250_display_field_data (This->display, field);
 
 	       /* Strip trailing NULs */
-	       while (size > 0 && (tn5250_field_get_char (field, size - 1) == 0x00))
+	       while (size > 0 && field_data[size-1] == 0)
 		  size--;
 
 	       TN5250_LOG(("SendFields: size = %d\n", size));
 	       for (temp = 0; temp < size; temp++) {
-		  c = tn5250_field_get_char(field, temp);
-		  tn5250_buffer_append_byte(&field_buf, c == 0 ? 0x40 : c);
+		  tn5250_buffer_append_byte(&field_buf,
+			field_data[temp] == 0 ? 0x40 : field_data[temp]);
 	       }
 	    }
 	    field = field->next;
@@ -824,8 +621,7 @@ static void tn5250_session_send_fields(Tn5250Session * This, int aidcode)
    This->read_opcode = 0; /* No longer in a read command. */
 
    tn5250_dbuffer_indicator_clear(This->dsp, TN5250_DISPLAY_IND_INSERT);
-   if (This->term != NULL)
-      tn5250_terminal_update_indicators(This->term, This->dsp);
+   tn5250_display_update(This->display);
 
    tn5250_stream_send_packet(This->stream, tn5250_buffer_length(&field_buf), TN5250_RECORD_FLOW_DISPLAY,
 			     TN5250_RECORD_H_NONE,
@@ -902,8 +698,8 @@ static void tn5250_session_write_error_code(Tn5250Session * This)
 
    TN5250_LOG(("WriteErrorCode: entered.\n"));
 
-   curX = tn5250_dbuffer_cursor_x(This->dsp);
-   curY = tn5250_dbuffer_cursor_y(This->dsp);
+   curX = tn5250_display_cursor_x(This->display);
+   curY = tn5250_display_cursor_y(This->display);
 
    tn5250_dbuffer_cursor_set(This->dsp, 23, 0);
    done = 0;
@@ -933,8 +729,7 @@ static void tn5250_session_write_error_code(Tn5250Session * This)
    TN5250_LOG(("\n"));
    tn5250_dbuffer_cursor_set(This->dsp, curY, curX);
    tn5250_dbuffer_inhibit(This->dsp);
-   if (This->term != NULL)
-      tn5250_terminal_update(This->term, This->dsp);
+   tn5250_display_update(This->display);
 }
 
 /*
@@ -990,8 +785,9 @@ static void tn5250_session_handle_cc1 (Tn5250Session *This, unsigned char cc1)
       do {
 	 if (!tn5250_field_is_bypass (iter)) {
 	    if ((null_non_bypass_mdt && tn5250_field_mdt(iter)) || null_non_bypass) {
-	       memset (iter->data, 0, iter->length);
-	       tn5250_field_update_display (iter);
+	       unsigned char *data;
+	       data = tn5250_display_field_data (This->display, iter);
+	       memset (data, 0, tn5250_field_length (iter));
 	    }
 	 }
 	 if (reset_all_mdt || (reset_non_bypass_mdt && !tn5250_field_is_bypass (iter)))
@@ -1007,9 +803,7 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
    unsigned char CC1;
    unsigned char CC2;
    int done;
-   int count;
-   int fieldnum;
-   int Y, X;
+   Tn5250Field *last_field = NULL;
 
    TN5250_LOG(("WriteToDisplay: entered.\n"));
 
@@ -1052,22 +846,6 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
 	    break;
 	 default:
 	    if (tn5250_printable(cur_order)) {
-
-	       X = tn5250_dbuffer_cursor_x(This->dsp);
-	       Y = tn5250_dbuffer_cursor_y(This->dsp);
-	       if (tn5250_table_field_number(This->table, Y, X) >= 0) {
-		  Tn5250Field *field;
-		  int curfield;
-		  int ofs;
-		  /* We don't want to set MDT here, so we access the Tn5250Field
-		   * structures innards directly. */
-		  TN5250_LOG(("WTD putting char 0x%02X in field %d!",
-			   cur_order, tn5250_table_field_number(This->table, Y, X)));
-		  curfield = tn5250_table_field_number (This->table, Y, X);
-		  field = tn5250_table_field_n (This->table, curfield);
-		  ofs = tn5250_field_count_left (field, Y, X);
-		  field->data[ofs] = cur_order;
-	       }
 	       tn5250_dbuffer_addch(This->dsp, cur_order);
 #ifndef NDEBUG
 	       if (tn5250_attribute(cur_order)) {
@@ -1086,43 +864,27 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
    }				/* end while */
    TN5250_LOG(("\n"));
 
-   if (This->pending_insert) {
-      TN5250_LOG(("WriteToDisplay: disp_buf.set_new_ic()\n"));
+   if (This->pending_insert)
       tn5250_dbuffer_goto_ic(This->dsp);
-      X = tn5250_dbuffer_cursor_x(This->dsp);
-      Y = tn5250_dbuffer_cursor_y(This->dsp);
-      fieldnum = tn5250_table_field_number(This->table, Y, X);
-      if (fieldnum >= 0)
-	 tn5250_table_set_current_field(This->table, fieldnum);
-   } else {
+   else {
+      /* Set the cursor to the first non-bypass field, if there is one.  If
+       * not, set cursor position to 0,0 */
+      Tn5250Field *field = This->display->format_tables->field_list;
       done = 0;
-      count = 0;
-      while (!done && count < tn5250_table_field_count(This->table)) {
-	 Tn5250Field *field = tn5250_table_field_n(This->table, count);
-	 TN5250_ASSERT (field != NULL);
-	 if (!tn5250_field_is_bypass(field)) {
-	    TN5250_LOG(("WriteToDisplay: Position to field %d\n", count));
-	    tn5250_dbuffer_cursor_set(This->dsp,
-				      tn5250_field_start_row(field) - 1,
-				      tn5250_field_start_col(field) - 1);
-	    TN5250_LOG(("WriteToDisplay: row = %d; col = %d\n",
-		 tn5250_field_start_row(field),
-		 tn5250_field_start_col(field)));
-	    X = tn5250_dbuffer_cursor_x(This->dsp);
-	    Y = tn5250_dbuffer_cursor_y(This->dsp);
-	    fieldnum = tn5250_table_field_number(This->table, Y, X);
-	    if (fieldnum >= 0)
-	       tn5250_table_set_current_field(This->table, fieldnum);
-	    done = 1;
-	 }
-	 count++;
+      if (field != NULL) {
+	 do {
+	    if (tn5250_field_is_bypass (field)) {
+	       tn5250_display_set_cursor_field (This->display, field);
+	       field = NULL;
+	       break;
+	    }
+	    field = field->next;
+	 } while (field != This->display->format_tables->field_list);
       }
+      if (field == NULL)
+	 tn5250_dbuffer_cursor_set(This->dsp, 0, 0);
    }
 
-   if (!done) {
-      TN5250_LOG(("WriteToDisplay: Moving IC to (1,1)\n"));
-      tn5250_dbuffer_cursor_set(This->dsp, 0, 0);
-   }
    TN5250_LOG(("WriteToDisplay: CTL = 0x%02X\n", CC2));
    if (CC2 & TN5250_SESSION_CTL_MESSAGE_ON)
       tn5250_dbuffer_indicator_set(This->dsp, TN5250_DISPLAY_IND_MESSAGE_WAITING);
@@ -1138,17 +900,14 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
       /* FIXME: Hand off to terminal */
    }
 
-   if ((CC2 & TN5250_SESSION_CTL_ALARM) != 0) {
-      /* FIXME: Hand off to terminal */
-   }
+   if ((CC2 & TN5250_SESSION_CTL_ALARM) != 0)
+      tn5250_display_beep (This->display);
 
    if ((CC2 & TN5250_SESSION_CTL_UNLOCK) != 0) {
       tn5250_dbuffer_indicator_clear(This->dsp, TN5250_DISPLAY_IND_X_SYSTEM);
    }
 
-   if (This->term != NULL)
-      tn5250_terminal_update(This->term, This->dsp);
-   tn5250_terminal_update_indicators(This->term, This->dsp);
+   tn5250_display_update(This->display);
 }
 
 static void tn5250_session_clear_unit(Tn5250Session * This)
@@ -1178,7 +937,7 @@ static void tn5250_session_clear_unit_alternate(Tn5250Session * This)
    tn5250_dbuffer_indicator_clear(This->dsp, TN5250_DISPLAY_IND_INSERT | TN5250_DISPLAY_IND_INHIBIT);
    This->read_opcode = 0;
    tn5250_dbuffer_set_temp_ic(This->dsp, 0, 0);
-   tn5250_terminal_update_indicators(This->term, This->dsp);
+   tn5250_display_update(This->display);
 }
 
 static void tn5250_session_clear_format_table(Tn5250Session * This)
@@ -1189,8 +948,7 @@ static void tn5250_session_clear_format_table(Tn5250Session * This)
    tn5250_dbuffer_indicator_set(This->dsp, TN5250_DISPLAY_IND_X_SYSTEM);
    tn5250_dbuffer_indicator_clear(This->dsp, TN5250_DISPLAY_IND_INSERT);
    This->read_opcode = 0;
-   tn5250_terminal_update(This->term, This->dsp);
-   tn5250_terminal_update_indicators(This->term, This->dsp);
+   tn5250_display_update(This->display);
 }
 
 static void tn5250_session_read_immediate(Tn5250Session * This)
@@ -1211,8 +969,8 @@ static void tn5250_session_home(Tn5250Session * This)
    TN5250_LOG(("Home: entered.\n"));
 
    tn5250_buffer_init(&buf);
-   tn5250_buffer_append_byte(&buf, tn5250_dbuffer_cursor_y(This->dsp) + 1);
-   tn5250_buffer_append_byte(&buf, tn5250_dbuffer_cursor_x(This->dsp) + 1);
+   tn5250_buffer_append_byte(&buf, tn5250_display_cursor_y(This->display) + 1);
+   tn5250_buffer_append_byte(&buf, tn5250_display_cursor_x(This->display) + 1);
    tn5250_buffer_append_byte(&buf, TN5250_SESSION_AID_RECORD_BS);
 
    tn5250_stream_send_packet(This->stream, tn5250_buffer_length(&buf), 
@@ -1274,18 +1032,13 @@ static void tn5250_session_save_screen(Tn5250Session * This)
 
    TN5250_LOG(("SaveScreen: entered.\n"));
 
-   for (n = 1; n < (int) (sizeof(This->saved_bufs) / sizeof(Tn5250DBuffer *)); n++) {
-      if (This->saved_bufs[n] == NULL)
-	 break;
-   }
-
-   TN5250_ASSERT(This->saved_bufs[n] == NULL);
-   This->saved_bufs[n] = tn5250_dbuffer_copy(This->dsp);
-
    outbuf[0] = 0x04;
    outbuf[1] = 0x12;
-   outbuf[2] = (unsigned char) n;
-   outbuf[3] = tn5250_table_save(This->table);
+   outbuf[2] = tn5250_display_push_dbuffer(This->display);
+   outbuf[3] = tn5250_display_push_table(This->display);
+
+   This->dsp = This->display->display_buffers;
+   This->table = This->display->format_tables;
 
    TN5250_LOG(("SaveScreen: display buffer = %d; format buffer = %d\n",
 	outbuf[2], outbuf[3]));
@@ -1305,26 +1058,20 @@ static void tn5250_session_restore_screen(Tn5250Session * This)
 
    TN5250_LOG(("RestoreScreen: screen = %d; format = %d\n", screen, format));
 
-   TN5250_ASSERT(screen < (int) (sizeof(This->saved_bufs) / sizeof(Tn5250DBuffer *)));
-   TN5250_ASSERT(This->saved_bufs[screen] != NULL);
-   tn5250_dbuffer_destroy(This->dsp);
-   This->dsp = This->saved_bufs[screen];
-   This->saved_bufs[screen] = NULL;
+   tn5250_display_restore_dbuffer (This->display, screen);
+   tn5250_display_restore_table (This->display, format);
 
-   if (This->table != NULL) {
-      This->table->display = This->dsp;
-      tn5250_table_restore(This->table, format);
-   }
-   if (This->term != NULL)
-      tn5250_terminal_update(This->term, This->dsp);
+   This->dsp = This->display->display_buffers;
+   This->table = This->display->format_tables;
+
+   tn5250_display_update(This->display);
 }
 
 static void tn5250_session_message_on(Tn5250Session * This)
 {
    TN5250_LOG(("MessageOn: entered.\n"));
    tn5250_dbuffer_indicator_set(This->dsp, TN5250_DISPLAY_IND_MESSAGE_WAITING);
-   if (This->term != NULL)
-      tn5250_terminal_update_indicators(This->term, This->dsp);
+   tn5250_display_update(This->display);
 }
 
 static void tn5250_session_message_off(Tn5250Session * This)
@@ -1332,8 +1079,7 @@ static void tn5250_session_message_off(Tn5250Session * This)
    TN5250_LOG(("MessageOff: entered.\n"));
    tn5250_dbuffer_indicator_clear(This->dsp,
 				  TN5250_DISPLAY_IND_MESSAGE_WAITING);
-   if (This->term != NULL)
-      tn5250_terminal_update_indicators(This->term, This->dsp);
+   tn5250_display_update(This->display);
 }
 
 static void tn5250_session_roll(Tn5250Session * This)
@@ -1358,8 +1104,7 @@ static void tn5250_session_roll(Tn5250Session * This)
       return;
 
    tn5250_dbuffer_roll(This->dsp, top, bot, lines);
-   if (This->term != NULL)
-      tn5250_terminal_update(This->term, This->dsp);
+   tn5250_display_update(This->display);
 }
 
 static void tn5250_session_start_of_field(Tn5250Session * This)
@@ -1415,33 +1160,31 @@ static void tn5250_session_start_of_field(Tn5250Session * This)
    Length2 = tn5250_record_get_byte(This->record);
 
    if (input_field) {
-      /* FIXME: `This address is either determined by the contents of the preceding SBA
-       *  order or calculated from the field length parameter in the last SF order.'
-       *  5494 Functions Reference.  -JMF */
-      X = tn5250_dbuffer_cursor_x(This->dsp);
-      Y = tn5250_dbuffer_cursor_y(This->dsp);
+      /* FIXME: `This address is either determined by the contents of the
+       * preceding SBA order or calculated from the field length parameter
+       * in the last SF order.'  5494 Functions Reference.  -JMF */
+      X = tn5250_display_cursor_x(This->display);
+      Y = tn5250_display_cursor_y(This->display);
 
       if ((field = tn5250_table_field_yx (This->table, Y, X)) != NULL) {
 	 TN5250_LOG(("StartOfField: Modifying field.\n"));
-	 if (tn5250_field_start_col (field) == X+1 && tn5250_field_start_row (field) == Y+1) {
+	 if (tn5250_field_start_col (field) == X &&
+	       tn5250_field_start_row (field) == Y) {
 	    field->FFW = (FFW1 << 8) | FFW2;
 	    field->attribute = Attr;
 	 }
       } else {
 	 TN5250_LOG(("StartOfField: Adding field.\n"));
-	 field = tn5250_field_new (This->dsp);
+	 field = tn5250_field_new (tn5250_dbuffer_width(This->dsp));
 	 TN5250_ASSERT(field != NULL);
 
 	 field->FFW = (FFW1 << 8) | FFW2;
 	 field->FCW = (FCW1 << 8) | FCW2;
 	 field->attribute = Attr;
 	 field->length =(Length1 << 8) | Length2;
-	 field->start_row = Y + 1;
-	 field->start_col = X + 1;
+	 field->start_row = Y;
+	 field->start_col = X;
 
-	 field->data = (unsigned char *)malloc (field->length);
-	 TN5250_ASSERT(field->data != NULL);
-	 memset (field->data, 0, field->length);
 	 tn5250_table_add_field (This->table, field);
       }
    } else {
@@ -1453,10 +1196,10 @@ static void tn5250_session_start_of_field(Tn5250Session * This)
       TN5250_ASSERT (field != NULL);
       endrow = tn5250_field_end_row(field);
       endcol = tn5250_field_end_col(field);
-      if (endcol == tn5250_dbuffer_width(This->dsp)) { 
-	 endcol = 1;
-	 if (endrow == tn5250_dbuffer_height(This->dsp))
-	    endrow = 1;
+      if (endcol == tn5250_dbuffer_width(This->dsp) - 1) { 
+	 endcol = 0;
+	 if (endrow == tn5250_dbuffer_height(This->dsp) - 1)
+	    endrow = 0;
 	 else
 	    endrow++;
       } else 
@@ -1468,7 +1211,7 @@ static void tn5250_session_start_of_field(Tn5250Session * This)
       tn5250_field_dump(field);
 #endif
 
-      tn5250_dbuffer_cursor_set(This->dsp, endrow - 1, endcol - 1);
+      tn5250_dbuffer_cursor_set(This->dsp, endrow, endcol);
       tn5250_dbuffer_addch(This->dsp, 0x20);
       tn5250_dbuffer_cursor_set(This->dsp, Y, X);
    } 
@@ -1538,16 +1281,12 @@ static void tn5250_session_repeat_to_address(Tn5250Session * This)
 	temp[0], temp[1], temp[2]));
 
    while(1) {
-      y = tn5250_dbuffer_cursor_y(This->dsp);
-      x = tn5250_dbuffer_cursor_x(This->dsp);
+      y = tn5250_display_cursor_y(This->display);
+      x = tn5250_display_cursor_x(This->display);
+
+      TN5250_LOG(("RTA @ %d, %d.\n", y, x));
 
       tn5250_dbuffer_addch(This->dsp, temp[2]);
-
-      field = tn5250_table_field_yx(This->table,y,x);
-      if(field != NULL) {
-	 ins_loc = tn5250_field_count_left(field,y,x);
-	 tn5250_field_put_char(field,ins_loc,temp[2]);
-      }
 
       if(y == temp[0] - 1 && x == temp[1] - 1)
 	 break;
@@ -1632,7 +1371,7 @@ static void tn5250_session_read_input_fields(Tn5250Session * This)
 				  TN5250_DISPLAY_IND_X_SYSTEM
 				  | TN5250_DISPLAY_IND_X_CLOCK
 				  | TN5250_DISPLAY_IND_INHIBIT);
-   tn5250_terminal_update_indicators(This->term, This->dsp);
+   tn5250_display_update(This->display);
 }
 
 static void tn5250_session_read_mdt_fields(Tn5250Session * This)
@@ -1651,7 +1390,7 @@ static void tn5250_session_read_mdt_fields(Tn5250Session * This)
 				  TN5250_DISPLAY_IND_X_SYSTEM
 				  | TN5250_DISPLAY_IND_X_CLOCK
 				  | TN5250_DISPLAY_IND_INHIBIT);
-   tn5250_terminal_update_indicators(This->term, This->dsp);
+   tn5250_display_update(This->display);
 }
 
 /*
@@ -1664,8 +1403,8 @@ static void tn5250_session_print(Tn5250Session * This)
    TN5250_LOG(("Print request: entered.\n"));
 
    tn5250_buffer_init(&buf);
-   tn5250_buffer_append_byte(&buf, tn5250_dbuffer_cursor_y(This->dsp) + 1);
-   tn5250_buffer_append_byte(&buf, tn5250_dbuffer_cursor_x(This->dsp) + 1);
+   tn5250_buffer_append_byte(&buf, tn5250_display_cursor_y(This->display) + 1);
+   tn5250_buffer_append_byte(&buf, tn5250_display_cursor_x(This->display) + 1);
    tn5250_buffer_append_byte(&buf, TN5250_SESSION_AID_PRINT);
 
    tn5250_stream_send_packet(This->stream, tn5250_buffer_length(&buf), 
@@ -1675,111 +1414,6 @@ static void tn5250_session_print(Tn5250Session * This)
                              tn5250_buffer_data(&buf));
 
    tn5250_buffer_free(&buf);
-}
-
-/*
- *    Process the field exit function.  Returns non-zero if this is an auto
- *    enter field and the auto-enter feature should be invoked.
- */
-static int tn5250_session_field_exit (Tn5250Session *This)
-{
-   int y, x, curfield;
-   Tn5250Field *field;
-
-   y = tn5250_dbuffer_cursor_y (This->dsp);
-   x = tn5250_dbuffer_cursor_x (This->dsp);
-
-   field = tn5250_table_field_yx(This->table, y, x);
-   if (field == NULL || tn5250_field_is_bypass(field))
-      tn5250_dbuffer_inhibit(This->dsp);
-   else {
-      tn5250_table_field_exit(This->table, y, x);
-      
-      if (tn5250_field_is_auto_enter(field))
-	 return 1;
-
-      curfield = tn5250_table_next_field2(This->table, y, x);
-      field = tn5250_table_field_n(This->table, curfield);
-      tn5250_dbuffer_cursor_set(This->dsp,
-				tn5250_field_start_row(field) - 1,
-				tn5250_field_start_col(field) - 1);
-      tn5250_terminal_update(This->term, This->dsp);
-   }
-   return 0;
-}
-
-/*
- *    Process field minus function (either '-' in a signed numeric field or
- *    the actual Field Minus key).
- */
-static int tn5250_session_field_minus (Tn5250Session *This)
-{
-   int y, x, curfield;
-   Tn5250Field *field;
-
-   y = tn5250_dbuffer_cursor_y(This->dsp);
-   x = tn5250_dbuffer_cursor_x(This->dsp);
-   
-   field = tn5250_table_field_yx(This->table, y, x);
-   if (field == NULL || tn5250_field_is_bypass(field) 
-	 || !tn5250_field_is_signed_num(field)) {
-      tn5250_dbuffer_inhibit(This->dsp);
-      return 0;
-   }
-
-   tn5250_table_field_exit(This->table, y, x);
-   tn5250_field_set_minus_zone(field);
-
-   if (tn5250_field_is_auto_enter(field))
-      return 1;
-
-   curfield = tn5250_table_next_field2(This->table, y, x);
-   field = tn5250_table_field_n(This->table, curfield);
-   tn5250_dbuffer_cursor_set(This->dsp,
-			     tn5250_field_start_row(field) - 1,
-			     tn5250_field_start_col(field) - 1);
-   tn5250_terminal_update(This->term, This->dsp);
-   return 0;
-}
-
-/*
- *    Handle the Dup key ... fill the field from the cursor position to 
- *    the end of the field with 0x1C.
- */
-static void tn5250_session_dup(Tn5250Session * This)
-{
-   int y, x, i;
-   Tn5250Field *field;
-   int curfield;
-
-   y = tn5250_dbuffer_cursor_y(This->dsp);
-   x = tn5250_dbuffer_cursor_x(This->dsp);
-   
-   field = tn5250_table_field_yx(This->table, y, x);
-   if (field == NULL) {
-      tn5250_dbuffer_inhibit(This->dsp);
-      return;
-   }
-
-   /* Hmm, should we really go to operator error mode when operator
-    * hits Dup in a non-Dupable field? */
-   if (!tn5250_field_is_dup_enable(field)) {
-      tn5250_dbuffer_inhibit(This->dsp);
-      return;
-   }
-
-   i = tn5250_field_count_left(field, y, x);
-   for(; i < tn5250_field_length(field); i++) {
-      tn5250_field_put_char(field, i, 0x1C);
-      tn5250_dbuffer_addch(This->dsp, 0x1C);
-   }
-
-   curfield = tn5250_table_next_field2(This->table, y, x);
-   field = tn5250_table_field_n(This->table, curfield);
-   tn5250_dbuffer_cursor_set(This->dsp,
-			     tn5250_field_start_row(field) - 1,
-			     tn5250_field_start_col(field) - 1);
-   tn5250_terminal_update(This->term, This->dsp);
 }
 
 /* vi:set cindent sts=3 sw=3: */

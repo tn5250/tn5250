@@ -22,51 +22,28 @@
 extern "C" {
 #endif
 
-   struct _Tn5250TableSaveBuffer {
-      struct _Tn5250TableSaveBuffer /*@dependent@*/ *next;
-      struct _Tn5250TableSaveBuffer /*@dependent@*/ *prev;
-      int id;
-
-      int numfields;
-      Tn5250Field /*@null@*/ *fields;
-   };
-
-   typedef struct _Tn5250TableSaveBuffer Tn5250TableSaveBuffer;
-
    struct _Tn5250Table {
+
+      /* How we keep track of multiple saved format tables */
+      struct _Tn5250Table *	next;
+      struct _Tn5250Table *     prev;
+      unsigned char		id; /* Saved buffer id */
+
       Tn5250Field /*@null@*/ *field_list;
-      Tn5250DBuffer /*@dependent@*/ *display;
       int numfields;
       int MasterMDT;
-      Tn5250TableSaveBuffer /*@null@*/ *save_buffers;
       int message_line;
       int curfield;
-      int next_save_id;
    };
 
    typedef struct _Tn5250Table Tn5250Table;
 
-   extern /*@null@*/ /*@only@*/ Tn5250Table *tn5250_table_new(Tn5250DBuffer /*@dependent@*/ * display);
+   extern Tn5250Table *tn5250_table_new(void);
+   extern Tn5250Table *tn5250_table_copy(Tn5250Table *table);
    extern void tn5250_table_destroy(Tn5250Table /*@only@*/ * This);
 
    extern void tn5250_table_add_field(Tn5250Table * This, Tn5250Field * field);
-   extern void tn5250_table_set_current_field(Tn5250Table * This, int CurField);
-   extern int tn5250_table_first_field(Tn5250Table * This);
-   extern int tn5250_table_next_field(Tn5250Table * This);
-   extern int tn5250_table_next_field2(Tn5250Table * This, int y, int x);
-   extern int tn5250_table_prev_field(Tn5250Table * This);
-   extern int tn5250_table_prev_field2(Tn5250Table * This, int y, int x);
-   extern int tn5250_table_field_number(Tn5250Table * This, int y, int x);
-
    extern void tn5250_table_clear(Tn5250Table * This);
-   extern int tn5250_table_save(Tn5250Table * This);
-   extern void tn5250_table_restore(Tn5250Table * This, int formatnum);
-   extern int tn5250_table_field_exit(Tn5250Table * This, int y, int x);
-   extern void tn5250_table_del_char(Tn5250Table * This, int y, int x);
-   extern void tn5250_table_ins_char(Tn5250Table * This, int y, int x, unsigned char c);
-   extern void tn5250_table_add_char(Tn5250Table * This, int y, int x, unsigned char c);
-   extern void tn5250_table_process_adjust(Tn5250Table * This, Tn5250DBuffer * dsp, int y, int x);
-
    extern Tn5250Field *tn5250_table_field_yx (Tn5250Table *This, int y, int x);
 
 #define tn5250_table_field_n(This,n) \
@@ -78,7 +55,6 @@ extern "C" {
 #define tn5250_table_set_message_line(This,row) (void) ((This)->message_line = (row))
 
 #define tn5250_table_field_count(This) ((This)->numfields)
-#define tn5250_table_current_field(This) ((This)->curfield)
 #define tn5250_table_mdt(This) ((This)->MasterMDT)
 #define tn5250_table_message_line(This) ((This)->message_line)
 

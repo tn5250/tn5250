@@ -49,25 +49,14 @@ Tn5250DBuffer *tn5250_dbuffer_new(int width, int height)
    This->cx = This->cy = 0;
    This->tcx = This->tcy = 0;
    This->disp_indicators = 0;
+   This->next = This->prev = NULL;
 
-   This->rows = tn5250_new(unsigned char *, height);
-   if (This->rows == NULL) {
+   This->data = tn5250_new(unsigned char, width * height);
+   if (This->data == NULL) {
       free(This);
       return NULL;
    }
-   for (n = 0; n < height; n++) {
-      This->rows[n] = tn5250_new(unsigned char, width);
-      if (This->rows[n] == NULL) {
-	 int i;
-	 for (i = 0; i < n; i++) {
-	    free(This->rows[n]);
-	 }
-	 free(This->rows);
-	 free(This);
-	 return NULL;
-      }
-   }
-
+   
    tn5250_dbuffer_clear(This);
    return This;
 }
@@ -88,24 +77,10 @@ Tn5250DBuffer *tn5250_dbuffer_copy(Tn5250DBuffer * dsp)
    This->tcx = dsp->tcx;
    This->tcy = dsp->tcy;
    This->disp_indicators = dsp->disp_indicators;
-   This->rows = tn5250_new(unsigned char *, dsp->h);
-   if (This->rows == NULL) {
+   This->data = tn5250_new(unsigned char, dsp->w * dsp->h);
+   if (This->data == NULL) {
       free(This);
       return NULL;
-   }
-   for (n = 0; n < This->h; n++) {
-      This->rows[n] = tn5250_new(unsigned char, This->w);
-      if (This->rows[n] == NULL) {
-	 int i;
-	 for (i = 0; i < n; i++) {
-	    if (This->rows[i] != NULL) /* This is to make lclint happy... */
-	       free(This->rows[i]);
-	 }
-	 free(This->rows);
-	 free(This);
-	 return NULL;
-      }
-      memcpy(This->rows[n], dsp->rows[n], dsp->w);
    }
 
    ASSERT_VALID(This);
@@ -114,11 +89,7 @@ Tn5250DBuffer *tn5250_dbuffer_copy(Tn5250DBuffer * dsp)
 
 void tn5250_dbuffer_destroy(Tn5250DBuffer * This)
 {
-   int n;
-   for (n = 0; n < This->h; n++) {
-      free(This->rows[n]);
-   }
-   free(This->rows);
+   free(This->data);
    free(This);
 }
 
@@ -128,18 +99,10 @@ void tn5250_dbuffer_destroy(Tn5250DBuffer * This)
 void tn5250_dbuffer_set_size(Tn5250DBuffer * This, int rows, int cols)
 {
    int r;
-   for (r = 0; r < This->h; r++)
-      free(This->rows[r]);
-   free(This->rows);
 
-   This->rows = tn5250_new(unsigned char *, rows);
-   TN5250_ASSERT (This->rows != NULL);
-
-   for (r = 0; r < rows; r++)
-      This->rows[r] = tn5250_new(unsigned char, cols);
-
-   This->h = rows;
-   This->w = cols;
+   free(This->data);
+   This->data = tn5250_new(unsigned char, rows * cols);
+   TN5250_ASSERT (This->data != NULL);
    tn5250_dbuffer_clear(This);
 }
 
@@ -154,12 +117,7 @@ void tn5250_dbuffer_cursor_set(Tn5250DBuffer * This, int y, int x)
 void tn5250_dbuffer_clear(Tn5250DBuffer * This)
 {
    int r, c;
-   for (r = 0; r < This->h; r++) {
-      for (c = 0; c < This->w; c++) {
-	 This->rows[r][c] = 0;
-      }
-   }
-
+   memset (This->data, 0, This->w * This->h);
    This->cx = This->cy = 0;
 }
 
@@ -217,7 +175,7 @@ void tn5250_dbuffer_addch(Tn5250DBuffer * This, unsigned char c)
 {
    ASSERT_VALID(This);
 
-   This->rows[This->cy][This->cx] = c;
+   This->data[(This->cy * This->w) + This->cx] = c;
    tn5250_dbuffer_right(This, 1);
 
    ASSERT_VALID(This);
@@ -259,11 +217,11 @@ void tn5250_dbuffer_del(Tn5250DBuffer * This, int shiftcount)
 	 fwdx = 0;
 	 fwdy++;
       }
-      This->rows[y][x] = This->rows[fwdy][fwdx];
+      This->data[y * This->w + x] = This->data[fwdy * This->w + fwdx];
       x = fwdx;
       y = fwdy;
    }
-   This->rows[y][x] = 0x40;
+   This->data[y * This->w + x] = 0x40;
 
    ASSERT_VALID(This);
 }
@@ -274,8 +232,8 @@ void tn5250_dbuffer_ins(Tn5250DBuffer * This, unsigned char c, int shiftcount)
    unsigned char c2;
 
    for (i = 0; i < shiftcount; i++) {
-      c2 = This->rows[y][x];
-      This->rows[y][x] = c;
+      c2 = This->data[y * This->w + x];
+      This->data[y * This->w + x] = c;
       c = c2;
       if (++x == This->w) {
 	 x = 0;
@@ -309,7 +267,8 @@ void tn5250_dbuffer_roll(Tn5250DBuffer * This, int top, int bot, int lines)
       for (n = top; n <= bot; n++) {
 	 if (n + lines >= top) {
 	    for (c = 0; c < This->w; c++) {
-	       This->rows[n + lines][c] = This->rows[n][c];
+	       This->data[(n + lines) * This->w + c] =
+		  This->data[n * This->w + c];
 	    }
 	 }
       }
@@ -317,7 +276,8 @@ void tn5250_dbuffer_roll(Tn5250DBuffer * This, int top, int bot, int lines)
       for (n = bot; n >= top; n--) {
 	 if (n + lines <= bot) {
 	    for (c = 0; c < This->w; c++) {
-	       This->rows[n + lines][c] = This->rows[n][c];
+	       This->data[(n  + lines) * This->w + c] =
+		  This->data[n * This->w + c];
 	    }
 	 }
       }
@@ -332,7 +292,7 @@ unsigned char tn5250_dbuffer_char_at(Tn5250DBuffer * This, int y, int x)
    TN5250_ASSERT(x >= 0);
    TN5250_ASSERT(y < This->h);
    TN5250_ASSERT(x < This->w);
-   return This->rows[y][x];
+   return This->data[y * This->w + x];
 }
 
 /* vi:set cindent sts=3 sw=3: */

@@ -113,6 +113,7 @@ static void telnet_stream_write(Tn5250Stream * This, unsigned char *data, int si
 static int telnet_stream_get_byte(Tn5250Stream * This);
 
 static int telnet_stream_connect(Tn5250Stream * This, const char *to);
+static void telnet_stream_destroy(Tn5250Stream *This);
 static void telnet_stream_disconnect(Tn5250Stream * This);
 static int telnet_stream_handle_receive(Tn5250Stream * This);
 static void telnet_stream_send_packet(Tn5250Stream * This, int length,
@@ -161,7 +162,7 @@ int tn5250_telnet_stream_init (Tn5250Stream *This)
    This->disconnect = telnet_stream_disconnect;
    This->handle_receive = telnet_stream_handle_receive;
    This->send_packet = telnet_stream_send_packet;
-   This->destroy = NULL; /* FIXME: */
+   This->destroy = telnet_stream_destroy;
    return 0; /* Ok */
 }
 
@@ -239,6 +240,11 @@ static int telnet_stream_connect(Tn5250Stream * This, const char *to)
 static void telnet_stream_disconnect(Tn5250Stream * This)
 {
    CLOSESOCKET(This->sockfd);
+}
+
+static void telnet_stream_destroy(Tn5250Stream *This)
+{
+   /* noop */
 }
 
 /*
@@ -326,7 +332,10 @@ static void telnet_stream_do_verb(Tn5250Stream * This, unsigned char verb, unsig
       break;
    }
 
-   /* FIXME: We have to keep track of states here, but... */
+   /* We should really keep track of states here, but the code has been
+    * like this for some time, and no complaints.  
+    *
+    * Actually, I don't even remember what that comment means -JMF */
 
    ret = send(This->sockfd, (char *) reply, 3, 0);
    if (WAS_ERROR_RET(ret)) {

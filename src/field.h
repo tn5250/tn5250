@@ -27,13 +27,13 @@ extern "C" {
       struct _Tn5250Field /*@dependent@*/ /*@null@*/ *next;
       struct _Tn5250Field /*@dependent@*/ /*@null@*/ *prev;
       int id;
-      struct _Tn5250DBuffer /*@dependent@*/ *display;
       struct _Tn5250Table /*@dependent@*/ *table;
+
+      int w;	/* Display width, needed for some calcs */
 
       Tn5250Uint16 FFW;
       Tn5250Uint16 FCW;
       unsigned char attribute;
-      unsigned char /*@null@*/ *data;
       int start_row;
       int start_col;
       int length;
@@ -72,7 +72,7 @@ extern "C" {
 #define TN5250_FIELD_MAND_FILL_MASK	0x0007
 
 /* Manipulate fields */
-   extern Tn5250Field /*@only@*/ /*@null@*/ *tn5250_field_new(Tn5250DBuffer /*@dependent@*/ * display);
+   extern Tn5250Field /*@only@*/ /*@null@*/ *tn5250_field_new(int w);
    extern Tn5250Field /*@only@*/ /*@null@*/ *tn5250_field_copy(Tn5250Field * This);
    extern void tn5250_field_destroy(Tn5250Field /*@only@*/ * This);
 
@@ -84,17 +84,10 @@ extern "C" {
    extern const char *tn5250_field_description(Tn5250Field * This);
    extern const char *tn5250_field_adjust_description(Tn5250Field * This);
 
-   extern int tn5250_field_count_eof(Tn5250Field * This);
-   extern int tn5250_field_is_full(Tn5250Field * This);
    extern int tn5250_field_count_left(Tn5250Field * This, int y, int x);
    extern int tn5250_field_count_right(Tn5250Field * This, int y, int x);
-   extern unsigned char tn5250_field_get_char(Tn5250Field * This, int pos);
-   extern void tn5250_field_put_char(Tn5250Field *This, int pos, unsigned char c);
-   extern void tn5250_field_set_minus_zone(Tn5250Field *This);
-   extern void tn5250_field_process_adjust(Tn5250Field *This, int y, int x);
-   extern void tn5250_field_shift_right_fill(Tn5250Field * field, int n, unsigned char c);
-   extern void tn5250_field_update_display(Tn5250Field *This);
    extern void tn5250_field_set_mdt(Tn5250Field *This);
+   extern int tn5250_field_valid_char(Tn5250Field *This, int ch);
 
 #define tn5250_field_mdt(This) \
 	(((This)->FFW & TN5250_FIELD_MODIFIED) != 0)
