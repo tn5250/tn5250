@@ -19,5 +19,8 @@ int tn5250_config_exists (Tn5250Config *cfg, const char *name) {
 void tn5250_terminal_set_conn_fd (Tn5250Terminal *term, int fd) {
 	term->conn_fd = fd;
 }
+int tn5250_stream_env_exists (Tn5250Stream *This, const char *name) {
+    return !!tn5250_stream_getenv (This, name);
+}
 %}
 
