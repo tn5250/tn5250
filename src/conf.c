@@ -119,6 +119,8 @@ int tn5250_config_load (Tn5250Config *This, const char *filename)
    int done;
    char * curitem;
    GSList * temp;
+   int name_len, i;
+   char *name;
 
    /* It is not an error for a config file not to exist. */
    if ((f = fopen (filename, "r")) == NULL)
@@ -143,7 +145,19 @@ int tn5250_config_load (Tn5250Config *This, const char *filename)
 	 len = strlen (scan) - 1;
 	 while (len > 0 && isspace (scan[len]))
 	    scan[len--] = '\0';
-	 tn5250_config_set (This, scan, CONFIG_STRING, "1");
+
+	 for (i = 0, name_len = len + 3; i < prefix_stack_size; i++) {
+	    name_len += strlen (prefix_stack[i]) + 1;
+	 }
+	 name = (char*)g_malloc (name_len);
+	 name[0] = '\0';
+	 for (i = 0; i < prefix_stack_size; i++) {
+	    strcat (name, prefix_stack[i]);
+	    strcat (name, ".");
+	 }
+         strcat(name, scan);
+	 tn5250_config_set (This, name, CONFIG_STRING, "1");
+         g_free(name);
 
       } else if (*scan == '-') {
 	 scan++;
@@ -152,11 +166,21 @@ int tn5250_config_load (Tn5250Config *This, const char *filename)
 	 len = strlen (scan) - 1;
 	 while (len > 0 && isspace (scan[len]))
 	    scan[len--] = '\0';
-	 tn5250_config_set (This, scan, CONFIG_STRING, "0");
+
+	 for (i = 0, name_len = len + 3; i < prefix_stack_size; i++) {
+	    name_len += strlen (prefix_stack[i]) + 1;
+	 }
+	 name = (char*)g_malloc (name_len);
+	 name[0] = '\0';
+	 for (i = 0; i < prefix_stack_size; i++) {
+	    strcat (name, prefix_stack[i]);
+	    strcat (name, ".");
+	 }
+         strcat(name, scan);
+	 tn5250_config_set (This, name, CONFIG_STRING, "0");
+         g_free(name);
 
       } else if (strchr (scan, '=')) {
-	 int name_len, i;
-	 char *name;
 
 	 /* Set item. */
 
@@ -385,6 +409,7 @@ void tn5250_config_set (Tn5250Config *This, const char *name,
 {
    Tn5250ConfigStr *str = tn5250_config_get_str (This, name);
 
+           fprintf(stderr, "setting %s\n", name);
    if (str != NULL) {
      if(str->type == CONFIG_STRING) {
        g_free (str->value);
@@ -428,6 +453,8 @@ void tn5250_config_promote (Tn5250Config *This, const char *prefix)
      if (strlen(prefix) <= strlen( data->name ) + 2
 	 && !memcmp(data->name, prefix, strlen(prefix))
 	 && data->name[strlen(prefix)] == '.') {
+       fprintf(stderr, "promoting %s to %s for prefix %s\n", data->name,
+               data->name+strlen(prefix)+1, prefix);
        tn5250_config_set(This, data->name 
 			 + strlen(prefix) + 1,
 			 data->type,
