@@ -199,6 +199,7 @@ void tn5250_print_session_set_output_command(Tn5250PrintSession * This, const ch
  *****/
 int tn5250_print_session_get_response_code(Tn5250PrintSession * This, char *code)
 {
+
    /* Offset of first byte of data after record variable-length header. */
    int o = 6 + tn5250_record_data(This->rec)[6];
    int i;
@@ -212,14 +213,15 @@ int tn5250_print_session_get_response_code(Tn5250PrintSession * This, char *code
 	       );
       }
    }
+
    code[4] = '\0';
    for (i = 0; i < sizeof (response_codes)/sizeof (struct response_code); i++) {
+   printf("i= %d\n", i);
+   printf("%s\n", code);
       if (!strcmp (response_codes[i].code, code)) {
-	 printf ("%s %s\n", response_codes[i].code, response_codes[i].text);
 	 return response_codes[i].retval;
       }
    }
-   printf ("%s (Unknown response code)\n", code);
    return 0;
 }
 
@@ -252,8 +254,10 @@ void tn5250_print_session_main_loop(Tn5250PrintSession * This)
 	    break;
 	 }
       }
+
    }
 
+   
    newjob = 1;
    while (1) {
       if (tn5250_print_session_waitevent(This)) {

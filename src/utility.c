@@ -128,7 +128,7 @@ Tn5250Char tn5250_char_map_to_local(Tn5250CharMap *map, Tn5250Char ebcdic)
  * NAME
  *    tn5250_char_map_new
  * SYNOPSIS
- *    cmap = tn5250_char_map_new ("en");
+ *    cmap = tn5250_char_map_new ("37");
  * INPUTS
  *    const char *         map        - Name of the character translation map.
  * DESCRIPTION

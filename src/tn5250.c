@@ -21,21 +21,17 @@
 char *remotehost;
 char *mapname = "37";
 char *sessionname = NULL;
-int printsession = 0;
-char *transformname = NULL;
-char *outputcommand = NULL;
 char *termtype = NULL;
 #ifndef NDEBUG
 int debugpause = 1;
 #endif
 
-Tn5250PrintSession *printsess = NULL;
 Tn5250Session *sess = NULL;
 Tn5250Stream *stream = NULL;
 Tn5250Terminal *term = NULL;
 Tn5250Display *display = NULL;
 
-static char sopts[] = "m:s:t:T:P:Vwy:";
+static char sopts[] = "m:s:t:Vwy:";
 
 /* FIXME: This should be moved into session.[ch] or something. */
 static struct valid_term {
@@ -72,13 +68,9 @@ int main(int argc, char *argv[])
    if (stream == NULL)
       goto bomb_out;
 
-   if (printsession) {
-      printsess = tn5250_print_session_new();
-      tn5250_stream_setenv(stream, "TERM", "IBM-3812-1");
-   } else {
-      display = tn5250_display_new ();
-      if (mapname != NULL)
-	 tn5250_display_set_char_map (display, mapname);
+   display = tn5250_display_new ();
+   if (mapname != NULL)
+      tn5250_display_set_char_map (display, mapname);
 
 #ifdef USE_CURSES
       term = tn5250_curses_terminal_new();
@@ -124,47 +116,23 @@ int main(int argc, char *argv[])
 	 }
       } else
 	 tn5250_stream_setenv(stream, "TERM", termtype);
-   }
 
    tn5250_stream_setenv(stream, "DEVNAME", sessionname);
 
-   if (printsession) {
-      tn5250_stream_setenv(stream, "IBMFONT", "12");
-      if (transformname != NULL) {
-         tn5250_stream_setenv(stream, "IBMTRANSFORM", "1");
-         tn5250_stream_setenv(stream, "IBMMFRTYPMDL", transformname);
-      } else
-         tn5250_stream_setenv(stream, "IBMTRANSFORM", "0");
-      tn5250_print_session_set_fd(printsess, tn5250_stream_socket_handle(stream));
-      tn5250_print_session_set_stream(printsess, stream);
-      if (mapname == NULL)
-	 mapname = "en";
-      tn5250_print_session_set_char_map(printsess, mapname);
-      printf("-%s-\n", outputcommand);
-      tn5250_print_session_set_output_command(printsess, outputcommand);
-      tn5250_print_session_main_loop(printsess);
-   } else {
-      term->conn_fd = tn5250_stream_socket_handle(stream);
-      tn5250_session_set_stream(sess, stream);
-      tn5250_session_main_loop(sess);
-   }
+   term->conn_fd = tn5250_stream_socket_handle(stream);
+   tn5250_session_set_stream(sess, stream);
+   tn5250_session_main_loop(sess);
 
    errno = 0;
 
 bomb_out:
-   if (!printsession) {
-      if (term != NULL)
-	 tn5250_terminal_term(term);
-      if (sess != NULL)
-	 tn5250_session_destroy(sess);
-      else if (stream != NULL)
-	 tn5250_stream_destroy (stream);
-   } else {
-      if (printsess != NULL)
-	 tn5250_print_session_destroy(printsess);
-      if (stream != NULL)
-	 tn5250_stream_destroy (stream);
-   }
+   if (term != NULL)
+      tn5250_terminal_term(term);
+   if (sess != NULL)
+      tn5250_session_destroy(sess);
+   else if (stream != NULL)
+      tn5250_stream_destroy (stream);
+
    if (errno != 0)
       printf("Could not start session: %s\n", strerror(errno));
 #ifndef NDEBUG
@@ -180,11 +148,6 @@ static int parse_options(int argc, char *argv[])
       switch (arg) {
       case 'm':
 	 mapname = optarg;
-	 break;
-
-      case 'P':
-	 outputcommand = optarg;
-	 printsession = 1;
 	 break;
 
       case 's':
@@ -221,10 +184,6 @@ static int parse_options(int argc, char *argv[])
 	 }
 	 break;
 #endif
-
-      case 'T':
-	 transformname = optarg;
-	 break;
 
       case 'V':
 	 printf("tn5250 version %s\n\n", version_string);
@@ -273,7 +232,7 @@ Syntax:\n\
   tn5250 [options] HOST[:PORT]\n\
 \n\
 Options:\n\
-   -m NAME                 Character map (default is 'en'):");
+   -m NAME                 Character map (default is '37'):");
    m = tn5250_transmaps;
    while (m->name != NULL) {
       if (i % 5 == 0)
@@ -282,9 +241,7 @@ Options:\n\
       m++; i++;
    }
    printf ("\n\
-   -s NAME                 Use NAME as session name (default: none).\n\
-   -P COMMAND              Use COMMAND to send output to printer.\n\
-   -T NAME                 Use NAME as print transformation.\n"
+   -s NAME                 Use NAME as session name (default: none).\n"
 #ifndef NDEBUG
 "   -t FILE                 Log session to FILE.\n"
 #endif
