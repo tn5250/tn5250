@@ -227,7 +227,6 @@ struct _Tn5250TerminalPrivate {
 };
 
 
-
 /* 
  *  This array converts windows "keystrokes" into character messages
  *  for those that aren't handled by the "TranslateMessage" function.
@@ -1328,7 +1327,7 @@ void win32_terminal_draw_text(HDC hdc, int attr, const char *text, int len, int 
 
     if (flags&A_VERTICAL && colsep_style==COLSEPSTYLE_NONE) {
           flags &= ~A_VERTICAL;
-          flags |= A_UNDERLINE;
+/*          flags |= A_UNDERLINE; */
     }
 
     /* draw underlines */
@@ -1439,19 +1438,17 @@ static void win32_terminal_update_indicators(Tn5250Terminal *This, Tn5250Display
        RECT rect;
        int x, y;
        int savemixmode;
-//       x = This->data->caretx + This->data->font_width / 2;
        x = This->data->caretx;
-//       y = This->data->carety + This->data->font_height / 2;
        y = This->data->carety + This->data->font_height;
        GetClientRect(This->data->hwndMain, &rect);
        savepen = SelectObject(bmphdc, 
                    CreatePen(PS_SOLID, 0, colorlist[A_5250_RULER_COLOR].ref));
-//       savepen = SelectObject(bmphdc, GetStockObject(WHITE_PEN));
        MoveToEx(bmphdc, x, rect.top, NULL);
        LineTo  (bmphdc, x, rect.bottom);
        MoveToEx(bmphdc, rect.left, y, NULL);
        LineTo  (bmphdc, rect.right, y);
        savepen = SelectObject(hdc, savepen);
+       DeleteObject(savepen);
    }
 
    This->data->selected = This->data->selecting = 0;
@@ -2506,6 +2503,7 @@ PRINTDLG * win32_get_printer_info(Tn5250Terminal *This) {
     pd->nMinPage    = 1;
     pd->nMaxPage    = 1;
 
+
     if (PrintDlg(This->data->pd) == 0) {
         TN5250_LOG (("PrintDlg() error %d\n", CommDlgExtendedError()));
         g_free(This->data->pd);
@@ -2580,11 +2578,16 @@ void win32_print_screen(Tn5250Terminal *This, Tn5250Display *display) {
     HPEN oldpen;
     Tn5250Win32Attribute *mymap;
 
+
  /* get info about the printer.   The GDI device context will
     be in pd->hDC.  We need this to print.  */
 
     if ((pd = win32_get_printer_info(This)) == NULL) {
+       TN5250_LOG(("win32_get_printer_info failed.\n"));
        return;
+    }
+    if ( pd->hDC == NULL ) {
+        TN5250_LOG(("pd->hDC == NULL!!\n"));
     }
     TN5250_ASSERT ( pd->hDC != NULL );
 
@@ -2632,6 +2635,9 @@ void win32_print_screen(Tn5250Terminal *This, Tn5250Display *display) {
         i++;
     size = (i+1) * sizeof(Tn5250Win32Attribute);
     mymap = (Tn5250Win32Attribute *) g_malloc(size);
+    if ( mymap == NULL ) {
+        TN5250_LOG(("mymap == NULL.  Unable to allocate memory.\n"));
+    }
     memcpy(mymap, attribute_map, size);
     for (i=0; mymap[i].colorindex != -1; i++) {
         if ( mymap[i].colorindex == A_5250_BLACK )
@@ -2643,6 +2649,7 @@ void win32_print_screen(Tn5250Terminal *This, Tn5250Display *display) {
 /* re-draw the screen into our new bitmap */
     
     win32_do_terminal_update(hdc, This, display, mymap, 3, 3);
+    g_free(mymap);
     
 
 /* start a new printer document */
@@ -2702,8 +2709,20 @@ void win32_print_screen(Tn5250Terminal *This, Tn5250Display *display) {
     same time) copying it to the printer */
 
     if (StretchBlt(pd->hDC, 0, 0, w2, h2, hdc, x, y, w, h, SRCCOPY)==0) {
-       TN5250_LOG (("StretchBlt error %d\n", GetLastError ));
-       TN5250_ASSERT( FALSE );
+       LPVOID lpMsgBuf;
+       FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_ALLOCATE_BUFFER,
+             NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL,SUBLANG_DEFAULT),
+             (LPTSTR) &lpMsgBuf, 0, NULL);
+       TN5250_LOG (("StretchBlt error %s\n", (char *)lpMsgBuf));
+       MessageBox(NULL, lpMsgBuf, "StretchBlt", MB_OK|MB_ICONINFORMATION);
+       LocalFree(lpMsgBuf);
+       BitBlt(pd->hDC, 0, 0, w, h, hdc, x, y, SRCCOPY);  // worth a try!
+       EndPage(pd->hDC);
+       EndDoc(pd->hDC);
+       free(This->data->pd);
+       This->data->pd = NULL;
+       pd = NULL;
+       return;
     }
  
 /* close printer document */
