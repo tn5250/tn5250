@@ -116,7 +116,7 @@ void tn5250_session_destroy(Tn5250Session * This)
       tn5250_record_destroy(This->record);
    if (This->config != NULL)
       tn5250_config_unref (This->config);
-   g_free (This);
+   free (This);
 }
 
 /****f* lib5250/tn5250_session_config

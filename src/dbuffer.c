@@ -267,7 +267,7 @@ void tn5250_dbuffer_set_size(Tn5250DBuffer * This, int rows, int cols)
    This->w = cols;
    This->h = rows;
 
-   g_free(This->data);
+   free(This->data);
    This->data = tn5250_new(unsigned char, rows * cols);
    TN5250_ASSERT (This->data != NULL);
 
