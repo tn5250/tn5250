@@ -1,3 +1,11 @@
+2002-03-11 James Rich <james@eaerich.com>
+- Removed all common functions in scs2ascii.c and scs2pdf.c and put them
+  in scs.c.  Expanded scs.h to have the appropriate definitions.  Updated
+  the TODO file appropriately.  Added scs.c to Makefile.am so it is part
+  of the build.
+- As a consequence of this the solution to the page size problem became
+  evident.  Updated scs2pdf.c to fix the page sizes.
+
 2002-03-09 James Rich <james@eaerich.com>
 - Changed scs2pdf.c to use environment variable TN5250_PDF to determine
   where to write it's output.  If this environment variable is not set, 

@@ -28,6 +28,7 @@ lib5250_la_SOURCES =	buffer.c\
 			field.c\
 			printsession.c\
 			record.c\
+			scs.c\
 			session.c\
 			slangterm.c\
 			sslstream.c\
