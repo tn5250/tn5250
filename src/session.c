@@ -170,6 +170,7 @@ static void tn5250_session_handle_keys(Tn5250Session *This)
 	    if ((This->key_queue_tail + 1 == This->key_queue_head) ||
 		  (This->key_queue_head == 0 &&
 		   This->key_queue_tail == TN5250_SESSION_KEY_QUEUE_SIZE - 1)) {
+	       TN5250_LOG (("Beep: Key queue full.\n"));
 	       tn5250_display_beep (This->display);
 	    }
 	    This->key_queue[This->key_queue_tail] = cur_key;
@@ -685,6 +686,7 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
 
 static void tn5250_session_handle_cc2 (Tn5250Session *This, unsigned char CC2)
 {
+   TN5250_LOG (("Processing CC2 0x%02X.\n", (int)CC2));
    if (CC2 & TN5250_SESSION_CTL_MESSAGE_ON)
       tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_MESSAGE_WAITING);
    if ((CC2 & TN5250_SESSION_CTL_MESSAGE_OFF) && !(CC2 & TN5250_SESSION_CTL_MESSAGE_ON))
@@ -693,13 +695,13 @@ static void tn5250_session_handle_cc2 (Tn5250Session *This, unsigned char CC2)
    if ((CC2 & TN5250_SESSION_CTL_CLR_BLINK) != 0 && (CC2 & TN5250_SESSION_CTL_SET_BLINK) == 0) {
       /* FIXME: Hand off to terminal */
    }
-
    if ((CC2 & TN5250_SESSION_CTL_SET_BLINK) != 0) {
       /* FIXME: Hand off to terminal */
    }
-
-   if ((CC2 & TN5250_SESSION_CTL_ALARM) != 0)
+   if ((CC2 & TN5250_SESSION_CTL_ALARM) != 0) {
+      TN5250_LOG (("TN5250_SESSION_CTL_ALARM was set.\n"));
       tn5250_display_beep (This->display);
+   }
    if ((CC2 & TN5250_SESSION_CTL_UNLOCK) != 0)
       tn5250_display_indicator_clear(This->display, TN5250_DISPLAY_IND_X_SYSTEM);
 }

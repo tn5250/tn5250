@@ -243,17 +243,17 @@ static void curses_terminal_update(Tn5250Terminal * This, Tn5250Display *display
    if (This->data->last_width != tn5250_display_width(display)
        || This->data->last_height != tn5250_display_height(display)) {
       clear();
-      if(1) {
-/*      if (This->data->is_xterm) {   */
+      if(This->data->is_xterm) {
 	 refresh ();
 	 printf ("\x1b[8;%d;%dt", tn5250_display_height (display)+1,
 	       tn5250_display_width (display));
 	 fflush (stdout);
+#ifdef HAVE_RESIZETERM
 	 resizeterm(tn5250_display_height(display)+1, tn5250_display_width(display)+1);
-
-	 /* Make sure we get a SIGWINCH - We need curses to resize its
-	  * buffer. */
-	 raise (SIGWINCH);
+#endif
+ 	 /* Make sure we get a SIGWINCH - We need curses to resize its
+ 	  * buffer. */
+ 	 raise (SIGWINCH);
       }
       This->data->last_width = tn5250_display_width(display);
       This->data->last_height = tn5250_display_height(display);
@@ -408,7 +408,7 @@ static int curses_terminal_getkey(Tn5250Terminal * This)
 
       case K_CTRL('Q'):
 	 This->data->quit_flag = 1;
-	 return ERR;
+	 return -1;
 
       case K_CTRL('G'):	/* C-g <function-key-shortcut> */
 	 if ((key = curses_terminal_get_esc_key(This, 0)) != ERR)
@@ -447,7 +447,7 @@ static int curses_terminal_getkey(Tn5250Terminal * This)
 
 static void curses_terminal_beep (Tn5250Terminal *This)
 {
-   TN5250_LOG (("beep\n"));
+   TN5250_LOG (("CURSES: beep\n"));
    beep ();
    refresh ();
 }
@@ -606,16 +606,17 @@ static int curses_terminal_get_esc_key(Tn5250Terminal * This,
 
    case 'Q':
       This->data->quit_flag = 1;
-      key = ERR;
+      key = -1;
       break;
 
+   case ERR:
    default:
       beep();
-      key = ERR;
+      key = -1;
       break;
    }
 
-   if (key == ERR)
+   if (key == -1)
       mvaddstr(24, 64, "???");
    else
       mvaddch(24, 64, (chtype)display_key);

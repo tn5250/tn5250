@@ -10,6 +10,13 @@ AC_PROG_CC
 AC_PROG_GCC_TRADITIONAL
 AM_PROG_LIBTOOL
 
+AC_PATH_PROG(DIALOG,dialog,no)
+if test x$DIALOG = xno
+then
+	AC_PATH_PROG(DIALOG,whiptail,no)
+fi
+AC_SUBST(DIALOG)
+
 dnl **
 dnl ** Check for screen interface libraries.  There are a few posibilities here:
 dnl ** -lncurses, -lcurses, -lslang.  -lslang is only checked for if the 
@@ -108,9 +115,8 @@ AC_DEFINE(SOCKET_TYPE,int)
 
 dnl ** Checks for library functions.
 AC_FUNC_MEMCMP
-AC_CHECK_FUNCS(setlocale)
 AC_TYPE_SIGNAL
-AC_CHECK_FUNCS(select socket strerror)
+AC_CHECK_FUNCS(setlocale select socket strerror resizeterm)
 AC_CHECK_SIZEOF(short, 2)
 AC_CHECK_SIZEOF(int, 4)
 AC_CHECK_SIZEOF(long, 4)
