@@ -26,7 +26,7 @@
 static void scs2ascii_sic ();
 static void scs2ascii_sil ();
 static void scs2ascii_sls ();
-static void scs2ascii_process34 ();
+int scs2ascii_process34 (int *curpos);
 static void scs2ascii_process2b ();
 static void scs2ascii_rff ();
 static void scs2ascii_noop ();
@@ -54,7 +54,7 @@ static void scs2ascii_cr ();
 static void scs2ascii_nl ();
 static void scs2ascii_rnl ();
 static void scs2ascii_ht ();
-static void scs2ascii_ahpp ();
+int scs2ascii_ahpp (int *curpos);
 static void scs2ascii_avpp ();
 static void scs2ascii_processd3 ();
 static void scs2ascii_sto ();
@@ -93,6 +93,7 @@ main ()
   int pageparent, procsetobject, fontobject, rootobject;
   int i;
   int newpage = 0;
+  int column;
   ObjectList = g_array_new (FALSE, FALSE, sizeof (int));
   new_line = 1;
 
@@ -101,8 +102,12 @@ main ()
   g_array_append_val (ObjectList, filesize);
   objcount++;
   filesize += pdf_begin_stream (objcount);
+#ifdef DEBUG
+  fprintf (stderr, "objcount = %d\n", objcount);
+#endif
 
   pagenumber = 1;
+  column = 0;
 
   while (!feof (stdin))
     {
@@ -152,7 +157,7 @@ main ()
 	  }
 	case 0x34:
 	  {
-	    scs2ascii_process34 ();
+	    streamsize += scs2ascii_process34 (&column);
 	    break;
 	  }
 	case 0x2B:
@@ -179,13 +184,21 @@ main ()
 		g_array_append_val (ObjectList, filesize);
 		objcount++;
 		filesize += pdf_stream_length (objcount, streamsize);
+		streamsize = 0;
+#ifdef DEBUG
+		fprintf (stderr, "objcount = %d\n", objcount);
+#endif
 
 		g_array_append_val (ObjectList, filesize);
 		objcount++;
 		filesize += pdf_begin_stream (objcount);
+#ifdef DEBUG
+		fprintf (stderr, "objcount = %d\n", objcount);
+#endif
 
 		pagenumber++;
 		newpage = 0;
+		column = 0;
 	      }
 	    if (new_line)
 	      {
@@ -193,11 +206,13 @@ main ()
 		streamsize += pdf_process_char ('\0', 1);
 		printf ("0 -12 Td\n");
 		streamsize += 9;
+		column = 0;
 	      }
 	    streamsize += pdf_process_char (tn5250_char_map_to_local (map,
 								      curchar),
 					    0);
 	    /*streamsize += pdf_process_char(curchar, 0); */
+	    column++;
 	  }
 	}
 
@@ -210,30 +225,48 @@ main ()
   g_array_append_val (ObjectList, filesize);
   objcount++;
   filesize += pdf_stream_length (objcount, streamsize);
+#ifdef DEBUG
+  fprintf (stderr, "stream length objcount = %d\n", objcount);
+#endif
 
   g_array_append_val (ObjectList, filesize);
   objcount++;
   filesize += pdf_catalog (objcount, objcount + 1, objcount + 4);
   rootobject = objcount;
+#ifdef DEBUG
+  fprintf (stderr, "catalog objcount = %d\n", objcount);
+#endif
 
   g_array_append_val (ObjectList, filesize);
   objcount++;
   filesize += pdf_outlines (objcount);
+#ifdef DEBUG
+  fprintf (stderr, "outlines objcount = %d\n", objcount);
+#endif
 
   g_array_append_val (ObjectList, filesize);
   objcount++;
   filesize += pdf_procset (objcount);
   procsetobject = objcount;
+#ifdef DEBUG
+  fprintf (stderr, "procedure set objcount = %d\n", objcount);
+#endif
 
   g_array_append_val (ObjectList, filesize);
   objcount++;
   filesize += pdf_font (objcount);
   fontobject = objcount;
+#ifdef DEBUG
+  fprintf (stderr, "font objcount = %d\n", objcount);
+#endif
 
   g_array_append_val (ObjectList, filesize);
   objcount++;
   filesize += pdf_pages (objcount, objcount + 1, pagenumber);
   pageparent = objcount;
+#ifdef DEBUG
+  fprintf (stderr, "pages objcount = %d\n", objcount);
+#endif
 
   for (i = 0; i < pagenumber; i++)
     {
@@ -242,6 +275,9 @@ main ()
       filesize += pdf_page (objcount,
 			    pageparent,
 			    textobjects[i], procsetobject, fontobject);
+#ifdef DEBUG
+      fprintf (stderr, "page objcount = %d\n", objcount);
+#endif
     }
 
   pdf_xreftable (objcount);
@@ -267,21 +303,18 @@ scs2ascii_rnl ()
 static void
 scs2ascii_nl ()
 {
-  if (!new_line)
-    {
-    }
   new_line = 1;
+#ifdef DEBUG
   fprintf (stderr, "NL\n");
+#endif
 }
 
 static void
 scs2ascii_ff ()
 {
-  int row;
-  int junk;
-  int loop;
-
+#ifdef DEBUG
   fprintf (stderr, "FF\n");
+#endif
 }
 
 static void
@@ -314,13 +347,17 @@ scs2ascii_rff ()
 static void
 scs2ascii_noop ()
 {
+#ifdef DEBUG
   fprintf (stderr, "NOOP\n");
+#endif
 }
 
-static void
-scs2ascii_process34 ()
+int
+scs2ascii_process34 (int *curpos)
 {
+  int bytes;
 
+  bytes = 0;
   curchar = fgetc (stdin);
   switch (curchar)
     {
@@ -331,7 +368,7 @@ scs2ascii_process34 ()
       }
     case SCS_AHPP:
       {
-	scs2ascii_ahpp ();
+	bytes = scs2ascii_ahpp (curpos);
 	break;
       }
     default:
@@ -339,6 +376,7 @@ scs2ascii_process34 ()
 	fprintf (stderr, "ERROR: Unknown 0x34 command %x\n", curchar);
       }
     }
+  return (bytes);
 }
 
 static void
@@ -347,29 +385,44 @@ scs2ascii_avpp ()
   fprintf (stderr, "AVPP %d\n", fgetc (stdin));
 }
 
-static void
-scs2ascii_ahpp ()
+int
+scs2ascii_ahpp (int *curpos)
 {
-  int position;
-  int loop;
+  int position, bytes;
+  int i;
 
+  bytes = 0;
   position = fgetc (stdin);
-  /*
-     if (ccp > position) {
-     printf("\r");
-     current_line++;
-     for (loop = 0; loop < position; loop++) {
-     page[current_line-1][ccp-1] = ' ';
-     ccp++;
-     }
-     } else {
-     for (loop = 0; loop < position - ccp; loop++) {
-     page[current_line-1][ccp-1] = ' ';
-     ccp++;
-     }
-     }
-   */
+
+  if (*curpos > position)
+    {
+      /* I think we should be writing a new line here but the output is
+       * all screwed up when we do.  Since it looks correct without the
+       * new line I'm going to leave it out. */
+      /*
+      bytes += pdf_process_char ('\0', 1);
+      printf ("0 -12 Td\n");
+      bytes += 9;
+      */
+
+      for (i = 0; i < position; i++)
+	{
+	  bytes += pdf_process_char (' ', 0);
+	}
+    }
+  else
+    {
+      for (i = 0; i < (position - *curpos); i++)
+	{
+	  bytes += pdf_process_char (' ', 0);
+	}
+    }
+  *curpos = position;
+
+#ifdef DEBUG
   fprintf (stderr, "AHPP %d\n", position);
+#endif
+  return (bytes);
 }
 
 static void
@@ -924,6 +977,7 @@ int
 pdf_pages (int objnum, int pagechildren, int pages)
 {
   char text[255];
+  int bytes;
   int i;
 
   sprintf (text,
@@ -932,27 +986,32 @@ pdf_pages (int objnum, int pagechildren, int pages)
 	   "\t\t/Type /Pages\n" \
 	   "\t\t/Kids [",
 	   objnum);
+  printf ("%s", text);
+  bytes = strlen (text);
   sprintf (text,
-	   "%s %d 0 R\n",
-	   text, pagechildren);
+	   " %d 0 R\n",
+	   pagechildren);
+  printf ("%s", text);
+  bytes += strlen (text);
   for (i = 1; i < pages; i++)
     {
       sprintf (text,
-	       "%s" \
 	       "\t\t      %d 0 R\n",
-	       text, pagechildren + i);
+	       pagechildren + i);
+      printf ("%s", text);
+      bytes += strlen (text);
     }
   sprintf (text,
-	   "%s" \
 	   "\t\t      ]\n" \
 	   "\t\t/Count %d\n" \
 	   "\t>>\n" \
 	   "endobj\n\n",
-	   text, pages);
+	   pages);
 
   printf ("%s", text);
+  bytes += strlen (text);
 
-  return (strlen (text));
+  return (bytes);
 }
 
 int
