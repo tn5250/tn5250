@@ -79,6 +79,10 @@
 #include <syslog.h>
 #endif
 
+#ifdef HAVE_PWD_H
+#include <pwd.h>
+#endif
+
 #include "buffer.h"
 #include "record.h"
 #include "stream.h"
@@ -93,6 +97,7 @@
 #include "debug.h"
 #include "wtd.h"
 #include "scs.h"
+#include "conf.h"
 
 #if USE_CURSES
 #ifdef HAVE_NCURSES_H

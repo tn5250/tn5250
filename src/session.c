@@ -119,7 +119,30 @@ void tn5250_session_destroy(Tn5250Session * This)
       tn5250_stream_destroy(This->stream);
    if (This->record != NULL)
       tn5250_record_destroy(This->record);
+   if (This->config != NULL)
+      tn5250_config_unref (This->config);
    free (This);
+}
+
+/****f* lib5250/tn5250_session_config
+ * NAME
+ *    tn5250_session_config
+ * SYNOPSIS
+ *    tn5250_session_config (This);
+ * INPUTS
+ *    Tn5250Session *      This       - The session to configure.
+ *    Tn5250Config *       config     - The configuration object to use.
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
+int tn5250_session_config (Tn5250Session *This, Tn5250Config *config)
+{
+   tn5250_config_ref (config);
+   if (This->config != NULL)
+      tn5250_config_unref (This->config);
+   This->config = config;
+   /* FIXME: Validate */
+   return 0;
 }
 
 /****f* lib5250/tn5250_session_set_stream
@@ -1464,7 +1487,7 @@ static void tn5250_session_read_cmd (Tn5250Session * This, int readop)
 static void tn5250_session_query_reply(Tn5250Session * This)
 {
    unsigned char temp[61];
-   char *scan;
+   const char *scan;
    int dev_type, dev_model, i;
 
    TN5250_LOG(("Sending QueryReply.\n"));
@@ -1511,7 +1534,7 @@ static void tn5250_session_query_reply(Tn5250Session * This)
 
    /* Retreive the device type from the stream, parse out the device
     * type and model, convert it to EBCDIC, and put it in the packet. */
-   scan = tn5250_stream_getenv (This->stream, "TERM");
+   scan = tn5250_config_get (This->config, "env.TERM");
    TN5250_ASSERT (scan != NULL);
    TN5250_ASSERT (strchr (scan, '-') != NULL);
    scan = strchr (scan, '-') + 1;

@@ -173,7 +173,7 @@ AC_PATH_XTRA
 dnl ** Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/ioctl.h sys/filio.h sys/time.h unistd.h slang/slang.h slang.h locale.h)
-AC_CHECK_HEADERS(netinet/in.h sys/wait.h fcntl.h syslog.h)
+AC_CHECK_HEADERS(netinet/in.h sys/wait.h fcntl.h syslog.h pwd.h)
 
 AC_TYPE_SIGNAL
 
@@ -186,5 +186,14 @@ AM_CONDITIONAL(LIB_GETOPT, test x$ac_cv_func_getopt_long = xno)
 AC_CHECK_SIZEOF(short, 2)
 AC_CHECK_SIZEOF(int, 4)
 AC_CHECK_SIZEOF(long, 4)
+
+dnl *
+dnl *	 Export $sysconfdir as @SYSCONFDIR@ so tn5250 can find it's
+dnl *	 default config file.
+dnl *
+eval SYSCONFDIR="$sysconfdir"
+eval SYSCONFDIR="$SYSCONFDIR"
+SYSCONFDIR="`echo "$sysconfdir" |sed 's/^NONE/\/usr\/local/'`"
+AC_DEFINE_UNQUOTED(SYSCONFDIR,"$SYSCONFDIR")
 
 AC_OUTPUT(Makefile src/Makefile doc/Makefile linux/Makefile freebsd/Makefile tn5250-config xt5250)

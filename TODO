@@ -53,10 +53,5 @@
     to break the emulator when it is encountered.  So far, no reported problems.
   </item>
 
-  <item>
-    Add some kind of version control to tn5250-config shell script, add aclocal/
-    autoconf/automake macro for detecting lib5250.
-  </item>
-
 </todo>
 <!-- vi:set sts=2 sw=2 autoindent: -->

@@ -38,6 +38,8 @@
 extern "C" {
 #endif
 
+struct _Tn5250Config;
+
 /****s* lib5250/Tn5250Stream
  * NAME
  *    Tn5250Stream
@@ -63,10 +65,11 @@ struct _Tn5250Stream {
 	 unsigned char opcode, unsigned char *data);
    void (/*@null@*/ * destroy) (struct _Tn5250Stream /*@only@*/ *This);
 
+   struct _Tn5250Config *config; 
+
    Tn5250Record /*@null@*/ *records;
    Tn5250Record /*@dependent@*/ /*@null@*/ *current_record;
    int record_count;
-   struct _Tn5250StreamVar /*@null@*/ *environ;
 
    Tn5250Buffer sb_buf;
 
@@ -82,31 +85,8 @@ struct _Tn5250Stream {
 typedef struct _Tn5250Stream Tn5250Stream;
 /******/
 
-/****s* lib5250/Tn5250StreamVar
- * NAME
- *    Tn5250StreamVar
- * SYNOPSIS
- *    Should only be accessed via Tn5250Stream objects.
- * DESCRIPTION
- *    Manages a name/value pair of strings used to determine the stream's
- *    behavior.
- * SEE ALSO
- *    tn5250_stream_setenv ()
- *    tn5250_stream_getenv ()
- *    tn5250_stream_unsetenv ()
- * SOURCE
- */
-struct _Tn5250StreamVar {
-   struct _Tn5250StreamVar *next;
-   struct _Tn5250StreamVar *prev;
-   char *name;
-   char *value;
-};
-
-typedef struct _Tn5250StreamVar Tn5250StreamVar;
-/******/
-
 extern Tn5250Stream /*@only@*/ /*@null@*/ *tn5250_stream_open (const char *to);
+extern int tn5250_stream_config (Tn5250Stream *This, struct _Tn5250Config *config);
 extern void tn5250_stream_destroy(Tn5250Stream /*@only@*/ * This);
 extern Tn5250Record /*@only@*/ *tn5250_stream_get_record(Tn5250Stream * This);
 
@@ -124,7 +104,7 @@ extern Tn5250Record /*@only@*/ *tn5250_stream_get_record(Tn5250Stream * This);
 extern void tn5250_stream_setenv(Tn5250Stream * This, const char *name,
 				 const char /*@null@*/ *value);
 extern void tn5250_stream_unsetenv(Tn5250Stream * This, const char *name);
-extern /*@observer@*/ /*@null@*/ char *tn5250_stream_getenv(Tn5250Stream * This, const char *name);
+extern /*@observer@*/ /*@null@*/ const char *tn5250_stream_getenv(Tn5250Stream * This, const char *name);
 
 #define tn5250_stream_record_count(This) ((This)->record_count)
 #define tn5250_stream_socket_handle(This) ((This)->sockfd)

@@ -62,11 +62,11 @@ extern "C" {
 #define SOH	0x01		/* Start of header */
 #define RA	0x02		/* Repeat to address */
 #define EA	0x03		/* Erase to Address on 5494 */ /* FIXME: */
-#define TD	0x10		/* Transparent Data on 5494 */ /* FIXME: */
+#define TD	0x10		/* Transparent Data on 5494 */
 #define SBA	0x11		/* Set buffer address */
 #define WEA	0x12		/* Write Extended Attribute on 5494 */ /* FIXME: */
 #define IC	0x13		/* Insert cursor */
-#define MC	0x14		/* Move Cursor on 5494 */ /* FIXME: */
+#define MC	0x14		/* Move Cursor on 5494 */
 #define WDSF	0x15		/* Write to Display Structured Field on 5494 */ /* FIXME: */
 #define SF	0x1D		/* Start of field */
 

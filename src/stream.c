@@ -96,7 +96,7 @@ Tn5250Stream *tn5250_stream_open (const char *to)
       This->record_count = 0;
       This->records = This->current_record = NULL;
       This->sockfd = (SOCKET_TYPE) - 1;
-      This->environ = NULL;
+      This->config = NULL;
       tn5250_buffer_init(&(This->sb_buf));
 
       /* Figure out the stream type. */
@@ -136,6 +136,29 @@ Tn5250Stream *tn5250_stream_open (const char *to)
    return NULL;
 }
 
+/****f* lib5250/tn5250_stream_config
+ * NAME
+ *    tn5250_stream_config
+ * SYNOPSIS
+ *    tn5250_stream_config (This, config);
+ * INPUTS
+ *    Tn5250Stream *       This       - Stream object.
+ *    Tn5250Config *       config     - Configuration object.
+ * DESCRIPTION
+ *    Associates a stream with a configuration object.  The stream uses the
+ *    configuration object at run time to determine how to operate.
+ *****/
+int tn5250_stream_config (Tn5250Stream *This, Tn5250Config *config)
+{
+   /* Always reference before unreferencing, in case it's the same
+    * object. */
+   tn5250_config_ref (config);
+   if (This->config != NULL)
+      tn5250_config_unref (This->config);
+   This->config = config;
+   return 0;
+}
+
 /****f* lib5250/tn5250_stream_destroy
  * NAME
  *    tn5250_stream_destroy
@@ -148,24 +171,13 @@ Tn5250Stream *tn5250_stream_open (const char *to)
  *****/
 void tn5250_stream_destroy(Tn5250Stream * This)
 {
-   Tn5250StreamVar *iter, *next;
-
    /* Call particular stream type's destroy handler. */
    if (This->destroy)
       (* (This->destroy)) (This);
 
    /* Free the environment. */
-   if ((iter = This->environ) != NULL) {
-      do {
-	 next = iter->next;
-	 if (iter->name != NULL)
-	    free(iter->name);
-	 if (iter->value != NULL)
-	    free(iter->value);
-	 free(iter);
-	 iter = next;
-      } while (iter != This->environ);
-   }
+   if (This->config != NULL)
+      tn5250_config_unref (This->config);
    tn5250_buffer_free(&(This->sb_buf));
    tn5250_record_list_destroy(This->records);
    free(This);
@@ -216,43 +228,20 @@ Tn5250Record *tn5250_stream_get_record(Tn5250Stream * This)
  *****/
 void tn5250_stream_setenv(Tn5250Stream * This, const char *name, const char *value)
 {
-   Tn5250StreamVar *var;
-
-   TN5250_ASSERT(name != NULL);
-   if (value == NULL) {
-      tn5250_stream_unsetenv(This, name);
+   char *name_buf;
+   if (This->config == NULL) {
+      This->config = tn5250_config_new ();
+      TN5250_ASSERT (This->config != NULL);
+   }
+   name_buf = (char*)malloc (strlen (name) + 10);
+   if (name_buf == NULL) {
+      TN5250_LOG (("tn5250_stream_setenv: not enough memory.\n"));
       return;
    }
-   /* Clear the variable if it exists already. */
-   if (tn5250_stream_getenv(This, name) != NULL)
-      tn5250_stream_unsetenv(This, name);
-
-   /* Create a new list node for the variable, fill it in. */
-   var = tn5250_new(Tn5250StreamVar, 1);
-   if (var != NULL) {
-      var->name = tn5250_new(char, strlen(name) + 1);
-      if (var->name == NULL) {
-	 free(var);
-	 return;
-      }
-      strcpy(var->name, name);
-      var->value = tn5250_new(char, strlen(value) + 1);
-      if (var->value == NULL) {
-	 free(var->name);
-	 free(var);
-	 return;
-      }
-      strcpy(var->value, value);
-   }
-   /* Add the variable node to the linked list. */
-   if (This->environ == NULL)
-      This->environ = var->next = var->prev = var;
-   else {
-      var->next = This->environ;
-      var->prev = This->environ->prev;
-      var->next->prev = var;
-      var->prev->next = var;
-   }
+   strcpy (name_buf, "env.");
+   strcat (name_buf, name);
+   tn5250_config_set (This->config, name_buf, value);
+   free (name_buf);
 }
 
 /****f* lib5250/tn5250_stream_getenv
@@ -266,18 +255,24 @@ void tn5250_stream_setenv(Tn5250Stream * This, const char *name, const char *val
  * DESCRIPTION
  *    Retrieve the value of a 5250 environment string.
  *****/
-char *tn5250_stream_getenv(Tn5250Stream * This, const char *name)
+const char *tn5250_stream_getenv(Tn5250Stream * This, const char *name)
 {
-   Tn5250StreamVar *iter;
+   char *name_buf;
+   const char *val;
 
-   if ((iter = This->environ) != NULL) {
-      do {
-	 if (!strcmp(iter->name, name))
-	    return iter->value;
-	 iter = iter->next;
-      } while (iter != This->environ);
+   if (This->config == NULL)
+      return NULL;
+
+   name_buf = (char*)malloc (strlen (name) + 10);
+   if (name_buf == NULL) {
+      TN5250_LOG (("tn5250_stream_setenv: not enough memory.\n"));
+      return NULL;
    }
-   return NULL;
+   strcpy (name_buf, "env.");
+   strcat (name_buf, name);
+   val = tn5250_config_get (This->config, name_buf);
+   free (name_buf);
+   return val;
 }
 
 /****f* lib5250/tn5250_stream_unsetenv
@@ -293,27 +288,19 @@ char *tn5250_stream_getenv(Tn5250Stream * This, const char *name)
  *****/
 void tn5250_stream_unsetenv(Tn5250Stream * This, const char *name)
 {
-   Tn5250StreamVar *iter;
+   char *name_buf;
+   if (This->config == NULL)
+      return; /* Nothing to unset. */
 
-   if ((iter = This->environ) != NULL) {
-      do {
-	 if (!strcmp(iter->name, name)) {
-	    if (iter == iter->next)
-	       This->environ = NULL;
-	    else {
-	       if (iter == This->environ)
-		  This->environ = This->environ->next;
-	       iter->next->prev = iter->prev;
-	       iter->prev->next = iter->next;
-	    }
-	    free(iter->name);
-	    if (iter->value != NULL)
-	       free(iter->value);
-	    free(iter);
-	    return;
-	 }
-	 iter = iter->next;
-      } while (iter != This->environ);
+   name_buf = (char*)malloc (strlen (name) + 10);
+   if (name_buf == NULL) {
+      TN5250_LOG (("tn5250_stream_setenv: not enough memory.\n"));
+      return;
    }
+   strcpy (name_buf, "env.");
+   strcat (name_buf, name);
+   tn5250_config_unset (This->config, name_buf);
+   free (name_buf);
 }
 
+/* vi:set sts=3 sw=3: */

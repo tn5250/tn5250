@@ -251,6 +251,7 @@ void tn5250_log_open(const char *fname)
       perror(fname);
       exit(1);
    }
+   /* FIXME: Write $TERM, version, and uname -a to the file. */
 #ifndef WIN32
    /* Set file mode to 0600 since it may contain passwords. */
    fchmod(fileno(tn5250_logfile), 0600);

@@ -86,6 +86,7 @@ extern "C" {
 #define TN5250_SESSION_KB_SIZE	        100
 
    struct _Tn5250Display;
+   struct _Tn5250Config;
 
 /****s* lib5250/Tn5250Session
  * NAME
@@ -108,6 +109,7 @@ struct _Tn5250Session {
 
    Tn5250Stream /*@owned@*/ /*@null@*/ *stream;
    Tn5250Record /*@owned@*/ *record;
+   struct _Tn5250Config *config;
    int read_opcode;	/* Current read opcode. */
    int invited;
 };
@@ -117,6 +119,7 @@ typedef struct _Tn5250Session Tn5250Session;
 
 extern Tn5250Session /*@only@*/ *tn5250_session_new(void);
 extern void tn5250_session_destroy(Tn5250Session /*@only@*/ * This);
+extern int tn5250_session_config (Tn5250Session *This, struct _Tn5250Config *config);
 
 extern void tn5250_session_set_stream(Tn5250Session * This, Tn5250Stream /*@only@*/ * newstream);
 #define tn5250_session_stream(This) ((This)->stream)

@@ -55,6 +55,7 @@ Tn5250Display *tn5250_display_new()
       return NULL;
    This->display_buffers = NULL;
    This->terminal = NULL;
+   This->config = NULL;
    This->indicators = 0;
    This->indicators_dirty = 0;
    This->pending_insert = 0;
@@ -62,7 +63,7 @@ Tn5250Display *tn5250_display_new()
    This->session = NULL;
    This->key_queue_head = This->key_queue_tail = 0;
    This->saved_msg_line = NULL;
-   This->map = tn5250_char_map_new("37");
+   This->map = NULL;
 
    tn5250_display_add_dbuffer(This, tn5250_dbuffer_new(80, 24));
    return This;
@@ -93,8 +94,42 @@ void tn5250_display_destroy(Tn5250Display * This)
       tn5250_terminal_destroy(This->terminal);
    if (This->saved_msg_line != NULL)
       free (This->saved_msg_line);
+   if (This->config != NULL)
+      tn5250_config_unref (This->config);
 
    free(This);
+}
+
+/****f* lib5250/tn5250_display_config
+ * NAME
+ *    tn5250_display_config
+ * SYNOPSIS
+ *    tn5250_display_config (This, config);
+ * INPUTS
+ *    Tn5250Display *      This       - 
+ *    Tn5250Config *       config     -
+ * DESCRIPTION
+ *    Applies configuration to the display.
+ *****/
+int tn5250_display_config(Tn5250Display *This, Tn5250Config *config)
+{
+   const char *v;
+
+   tn5250_config_ref (config);
+   if (This->config != NULL)
+      tn5250_config_unref (This->config);
+   This->config = config;
+
+   /* Set the new character map. */
+   if (This->map != NULL)
+      tn5250_char_map_destroy (This->map);
+   if ((v = tn5250_config_get (config, "map")) == NULL)
+      return -1; /* FIXME: An error message would be nice. */
+   This->map = tn5250_char_map_new (v);
+   if (This->map == NULL)
+      return -1; /* FIXME: An error message would be nice. */
+
+   return 0;
 }
 
 /****f* lib5250/tn5250_display_set_session

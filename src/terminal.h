@@ -164,6 +164,8 @@ struct _Tn5250Terminal {
    int (*waitevent) (struct _Tn5250Terminal * This);
    int (*getkey) (struct _Tn5250Terminal * This);
    void (* beep) (struct _Tn5250Terminal * This);
+   int (*config) (struct _Tn5250Terminal * This,
+	          struct _Tn5250Config *config);
 };
 
 typedef struct _Tn5250Terminal Tn5250Terminal;
@@ -191,6 +193,9 @@ typedef struct _Tn5250Terminal Tn5250Terminal;
 	   (* ((This)->waitevent)) ((This))
 #define tn5250_terminal_getkey(This) (* ((This)->getkey)) ((This))
 #define tn5250_terminal_beep(This) (* ((This)->beep)) ((This))
+
+#define tn5250_terminal_config(This,conf) \
+   ((This)->config == NULL ? 0 : (* ((This)->config)) ((This),(conf)))
 
 #ifdef __cplusplus
 }
