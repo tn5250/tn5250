@@ -378,5 +378,80 @@ void tn5250_log_assert(int val, char const *expr, char const *file, int line)
    }
 }
 
+
+/****f* lib5250/tn5250_parse_color
+ * NAME
+ *    tn5250_parse_color
+ * SYNOPSIS
+ *    tn5250_parse_color (config, "green", &red, &green, &blue);
+ * INPUTS
+ *    Tn5250Config *       config     -
+ *    const char   *       colorname  -
+ *    int          *       red        - 
+ *    int          *       green      - 
+ *    int          *       blue       - 
+ * DESCRIPTION
+ *    This loads a color from the TN5250 config object, and then
+ *    parses it into it's red, green, blue components.
+ *****/
+int tn5250_parse_color(Tn5250Config *config, const char *colorname, 
+                        int *red, int *green, int *blue) {
+
+    const char *p;
+    char colorspec[8];
+    int r, g, b;
+
+    if ((p=tn5250_config_get(config, colorname)) == NULL) {
+        return -1;
+    }
+
+    strncpy(colorspec, p, sizeof(colorspec));
+    colorspec[7] = '\0';
+
+    if (*colorspec != '#') {
+          if (!strcasecmp(colorspec, "white")) {
+               r = 255; g = 255; b = 255;
+          } else if (!strcasecmp(colorspec, "yellow")) {
+               r = 255; g = 255; b = 0;
+          } else if (!strcasecmp(colorspec, "lightmagenta")) {
+               r = 255; g = 0;   b = 255;
+          } else if (!strcasecmp(colorspec, "lightred")) {
+               r = 255; g = 0;   b = 0;
+          } else if (!strcasecmp(colorspec, "lightcyan")) {
+               r = 0;   g = 255; b = 255;
+          } else if (!strcasecmp(colorspec, "lightgreen")) {
+               r = 0;   g = 255; b = 0;
+          } else if (!strcasecmp(colorspec, "lightblue")) {
+               r = 0;   g = 0;   b = 255;
+          } else if (!strcasecmp(colorspec, "lightgray")) {
+               r = 192; g = 192; b = 192;
+          } else if (!strcasecmp(colorspec, "gray")) {
+               r = 128; g = 128; b = 128;
+          } else if (!strcasecmp(colorspec, "brown")) {
+               r = 128; g = 128; b = 0;
+          } else if (!strcasecmp(colorspec, "red")) {
+               r = 128; g = 0;   b = 0;
+          } else if (!strcasecmp(colorspec, "cyan")) {
+               r = 0;   g = 128; b = 128;
+          } else if (!strcasecmp(colorspec, "green")) {
+               r = 0;   g = 128; b = 0;
+          } else if (!strcasecmp(colorspec, "blue")) {
+               r = 0;   g = 0;   b = 128;
+          } else if (!strcasecmp(colorspec, "black")) {
+               r = 0;   g = 0;   b = 0;
+          }
+    }
+    else {
+         if (strlen(colorspec) != 7)
+              return -1;
+         if (sscanf(&colorspec[1], "%02x%02x%02x", &r, &g, &b)!=3) 
+              return -1;
+    }
+
+    *red = r;
+    *green = g;
+    *blue = b;
+    return 0;
+}
 #endif				/* NDEBUG */
 
