@@ -23,7 +23,6 @@
 #include "utility.h"
 #include "dbuffer.h"
 #include "field.h"
-#include "formattable.h"
 #include "display.h"
 #include "terminal.h"
 #include "buffer.h"
@@ -43,22 +42,19 @@ static Tn5250Field *tn5250_wtd_context_peek_field (Tn5250WTDContext *This);
 /*
  *    Create a new instance of our WTD context object and initialize it.
  */
-Tn5250WTDContext *tn5250_wtd_context_new (Tn5250Buffer *buffer, Tn5250DBuffer *sd, Tn5250Table *st, Tn5250DBuffer *dd, Tn5250Table *dt)
+Tn5250WTDContext *tn5250_wtd_context_new (Tn5250Buffer *buffer, Tn5250DBuffer *sd, Tn5250DBuffer *dd)
 {
    Tn5250WTDContext *This;
 
    TN5250_ASSERT(dd != NULL);
-   TN5250_ASSERT(dt != NULL);
    TN5250_ASSERT(buffer != NULL);
 
    if ((This = tn5250_new (Tn5250WTDContext, 1)) == NULL)
       return NULL;
 
    This->buffer = buffer;
-   This->src_dbuffer = sd;
-   This->src_table = st;
-   This->dst_dbuffer = dd;
-   This->dst_table = dt;
+   This->src = sd;
+   This->dst = dd;
    This->ra_count = 0;
    This->ra_char = 0x00;
    This->clear_unit = 0;
@@ -82,7 +78,7 @@ void tn5250_wtd_context_convert (Tn5250WTDContext *This)
 {
    /* The differential conversion is not yet implemented, and probably
     * won't be until we implement the 5250 server. */
-   TN5250_ASSERT (This->src_dbuffer == NULL && This->src_table == NULL);
+   TN5250_ASSERT (This->src == NULL);
 
    tn5250_wtd_context_convert_nosrc (This);
 }
@@ -101,7 +97,7 @@ static void tn5250_wtd_context_convert_nosrc (Tn5250WTDContext *This)
 
    /* Since we don't know the unit's prior state, we clear the unit. */
    tn5250_wtd_context_putc (This, ESC);
-   if (tn5250_dbuffer_width (This->dst_dbuffer) != 80) {
+   if (tn5250_dbuffer_width (This->dst) != 80) {
       tn5250_wtd_context_putc (This, CMD_CLEAR_UNIT_ALTERNATE);
       tn5250_wtd_context_putc (This, 0x00);
    } else
@@ -116,21 +112,21 @@ static void tn5250_wtd_context_convert_nosrc (Tn5250WTDContext *This)
    tn5250_wtd_context_putc (This, 0x00); /* CC2 */
 
    /* If we have header data, start with a SOH order. */
-   if (This->dst_table->header_length != 0) {
+   if (This->dst->header_length != 0) {
       int i;
       tn5250_wtd_context_putc (This, SOH);
-      tn5250_wtd_context_putc (This, This->dst_table->header_length);
-      for (i = 0; i < This->dst_table->header_length; i++)
-	 tn5250_wtd_context_putc (This, This->dst_table->header_data[i]);
+      tn5250_wtd_context_putc (This, This->dst->header_length);
+      for (i = 0; i < This->dst->header_length; i++)
+	 tn5250_wtd_context_putc (This, This->dst->header_data[i]);
    }
 
    /* FIXME: Set the insert-cursor address using IC if necessary. */
 
-   for (This->y = 0; This->y < tn5250_dbuffer_height(This->dst_dbuffer);
+   for (This->y = 0; This->y < tn5250_dbuffer_height(This->dst);
 	 This->y++) {
-      for (This->x = 0; This->x < tn5250_dbuffer_width(This->dst_dbuffer);
+      for (This->x = 0; This->x < tn5250_dbuffer_width(This->dst);
 	    This->x++) {
-	 c = tn5250_dbuffer_char_at (This->dst_dbuffer, This->y, This->x);
+	 c = tn5250_dbuffer_char_at (This->dst, This->y, This->x);
 	 field = tn5250_wtd_context_peek_field (This);
 	 if (field != NULL) {
 	    /* Start of a field, write an SF order.  We have to remove
@@ -143,7 +139,9 @@ static void tn5250_wtd_context_convert_nosrc (Tn5250WTDContext *This)
       }
    }
 
-   TN5250_LOG_BUFFER (This->buffer);
+#ifndef NDEBUG
+   tn5250_buffer_log (This->buffer, "wtd>");
+#endif
 }
 
 /*
@@ -155,12 +153,12 @@ static Tn5250Field *tn5250_wtd_context_peek_field (Tn5250WTDContext *This)
    int nx = This->x, ny = This->y;
    Tn5250Field *field;
    
-   if (++nx == tn5250_dbuffer_width (This->dst_dbuffer)) {
-      if (++ny == tn5250_dbuffer_height (This->dst_dbuffer))
+   if (++nx == tn5250_dbuffer_width (This->dst)) {
+      if (++ny == tn5250_dbuffer_height (This->dst))
 	 return NULL;
    }
 
-   field = tn5250_table_field_yx (This->dst_table, ny, nx);
+   field = tn5250_dbuffer_field_yx (This->dst, ny, nx);
    if (field == NULL)
       return NULL;
 
@@ -213,7 +211,7 @@ static void tn5250_wtd_context_ra_flush (Tn5250WTDContext *This)
       } else {
 	 int px = This->x, py = This->y;
 	 if (px == 0) {
-	    px = tn5250_dbuffer_width (This->dst_dbuffer) - 1;
+	    px = tn5250_dbuffer_width (This->dst) - 1;
 	    TN5250_ASSERT (py != 0);
 	    py--;
 	 } else

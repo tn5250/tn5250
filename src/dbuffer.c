@@ -22,6 +22,11 @@
 #include <malloc.h>
 #include "utility.h"
 #include "dbuffer.h"
+#include "field.h"
+#include "buffer.h"
+#include "record.h"
+#include "stream.h"
+#include "session.h"
 
 #ifdef NDEBUG
 #define ASSERT_VALID(This)
@@ -36,6 +41,9 @@
    }
 #endif
 
+/*
+ *    Allocate a new display buffer.
+ */
 Tn5250DBuffer *tn5250_dbuffer_new(int width, int height)
 {
    int n;
@@ -50,6 +58,12 @@ Tn5250DBuffer *tn5250_dbuffer_new(int width, int height)
    This->tcx = This->tcy = 0;
    This->next = This->prev = NULL;
 
+   This->field_count = 0;
+   This->field_list = NULL;
+   This->master_mdt = 0;
+   This->header_data = NULL;
+   This->header_length = 0;
+
    This->data = tn5250_new(unsigned char, width * height);
    if (This->data == NULL) {
       free(This);
@@ -60,6 +74,10 @@ Tn5250DBuffer *tn5250_dbuffer_new(int width, int height)
    return This;
 }
 
+/*
+ *    Allocate a new display buffer and copy the contents of the old
+ *    one.
+ */
 Tn5250DBuffer *tn5250_dbuffer_copy(Tn5250DBuffer * dsp)
 {
    int n;
@@ -82,14 +100,98 @@ Tn5250DBuffer *tn5250_dbuffer_copy(Tn5250DBuffer * dsp)
    }
    memcpy (This->data, dsp->data, dsp->w * dsp->h);
 
+   This->field_list = tn5250_field_list_copy (dsp->field_list);
+   This->header_length = dsp->header_length;
+   if (dsp->header_data != NULL) {
+      This->header_data = (unsigned char *)malloc (This->header_length);
+      TN5250_ASSERT (This->header_data != NULL);
+      memcpy (This->header_data, dsp->header_data, dsp->header_length);
+   } else
+      This->header_data = NULL;
+
    ASSERT_VALID(This);
    return This;
 }
 
+/*
+ *    Free a display buffer and destroy all sub-structures.
+ */
 void tn5250_dbuffer_destroy(Tn5250DBuffer * This)
 {
    free(This->data);
+   if (This->header_data != NULL)
+      free (This->header_data);
+   (void)tn5250_field_list_destroy(This->field_list);
    free(This);
+}
+
+/*
+ *    Set the format table header data.
+ */
+void tn5250_dbuffer_set_header_data(Tn5250DBuffer *This, unsigned char *data, int len)
+{
+   if (This->header_data != NULL)
+      free (This->header_data);
+   This->header_length = len;
+   if (data != NULL) {
+      TN5250_ASSERT (len > 0);
+      This->header_data = (unsigned char *)malloc (len);
+      TN5250_ASSERT (This->header_data != NULL);
+      memcpy (This->header_data, data, len);
+   }
+}
+
+/*
+ *    Determine, according to the format table header, if we should send
+ *    data for this aid key.
+ */
+int tn5250_dbuffer_send_data_for_aid_key(Tn5250DBuffer *This, int k)
+{
+   int byte, bit, result;
+   if (This->header_data == NULL) {
+      result = 1;
+      goto send_data_done;
+   }
+
+   switch (k) {
+   case TN5250_SESSION_AID_F1: byte = 6; bit = 7; break;
+   case TN5250_SESSION_AID_F2: byte = 6; bit = 6; break;
+   case TN5250_SESSION_AID_F3: byte = 6; bit = 5; break;
+   case TN5250_SESSION_AID_F4: byte = 6; bit = 4; break;
+   case TN5250_SESSION_AID_F5: byte = 6; bit = 3; break;
+   case TN5250_SESSION_AID_F6: byte = 6; bit = 2; break;
+   case TN5250_SESSION_AID_F7: byte = 6; bit = 1; break;
+   case TN5250_SESSION_AID_F8: byte = 6; bit = 0; break;
+   case TN5250_SESSION_AID_F9: byte = 5; bit = 7; break;
+   case TN5250_SESSION_AID_F10: byte = 5; bit = 6; break;
+   case TN5250_SESSION_AID_F11: byte = 5; bit = 5; break;
+   case TN5250_SESSION_AID_F12: byte = 5; bit = 4; break;
+   case TN5250_SESSION_AID_F13: byte = 5; bit = 3; break;
+   case TN5250_SESSION_AID_F14: byte = 5; bit = 2; break;
+   case TN5250_SESSION_AID_F15: byte = 5; bit = 1; break;
+   case TN5250_SESSION_AID_F16: byte = 5; bit = 0; break;
+   case TN5250_SESSION_AID_F17: byte = 4; bit = 7; break;
+   case TN5250_SESSION_AID_F18: byte = 4; bit = 6; break;
+   case TN5250_SESSION_AID_F19: byte = 4; bit = 5; break;
+   case TN5250_SESSION_AID_F20: byte = 4; bit = 4; break;
+   case TN5250_SESSION_AID_F21: byte = 4; bit = 3; break;
+   case TN5250_SESSION_AID_F22: byte = 4; bit = 2; break;
+   case TN5250_SESSION_AID_F23: byte = 4; bit = 1; break;
+   case TN5250_SESSION_AID_F24: byte = 4; bit = 0; break;
+   default:
+     result = 1;
+     goto send_data_done;
+   }
+
+   if (byte >= This->header_length) {
+      result = 1;
+      goto send_data_done;
+   }
+      
+   result = ((This->header_data[byte] & (0x80 >> bit)) != 0);
+send_data_done:
+   TN5250_LOG (("tn5250_dbuffer_send_data_for_aid_key() = %d\n", result));
+   return result;
 }
 
 /*
@@ -120,6 +222,40 @@ void tn5250_dbuffer_clear(Tn5250DBuffer * This)
    int r, c;
    memset (This->data, 0, This->w * This->h);
    This->cx = This->cy = 0;
+   tn5250_dbuffer_clear_table (This);
+}
+
+void tn5250_dbuffer_add_field(Tn5250DBuffer *This, Tn5250Field *field)
+{
+   field->id = This->field_count++;
+   field->table = This;
+   This->field_list = tn5250_field_list_add(This->field_list, field);
+}
+
+void tn5250_dbuffer_clear_table(Tn5250DBuffer * This)
+{
+   TN5250_LOG(("tn5250_dbuffer_clear_table() entered.\n"));
+   This->field_list = tn5250_field_list_destroy(This->field_list);
+   This->field_count = 0;
+   This->master_mdt = 0;
+   This->header_length = 0;
+   if (This->header_data != NULL) {
+      free (This->header_data);
+      This->header_data = NULL;
+   }
+}
+
+Tn5250Field *tn5250_dbuffer_field_yx (Tn5250DBuffer *This, int y, int x)
+{
+   Tn5250Field *iter;
+   if ((iter = This->field_list) != NULL) {
+      do {
+	 if (tn5250_field_hit_test(iter, y, x))
+	    return iter;
+	 iter = iter->next;
+      } while (iter != This->field_list);
+   }
+   return NULL; 
 }
 
 void tn5250_dbuffer_right(Tn5250DBuffer * This, int n)

@@ -68,10 +68,7 @@ void tn5250_print_session_set_output_command(Tn5250PrintSession * This,
 void tn5250_print_session_get_response_code(Tn5250PrintSession * This,
 					    char *code)
 {
-   code[0] = tn5250_ebcdic2ascii(This->rec->data[5]);
-   code[1] = tn5250_ebcdic2ascii(This->rec->data[6]);
-   code[2] = tn5250_ebcdic2ascii(This->rec->data[7]);
-   code[3] = tn5250_ebcdic2ascii(This->rec->data[8]);
+   memcpy (code, tn5250_record_data(This->rec) + 5, 4);
    code[4] = '\0';
 }
 
@@ -119,7 +116,11 @@ void tn5250_print_session_main_loop(Tn5250PrintSession * This)
 	    if (This->rec != NULL)
 	       tn5250_record_destroy(This->rec);
 	    This->rec = tn5250_stream_get_record(This->stream);
-	    tn5250_stream_print_complete(This->stream);
+	    tn5250_stream_send_packet(This->stream, 0,
+		  TN5250_RECORD_FLOW_CLIENTO,
+		  TN5250_RECORD_H_NONE,
+		  TN5250_RECORD_OPCODE_PRINT_COMPLETE,
+		  NULL);
 	    if (tn5250_record_length(This->rec) == 0x11) {
 	       printf("Job Complete\n");
 	       pclose(This->printfile);

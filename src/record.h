@@ -26,11 +26,7 @@ extern "C" {
       struct _Tn5250Record /*@dependent@*/ *prev;
       struct _Tn5250Record /*@dependent@*/ *next;
 
-      unsigned char *data;
-      int allocated, length;
-      unsigned char flowtype[2];
-      unsigned char flags;
-      unsigned char opcode;
+      Tn5250Buffer data;
       int cur_pos;
    };
 
@@ -67,36 +63,36 @@ extern "C" {
 
    extern Tn5250Record /*@only@*/ *tn5250_record_new(void);
    extern void tn5250_record_destroy(Tn5250Record /*@only@*/ * This);
-   extern void tn5250_record_append_byte(Tn5250Record * This, unsigned char c);
 
    extern unsigned char tn5250_record_get_byte(Tn5250Record * This);
    extern void tn5250_record_unget_byte(Tn5250Record * This);
-   extern void tn5250_record_set_flow_type(Tn5250Record * This, unsigned char byte1, unsigned char byte2);
-#define tn5250_record_set_flags(This,newflags) (void)((This)->flags = (newflags))
-#define tn5250_record_length(This) ((This)->length)
+   extern int tn5250_record_is_chain_end(Tn5250Record * This);
+#define tn5250_record_length(This) \
+   tn5250_buffer_length (&((This)->data))
+#define tn5250_record_append_byte(This,c) \
+   tn5250_buffer_append_byte (&((This)->data),(c))
+#define tn5250_record_data(This) \
+   tn5250_buffer_data(&((This)->data))
 
-/* Should these be hidden? */
-#define tn5250_record_set_opcode(This,newop) \
-   (void)((This)->opcode = (newop))
+/* Should this be hidden? */
 #define tn5250_record_set_cur_pos(This,newpos) \
    (void)((This)->cur_pos = (newpos))
-#define tn5250_record_opcode(This) ((This)->opcode)
+#define tn5250_record_opcode(This) \
+   (tn5250_record_data(This)[9])
 #define tn5250_record_flow_type(This) \
-   (((This)->flowtype[0] << 8) | This->flowtype[1])
-   extern int tn5250_record_is_chain_end(Tn5250Record * This);
-#define tn5250_record_sys_request(This) (((This)->flags & TN5250_RECORD_H_SRQ) != 0)
-#define tn5250_record_attention(This) (((This)->flags & TN5250_RECORD_H_ATN) != 0)
+   ((tn5250_record_data(This)[4] << 8) | (tn5250_record_data(This)[5]))
+#define tn5250_record_flags(This) \
+   (tn5250_record_data(This)[7])
+#define tn5250_record_sys_request(This) \
+   ((tn5250_record_flags((This)) & TN5250_RECORD_H_SRQ) != 0)
+#define tn5250_record_attention(This) \
+   ((tn5250_record_flags((This)) & TN5250_RECORD_H_ATN) != 0)
 
 /* Manipulating lists of records (used in stream.c) */
    extern Tn5250Record /*@null@*/ *tn5250_record_list_add(Tn5250Record /*@null@*/ * list, Tn5250Record /*@dependent@*/ * record);
    extern Tn5250Record *tn5250_record_list_remove(Tn5250Record * list, Tn5250Record * record);
    extern Tn5250Record *tn5250_record_list_destroy(Tn5250Record /*@only@*/ /*@null@*/ * list);
-
-#ifdef NDEBUG
-#define tn5250_record_dump(This) (void)0
-#else
    extern void tn5250_record_dump(Tn5250Record * This);
-#endif
 
 #ifdef __cplusplus
 }

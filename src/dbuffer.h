@@ -37,7 +37,18 @@ extern "C" {
       int w, h;
       int cx, cy;		/* Cursor Position */
       int tcx, tcy;		/* for set_new_ic */
-      unsigned char /*@notnull@*/ *data;
+      unsigned char /*@notnull@*/ *	  data;
+
+      /* Stuff from the old Tn5250Table structure. */
+      struct _Tn5250Field /*@null@*/ *	  field_list;
+      int				  field_count;
+      int				  master_mdt;
+
+      /* Header data (from SOH order) is saved here.  We even save data that
+       * we don't understand here so we can insert that into our generated
+       * WTD orders for save/restore screen. */
+      unsigned char *			  header_data;
+      int				  header_length;
    };
 
    typedef struct _Tn5250DBuffer Tn5250DBuffer;
@@ -69,8 +80,21 @@ extern "C" {
 #define tn5250_dbuffer_cursor_x(This) ((This)->cx)
 #define tn5250_dbuffer_cursor_y(This) ((This)->cy)
 
+   /* Format table manipulation. */
+   extern void tn5250_dbuffer_add_field(Tn5250DBuffer *This, struct _Tn5250Field *field);
+   extern void tn5250_dbuffer_clear_table(Tn5250DBuffer *This);
+   extern struct _Tn5250Field *tn5250_dbuffer_field_yx(Tn5250DBuffer *This, int y, int x);
+   extern void tn5250_dbuffer_set_header_data(Tn5250DBuffer *This, unsigned char *data, int len);
+   extern int tn5250_dbuffer_send_data_for_aid_key(Tn5250DBuffer *This, int k);
+
+#define tn5250_dbuffer_field_count(This) ((This)->field_count)
+#define tn5250_dbuffer_mdt(This) ((This)->master_mdt)
+#define tn5250_dbuffer_set_mdt(This) ((This)->master_mdt = 1)
+
 #ifdef __cplusplus
 }
 
 #endif
 #endif				/* DBUFFER_H */
+
+/* vi:set sts=3 sw=3: */

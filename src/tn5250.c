@@ -38,7 +38,6 @@
 #include "utility.h"
 #include "dbuffer.h"
 #include "field.h"
-#include "formattable.h"
 #include "codes5250.h"
 #include "terminal.h"
 #include "session.h"

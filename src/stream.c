@@ -143,13 +143,9 @@ Tn5250Record *tn5250_stream_get_record(Tn5250Stream * This)
    This->records = tn5250_record_list_remove(This->records, record);
    This->record_count--;
 
-   TN5250_ASSERT(record->length >= 10);
+   TN5250_ASSERT(tn5250_record_length(record)>= 10);
 
-   tn5250_record_set_flow_type(record, record->data[4], record->data[5]);
-   tn5250_record_set_flags(record, record->data[7]);
-   tn5250_record_set_opcode(record, record->data[9]);
-
-   offset = 6 + record->data[6];
+   offset = 6 + tn5250_record_data(record)[6];
 
    TN5250_LOG(("tn5250_stream_get_record: offset = %d\n", offset));
    tn5250_record_set_cur_pos(record, offset);
@@ -241,15 +237,6 @@ void tn5250_stream_query_reply(Tn5250Stream * This)
    tn5250_stream_send_packet(This, 61, TN5250_RECORD_FLOW_DISPLAY, TN5250_RECORD_H_NONE,
 		 TN5250_RECORD_OPCODE_NO_OP, (unsigned char *) &temp[0]);
 
-}
-
-/*
- *    Hmm, this should probably be moved to printsession.c.
- */
-void tn5250_stream_print_complete(Tn5250Stream * This)
-{
-   tn5250_stream_send_packet(This, 0, TN5250_RECORD_FLOW_CLIENTO, TN5250_RECORD_H_NONE,
-			     TN5250_RECORD_OPCODE_PRINT_COMPLETE, NULL);
 }
 
 /*
