@@ -3,7 +3,8 @@
 lib_LTLIBRARIES =	lib5250.la
 
 bin_PROGRAMS =		scs2ascii\
-			tn5250
+			tn5250\
+			lp5250d
 
 lib5250_la_SOURCES =	buffer.c\
 			cursesterm.c\
@@ -30,6 +31,10 @@ tn5250_LDADD = 		@with_extra_libs@ lib5250.la
 scs2ascii_SOURCES =	scs2ascii.c
 
 scs2ascii_LDADD =	@with_extra_libs@ lib5250.la
+
+lp5250d_SOURCES =	lp5250d.c
+
+lp5250d_LDADD =		@with_extra_libs@ lib5250.la
 
 pkginclude_HEADERS = 	buffer.h\
 		 	codes5250.h\
