@@ -1,0 +1,22 @@
+Date: Fri, 15 Mar 2002 13:59:49 +0100 (CET)
+From: Peter Turczak <xxxxxxx@xxxxxxxxx>
+To: Scott Klement <klemscot@klements.com>
+Subject: TN5250 on Solaris 7
+
+Hi there,
+
+i just got tn5250 working on our Sun. We are running X-forwarding for the
+as400 emulation windows.
+
+There are two termcaps/terminfos in the archive.
+xt5250.termcap and xt5250.terminfo are for the standard sun x-term w/o
+color.
+
+xt5250-color.termcap and xt5250-color.terminfo are for the XFree86 xterm
+w/ color. (You can download it seperately from
+ftp://ftp.invisible-island.com/xterm/ )
+
+So long..
+
+
+Peter Turczak

@@ -1,3 +1,6 @@
+2002-03-15 Scott Klement <klemscot@klements.com>
+- Added sun subdir, contributed by Peter Turczak
+
 2002-03-14 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - tn5250-config script now reports usable cflags and libs (including flags
   for the glib we were built against).
