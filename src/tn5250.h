@@ -39,8 +39,12 @@ extern "C" {
 #include <tn5250/terminal.h>
 #include <tn5250/session.h>
 #include <tn5250/printsession.h>
+#ifdef USE_CURSES
 #include <tn5250/cursesterm.h>
+#endif
+#ifdef USE_SLANG
 #include <tn5250/slangterm.h>
+#endif
 #include <tn5250/debug.h>
 
 #ifdef __cplusplus

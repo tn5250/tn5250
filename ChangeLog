@@ -5,6 +5,9 @@
   Tn5250DBuffer.  Also renamed display.[ch] to dbuffer.[ch]
 - Fix problems reported by Scott Klement for Dup key/Field Minus key not
   advancing to the next field (hopefully ;)
+- Added contributed FreeBSD keyboard map stuff and README to package ...
+  Thanks to Scott Klement again.  Move Linux keyboard map and termcap
+  definitions into a linux/ subdirectory.
 
 1999-10-24 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 
