@@ -1,5 +1,5 @@
 /* TN5250 - An implementation of the 5250 telnet protocol.
- * Copyright (C) 2000 Jay 'Eraserhead' Felice
+ * Copyright (C) 2005 James Rich
  * 
  * This file is part of TN5250.
  *
