@@ -1,4 +1,9 @@
 2002-03-18 Scott Klement <klemscot@klements.com>
+- Overrode the TRANSPARENT order in scs2ascii to use it's own routine
+  instead of the one in scs.c.  The one in scs.c was writing data to
+  stderr instead of stdout, which breaks Host Print Transform.
+
+2002-03-18 Scott Klement <klemscot@klements.com>
 - Removed unnecessary/unused getopt.[ch]
 
 2002-03-17 Scott Klement <klemscot@klements.com>
