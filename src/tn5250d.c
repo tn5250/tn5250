@@ -40,12 +40,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-GSList *
-build_addr_list(GSList * addrlist)
-{
-
-}
-
 void
 process_client(int sockfd)
 {
@@ -82,6 +76,7 @@ Tn5250Config * config = NULL;
 int clientport;
 int manageport;
 GSList * addrlist;
+GSList * permitlist;
 
 int
 main(void)
@@ -106,6 +101,8 @@ main(void)
   }
 
   addrlist = (GSList *)tn5250_config_get(config, "allowed");
+
+  permitlist = build_addr_list(addrlist);
 
   printf("Starting tn5250d server...\n");
   printf("Client port     = %d\n", clientport);
@@ -162,9 +159,16 @@ main(void)
 	}
       } 
 
-      syslog(LOG_INFO, "Incoming connection from %s\n", 
-	     inet_ntoa(sn.sin_addr));
-      
+      if(valid_client(permitlist, sn.sin_addr.s_addr)) {
+	syslog(LOG_INFO, "Accepting connection from %s\n", 
+	       inet_ntoa(sn.sin_addr));
+      } else {
+	syslog(LOG_INFO, "Rejecting connection from %s\n",
+	       inet_ntoa(sn.sin_addr));
+	close(sockfd);
+	continue;
+      }
+
       if( (childpid = fork()) < 0) {
 	perror("fork");
       } else if(childpid > 0) {

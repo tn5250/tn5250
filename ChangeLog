@@ -1,3 +1,18 @@
+2000-06-01 Mike Madore <mmadore@blarg.net>
+- Implemented access control in the 5250/3270 daemons (via utility.c).  To 
+  specify access control, put an entry like this in your tn5250d/tn3270d.conf
+  file:
+	allowed = [
+	   127.0.0.1/32
+	   192.168.1.0/24
+	   172.13.12.100/32
+	]
+  The daemon loads this list and uses to determine whether or not to accept a
+  client connection.  The number after the slash tells how many bits to 
+  compare.  32 means all bits must match.  24 means the upper 24 bits must
+  match.  Other configuration options are clientport and manageport.  These
+  determine which ports the daemon will be listening on.
+	
 2000-06-01 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - Applied Scott Klement's fix (slightly modified) for accepting appropriate
   aidcodes when there is no read, etc.  (Crashing issues).

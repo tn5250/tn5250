@@ -77,6 +77,13 @@ struct _Tn5250CharMap {
 
 typedef struct _Tn5250CharMap Tn5250CharMap;
 
+struct _clientaddr {
+  unsigned long int address;
+  unsigned long int mask;
+};  
+
+typedef struct _clientaddr clientaddr;
+
 extern Tn5250CharMap tn5250_transmaps[];
 /*******/
 
@@ -86,6 +93,10 @@ void tn5250_char_map_destroy(Tn5250CharMap *This);
 void tn5250_closeall(int fd);
 int tn5250_daemon(int nochdir, int noclose, int ignsigcld);
 int tn5250_make_socket(unsigned short int port);
+GSList * build_addr_list(GSList * addrlist);
+int valid_client(GSList * addrlist, unsigned long int client);
+void destroy_addr_list(GSList * addrlist);
+
 Tn5250Char tn5250_char_map_to_remote(Tn5250CharMap *This, Tn5250Char ascii);
 Tn5250Char tn5250_char_map_to_local(Tn5250CharMap *This, Tn5250Char ebcdic);
 
