@@ -23,6 +23,13 @@
 static void tn5250_config_str_destroy (Tn5250ConfigStr *This);
 static Tn5250ConfigStr *tn5250_config_str_new (const char *name, const char *value);
 static Tn5250ConfigStr *tn5250_config_get_str (Tn5250Config *This, const char *name);
+static void tn5250_config_replace_vars(char *buf, int maxlen);
+static void tn5250_config_replacedata(const char *from, const char *to, 
+                               char *line, int maxlen);
+#ifdef WIN32
+#define snprintf _snprintf
+#define vsnprintf _vsnprintf
+#endif
 
 /*** Tn5250ConfigStr ***/
 
@@ -119,6 +126,8 @@ int tn5250_config_load (Tn5250Config *This, const char *filename)
       buf[sizeof (buf)-1] = '\0';
       if (strchr (buf, '\n'))
 	 *strchr (buf, '\n') = '\0';
+
+      tn5250_config_replace_vars(buf, sizeof(buf));
 
       scan = buf;
       while (*scan && isspace (*scan))
@@ -534,5 +543,93 @@ static Tn5250ConfigStr *tn5250_config_get_str (Tn5250Config *This, const char *n
    return NULL; /* Not found */
 }
 
-/* vi:set sts=3 sw=3: */
 
+/****f* lib5250/tn5250_config_replace_vars
+ * NAME
+ *    tn5250_config_replace_vars
+ * SYNOPSIS
+ *    tn5250_config_replace_vars (buf, 128);
+ * INPUTS
+ *    char        *      buf          -
+ *    int                maxlen       -
+ * DESCRIPTION
+ *    This searches for special "replacement variables" in the
+ *    config file entries and converts them to their "real values".
+ *    (At this time, the only var is "$loginname$".)
+ *****/
+#define USER_NAME_MAX 50
+static void tn5250_config_replace_vars(char *buf, int maxlen) {
+
+#ifdef WIN32
+    {
+       DWORD len;
+       char usrnam[USER_NAME_MAX+1];
+       len = USER_NAME_MAX;
+       if (GetUserName(usrnam, &len)!=0) {
+            tn5250_config_replacedata("$loginname$",usrnam,buf,maxlen);
+       }
+    }
+#else
+    {
+       struct passwd *pwent;
+       pwent = getpwuid (getuid ());
+       if (pwent != NULL) {
+            tn5250_config_replacedata("$loginname$",pwent->pw_name,buf,maxlen);
+       }
+    }
+#endif
+
+    return;
+}
+
+
+/****f* lib5250/tn5250_config_replacedata
+ * NAME
+ *    tn5250_config_replacedata
+ * SYNOPSIS
+ *    tn5250_config_replacedata ("$loginname$", "fred", line, sizeof(line));
+ * INPUTS
+ *    const char  *      from         -
+ *    const char  *      to           -
+ *    char        *      line         -
+ *    int                maxlen       -
+ * DESCRIPTION
+ *    This will replace the first occurrance of the "from" string with 
+ *    the "to" string in a line of text.  The from and to do not have to 
+ *    be the same length. 
+ *****/
+static void tn5250_config_replacedata(const char *from, const char *to, 
+                               char *line, int maxlen) {
+
+     char *p;
+     int len;
+     char *before, *after;
+
+     if ((p=strstr(line, from))!=NULL) {
+          if (p<=line) {
+             before=malloc(1);
+             *before = '\0';
+          } else {
+             len = p - line;
+             before = malloc(len+1);
+             memcpy(before, line, len);
+             before[len] = '\0';
+          }
+          p += strlen(from);
+          if (strlen(p)<1) {
+             after = malloc(1);
+             *after = '\0';
+          } else {
+             len = strlen(p);
+             after = malloc(len+1);
+             memcpy(after, p, len);
+             after[len] = '\0';
+          }
+          snprintf(line, maxlen-1, "%s%s%s", before, to, after);
+          free(before);
+          free(after);
+     }
+
+}
+
+/* vi:set sts=3 sw=3: */
