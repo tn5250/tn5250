@@ -1,5 +1,6 @@
 2000-05-24 Mike Madore <mmadore@mmadore@turbolinux.com>
-- Updated Makefile.am to build tn5250d daemon.
+- Updated Makefile.am to build tn5250d daemon.  Fixes to sig_child in utility.c
+for UnixWare.
 	
 2000-05-24 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - SIGCHLD/SIGCLD #ifdef magic; should now compile on *BSD again.
