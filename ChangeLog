@@ -1,3 +1,12 @@
+2002-03-13 James Rich <james@eaerich.com>
+- Changed scs2pdf.c to correctly handle AHPP commands with guidance from
+  Frank Richter <frichter@esda.com>.  AHPP can be to cause some characters
+  to be bold if it overwrites previously written text.  In this case scs2pdf
+  now causes those characters to be in bold (i.e. Courier-Bold).
+- Also from Frank Richter suggestion changed scs2pdf.c to use WinAnsiEncoding
+  instead of MacRomanEncoding.  It should handle international fonts better
+  now.
+
 2002-03-13 Scott Klement <klemscot@klements.com>
 - Changed lp5250d to set the TN5250_CCSIDMAP variable in the environment
   to match the "map" entry from the config.  (It does not overwrite an
