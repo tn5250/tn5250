@@ -1,3 +1,6 @@
+2000-03-26 Mike Madore <mmadore@turbolinux.com>
+- Added documentation to tn5250_stream_open function
+
 2000-03-21 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 - Added updated manual pages per Carey Evans, including new manual pages
   for lp5250d and scs2pdf.
