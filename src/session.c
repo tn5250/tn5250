@@ -90,6 +90,7 @@ Tn5250Session *tn5250_session_new()
       return NULL;
    }
 
+   This->config = NULL;
    This->stream = NULL;
    This->invited = 1;
    This->read_opcode = 0;
