@@ -9,3 +9,6 @@
 
 /* Define this to `int' if your curses doesn't typedef attr_t */
 #undef attr_t
+
+/* Define this to use the new key handler. */
+#undef USE_OWN_KEY_PARSING
