@@ -1,3 +1,7 @@
+2004-03-29 Scott Klement <klemscot@klements.com>
+- Added +always_ask option so that Win32 print screen always asks for a
+    new device.  
+
 2004-03-10 Scott Klement <klemscot@klements.com>
 - Include searched-for include paths for openssl in tn5250.pc file so
   that projects like gnome-5250 will compile w/pkgconfig
@@ -5,7 +9,7 @@
 2004-03-06 Scott Klement <klemscot@klements.com>
 - Upgraded GLIB support to use GLIB 2.0.
 
-2003-02-05 Scott Klement <klemscot@klements.com>
+2004-02-05 Scott Klement <klemscot@klements.com>
 - Fix memory leak in local print screen function, and add more diagnostics
 - Fix memory leak (thanks to Marc Antoine Ruel) in ruler drawing.
 
