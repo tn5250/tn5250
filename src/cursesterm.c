@@ -121,6 +121,8 @@ struct _Tn5250TerminalPrivate {
    Key *	  k_map;
    int		  k_map_len;
 #endif
+   char *         font_80;
+   char *         font_132;
    int		  quit_flag : 1;
    int		  have_underscores : 1;
    int		  underscores : 1;
@@ -275,6 +277,8 @@ Tn5250Terminal *tn5250_curses_terminal_new()
    r->data->last_width = 0;
    r->data->last_height = 0;
    r->data->is_xterm = 0;
+   r->data->font_80 = NULL;
+   r->data->font_132 = NULL;
 
 #ifdef USE_OWN_KEY_PARSING
    r->data->k_buf_len = 0;
@@ -428,6 +432,34 @@ void tn5250_curses_terminal_use_underscores (Tn5250Terminal *This, int u)
    This->data->underscores = u;
 }
 
+/****i* lib5250/tn5250_curses_terminal_set_xterm_font
+ * NAME
+ *  tn5250_curses_terminal_set_xterm_font  
+ * SYNOPSIS
+ *    tn5250_curses_terminal_set_xterm_font (This, font80, font132);
+ * INPUTS
+ *    Tn5250Terminal  *    This       - curses terminal object
+ *    const char  *	   font80     - string to send when using 80 col font
+ *    const char  *	   font132    - string to send when using 132 col font
+ * DESCRIPTION
+ *    When using an xterm, it is sometimes desirable to change fonts when
+ *    switching from 80 to 132 col mode.  If this is not explicitly set,
+ *    no font-change will be sent to the xterm.
+ *
+ *    Font changes consist of "\x1b]50;<font string>\x07".  You only need
+ *    specify the "<font string>" portion as an argument to this function.
+ *****/
+void tn5250_curses_terminal_set_xterm_font (Tn5250Terminal *This, 
+                                 const char *font80, const char *font132)
+{
+   This->data->font_80 = g_malloc(strlen(font80) + 6);
+   This->data->font_132 = g_malloc(strlen(font132) + 6);
+   sprintf(This->data->font_80, "\x1b]50;%s\x07", font80);
+   sprintf(This->data->font_132, "\x1b]50;%s\x07", font132);
+   TN5250_LOG(("font_80 = %s.\n",This->data->font_80));
+   TN5250_LOG(("font_132 = %s.\n",This->data->font_132));
+}
+
 /****i* lib5250/curses_terminal_term
  * NAME
  *    curses_terminal_term
@@ -459,6 +491,10 @@ static void curses_terminal_destroy(Tn5250Terminal * This)
    if (This->data->k_map != NULL)
       g_free(This->data->k_map);
 #endif
+   if (This->data->font_80 !=NULL) 
+      g_free(This->data->font_80);
+   if (This->data->font_132 !=NULL) 
+      g_free(This->data->font_132);
    if (This->data != NULL)
       g_free(This->data);
    g_free(This);
@@ -540,6 +576,12 @@ static void curses_terminal_update(Tn5250Terminal * This, Tn5250Display *display
       if(This->data->is_xterm) {
 	 printf ("\x1b[8;%d;%dt", tn5250_display_height (display)+1,
 	       tn5250_display_width (display));
+         if (This->data->font_132!=NULL) {
+               if (tn5250_display_width (display)>100)
+                    printf(This->data->font_132);
+               else
+                    printf(This->data->font_80);
+         }
 	 fflush (stdout);
 #ifdef HAVE_RESIZETERM
 	 resizeterm(tn5250_display_height(display)+1, tn5250_display_width(display)+1);

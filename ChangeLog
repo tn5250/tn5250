@@ -1,3 +1,7 @@
+2001-01-04 Scott Klement <klemscot@klements.com>
+- Added xterm font support requested by Frank Richter
+- to use: set the font_80 and font_132 config options in ~/.tn5250rc
+
 2000-12-27 Rich Duzenbury <theduz@theduz.com>
 - Added Experimental scs2ps (SCS to Postscript) program.  
 - call by:  cat myscsfile | scs2ps

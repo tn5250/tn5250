@@ -99,6 +99,13 @@ int main(int argc, char *argv[])
 	    tn5250_config_get_bool (config, "underscores")
 	    );
    }
+   if ((tn5250_config_get (config, "font_80")) 
+       && (tn5250_config_get (config, "font_132"))) {
+      tn5250_curses_terminal_set_xterm_font (term,   
+            tn5250_config_get (config, "font_80"),
+            tn5250_config_get (config, "font_132")
+            );
+   }
 #endif
 #ifdef USE_SLANG
    term = tn5250_slang_terminal_new();
