@@ -1,3 +1,8 @@
+2002-03-13 Scott Klement <klemscot@klements.com>
+- Changed lp5250d to set the TN5250_CCSIDMAP variable in the environment
+  to match the "map" entry from the config.  (It does not overwrite an
+  existing value, if one is already set)
+
 2002-03-12 James Rich <james@eaerich.com>
 - Removed common functions from scs2ps.c that are in scs.c.
 - Changed scs2ascii.c, scs2pdf.c, and scs2ps.c to check environment
