@@ -1,4 +1,9 @@
 2000-05-16 Mike Madore <mmadore@turbolinux.com>
+- One more UnixWare fix.  This time to the curses terminal initialization.
+  I set the r->conf member to NULL.  Fixes a segfault.  Did the same thing to
+  the session and streamInit code in the last update.
+	
+2000-05-16 Mike Madore <mmadore@turbolinux.com>
 - UnixWare fixes.  Now it doesn't segfault, but it hangs before we get a 
   signon. More fun to come.
 	

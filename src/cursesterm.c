@@ -294,7 +294,7 @@ Tn5250Terminal *tn5250_curses_terminal_new()
    r->waitevent = curses_terminal_waitevent;
    r->getkey = curses_terminal_getkey;
    r->beep = curses_terminal_beep;
-
+   r->config = NULL;
    return r;
 }
 
