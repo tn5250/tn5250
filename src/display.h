@@ -81,6 +81,7 @@ struct _Tn5250Display {
 
    int indicators_dirty : 1;
    int pending_insert : 1;
+   int pending_aid;
 };
 
 typedef struct _Tn5250Display Tn5250Display;
@@ -136,6 +137,8 @@ extern void	  tn5250_display_clear_format_table   (Tn5250Display *This);
 extern void	  tn5250_display_set_pending_insert   (Tn5250Display *This,
 						       int y,
 						       int x);
+extern void       tn5250_display_set_pending_aid      (Tn5250Display *This,
+                                                       int aidcode);						       
 extern void	  tn5250_display_make_wtd_data        (Tn5250Display *This,
 						       struct _Tn5250Buffer *b,
 						       struct _Tn5250DBuffer *);
@@ -194,8 +197,12 @@ extern void	  tn5250_display_kf_delete            (Tn5250Display *This);
    (tn5250_dbuffer_set_header_data((This)->display_buffers,(data),(len)))
 #define tn5250_display_clear_pending_insert(This) \
    (void)((This)->pending_insert = 0)
+#define tn5250_display_clear_pending_aid(This) \
+   (void)((This)->pending_aid = 0)
 #define tn5250_display_pending_insert(This) \
    ((This)->pending_insert)
+#define tn5250_display_pending_aid(This) \
+   ((This)->pending_aid)
 #define tn5250_display_field_data(This,field) \
    (tn5250_dbuffer_field_data((This)->display_buffers,(field)))
 #define tn5250_display_msg_line(This) \

@@ -319,7 +319,7 @@ static void curses_terminal_init(Tn5250Terminal * This)
    raw();
 
 #ifdef USE_OWN_KEY_PARSING
-   if ((str = tgetstr ("ks", NULL)) != NULL)
+   if ((str = (unsigned char *)tgetstr ("ks", NULL)) != NULL)
       tputs (str, 1, putchar);
    fflush (stdout);
 #else
@@ -351,7 +351,7 @@ static void curses_terminal_init(Tn5250Terminal * This)
 
    /* Determine if the terminal supports underlining. */
    if (This->data->have_underscores == 0) {
-      if (tgetstr ("us", NULL) == NULL)
+      if ((unsigned char *)tgetstr ("us", NULL) == NULL)
 	 This->data->underscores = 1;
       else
 	 This->data->underscores = 0;
@@ -368,7 +368,7 @@ static void curses_terminal_init(Tn5250Terminal * This)
    s = sizeof (curses_vt100) / sizeof (Key);
    for (i = 0; i < c; i++) {
       This->data->k_map[i].k_code = curses_caps[i].k_code;
-      if ((str = tgetstr (curses_caps[i].k_str, NULL)) != NULL) {
+      if ((str = (unsigned char *)tgetstr (curses_caps[i].k_str, NULL)) != NULL) {
 	 TN5250_LOG(("Found string for cap '%s': '%s'.\n",
 		  curses_caps[i].k_str, str));
 	 strcpy (This->data->k_map[i].k_str, str);
@@ -393,7 +393,7 @@ static void curses_terminal_init(Tn5250Terminal * This)
    /* Damn the exceptions to the rules. (ESC + DEL) */
    This->data->k_map[This->data->k_map_len-1].k_code = K_INSERT;
    This->data->k_map[This->data->k_map_len-s-1].k_code = K_INSERT;
-   if ((str = tgetstr ("kD", NULL)) != NULL) {
+   if ((str = (unsigned char *)tgetstr ("kD", NULL)) != NULL) {
       This->data->k_map[This->data->k_map_len-1].k_str[0] = '\033';
       This->data->k_map[This->data->k_map_len-s-1].k_str[0] = K_CTRL('G');
       strcpy (This->data->k_map[This->data->k_map_len-1].k_str + 1, str);

@@ -58,6 +58,7 @@ Tn5250Display *tn5250_display_new()
    This->indicators = 0;
    This->indicators_dirty = 0;
    This->pending_insert = 0;
+   This->pending_aid = 0;
    This->session = NULL;
    This->key_queue_head = This->key_queue_tail = 0;
    This->saved_msg_line = NULL;
@@ -334,6 +335,22 @@ void tn5250_display_set_pending_insert (Tn5250Display *This, int y, int x)
 {
    This->pending_insert = 1;
    tn5250_dbuffer_set_ic (This->display_buffers, y, x);
+}
+
+/****f* lib5250/tn5250_display_set_pending_aid
+ * NAME
+ *    tn5250_display_set_pending_aid
+ * SYNOPSIS
+ *    tn5250_display_set_pending_aid (This, aidcode);
+ * INPUTS
+ *    Tn5250Display *      This       - 
+ *    int                  aidcode    - 
+ * DESCRIPTION
+ *    Stores the given aidcode for later processing.
+ *****/
+void tn5250_display_set_pending_aid (Tn5250Display *This, int aidcode)
+{
+   This->pending_aid = aidcode;
 }
 
 /****f* lib5250/tn5250_display_field_at
@@ -1121,7 +1138,7 @@ void tn5250_display_do_aidkey (Tn5250Display *This, int aidcode)
       ( *(This->session->handle_aidkey)) (This->session, aidcode);
    } else {
       /* No read active.  AID code is pending. */
-      This->session->pending_aid = aidcode;
+      This->pending_aid = aidcode;
    }
 }
 

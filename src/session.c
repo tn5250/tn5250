@@ -152,6 +152,8 @@ void tn5250_session_set_stream(Tn5250Session * This, Tn5250Stream * newstream)
 void tn5250_session_main_loop(Tn5250Session * This)
 {
    int r;
+   int pending_aid;
+   
    while (1) {
       r = tn5250_display_waitevent(This->display);
       if ((r & TN5250_TERMINAL_EVENT_QUIT) != 0)
@@ -161,9 +163,12 @@ void tn5250_session_main_loop(Tn5250Session * This)
 	    return;
 	 tn5250_session_handle_receive(This);
       }
-      if(This->pending_aid && This->read_opcode) {
-         tn5250_session_handle_aidkey(This, This->pending_aid);
-         This->pending_aid = 0;
+      
+      pending_aid = tn5250_display_pending_aid(This->display);
+      
+      if(pending_aid && This->read_opcode) {
+         tn5250_session_handle_aidkey(This, pending_aid);
+         tn5250_display_clear_pending_aid(This->display);
       }
    }
 }
@@ -696,13 +701,9 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
    Tn5250Field *last_field = NULL;
    int old_x = tn5250_display_cursor_x(This->display);
    int old_y = tn5250_display_cursor_y(This->display);
-   int is_x_system = tn5250_display_indicators(This->display)
-   	             & TN5250_DISPLAY_IND_X_SYSTEM;
-
-   TN5250_LOG(("is_x_system = %x\n", is_x_system));
+   int is_x_system;
 
    TN5250_LOG(("WriteToDisplay: entered.\n"));
-
 
    CC1 = tn5250_record_get_byte(This->record);
    CC2 = tn5250_record_get_byte(This->record);
@@ -800,6 +801,8 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
     * position from a prior IC if the unit hasn't been cleared since then,
     * but is probably the first position of the first non-bypass field). */
                 
+   is_x_system = tn5250_display_indicators(This->display)
+   	         & TN5250_DISPLAY_IND_X_SYSTEM;                
    if (end_y != 0xff && end_x != 0xff) 
       tn5250_display_set_cursor(This->display, end_y, end_x);
    else if(is_x_system) {
@@ -1137,11 +1140,17 @@ static void tn5250_session_start_of_field(Tn5250Session * This)
 
    TN5250_LOG(("StartOfField: entered.\n"));
 
-   tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_X_SYSTEM);
 
    cur_char = tn5250_record_get_byte(This->record);
 
    if ((cur_char & 0xe0) != 0x20) {
+      /*
+         Lock the keyboard and clear any pending aid bytes.  
+         Only for input fields 
+      */
+      tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_X_SYSTEM);
+      tn5250_display_clear_pending_aid(This->display);
+      
       input_field = 1;
       FFW1 = cur_char;
       FFW2 = tn5250_record_get_byte(This->record);
@@ -1257,6 +1266,7 @@ static void tn5250_session_start_of_header(Tn5250Session * This)
    tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_X_SYSTEM);
 
    n = tn5250_record_get_byte (This->record);
+   TN5250_ASSERT((n > 0 && n <= 7));
    if (n > 0) {
       ptr = (unsigned char *)malloc (n);
       TN5250_ASSERT (ptr != NULL);

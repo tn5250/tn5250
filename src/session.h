@@ -110,7 +110,6 @@ struct _Tn5250Session {
    Tn5250Record /*@owned@*/ *record;
    int read_opcode;	/* Current read opcode. */
    int invited;
-   int pending_aid;
 };
 
 typedef struct _Tn5250Session Tn5250Session;
