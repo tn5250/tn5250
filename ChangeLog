@@ -1,3 +1,7 @@
+2001-07-11 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Python wrapper updates - now have tn5250.Display and tn5250.Field
+  `classes' wrapped.  Fix some dependency issues.
+
 2001-06-29 Scott Klement <klemscot@klements.com>
 - Applied Martin Rowe's patch to fix 80 to 132 col screen resizing when
     changing fonts. (along with my own update to his patch)

@@ -50,6 +50,8 @@ pyso_LTLIBRARIES =	libtn5250module.la
 # just add all the SOURCES (sigh).
 # libtn5250module_la_LIBADD =	lib5250.la
 
+libtn5250module_la_LIBADD =	@with_exra_libs@ @GLIB_LIBS@
+
 libtn5250module_la_SOURCES =	tn5250-python.c\
 			$(lib5250_la_SOURCES)
 endif
