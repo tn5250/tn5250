@@ -12,8 +12,8 @@ Group: 		Applications/Networking
 Source: 	http://prdownloads.sourceforge.net/tn5250/%{name}-%{version}.tar.gz
 Url: 		http://tn5250.sourceforge.net
 BuildRoot: 	/var/tmp/%{name}-root
-Requires: ncurses, openssl, glib
-BuildRequires: ncurses-devel, openssl-devel, glib-devel
+Requires: ncurses, openssl
+BuildRequires: ncurses-devel, openssl-devel
 
 %description
 tn5250 is an implementation of the 5250 Telnet protocol.
