@@ -1234,7 +1234,7 @@ static void tn5250_session_start_of_field(Tn5250Session * This)
    TN5250_LOG(("starty = %d width = %d startx = %d length = %d height = %d\n",
 	       starty, width, startx, length, height));
 
-   if( ((starty-1) * width + startx + length) > width*height)
+   if( ((starty-1) * width + startx - 1 + length) > width*height)
      {
        errorcode = TN5250_NR_INVALID_ROW_COL_ADDR;
 
