@@ -1,3 +1,9 @@
+2000-01-07 Jay 'Eraserhead' Felcie <jasonf@nacs.net>
+
+- tn5250_dbuffer_send_data_for_fields(): A *SET* bit inhibits the transmission
+  of field data, not a clear one.  Also, fine point of spec, all three aid key
+  bytes must be present before the 5294 controller will obey any of them.
+
 2000-01-06 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 
 - Carey Evans' suggestions for new xt5250 script portability, security
