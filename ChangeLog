@@ -10,6 +10,8 @@
   also.
 - Changed constants in scs.h/scs2ascii.c/scs2pdf.c so they don't conflict with
   standard defines on UnixWare.
+- Changed library order in tn5250-config.in.  gtk-5250 now compiles and runs
+  on UnixWare 7.
 	
 2000-05-25 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - Fixed syntax usage message in tn5250.c
