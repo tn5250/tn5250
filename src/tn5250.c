@@ -110,6 +110,7 @@ int main(int argc, char *argv[])
             tn5250_config_get (config, "font_132")
             );
    }
+   tn5250_curses_terminal_load_colorlist(config);
 #endif
 #ifdef USE_SLANG
    term = tn5250_slang_terminal_new();

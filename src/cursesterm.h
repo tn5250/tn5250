@@ -35,6 +35,7 @@ extern "C" {
                                                        const char *font132);
    extern void tn5250_curses_terminal_display_ruler (Tn5250Terminal *This,
                                                        int display_ruler);
+   extern void tn5250_curses_terminal_load_colorlist (Tn5250Config *config);
 #endif
 
 #ifdef __cplusplus

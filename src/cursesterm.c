@@ -30,49 +30,37 @@
 #endif				/* A_VERTICAL */
 
 /* Mapping of 5250 colors to curses colors */
-#define A_5250_GREEN    ((attr_t)COLOR_PAIR(COLOR_GREEN))
-#define A_5250_WHITE    ((attr_t)COLOR_PAIR(COLOR_WHITE) | A_BOLD)
-#define A_5250_RED      ((attr_t)COLOR_PAIR(COLOR_RED))
-#define A_5250_TURQ     ((attr_t)COLOR_PAIR(COLOR_CYAN))
-#define A_5250_YELLOW   ((attr_t)COLOR_PAIR(COLOR_YELLOW) | A_BOLD)
-#define A_5250_PINK     ((attr_t)COLOR_PAIR(COLOR_MAGENTA))
-#define A_5250_BLUE     ((attr_t)COLOR_PAIR(COLOR_CYAN) | A_BOLD)
+struct _curses_color_map {
+   char *name;
+   NCURSES_COLOR_T ref;
+   attr_t bld;
+};
+typedef struct _curses_color_map curses_color_map;
+
+static curses_color_map colorlist[] =
+{
+  { "black",     COLOR_BLACK         },
+  { "red",       COLOR_RED,   A_BOLD },
+  { "green",     COLOR_GREEN         },
+  { "yellow",    COLOR_YELLOW,A_BOLD },
+  { "blue",      COLOR_CYAN,  A_BOLD },
+  { "pink",      COLOR_MAGENTA       },
+  { "turquoise", COLOR_CYAN          },
+  { "white",     COLOR_WHITE, A_BOLD },
+  { NULL, -1 }
+};
+
+#define A_5250_GREEN    ((attr_t)COLOR_PAIR(COLOR_GREEN)|colorlist[COLOR_GREEN].bld)
+#define A_5250_WHITE    ((attr_t)COLOR_PAIR(COLOR_WHITE)|colorlist[COLOR_WHITE].bld)
+#define A_5250_RED      ((attr_t)COLOR_PAIR(COLOR_RED)|colorlist[COLOR_RED].bld)
+#define A_5250_TURQ     ((attr_t)COLOR_PAIR(COLOR_CYAN)|colorlist[COLOR_CYAN].bld)
+#define A_5250_YELLOW   ((attr_t)COLOR_PAIR(COLOR_YELLOW)|colorlist[COLOR_YELLOW].bld)
+#define A_5250_PINK     ((attr_t)COLOR_PAIR(COLOR_MAGENTA)|colorlist[COLOR_MAGENTA].bld)
+#define A_5250_BLUE     ((attr_t)COLOR_PAIR(COLOR_BLUE)|colorlist[COLOR_BLUE].bld)
 
 /*@-globstate -nullpass@*/  /* lclint incorrectly assumes stdscr may be NULL */
 
-static attr_t attribute_map[] =
-{A_5250_GREEN,
- A_5250_GREEN | A_REVERSE,
- A_5250_WHITE,
- A_5250_WHITE | A_REVERSE,
- A_5250_GREEN | A_UNDERLINE,
- A_5250_GREEN | A_UNDERLINE | A_REVERSE,
- A_5250_WHITE | A_UNDERLINE,
- 0x00,
- A_5250_RED,
- A_5250_RED | A_REVERSE,
- A_5250_RED | A_BLINK,
- A_5250_RED | A_BLINK | A_REVERSE,
- A_5250_RED | A_UNDERLINE,
- A_5250_RED | A_UNDERLINE | A_REVERSE,
- A_5250_RED | A_UNDERLINE | A_BLINK,
- 0x00,
- A_5250_TURQ | A_VERTICAL,
- A_5250_TURQ | A_VERTICAL | A_REVERSE,
- A_5250_YELLOW | A_VERTICAL,
- A_5250_YELLOW | A_VERTICAL | A_REVERSE,
- A_5250_TURQ | A_UNDERLINE | A_VERTICAL,
- A_5250_TURQ | A_UNDERLINE | A_REVERSE | A_VERTICAL,
- A_5250_YELLOW | A_UNDERLINE | A_VERTICAL,
- 0x00,
- A_5250_PINK,
- A_5250_PINK | A_REVERSE,
- A_5250_BLUE,
- A_5250_BLUE | A_REVERSE,
- A_5250_PINK | A_UNDERLINE,
- A_5250_PINK | A_UNDERLINE | A_REVERSE,
- A_5250_BLUE | A_UNDERLINE,
- 0x00};
+static attr_t attribute_map[33];
 
 static void curses_terminal_init(Tn5250Terminal * This) /*@modifies This@*/;
 static void curses_terminal_term(Tn5250Terminal * This) /*@modifies This@*/;
@@ -89,6 +77,7 @@ static int curses_terminal_getkey(Tn5250Terminal * This) /*@modifies This@*/;
 static int curses_terminal_get_esc_key(Tn5250Terminal * This, int is_esc) /*@modifies This@*/;
 static void curses_terminal_beep(Tn5250Terminal * This);
 static int curses_terminal_is_ruler(Tn5250Terminal *This, Tn5250Display *display, int x, int y);
+int curses_rgb_to_color(int r, int g, int b, int *rclr, int *rbold);
 
 
 #ifdef USE_OWN_KEY_PARSING
@@ -313,6 +302,7 @@ static void curses_terminal_init(Tn5250Terminal * This)
    int i = 0, c, s;
    struct timeval tv;
    char *str;
+   int x;
 
    (void)initscr();
    raw();
@@ -337,15 +327,58 @@ static void curses_terminal_init(Tn5250Terminal * This)
    /* Initialize colors if the terminal supports it. */
    if (has_colors()) {
       start_color();
-      init_pair(COLOR_BLACK, COLOR_BLACK, COLOR_BLACK);
-      init_pair(COLOR_GREEN, COLOR_GREEN, COLOR_BLACK);
-      init_pair(COLOR_RED, COLOR_RED, COLOR_BLACK);
-      init_pair(COLOR_CYAN, COLOR_CYAN, COLOR_BLACK);
-      init_pair(COLOR_WHITE, COLOR_WHITE, COLOR_BLACK);
-      init_pair(COLOR_MAGENTA, COLOR_MAGENTA, COLOR_BLACK);
-      init_pair(COLOR_BLUE, COLOR_BLUE, COLOR_BLACK);
-      init_pair(COLOR_YELLOW, COLOR_YELLOW, COLOR_BLACK);
+      init_pair(COLOR_BLACK, colorlist[COLOR_BLACK].ref, 
+                             colorlist[COLOR_BLACK].ref);
+      init_pair(COLOR_GREEN, colorlist[COLOR_GREEN].ref, 
+                             colorlist[COLOR_BLACK].ref);
+      init_pair(COLOR_RED,   colorlist[COLOR_RED  ].ref, 
+                             colorlist[COLOR_BLACK].ref);
+      init_pair(COLOR_CYAN,  colorlist[COLOR_CYAN ].ref, 
+                             colorlist[COLOR_BLACK].ref);
+      init_pair(COLOR_WHITE, colorlist[COLOR_WHITE].ref, 
+                             colorlist[COLOR_BLACK].ref);
+      init_pair(COLOR_MAGENTA,colorlist[COLOR_MAGENTA].ref, 
+                             colorlist[COLOR_BLACK].ref);
+      init_pair(COLOR_BLUE  ,colorlist[COLOR_BLUE ].ref, 
+                             colorlist[COLOR_BLACK].ref);
+      init_pair(COLOR_YELLOW,colorlist[COLOR_YELLOW].ref, 
+                             colorlist[COLOR_BLACK].ref);
    }
+
+   x=-1;
+   attribute_map[++x] = A_5250_GREEN;
+   attribute_map[++x] = A_5250_GREEN | A_REVERSE;
+   attribute_map[++x] = A_5250_WHITE;
+   attribute_map[++x] = A_5250_WHITE | A_REVERSE;
+   attribute_map[++x] = A_5250_GREEN | A_UNDERLINE;
+   attribute_map[++x] = A_5250_GREEN | A_UNDERLINE | A_REVERSE;
+   attribute_map[++x] = A_5250_WHITE | A_UNDERLINE;
+   attribute_map[++x] = 0x00;
+   attribute_map[++x] = A_5250_RED;
+   attribute_map[++x] = A_5250_RED | A_REVERSE;
+   attribute_map[++x] = A_5250_RED | A_BLINK;
+   attribute_map[++x] = A_5250_RED | A_BLINK | A_REVERSE;
+   attribute_map[++x] = A_5250_RED | A_UNDERLINE;
+   attribute_map[++x] = A_5250_RED | A_UNDERLINE | A_REVERSE;
+   attribute_map[++x] = A_5250_RED | A_UNDERLINE | A_BLINK;
+   attribute_map[++x] = 0x00;
+   attribute_map[++x] = A_5250_TURQ | A_VERTICAL;
+   attribute_map[++x] = A_5250_TURQ | A_VERTICAL | A_REVERSE;
+   attribute_map[++x] = A_5250_YELLOW | A_VERTICAL;
+   attribute_map[++x] = A_5250_YELLOW | A_VERTICAL | A_REVERSE;
+   attribute_map[++x] = A_5250_TURQ | A_UNDERLINE | A_VERTICAL;
+   attribute_map[++x] = A_5250_TURQ | A_UNDERLINE | A_REVERSE | A_VERTICAL;
+   attribute_map[++x] = A_5250_YELLOW | A_UNDERLINE | A_VERTICAL;
+   attribute_map[++x] = 0x00;
+   attribute_map[++x] = A_5250_PINK;
+   attribute_map[++x] = A_5250_PINK | A_REVERSE;
+   attribute_map[++x] = A_5250_BLUE;
+   attribute_map[++x] = A_5250_BLUE | A_REVERSE;
+   attribute_map[++x] = A_5250_PINK | A_UNDERLINE;
+   attribute_map[++x] = A_5250_PINK | A_UNDERLINE | A_REVERSE;
+   attribute_map[++x] = A_5250_BLUE | A_UNDERLINE;
+   attribute_map[++x] = 0x00;
+
    This->data->quit_flag = 0;
 
    /* Determine if the terminal supports underlining. */
@@ -1195,6 +1228,127 @@ static int curses_terminal_getkey (Tn5250Terminal *This)
 }
 #endif
 
+/****i* lib5250/curses_rgb_to_color
+ * NAME
+ *    curses_rgb_to_color
+ * SYNOPSIS
+ *    curses_rgb_to_color (r, g, b, &clr, &bld);
+ * INPUTS
+ *    int                  r          -    
+ *    int                  g          -    
+ *    int                  b          -    
+ *    int            *     rclr       -    
+ *    int            *     rbold      -    
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
+int curses_rgb_to_color(int r, int g, int b, int *rclr, int *rbold) {
+
+    int clr;
+    
+    clr = ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff);
+    *rbold = A_NORMAL;
+
+    switch (clr) {
+       case 0xFFFFFF:
+	 *rclr = COLOR_WHITE;   *rbold = A_BOLD;
+         break;
+       case 0xFFFF00:
+	 *rclr = COLOR_YELLOW;  *rbold = A_BOLD;
+         break;
+       case 0xFF00FF:
+	 *rclr = COLOR_MAGENTA; *rbold = A_BOLD;
+         break;
+       case 0xFF0000:
+	 *rclr = COLOR_RED;     *rbold = A_BOLD;
+         break;
+       case 0x00FFFF:
+	 *rclr = COLOR_CYAN;    *rbold = A_BOLD;
+         break;
+       case 0x00FF00:
+	 *rclr = COLOR_GREEN;   *rbold = A_BOLD;
+         break;
+       case 0x0000FF:
+	 *rclr = COLOR_BLUE;    *rbold = A_BOLD;
+         break;
+       case 0x808080:
+	 *rclr = COLOR_WHITE;
+         break;
+       case 0xC0C0C0:
+	 *rclr = COLOR_WHITE;
+         break;
+       case 0x808000:
+	 *rclr = COLOR_YELLOW;
+         break;
+       case 0x800080:
+	 *rclr = COLOR_MAGENTA;
+         break;
+       case 0x800000:
+	 *rclr = COLOR_RED;
+         break;
+       case 0x008080:
+	 *rclr = COLOR_CYAN;
+         break;
+       case 0x008000:
+	 *rclr = COLOR_GREEN;
+         break;
+       case 0x000080:
+	 *rclr = COLOR_BLUE;
+         break;
+       case 0x000000:
+	 *rclr = COLOR_BLACK;
+         break;
+       default:
+         return -1;
+    }
+
+    return 0;
+}
+
+/****i* lib5250/tn5250_curses_terminal_load_colorlist
+ * NAME
+ *    tn5250_curses_terminal_load_colorlist
+ * SYNOPSIS
+ *    tn5250_curses_terminal_load_colorlist(config);
+ * INPUTS
+ *    Tn5250Config   *     config     -    
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
+void tn5250_curses_terminal_load_colorlist(Tn5250Config *config) {
+
+   int r, g, b, x, clr, bld;
+
+   if (tn5250_config_get_bool(config, "black_on_white")) {
+       for (x=COLOR_BLACK+1; x<=COLOR_WHITE; x++) {
+           colorlist[x].ref = COLOR_BLACK;
+           colorlist[x].bld = A_NORMAL;
+       }
+       colorlist[COLOR_BLACK].ref = COLOR_WHITE;
+       colorlist[COLOR_BLACK].bld = A_BOLD;
+   }
+
+   if (tn5250_config_get_bool(config, "white_on_black")) {
+       for (x=COLOR_BLACK+1; x<=COLOR_WHITE; x++) {
+           colorlist[x].ref = COLOR_WHITE;
+           colorlist[x].bld = A_BOLD;
+       }
+       colorlist[COLOR_BLACK].ref = COLOR_BLACK;
+       colorlist[COLOR_BLACK].bld = A_NORMAL;
+   }
+
+   x=0;
+   while (colorlist[x].name != NULL) {
+       if (tn5250_parse_color(config, colorlist[x].name, &r, &g, &b)!=-1) {
+           if (curses_rgb_to_color(r,g,b, &clr, &bld) != -1) {
+                colorlist[x].ref = clr;
+                colorlist[x].bld = bld;
+           }
+       }
+       x++;
+   }
+
+}
 
 #endif /* USE_CURSES */
 
