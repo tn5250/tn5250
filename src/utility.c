@@ -56,9 +56,9 @@ void
 sig_child(int signum)
 {
   int pid;
-  union wait status;
+  int status;
 
-  while( (pid = wait3(&status, WNOHANG, (struct rusage *) 0)) > 0)
+  while( pid = waitpid(-1, &status, WNOHANG) > 0)
     ;
 
 }
