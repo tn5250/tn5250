@@ -2579,6 +2579,7 @@ tn5250_session_query_reply (Tn5250Session * This)
 
   temp[2] = 0x88;		/* Inbound Write Structured Field Aid */
 
+  /* Note that the IBM docs show this length as X'0044'. */
   temp[3] = 0x00;		/* Length of Query Reply */
 
   if (enhanced)
@@ -2590,16 +2591,31 @@ tn5250_session_query_reply (Tn5250Session * This)
       temp[4] = 0x3A;
     }
 
-  temp[5] = 0xD9;		/* Command class */
+  temp[5] = 0xD9;	/* Command class */
 
-  temp[6] = 0x70;		/* Command type - Query */
+  temp[6] = 0x70;	/* Command type - Query */
 
-  temp[7] = 0x80;		/* Flag byte */
+  temp[7] = 0x80;	/* Flag byte */
 
-  temp[8] = 0x06;		/* Controller hardware class */
-  temp[9] = 0x00;		/* 0x600 - Other WSF or another 5250 emulator */
+  /* The following bytes are supposed to correspond to table 89 of section
+   * 15.27.2 5250 QUERY Command of the Functions Reference manual.
+   */
 
-  temp[10] = 0x01;		/* Controller code level (Version 1 Release 1.0 */
+  /* This appears to be wrong.  Table 89 describes the first field of the
+   * QUERY Response Data Field as:
+   * Workstation Control Unit  |  X'0043'  |  Identifies the controller as
+   *                                          a 5494
+   *
+   * I don't know where the X'0600' came from, but it appears to be
+   * working.
+   */
+  temp[8] = 0x06;	/* Controller hardware class */
+  temp[9] = 0x00;	/* 0x600 - Other WSF or another 5250 emulator */
+
+  /* Here the docs use X'040310' for version 4 release 3.1.  But it doesn't
+   * appear to make any difference.
+   */
+  temp[10] = 0x01;	/* Controller code level (Version 1 Release 1.0 */
   temp[11] = 0x01;
   temp[12] = 0x00;
 
@@ -2620,7 +2636,7 @@ tn5250_session_query_reply (Tn5250Session * This)
   temp[27] = 0x00;
   temp[28] = 0x00;
 
-  temp[29] = 0x01;		/* 5250 Display or 5250 emulation */
+  temp[29] = 0x01;		/* Display or printer emulation */
 
   /* Retreive the device type from the stream, parse out the device
    * type and model, convert it to EBCDIC, and put it in the packet. */
@@ -2658,16 +2674,26 @@ tn5250_session_query_reply (Tn5250Session * This)
   temp[38] = 0x00;		/* Extended keyboard ID */
   temp[39] = 0x00;		/* Reserved */
 
+  /* I really doubt we have serial number.  This should probably be set to
+   * all zeroes since the docs say so for workstations without a serial
+   * number.
+   */
   temp[40] = 0x00;		/* Display serial number */
   temp[41] = 0x61;
   temp[42] = 0x50;
   temp[43] = 0x00;
 
+  /* Here the docs suggest that the maximum is 256.  I guess it would be
+   * possible to have a screen with 1701 input fields (a 127 by 27 screen
+   * can have at most (126/2) * 27) = 1701 fields on it).  At any rate,
+   * 65535 doesn't appear to be supported.
+   */
   temp[44] = 0xff;		/* Maximum number of input fields (65535) */
   temp[45] = 0xff;
 
-  temp[46] = 0x00;		/* Reserved (set to zero) */
-  temp[47] = 0x00;
+  temp[46] = 0x00;		/* Control unit customization */
+
+  temp[47] = 0x00;		/* Reserved (set to zero) */
   temp[48] = 0x00;
 
   temp[49] = 0x23;		/* Controller/Display Capability */

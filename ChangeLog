@@ -1,3 +1,9 @@
+2005-02-24 James Rich <james@eaerich.com>
+- Added more descriptive comments to tn5250_session_query_reply().
+
+2005-02-23 James Rich <james@eaerich.com>
+- Applied several fixes from Marc-Antoine Ruel for multi-threading issues
+
 2005-02-19 James Rich <james@eaerich.com>
 - Added support for the DEFINE SELECTION FIELD structured field.  For now
   it simply logs the selection field data we receive.
