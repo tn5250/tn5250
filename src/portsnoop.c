@@ -12,6 +12,9 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <netdb.h>
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
 #include <arpa/inet.h>
 #include <unistd.h>
 
