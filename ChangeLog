@@ -1,3 +1,7 @@
+2000-12-27 Rich Duzenbury <theduz@theduz.com>
+- Added Experimental scs2ps (SCS to Postscript) program.  
+- call by:  cat myscsfile | scs2ps
+
 2000-12-06 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - Applied Cary Evans' patch updating man pages.
 - Fixed text of LGPL exception clause in src/*.[ch]
