@@ -45,5 +45,11 @@
     about how ESC A (for Attention) can act strange if pressed too quickly.
   </item>
 
+  <item>
+    Reimplement Save/Restore Screen/Format Table commands so that they send
+    the saved data to the 400 instead of keeping track of it locally and
+    handing the 400 a unique identifier.
+  </item>
+
 </todo>
 <!-- vi:set sts=2 sw=2 autoindent: -->

@@ -1,3 +1,7 @@
+1999-12-17 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Partial work on save/restore screen rewrite finished.
+
 1999-12-04 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 
 - 0x0D is treated as a printable data character, since the AS/400 seems to

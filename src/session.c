@@ -35,7 +35,6 @@
 #include "display.h"
 
 static void tn5250_session_handle_keys(Tn5250Session * This);
-static void tn5250_session_handle_key(Tn5250Session * This, int cur_key);
 static void tn5250_session_handle_receive(Tn5250Session * This);
 static void tn5250_session_invite(Tn5250Session * This);
 static void tn5250_session_cancel_invite(Tn5250Session * This);
@@ -69,6 +68,7 @@ static void tn5250_session_read_screen_immediate(Tn5250Session * This);
 static void tn5250_session_read_input_fields(Tn5250Session * This);
 static void tn5250_session_read_mdt_fields(Tn5250Session * This);
 static int tn5250_session_valid_wtd_data_char (unsigned char c);
+static int tn5250_session_handle_aidkey (Tn5250Session *This, int key);
 
 Tn5250Session *tn5250_session_new()
 {
@@ -79,7 +79,6 @@ Tn5250Session *tn5250_session_new()
    if (This == NULL)
       return NULL;
 
-   This->display = tn5250_display_new (80,24);
 
    This->record = tn5250_record_new();
    if (This->record == NULL) {
@@ -91,9 +90,11 @@ Tn5250Session *tn5250_session_new()
 
    This->stream = NULL;
    This->invited = 1;
-   This->pending_insert = 0;
    This->read_opcode = 0;
    This->key_queue_head = This->key_queue_tail = 0;
+
+   This->handle_aidkey = tn5250_session_handle_aidkey;
+   This->display = tn5250_display_new (This);
 
    return This;
 }
@@ -136,7 +137,8 @@ void tn5250_session_main_loop(Tn5250Session * This)
       /* Handle keys from our key queue if we aren't X SYSTEM. */
       if (This->key_queue_head != This->key_queue_tail && !is_x_system) {
 	 TN5250_LOG (("Handling buffered key.\n"));
-	 tn5250_session_handle_key (This, This->key_queue[This->key_queue_head]);
+	 tn5250_display_do_key(This->display,
+	       This->key_queue[This->key_queue_head]);
 	 if (++ This->key_queue_head == TN5250_SESSION_KEY_QUEUE_SIZE)
 	    This->key_queue_head = 0;
 	 handled_key = 1;
@@ -175,7 +177,7 @@ static void tn5250_session_handle_keys(Tn5250Session *This)
 	    if (cur_key == K_SYSREQ || cur_key == K_RESET) {
 	       /* Flush the keyboard queue. */
 	       This->key_queue_head = This->key_queue_tail = 0;
-	       tn5250_session_handle_key (This, cur_key);
+	       tn5250_display_do_key (This->display, cur_key);
 	       break;
 	    }
 
@@ -190,211 +192,12 @@ static void tn5250_session_handle_keys(Tn5250Session *This)
 	 } else {
 	    /* We shouldn't ever be handling a key here if there are keys in the queue. */
 	    TN5250_ASSERT(This->key_queue_head == This->key_queue_tail);
-	    tn5250_session_handle_key (This, cur_key);
+	    tn5250_display_do_key (This->display, cur_key);
 	 }
       }
    } while (cur_key != -1);
 
    tn5250_display_update(This->display);
-}
-
-static void tn5250_session_handle_key(Tn5250Session * This, int cur_key)
-{
-   unsigned char aidcode = 0;
-   Tn5250Field *field;
-
-   TN5250_LOG(("HandleKey: entered.\n"));
-
-   TN5250_LOG(("@key %d\n", cur_key));
-
-   if (tn5250_display_inhibited(This->display)) {
-      if (cur_key != K_SYSREQ && cur_key != K_RESET) {
-	 tn5250_display_beep (This->display);
-	 return;
-      }
-   }
-   switch (cur_key) {
-   case K_RESET:
-      tn5250_display_uninhibit(This->display);
-      break;
-
-   case K_BACKSPACE:
-   case K_LEFT:
-      tn5250_display_kf_left (This->display);
-      break;
-   case K_RIGHT:
-      tn5250_display_kf_right (This->display);
-      break;
-   case K_UP:
-      tn5250_display_kf_up (This->display);
-      break;
-   case K_DOWN:
-      tn5250_display_kf_down (This->display);
-      break;
-   case (K_F1):
-      aidcode = TN5250_SESSION_AID_F1;
-      break;
-   case (K_F2):
-      aidcode = TN5250_SESSION_AID_F2;
-      break;
-   case (K_F3):
-      aidcode = TN5250_SESSION_AID_F3;
-      break;
-   case (K_F4):
-      aidcode = TN5250_SESSION_AID_F4;
-      break;
-   case (K_F5):
-      aidcode = TN5250_SESSION_AID_F5;
-      break;
-   case (K_F6):
-      aidcode = TN5250_SESSION_AID_F6;
-      break;
-   case (K_F7):
-      aidcode = TN5250_SESSION_AID_F7;
-      break;
-   case (K_F8):
-      aidcode = TN5250_SESSION_AID_F8;
-      break;
-   case (K_F9):
-      aidcode = TN5250_SESSION_AID_F9;
-      break;
-   case (K_F10):
-      aidcode = TN5250_SESSION_AID_F10;
-      break;
-   case (K_F11):
-      aidcode = TN5250_SESSION_AID_F11;
-      break;
-   case (K_F12):
-      aidcode = TN5250_SESSION_AID_F12;
-      break;
-   case (K_F13):
-      aidcode = TN5250_SESSION_AID_F13;
-      break;
-   case (K_F14):
-      aidcode = TN5250_SESSION_AID_F14;
-      break;
-   case (K_F15):
-      aidcode = TN5250_SESSION_AID_F15;
-      break;
-   case (K_F16):
-      aidcode = TN5250_SESSION_AID_F16;
-      break;
-   case (K_F17):
-      aidcode = TN5250_SESSION_AID_F17;
-      break;
-   case (K_F18):
-      aidcode = TN5250_SESSION_AID_F18;
-      break;
-   case (K_F19):
-      aidcode = TN5250_SESSION_AID_F19;
-      break;
-   case (K_F20):
-      aidcode = TN5250_SESSION_AID_F20;
-      break;
-   case (K_F21):
-      aidcode = TN5250_SESSION_AID_F21;
-      break;
-   case (K_F22):
-      aidcode = TN5250_SESSION_AID_F22;
-      break;
-   case (K_F23):
-      aidcode = TN5250_SESSION_AID_F23;
-      break;
-   case (K_F24):
-      aidcode = TN5250_SESSION_AID_F24;
-      break;
-   case (K_HELP):
-      aidcode = TN5250_SESSION_AID_HELP;
-      break;
-
-   case (K_HOME):
-      if (This->pending_insert)
-	 tn5250_display_goto_ic(This->display);
-      else {
-	 int gx, gy;
-	 field = tn5250_display_current_field (This->display);
-	 if (field != NULL) {
-	    gy = tn5250_field_start_row(field);
-	    gx = tn5250_field_start_col(field);
-	 } else
-	    gx = gy = 0;
-	 if (gy == tn5250_display_cursor_y(This->display)
-	       && gx == tn5250_display_cursor_x(This->display))
-	    tn5250_session_home (This);
-	 else
-	    tn5250_display_set_cursor(This->display, gy, gx);
-      }
-      break;
-
-   case (K_END):
-      tn5250_display_kf_end (This->display);
-      break;
-
-   case (K_DELETE):
-      tn5250_display_kf_delete (This->display);
-      break;
-
-   case (K_INSERT):
-      tn5250_display_kf_insert (This->display);
-      break;
-
-   case (K_TAB):
-      tn5250_display_kf_tab (This->display);
-      break;
-
-   case (K_BACKTAB):
-      tn5250_display_kf_backtab (This->display);
-      break;
-
-   case (K_ENTER):
-      aidcode = TN5250_SESSION_AID_ENTER;
-      break;
-
-   case (K_ROLLDN):
-      aidcode = TN5250_SESSION_AID_PGUP;
-      break;
-
-   case (K_ROLLUP):
-      aidcode = TN5250_SESSION_AID_PGDN;
-      break;
-
-   case (K_FIELDEXIT):
-      tn5250_display_kf_field_exit (This->display);
-      break;
-
-   case K_FIELDMINUS:
-      tn5250_display_kf_field_minus (This->display);
-      break;
-
-   case K_SYSREQ:
-      tn5250_session_system_request(This);
-      break;
-
-   case K_ATTENTION:
-      tn5250_session_attention(This);
-      break;
-
-   case K_PRINT:
-      tn5250_session_print(This);
-      break;
-
-   case K_DUPLICATE:
-      tn5250_display_kf_dup(This->display);
-      break;
-
-   default:
-      TN5250_LOG(("HandleKey: cur_key = %c\n", cur_key));
-      if (cur_key >= ' ' && cur_key <= 255)
-	 tn5250_display_interactive_addch (This->display, cur_key);
-      else {
-	 TN5250_LOG (("Weird Key handled in default clause: %d\n", cur_key));
-      }
-   }
-   if (aidcode != 0) {
-      tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_X_SYSTEM);
-      tn5250_display_update(This->display);
-      tn5250_session_send_fields(This, aidcode);
-   }
 }
 
 /* 
@@ -564,14 +367,15 @@ static void tn5250_session_send_fields(Tn5250Session * This, int aidcode)
  */
 static void tn5250_session_send_field (Tn5250Session * This, Tn5250Buffer *buf, Tn5250Field *field)
 {
-   /* FIXME: Do we handle signed fields (changing the zone of the second-last
-    * digit and not transmitting the last digit)? */
    int size, n;
    unsigned char *data;
    unsigned char c;
 
    size = tn5250_field_length(field);
    data = tn5250_display_field_data (This->display, field);
+
+   TN5250_LOG(("Sending:\n"));
+   tn5250_field_dump(field);
 
    switch (This->read_opcode) {
    case CMD_READ_INPUT_FIELDS:
@@ -590,8 +394,6 @@ static void tn5250_session_send_field (Tn5250Session * This, Tn5250Buffer *buf, 
       break;
 
    case CMD_READ_MDT_FIELDS:
-      TN5250_LOG(("Sending:\n"));
-      tn5250_field_dump(field);
       tn5250_buffer_append_byte(buf, SBA);
       tn5250_buffer_append_byte(buf, tn5250_field_start_row(field) + 1);
       tn5250_buffer_append_byte(buf, tn5250_field_start_col(field) + 1);
@@ -599,24 +401,23 @@ static void tn5250_session_send_field (Tn5250Session * This, Tn5250Buffer *buf, 
       /* For signed numeric fields, if the second-last character is a digit
        * and the last character is a '-', zone shift the second-last char.
        * In any case, don't send the sign position. */
+      c = data[size-1];
       if (tn5250_field_is_signed_num (field)) {
 	 size--;
+	 c = size > 0 ? data[size-1] : 0;
 	 if (size > 1 && data[size] == tn5250_ascii2ebcdic('-') &&
-	       isdigit (tn5250_ebcdic2ascii (data[size-1])))
-	    c = (0xd0 | (0x0f & data[size-1]));
-      } else if (size > 0)
-	 c = data[size-1];   /* c is the last character transmitted */
+	       isdigit (tn5250_ebcdic2ascii (c)))
+	    c = (0xd0 | (0x0f & c));
+      }
       
       /* Strip trailing NULs */
       while (size > 0 && data[size-1] == 0) {
 	 size--;
-	 if (size > 0)
-	    c = data[size-1];
+	 c = size > 0 ? data[size-1] : 0;
       }
 
       /* Send all but the last character, then send the last character.
        * This is because we don't want to modify the display buffer's data */
-      TN5250_LOG(("SendFields: size = %d\n", size));
       for (n = 0; n < size - 1; n++)
 	 tn5250_buffer_append_byte(buf, data[n] == 0 ? 0x40 : data[n]);
       if (size > 0)
@@ -630,7 +431,7 @@ static void tn5250_session_process_stream(Tn5250Session * This)
    int cur_command;
 
    TN5250_LOG(("ProcessStream: entered.\n"));
-   This->pending_insert = 0;
+   tn5250_display_clear_pending_insert (This->display);
    while (!tn5250_record_is_chain_end(This->record)) {
 
       cur_command = tn5250_record_get_byte(This->record);
@@ -862,8 +663,9 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
    }				/* end while */
    TN5250_LOG(("\n"));
 
-   if (This->pending_insert)
-      tn5250_display_goto_ic(This->display);
+   /* FIXME: This code is pretty much a duplicate of tn5250_display_kf_home()*/
+   if (tn5250_display_pending_insert (This->display))
+      tn5250_display_set_cursor_home(This->display);
    else {
       /* Set the cursor to the first non-bypass field, if there is one.  If
        * not, set cursor position to 0,0 */
@@ -941,24 +743,34 @@ static void tn5250_session_read_immediate(Tn5250Session * This)
    This->read_opcode = old_opcode;
 }
 
-static void tn5250_session_home(Tn5250Session * This)
+static int tn5250_session_handle_aidkey (Tn5250Session *This, int key)
 {
    Tn5250Buffer buf;
 
-   TN5250_LOG(("Home: entered.\n"));
-
-   tn5250_buffer_init(&buf);
-   tn5250_buffer_append_byte(&buf, tn5250_display_cursor_y(This->display) + 1);
-   tn5250_buffer_append_byte(&buf, tn5250_display_cursor_x(This->display) + 1);
-   tn5250_buffer_append_byte(&buf, TN5250_SESSION_AID_RECORD_BS);
-
-   tn5250_stream_send_packet(This->stream, tn5250_buffer_length(&buf), 
+   switch (key) {
+   case TN5250_SESSION_AID_PRINT:
+   case TN5250_SESSION_AID_RECORD_BS:
+      tn5250_buffer_init (&buf);
+      tn5250_buffer_append_byte (&buf,
+	    tn5250_display_cursor_y(This->display) + 1);
+      tn5250_buffer_append_byte (&buf,
+	    tn5250_display_cursor_x(This->display) + 1);
+      tn5250_buffer_append_byte (&buf, key);
+      tn5250_stream_send_packet(This->stream, tn5250_buffer_length(&buf), 
                              TN5250_RECORD_FLOW_DISPLAY,
                              TN5250_RECORD_H_NONE,
                              TN5250_RECORD_OPCODE_NO_OP, 
                              tn5250_buffer_data(&buf));
+      tn5250_buffer_free (&buf);
+      break;
 
-   tn5250_buffer_free(&buf);
+   default:
+      tn5250_session_send_fields (This, key);
+      tn5250_display_inhibit (This->display);
+      break;
+   }
+
+   return 1; /* Continue processing. */
 }
 
 static void tn5250_session_system_request(Tn5250Session * This)
@@ -1006,24 +818,39 @@ static void tn5250_session_output_only(Tn5250Session * This)
 
 static void tn5250_session_save_screen(Tn5250Session * This)
 {
-   unsigned char outbuf[2 + sizeof(Tn5250DBuffer*) + sizeof(Tn5250Table*)];
-   int n;
+   Tn5250Buffer buffer;
 
    TN5250_LOG(("SaveScreen: entered.\n"));
 
+   tn5250_buffer_init (&buffer);
+
+   /* Append dummy CC1/CC2 bytes for write_to_display later. */
+   tn5250_buffer_append_byte (&buffer, 0);
+   tn5250_buffer_append_byte (&buffer, 0);
+
+   tn5250_display_make_wtd_data (This->display, &buffer);
+   tn5250_stream_send_packet (This->stream, tn5250_buffer_length (&buffer),
+	 TN5250_RECORD_FLOW_DISPLAY, TN5250_RECORD_H_NONE,
+	 TN5250_RECORD_OPCODE_SAVE_SCR, tn5250_buffer_data (&buffer));
+   tn5250_buffer_free (&buffer);
+
+   /* unsigned char outbuf[2 + sizeof(Tn5250DBuffer*) + sizeof(Tn5250Table*)];
+   int n;
+
    outbuf[0] = 0x04;
    outbuf[1] = 0x12;
+
    *((Tn5250DBuffer**)&outbuf[2]) = tn5250_display_push_dbuffer(This->display);
    *((Tn5250Table**)&outbuf[2+sizeof(Tn5250DBuffer*)]) =
       tn5250_display_push_table(This->display);
 
    tn5250_stream_send_packet(This->stream, sizeof(outbuf),
 	 TN5250_RECORD_FLOW_DISPLAY, TN5250_RECORD_H_NONE,
-	 TN5250_RECORD_OPCODE_SAVE_SCR, outbuf);
+	 TN5250_RECORD_OPCODE_SAVE_SCR, outbuf); */
 }
 
 static void tn5250_session_restore_screen(Tn5250Session * This)
-{
+{/*
    int screen, format;
    int i;
    unsigned char rdata[sizeof (Tn5250DBuffer*) + sizeof (Tn5250Table*)];
@@ -1037,8 +864,9 @@ static void tn5250_session_restore_screen(Tn5250Session * This)
 
    tn5250_display_restore_dbuffer (This->display, *((Tn5250DBuffer**)rdata));
    tn5250_display_restore_table (This->display,
-	 *((Tn5250Table**)(rdata + sizeof(Tn5250DBuffer*))));
+	 *((Tn5250Table**)(rdata + sizeof(Tn5250DBuffer*)))); */
 
+   tn5250_session_write_to_display (This);
    tn5250_display_update(This->display);
 }
 
@@ -1261,8 +1089,6 @@ static void tn5250_session_repeat_to_address(Tn5250Session * This)
       y = tn5250_display_cursor_y(This->display);
       x = tn5250_display_cursor_x(This->display);
 
-      TN5250_LOG(("RTA @ %d, %d.\n", y, x));
-
       tn5250_display_addch(This->display, temp[2]);
 
       if(y == temp[0] - 1 && x == temp[1] - 1)
@@ -1281,8 +1107,8 @@ static void tn5250_session_insert_cursor(Tn5250Session * This)
 
    TN5250_LOG(("InsertCursor: row = %d; col = %d\n", cur_char1, cur_char2));
 
-   tn5250_display_set_ic(This->display, cur_char1 - 1, cur_char2 - 1);
-   This->pending_insert = 1;
+   tn5250_display_set_pending_insert (This->display, cur_char1 - 1,
+	 cur_char2 - 1);
 }
 
 static void tn5250_session_write_structured_field(Tn5250Session * This)
@@ -1369,29 +1195,6 @@ static void tn5250_session_read_mdt_fields(Tn5250Session * This)
 				  | TN5250_DISPLAY_IND_X_CLOCK
 				  | TN5250_DISPLAY_IND_INHIBIT);
    tn5250_display_update(This->display);
-}
-
-/*
- *    Send a Copy To Printer request.
- */
-static void tn5250_session_print(Tn5250Session * This)
-{
-   Tn5250Buffer buf;
-
-   TN5250_LOG(("Print request: entered.\n"));
-
-   tn5250_buffer_init(&buf);
-   tn5250_buffer_append_byte(&buf, tn5250_display_cursor_y(This->display) + 1);
-   tn5250_buffer_append_byte(&buf, tn5250_display_cursor_x(This->display) + 1);
-   tn5250_buffer_append_byte(&buf, TN5250_SESSION_AID_PRINT);
-
-   tn5250_stream_send_packet(This->stream, tn5250_buffer_length(&buf), 
-                             TN5250_RECORD_FLOW_DISPLAY,
-                             TN5250_RECORD_H_NONE,
-                             TN5250_RECORD_OPCODE_NO_OP, 
-                             tn5250_buffer_data(&buf));
-
-   tn5250_buffer_free(&buf);
 }
 
 /* vi:set cindent sts=3 sw=3: */

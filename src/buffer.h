@@ -41,6 +41,13 @@ extern "C" {
    extern void tn5250_buffer_append_byte(Tn5250Buffer * This, unsigned char b);
    extern void tn5250_buffer_append_data(Tn5250Buffer * This, unsigned char *data, int len);
 
+#ifndef NDEBUG
+#define TN5250_LOG_BUFFER(x) tn5250_buffer_log((x))
+   extern void tn5250_buffer_log (Tn5250Buffer *This);
+#else
+#define TN5250_LOG_BUFFER(x)
+#endif
+
 #ifdef __cplusplus
 }
 
