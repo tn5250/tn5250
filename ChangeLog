@@ -1,3 +1,6 @@
+2005-04-04 James Rich <james@eaerich.com>
+- Fix cursor positioning in word wrap support.
+
 2005-04-03 James Rich <james@eaerich.com>
 - Fix several bugs in word wrap support.
 
@@ -40,7 +43,7 @@
   existant config object.
 
 2005-03-21 James Rich <james@eaerich.com>
-- Add --user=USER option to lp5250d to enable root to start it is another
+- Add --user=USER option to lp5250d to enable root to start it as another
   user (useful in startup scripts).  Also added --help option and changed
   -version to --version.
 

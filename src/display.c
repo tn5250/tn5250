@@ -1182,9 +1182,10 @@ tn5250_display_interactive_addch (Tn5250Display * This, unsigned char ch)
 
   tn5250_field_set_mdt (field);
 
-  /* If at the end of the field and not a fer field, advance to the
-   * next field. */
-  if (end_of_field)
+  /* If at the end of the field and not a fer field and not a word wrap
+   * field advance to the next field.
+   */
+  if (end_of_field && !tn5250_field_is_wordwrap (field))
     {
       if (tn5250_field_is_fer (field))
 	{
@@ -3199,6 +3200,21 @@ tn5250_display_wordwrap_insert (Tn5250Display * This, unsigned char c,
     }
 
   tn5250_dbuffer_right (This->display_buffers, 1);
+
+  /* We have to adjust the cursor position ourselves in the case of the
+   * cursor being outside the end of the field.
+   *
+   * Note that we *have* to handle all cursor placement ourselves because
+   * tn5250_display_wordwrap() can possibly put the cursor anywhere
+   * (don't worry, it is supposed to).  But our caller doesn't have enough
+   * info to intelligently place the cursor.
+   */
+  if (tn5250_display_cursor_x (This) > tn5250_field_end_col (field))
+    {
+      tn5250_dbuffer_left (This->display_buffers);
+      tn5250_display_set_cursor_next_field (This);
+    }
+
   free (text);
   return;
 }
@@ -3305,6 +3321,21 @@ tn5250_display_wordwrap_addch (Tn5250Display * This, unsigned char c)
     }
 
   tn5250_dbuffer_right (This->display_buffers, 1);
+
+  /* We have to adjust the cursor position ourselves in the case of the
+   * cursor being outside the end of the field.
+   *
+   * Note that we *have* to handle all cursor placement ourselves because
+   * tn5250_display_wordwrap() can possibly put the cursor anywhere
+   * (don't worry, it is supposed to).  But our caller doesn't have enough
+   * info to intelligently place the cursor.
+   */
+  if (tn5250_display_cursor_x (This) > tn5250_field_end_col (field))
+    {
+      tn5250_dbuffer_left (This->display_buffers);
+      tn5250_display_set_cursor_next_field (This);
+    }
+
   free (text);
   return;
 }
@@ -3315,14 +3346,45 @@ tn5250_display_wordwrap (Tn5250Display * This, unsigned char *text,
 			 int totallen, int fieldlen, Tn5250Field * field)
 {
   Tn5250Field *iter;
-  int origcursorrow = tn5250_dbuffer_cursor_y (This->display_buffers);
   int origcursorcol = tn5250_dbuffer_cursor_x (This->display_buffers);
+  int nonnullcheck, nonnullcount = 0;
+  int cursorset;
+  int origentryid = field->entry_id;
   int i, j;
   unsigned char c, c2;
   int curlinelength = 0;
   int wordlength = 0;
   char word[3564 + 1] = { '\0' };
   char line[3564 + 1] = { '\0' };
+
+  /* First find out how many non-null character are between the start
+   * of the field and the current cursor position.  This will be used
+   * later to set the cursor to the right place after wrapping.
+   *
+   * Note that the 'i < fieldlen + 1' in the for loop below is because
+   * we add an extra character to each field before calling this function.
+   */
+  j = 0;
+  for (iter = field; iter != tn5250_display_current_field (This);
+       iter = iter->next)
+    {
+      for (i = 0; i < fieldlen + 1; i++)
+	{
+	  if (text[i + j] != TN5250_DISPLAY_WORD_WRAP_SPACE)
+	    {
+	      nonnullcount++;
+	    }
+	}
+      j = i;
+    }
+
+  for (i = 0; i < origcursorcol - tn5250_field_start_col (iter); i++)
+    {
+      if (text[i + j] != TN5250_DISPLAY_WORD_WRAP_SPACE)
+	{
+	  nonnullcount++;
+	}
+    }
 
   /* After playing a bit with a real IBM terminal I discovered that it
    * treats every space as a word.  Thus everytime we encounter a space
@@ -3338,7 +3400,7 @@ tn5250_display_wordwrap (Tn5250Display * This, unsigned char *text,
    * character for spaces we pad with.  Since TN5250_DISPLAY_WORD_WRAP_SPACE
    * is not a valid character in EBCDIC or ASCII I'll use that here.
    */
-
+  iter = field;
   for (i = 0; i < totallen; i++)
     {
       c = text[i];
@@ -3373,8 +3435,8 @@ tn5250_display_wordwrap (Tn5250Display * This, unsigned char *text,
 	      if ((curlinelength + 1) > fieldlen)
 		{
 		  tn5250_dbuffer_cursor_set (This->display_buffers,
-					     tn5250_field_start_row (field),
-					     tn5250_field_start_col (field));
+					     tn5250_field_start_row (iter),
+					     tn5250_field_start_col (iter));
 		  for (j = 0; j < strlen (line); j++)
 		    {
 		      tn5250_dbuffer_addch (This->display_buffers,
@@ -3383,14 +3445,14 @@ tn5250_display_wordwrap (Tn5250Display * This, unsigned char *text,
 								       line
 								       [j]));
 		    }
-		  for (; j < tn5250_field_length (field); j++)
+		  for (; j < tn5250_field_length (iter); j++)
 		    {
 		      tn5250_dbuffer_addch (This->display_buffers,
 					    TN5250_DISPLAY_WORD_WRAP_SPACE);
 		    }
-		  if (tn5250_field_is_wordwrap (field))
+		  if (tn5250_field_is_wordwrap (iter))
 		    {
-		      field = field->next;
+		      iter = iter->next;
 		    }
 		  memset (line, '\0', 133);
 		  if (c == TN5250_DISPLAY_WORD_WRAP_SPACE)
@@ -3423,8 +3485,8 @@ tn5250_display_wordwrap (Tn5250Display * This, unsigned char *text,
 
   /* Add or clear any trailing text */
   tn5250_dbuffer_cursor_set (This->display_buffers,
-			     tn5250_field_start_row (field),
-			     tn5250_field_start_col (field));
+			     tn5250_field_start_row (iter),
+			     tn5250_field_start_col (iter));
   if (strlen (word) > 0)
     {
       sprintf (line, "%s%s", line, word);
@@ -3434,7 +3496,7 @@ tn5250_display_wordwrap (Tn5250Display * This, unsigned char *text,
       tn5250_dbuffer_addch (This->display_buffers,
 			    tn5250_char_map_to_remote (This->map, line[j]));
     }
-  for (; j < tn5250_field_length (field); j++)
+  for (; j < tn5250_field_length (iter); j++)
     {
       tn5250_dbuffer_addch (This->display_buffers,
 			    TN5250_DISPLAY_WORD_WRAP_SPACE);
@@ -3447,17 +3509,17 @@ tn5250_display_wordwrap (Tn5250Display * This, unsigned char *text,
    * checking to see if the field is continuous and not outside the current
    * word wrap group.
    */
-  if (tn5250_field_is_continued_last (field->next)
-      || (tn5250_field_is_wordwrap (field->next)
-	  && !tn5250_field_is_continued_first (field->next)))
+  if (tn5250_field_is_continued_last (iter->next)
+      || (tn5250_field_is_wordwrap (iter->next)
+	  && !tn5250_field_is_continued_first (iter->next)))
     {
-      for (iter = field->next; tn5250_field_is_wordwrap (iter);
+      for (iter = iter->next; tn5250_field_is_wordwrap (iter);
 	   iter = iter->next)
 	{
 	  tn5250_dbuffer_cursor_set (This->display_buffers,
 				     tn5250_field_start_row (iter),
 				     tn5250_field_start_col (iter));
-	  for (j = 0; j < tn5250_field_length (field); j++)
+	  for (j = 0; j < tn5250_field_length (iter); j++)
 	    {
 	      tn5250_dbuffer_addch (This->display_buffers,
 				    TN5250_DISPLAY_WORD_WRAP_SPACE);
@@ -3468,7 +3530,7 @@ tn5250_display_wordwrap (Tn5250Display * This, unsigned char *text,
 	  tn5250_dbuffer_cursor_set (This->display_buffers,
 				     tn5250_field_start_row (iter),
 				     tn5250_field_start_col (iter));
-	  for (j = 0; j < tn5250_field_length (field); j++)
+	  for (j = 0; j < tn5250_field_length (iter); j++)
 	    {
 	      tn5250_dbuffer_addch (This->display_buffers,
 				    TN5250_DISPLAY_WORD_WRAP_SPACE);
@@ -3476,7 +3538,38 @@ tn5250_display_wordwrap (Tn5250Display * This, unsigned char *text,
 	}
     }
 
-  tn5250_dbuffer_cursor_set (This->display_buffers, origcursorrow,
-			     origcursorcol);
+  /* And finally put the cursor where it should be. */
+  nonnullcheck = 0;
+  cursorset = 0;
+  for (iter = field; iter->entry_id == origentryid; iter = iter->next)
+    {
+      i = tn5250_field_start_row (iter);
+
+      for (j = tn5250_field_start_col (iter);
+	   j <= tn5250_field_end_col (iter); j++)
+	{
+	  if (j == This->display_buffers->w)
+	    {
+	      j = 0;
+	      i++;
+	    }
+	  if (tn5250_display_char_at (This, i, j) !=
+	      TN5250_DISPLAY_WORD_WRAP_SPACE)
+	    {
+	      if (nonnullcheck >= nonnullcount)
+		{
+		  tn5250_dbuffer_cursor_set (This->display_buffers, i, j);
+		  cursorset = 1;
+		  break;
+		}
+	      nonnullcheck++;
+	    }
+	}
+      if (cursorset)
+	{
+	  break;
+	}
+    }
+
   return;
 }
