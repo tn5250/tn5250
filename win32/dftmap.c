@@ -129,6 +129,14 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, PSTR cmdLine, int iCmdShow)
        fprintf(tn5250rc, "map=%d\n", ccsid);
        if (ccsid == 37) 
            fprintf(tn5250rc, "font_80=Terminal\n");
+#ifdef NETSHARE400
+       fprintf(tn5250rc, "netshare400 {\n");
+       fprintf(tn5250rc, "   host = 63.167.147.10\n");
+       fprintf(tn5250rc, "}\n");
+       fprintf(tn5250rc, "netshare400-ssl {\n");
+       fprintf(tn5250rc, "   host = ssl:63.167.147.10\n");
+       fprintf(tn5250rc, "}\n");
+#endif
        fclose(tn5250rc);
    }
 
