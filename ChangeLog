@@ -1,3 +1,10 @@
+2003-04-18 Scott Klement <klemscot@klements.com>
+- Added configure.in code to check alternate directories for OpenSSL files
+- Added configure.in code to check if OpenSSL is compiled with Kerberos
+    support.  If so, find & include the directory containing krb5.h in
+    the CPPFLAGS so that tn5250 will compile.   (Fixes compatibility with
+    RedHat 9)
+
 2003-03-17 Scott Klement <klemscot@klements.com>
 - Added glib dependency to tn5250.pc.in
 
