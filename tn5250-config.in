@@ -20,14 +20,20 @@ mandir="@mandir@"
 includedir="@includedir@"
 oldincludedir="@oldincludedir@"
 LIBS="@LIBS@"
+VERSION="@VERSION@"
 
 syntax () {
   cat <<EOF
 $(basename $0) - shell script to get tn5250/lib5250 config.
 Syntax:
-  tn5250-config --cflags
-    or
-  tn5250-config --libs
+  tn5250-config [options]
+
+Options:
+  --libs            Print libs and other linker flags necessary for creating
+                    a -l5250 based program.
+  --cflags          Print C compiler flags necessary for creating a -l5250
+                    based program.
+  --version         Print the version of the installed library.
 
 EOF
   exit 1
@@ -38,6 +44,9 @@ case "$1" in
     echo "-I$includedir";;
   --libs)
     echo "$LIBS -L$libdir -l5250";;
+  --version)
+    echo "$VERSION";;
   *)
     syntax;;
 esac
+exit 0

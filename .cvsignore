@@ -1,0 +1,11 @@
+aclocal.m4
+configure
+config.cache
+config.log
+config.status
+libtool
+Makefile.in
+Makefile
+tn5250-config
+xt5250
+*~

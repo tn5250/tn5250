@@ -8,6 +8,10 @@ bin_SCRIPTS = tn5250-config\
 pkgdata_DATA = dialogrc\
 	       XTerm
 
+aclocal_DATA = tn5250.m4
+
+aclocaldir = /usr/share/aclocal
+
 EXTRA_DIST = acconfig.h\
 	tn5250-48x48.xpm\
 	tn5250-48x48.png\
@@ -15,4 +19,5 @@ EXTRA_DIST = acconfig.h\
 	tn5250-62x48.png\
 	BUGS\
 	dialogrc\
-	XTerm
+	XTerm\
+	tn5250.m4
