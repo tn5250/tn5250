@@ -1,4 +1,14 @@
 2002-03-12 James Rich <james@eaerich.com>
+- Removed common functions from scs2ps.c that are in scs.c.
+- Changed scs2ascii.c, scs2pdf.c, and scs2ps.c to check environment
+  variable TN5250_CCSIDMAP for the character map to use for EBCDIC -> ASCII
+  translation.   *** Need to check that an overflow cannot occur because
+  of environment variable weirdness ***
+- Got closer to nailing down continuing issues with unspecified page sizes.
+  Changed scs2pdf.c to count characters printed per line and increase the
+  page size if the character count goes beyond the default size.
+
+2002-03-12 James Rich <james@eaerich.com>
 - Fixed bug with unspecified page sizes in scs2pdf.  Occasionally the page 
   size is specified and we were defaulting to a bad value.  We also would 
   compute incorrect values for unusual page sizes.

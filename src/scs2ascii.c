@@ -46,13 +46,22 @@ int mpp;
 int
 main ()
 {
-  Tn5250CharMap *map = tn5250_char_map_new ("37");
+  Tn5250CharMap *map;
   int new_line = 1;
   int ccp = 1;
   int width;
   int length;
   current_line = 1;
   mpp = 132;
+
+  if ((getenv ("TN5250_CCSIDMAP")) != NULL)
+    {
+      map = tn5250_char_map_new (getenv ("TN5250_CCSIDMAP"));
+    }
+  else
+    {
+      map = tn5250_char_map_new ("37");
+    }
 
   while (!feof (stdin))
     {
