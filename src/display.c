@@ -214,7 +214,6 @@ void tn5250_display_set_terminal(Tn5250Display * This, Tn5250Terminal * term)
 void tn5250_display_update(Tn5250Display * This)
 {
    if (This->terminal != NULL) {
-      /* FIXME: We might want to keep dirty flags for each */
       tn5250_terminal_update(This->terminal, This);
       if (This->indicators_dirty) {
 	 tn5250_terminal_update_indicators(This->terminal, This);
@@ -438,13 +437,19 @@ void tn5250_display_interactive_addch(Tn5250Display * This, unsigned char ch)
       return;
    }
    /* Add or insert the character (depending on whether insert mode is on). */
-   if ((tn5250_display_indicators(This) &
-	TN5250_DISPLAY_IND_INSERT) != 0) {
-      int shiftcount = tn5250_field_count_right(field,
-					   tn5250_display_cursor_y(This),
-					  tn5250_display_cursor_x(This));
+   if ((tn5250_display_indicators(This) & TN5250_DISPLAY_IND_INSERT) != 0) {
+      int ofs = tn5250_field_length(field) - 1;
+      unsigned char *data = tn5250_display_field_data (This, field);
+      if (tn5250_field_is_signed_num(field))
+	 ofs--;
+      if (data[ofs] != '\0' && tn5250_ebcdic2ascii(data[ofs]) != ' ') {
+	 tn5250_display_inhibit(This);
+	 return;
+      }
       tn5250_dbuffer_ins(This->display_buffers, tn5250_ascii2ebcdic(ch),
-	    shiftcount);
+	    tn5250_field_count_right(field,
+	       tn5250_display_cursor_y(This),
+	       tn5250_display_cursor_x(This)));
    } else
       tn5250_dbuffer_addch(This->display_buffers, tn5250_ascii2ebcdic(ch));
    tn5250_field_set_mdt(field);
@@ -669,6 +674,8 @@ void tn5250_display_kf_dup(Tn5250Display * This)
       return;
    }
 
+   tn5250_field_set_mdt(field);
+
    /* Hmm, should we really go to operator error mode when operator
     * hits Dup in a non-Dupable field? */
    if (!tn5250_field_is_dup_enable(field)) {
@@ -864,6 +871,7 @@ void tn5250_display_kf_delete (Tn5250Display *This)
    if (field == NULL || tn5250_field_is_bypass(field))
       tn5250_display_inhibit(This);
    else {
+      tn5250_field_set_mdt (field);
       tn5250_dbuffer_del(This->display_buffers,
 	    tn5250_field_count_right (field,
 	       tn5250_display_cursor_y (This),
