@@ -42,6 +42,7 @@ Tn5250Display *tn5250_display_new()
    if ((This = tn5250_new(Tn5250Display, 1)) == NULL)
       return NULL;
    This->display_buffers = NULL;
+   This->macro = NULL ;
    This->terminal = NULL;
    This->config = NULL;
    This->indicators = 0;
@@ -816,11 +817,21 @@ void tn5250_display_field_adjust(Tn5250Display * This, Tn5250Field * field)
 void tn5250_display_do_keys (Tn5250Display *This)
 {
    int cur_key;
+   char Last ;
 
    do {
-      cur_key = tn5250_display_getkey (This);
+      cur_key = tn5250_macro_getkey (This,&Last) ;
+      
+      if (Last)
+	 tn5250_display_indicator_clear(This, TN5250_DISPLAY_IND_MACRO);
+
+      if (cur_key == 0)
+         cur_key = tn5250_display_getkey (This);
 
       if (cur_key != -1) {
+
+	 tn5250_macro_reckey (This, cur_key) ;
+
 	 if ((tn5250_display_indicators(This) & TN5250_DISPLAY_IND_X_SYSTEM) != 0) {
 	    /* We can handle system request here. */
 	    if (cur_key == K_SYSREQ || cur_key == K_RESET) {
@@ -1018,17 +1029,29 @@ void tn5250_display_do_key(Tn5250Display *This, int key)
       tn5250_display_kf_newline(This);
       break;
 
+   case K_MEMO:
+      tn5250_display_kf_macro(This,K_MEMO);
+      break;
+
+   case K_EXEC:
+      tn5250_display_kf_macro(This,K_EXEC);
+      break;
+
    default:
       /* Handle function/command keys. */
       if (key >= K_F1 && key <= K_F24) {
-	 if (key <= K_F12) {
-	    TN5250_LOG (("Key = %d; K_F1 = %d; Key - K_F1 = %d\n",
+	 if ((!tn5250_macro_recfunct (This, key)) &&
+	    (!tn5250_macro_execfunct (This, key)))
+	 {
+	    if (key <= K_F12) {
+	       TN5250_LOG (("Key = %d; K_F1 = %d; Key - K_F1 = %d\n",
 		     key, K_F1, key-K_F1));
-	    TN5250_LOG (("AID_F1 = %d; Result = %d\n",
+	       TN5250_LOG (("AID_F1 = %d; Result = %d\n",
 		     TN5250_SESSION_AID_F1, key-K_F1+TN5250_SESSION_AID_F1));
-	    tn5250_display_do_aidkey (This, key-K_F1+TN5250_SESSION_AID_F1);
-	 } else
-	    tn5250_display_do_aidkey (This, key-K_F13+TN5250_SESSION_AID_F13);
+	       tn5250_display_do_aidkey (This, key-K_F1+TN5250_SESSION_AID_F1);
+	    } else
+	       tn5250_display_do_aidkey(This, key-K_F13+TN5250_SESSION_AID_F13);
+	 }
 	 break;
       }
 
@@ -1722,6 +1745,50 @@ void tn5250_display_kf_newline (Tn5250Display *This)
    tn5250_dbuffer_down (This->display_buffers);
    tn5250_display_set_cursor_next_field (This);
 
+}
+
+/****f* lib5250/tn5250_display_kf_macro
+ * NAME
+ *    tn5250_display_kf_macro
+ * SYNOPSIS
+ *    tn5250_display_kf_macro (This);
+ * INPUTS
+ *    Tn5250Display *      This       - 
+ *    int		   Ch	    - choice : K_MEMO | K_EXEC
+ * DESCRIPTION
+ *    Toggle the memo/exec indicator.
+ *****/
+void tn5250_display_kf_macro (Tn5250Display *This, int Ch)
+{
+   TN5250_LOG (("K_MEMO/EXEC\n"));
+
+   if ((Ch == K_MEMO) && (!tn5250_macro_estate(This)))
+   {
+      if (!tn5250_macro_rstate (This))
+      {
+	 if (tn5250_macro_startdef (This))
+	    tn5250_display_indicator_set(This, TN5250_DISPLAY_IND_MACRO);
+      }
+      else
+      {
+	 tn5250_macro_enddef (This) ;
+	 tn5250_display_indicator_clear(This, TN5250_DISPLAY_IND_MACRO);
+      }
+   }
+
+   if ((Ch == K_EXEC) && (!tn5250_macro_rstate(This)))
+   {
+      if (!tn5250_macro_estate (This))
+      {
+	 if (tn5250_macro_startexec (This))
+	    tn5250_display_indicator_set(This, TN5250_DISPLAY_IND_MACRO);
+      }
+      else
+      {
+	 tn5250_macro_endexec (This) ;
+	 tn5250_display_indicator_clear(This, TN5250_DISPLAY_IND_MACRO);
+      }
+   }
 }
 
 /****f* lib5250/tn5250_display_save_msg_line

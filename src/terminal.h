@@ -100,6 +100,8 @@ extern "C" {
 #define K_PREVWORD	0611    /* curses KEY_SLEFT (as good as any) */
 #define K_NEXTWORD	0622    /* curses KEY_SRIGHT (as good as any) */
 #define K_FIELDHOME	0607	/* curses KEY_SHOME (as good as any) */
+#define K_EXEC		0507    /* macro execution */
+#define K_MEMO		0510    /* macro record */
 #define K_COPY_TEXT     0xfffd  /* no similar curses key */
 #define K_PASTE_TEXT    0xfffe  /* no similar curses key */
 #define K_UNKNOW	0xffff

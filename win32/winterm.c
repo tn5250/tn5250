@@ -319,9 +319,11 @@ static win32_key_map win_kb[] =
    { 0x0f,   K_HOME },        /* CTRL-O */
    { 0x10,   K_PRINT },       /* CTRL-P */
    { 0x12,   K_RESET },       /* CTRL-R */
+   { 0x13,   K_MEMO },        /* CTRL-S */
    { 0x14,   K_TESTREQ },     /* CTRL-T */
    { 0x15,   K_ROLLDN },      /* CTRL-U */
    { 0x16,   K_PASTE_TEXT },  /* Ctrl-V */
+   { 0x17,   K_EXEC },        /* Ctrl-W */
    { 0x18,   K_FIELDPLUS },   /* CTRL-X */
    { 0x1b,   K_ATTENTION },   /* ESCAPE */
    { -1, -1 },
@@ -1372,6 +1374,8 @@ static void win32_terminal_update_indicators(Tn5250Terminal *This, Tn5250Display
       memcpy(ind_buf + 30, "IM", 2);
    if ((inds & TN5250_DISPLAY_IND_FER) != 0)
       memcpy(ind_buf + 33, "FER", 3);
+   if ((inds & TN5250_DISPLAY_IND_MACRO) != 0)
+      memcpy(ind_buf + 54, tn5250_macro_printstate (display), 11);
    sprintf(ind_buf+72,"%03.3d/%03.3d",tn5250_display_cursor_x(display)+1,
       tn5250_display_cursor_y(display)+1);
 

@@ -34,6 +34,7 @@ extern "C" {
 #define TN5250_DISPLAY_IND_X_CLOCK	   	0x0008
 #define TN5250_DISPLAY_IND_INSERT	   	0x0010
 #define TN5250_DISPLAY_IND_FER			0x0020
+#define TN5250_DISPLAY_IND_MACRO		0x0040
 
 struct _Tn5250Terminal;
 struct _Tn5250DBuffer;
@@ -42,6 +43,7 @@ struct _Tn5250Session;
 struct _Tn5250Buffer;
 struct _Tn5250CharMap;
 struct _Tn5250Config;
+struct _Tn5250Macro;
 
 /****s* lib5250/Tn5250Display
  * NAME
@@ -61,6 +63,7 @@ struct _Tn5250Display {
    struct _Tn5250Session *session;
    struct _Tn5250CharMap *map;
    struct _Tn5250Config *config;
+   struct _Tn5250Macro *macro;
    int indicators;
 
    unsigned char *saved_msg_line;

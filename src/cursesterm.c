@@ -177,8 +177,10 @@ static Key curses_vt100[] = {
    { K_HOME,            "\017" }, /* CTRL O */
    { K_PRINT,           "\020" }, /* CTRL P */
    { K_RESET,           "\022" }, /* CTRL R */
+   { K_MEMO,            "\023" }, /* CTRL S */
    { K_TESTREQ,         "\024" }, /* CTRL T */
    { K_ROLLDN,          "\025" }, /* CTRL U */
+   { K_EXEC,            "\027" }, /* CTRL W */
    { K_FIELDPLUS,       "\030" }, /* CTRL X */
 
    /* ASCII DEL is not correctly reported as the DC key in some
@@ -779,6 +781,8 @@ static void curses_terminal_update_indicators(Tn5250Terminal /*@unused@*/ * This
       memcpy(ind_buf + 30, "IM", 2);
    if ((inds & TN5250_DISPLAY_IND_FER) != 0)
       memcpy(ind_buf + 33, "FER", 3);
+   if ((inds & TN5250_DISPLAY_IND_MACRO) != 0)
+      memcpy(ind_buf + 54, tn5250_macro_printstate (display), 11);
    sprintf(ind_buf+72,"%03.3d/%03.3d",tn5250_display_cursor_x(display)+1,
       tn5250_display_cursor_y(display)+1);
 
@@ -880,10 +884,14 @@ static int curses_terminal_getkey(Tn5250Terminal * This)
 	 return K_PRINT;
       case K_CTRL('R'):
 	 return K_RESET;	/* Error Reset */
+      case K_CTRL('S'):
+	 return K_MEMO;
       case K_CTRL('T'):
 	 return K_TESTREQ;
       case K_CTRL('U'):
 	 return K_ROLLDN;
+      case K_CTRL('W'):
+	 return K_EXEC;
       case K_CTRL('X'):
 	 return K_FIELDPLUS;
 
