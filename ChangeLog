@@ -1,3 +1,8 @@
+2000-02-18 Mike Madore <mmadore@blarg.net>
+- tn5250_print_session_main_loop now checks the return value of
+  tn5250_stream_handle_recieve.  This keeps us from going into a tight loop
+  and consuming all the CPU if the host end of the socket gets closed.  
+
 2000-02-18 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 - Added +xb to xt5250.in
 - Tab and Reset keys now work in FER state.
