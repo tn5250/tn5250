@@ -7,7 +7,8 @@
   advancing to the next field (hopefully ;)
 - Added contributed FreeBSD keyboard map stuff and README to package ...
   Thanks to Scott Klement again.  Move Linux keyboard map and termcap
-  definitions into a linux/ subdirectory.
+  definitions into a linux/ subdirectory.  Removed doc/rfc1205.txt --
+  _why_ did I put that in there, anyway?
 
 1999-10-24 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 

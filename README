@@ -1,55 +1,18 @@
-This is my implementation of the 5250 Telnet protocol for LINUX.  This code
-(as well as the documentation) is extremely BETA.  That said, it does more or 
-less work...
+tn5250 README
+------------------------------------------------------------------------------
 
-This version has been substantially re-written with a more object oriented
-approach.  Hopefully, the code is should be easier to follow, enhance, and
-maintain.
+This is an implementation of the 5250 telnet protocol.  It was originally an
+implementation for Linux, but it has been reportedly compiled on a number
+of other platforms.  Contributed keyboard maps and termcap entries for
+FreeBSD are in this tarball as well (see freebsd/README for more information).
 
-The linux console only defines F1-F20 by default.  I have included a sample
-map file which has all the function keys.  It also has a modified definiton
-for the tab key to allow the use of Shift-Tab to move backwards through
-fields.  It is based on the stock linux
-console.  To make use of the file, you need to use the loadkeys command.  As
-the root user, type the following:
+This, the 0.14.x series, has been substantially tested and a large amount of
+effort has gone into fixing lots of bugs.  During the course of the 0.13.x
+(developer-only) series, a lot of features were added to aid the developers
+in tracking problems that happened only on strange platforms.
 
-   loadkeys us5250.map (or uk5250.map if you have that keyboard)
-
-The above is not necessary if you are only going to use the emlator in an
-xterminal. After doing this, all the function keys will now return unique 
-codes.  One caveat, is that this will effect all of your consoles.  Also, the 
-change is only temporary, so you will have to invoke it again unless you put 
-it in a startup file somewhere.
-
-In addition to the map file you also need to make sure that the terminfo
-file that you are using is properly set up.  In particular, it needs to have
-definitions for all 24 function keys, and it must have the proper code for
-back tab.  To look at the current contents of your terminfo, use the infocmp
-command to dump them to a file.  After making any necessary changes, you can
-recompile the file with the tic command.  For details please see the man
-pages for those commands.  There is a file called 5250.terminfo which shows
-the what I use.  To add this terminfo entry, type the following as root:
-
-   tic  5250.terminfo
-
-Now all you need to do is set your TERM environment variable to 5250 (or
-xterm-5250 if you are using X-Windows).
-
-To usr the emulator in an xterm, make sure you have compiled 5250.terminfo
-using the tic command.  To launch an xterm of the proper dimensions (a
-standard xterm is only 24 rows high), use the xt5250 shell script.  This
-shell script will open an xterm 80X25 and sets the TERM environment variable
-to the correct value, then launches the emulator.  Below is an example
-command line:
-
-  xt5250 -s MIKEM01 192.168.1.10
-
-Where MIKEM01 is the device name I want on the AS/400, and 192.168.1.10 is
-the address of the host system. NOTE:  as things stand, function keys will
-only work properly in a genuine x-term.  This means that rxvt won't respond
-to function keys correctly.  I'd be happy to include sample Xdefault
-settings for rxvt if someone sends them to me.
-
+Building and Installing
+=======================
 
 To build the emulator simply type the following:
 
@@ -57,9 +20,41 @@ To build the emulator simply type the following:
    make
    make install
 
+Additional (but decidedly generic) installation instructions are available
+in the file `INSTALL' included in this distribution.  Installation
+instructions specific to your platform exist if you are using Linux or
+FreeBSD -- they are in the linux/ and freebsd/ directories, respectively.
+Please read these before telling us that the function keys don't work ;-)
+
 The emulator uses the ncurses library for manipulating the console.  Make
 sure you have the ncurses development libraries installed before trying to
-compile the source.
+compile the source.  There have been both reports of the standard BSD curses
+working and not working, so you may have to install GNU curses (ncurses)
+under *BSD.
+
+X Windows
+=========
+
+To use the emulator under X Windows, use the provided `xt5250' shell script,
+which sets up a standard `xterm' (it will *not* work with an `nxterm' or an 
+`rxvt' terminal).  Additionally, you should do the following for each user:
+
+  cat Xdefaults >> ~/.Xdefaults
+
+To reload your .Xdefaults if X Windows is already running, do this:
+
+  xrdb ~/.Xdefaults
+
+This tells X Windows how to map keys to an xterm named `xt5250'.
+
+There are two common problems which would cause xt5250 to flash once on the
+screen then disapear.  If the termcap or terminfo entry for the `xterm-5250'
+terminal type does not exist, the `xterm' will exit immediately.  If you
+don't provide the host system name on the xt5250 command line, `tn5250' will
+exit immediately.
+
+Other Information
+=================
 
 Please send me any comments, questions, bug reports or patches. 
 
