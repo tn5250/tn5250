@@ -1,5 +1,9 @@
+2005-04-03 James Rich <james@eaerich.com>
+- Fix several bugs in word wrap support.
+
 2005-04-02 James Rich <james@eaerich.com>
 - Add support for insert in word wrap fields.
+- Add support for entering text in word wrap fields.
 
 2005-04-01 Marc-Antoine Ruel <maruel@users.sf.net>
 - Removed last static variable in sslstream
