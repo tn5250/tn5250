@@ -1,3 +1,13 @@
+2000-04-11 Mike Madore <mmadore@turbolinux.com>
+- Changed the save screen code to include an IC order.  This ensures that we
+  end up in the correct field when the screen is restored.  This fixes the bug
+  where the cursor would always end up in the first non-bypass field after a
+  break message. 
+- Merged in Ron's fix so that K_DELETE returns the correct code.
+
+2000-04-11 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+- Added the -u option back to force underscores on.
+
 2000-04-10 Mike Madore <mmadore@turbolinux.com>
 - Fixed problem where we were processing aid keys when we weren't in a read 
   state.  The new behavior is to save the aid code and process it when we are
@@ -10,8 +20,6 @@
 - Created a tests directory and placed the DDS and RPG source file from James 
   Rich <james.rich@m.cc.utah.edu> there.
 
-2000-04-05 Jay 'Eraserhead' Felice <jasonf@nacs.net>
-- Added the -u option back to force underscores on.
 	
 2000-04-03 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 - `tic' not running shouldn't make the install fail; also 5250.terminfo

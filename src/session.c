@@ -696,8 +696,13 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
    Tn5250Field *last_field = NULL;
    int old_x = tn5250_display_cursor_x(This->display);
    int old_y = tn5250_display_cursor_y(This->display);
+   int is_x_system = tn5250_display_indicators(This->display)
+   	             & TN5250_DISPLAY_IND_X_SYSTEM;
+
+   TN5250_LOG(("is_x_system = %x\n", is_x_system));
 
    TN5250_LOG(("WriteToDisplay: entered.\n"));
+
 
    CC1 = tn5250_record_get_byte(This->record);
    CC2 = tn5250_record_get_byte(This->record);
@@ -794,9 +799,10 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
     * Otherwise set the cursor to the home position (which could be the IC
     * position from a prior IC if the unit hasn't been cleared since then,
     * but is probably the first position of the first non-bypass field). */
+                
    if (end_y != 0xff && end_x != 0xff) 
       tn5250_display_set_cursor(This->display, end_y, end_x);
-   else if(tn5250_display_indicators(This->display) & TN5250_DISPLAY_IND_X_SYSTEM) {
+   else if(is_x_system) {
       tn5250_display_set_cursor_home (This->display);
    } else {
       tn5250_display_set_cursor(This->display, old_y, old_x);

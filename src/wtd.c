@@ -91,6 +91,23 @@ void tn5250_wtd_context_destroy (Tn5250WTDContext *This)
    free (This);
 }
 
+/****f* lib5250/tn5250_wtd_context_set_ic
+ * NAME
+ *   tn5250_wtd_context_set_ic
+ * SYNOPSIS
+ *   tn5250_wtd_context_set_ic (This, y, x);
+ * INPUTS
+ *    TN5250WTDContext * This -
+ *    int y -
+ *    int x -
+ * DESCRIPTION
+ *    Sets the x and y position to be used in the IC order.
+ *****/
+void tn5250_wtd_context_set_ic (Tn5250WTDContext *This, int y, int x)
+{
+   This->y = y;
+   This->x = x;
+}
 /****f* lib5250/tn5250_wtd_context_convert
  * NAME
  *    tn5250_wtd_context_convert
@@ -145,6 +162,15 @@ static void tn5250_wtd_context_convert_nosrc (Tn5250WTDContext *This)
    tn5250_wtd_context_putc (This, 0x00); /* CC1 */
    tn5250_wtd_context_putc (This, 0x00); /* CC2 */
 
+   /* 
+    Set the insert-cursor address.  This is necessary to ensure that
+    we return to same field we were in before the save_screen.
+   */
+   
+   tn5250_wtd_context_putc (This, IC);
+   tn5250_wtd_context_putc (This, This->y);
+   tn5250_wtd_context_putc (This, This->x);
+
    /* If we have header data, start with a SOH order. */
    if (This->dst->header_length != 0) {
       int i;
@@ -154,7 +180,6 @@ static void tn5250_wtd_context_convert_nosrc (Tn5250WTDContext *This)
 	 tn5250_wtd_context_putc (This, This->dst->header_data[i]);
    }
 
-   /* FIXME: Set the insert-cursor address using IC if necessary. */
 
    for (This->y = 0; This->y < tn5250_dbuffer_height(This->dst);
 	 This->y++) {

@@ -98,7 +98,8 @@ extern Tn5250WTDContext * tn5250_wtd_context_new    (struct _Tn5250Buffer *buf,
 						     struct _Tn5250DBuffer *dd);
 extern void		  tn5250_wtd_context_destroy(Tn5250WTDContext *This);
 extern void		  tn5250_wtd_context_convert(Tn5250WTDContext *This);
-
+extern void               tn5250_wtd_context_set_ic(Tn5250WTDContext *This,
+                                                    int y, int x);
 #ifdef __cplusplus
 }
 #endif

@@ -572,6 +572,14 @@ void tn5250_display_set_cursor_prev_field(Tn5250Display * This)
 	       This->display_buffers)) == NULL)
       return;
 
+   /* 
+      These coordinates will be used in an IC order when the screen is 
+      restored
+   */
+   tn5250_wtd_context_set_ic(ctx, 
+   	                     tn5250_display_cursor_y(This)+1,
+   	                     tn5250_display_cursor_x(This)+1);
+   	
    tn5250_wtd_context_convert (ctx);
    tn5250_wtd_context_destroy (ctx);
 }
