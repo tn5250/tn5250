@@ -223,8 +223,7 @@ AC_TYPE_SIGNAL
 dnl ** Checks for library functions.
 AC_FUNC_MEMCMP
 AC_TYPE_SIGNAL
-AC_CHECK_FUNCS(setlocale select socket strerror resizeterm getopt_long)
-AM_CONDITIONAL(LIB_GETOPT, test x$ac_cv_func_getopt_long = xno)
+AC_CHECK_FUNCS(setlocale select socket strerror resizeterm)
 
 AC_CHECK_SIZEOF(short, 2)
 AC_CHECK_SIZEOF(int, 4)

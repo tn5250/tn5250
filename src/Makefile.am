@@ -1,16 +1,5 @@
 ## Process this file with automake to produce Makefile.in
 
-#
-# LIBSOURCES are sources which implement functions which might be missing
-# on this system, but we don't want to include them in the built libs. We
-# also need to put them in EXTRA_DIST.
-#
-if LIB_GETOPT
-LIBSOURCES =		getopt.c
-else
-LIBSOURCES =		
-endif
-
 lib_LTLIBRARIES =	lib5250.la
 
 bin_PROGRAMS =		scs2ascii\
@@ -92,13 +81,11 @@ pkginclude_HEADERS = 	buffer.h\
 
 include_HEADERS =	tn5250.h
 
-noinst_HEADERS =	getopt.h\
-			transmaps.h\
+noinst_HEADERS =	transmaps.h\
 			tn5250-private.h
 
 EXTRA_DIST =		.lclintrc\
 			transmaps\
-			getopt.c\
 			scs2pdf.c
 
 lclint:

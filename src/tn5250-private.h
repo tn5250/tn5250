@@ -49,7 +49,6 @@
 #include <ctype.h>
 #include <errno.h>
 #include <signal.h>
-#include <getopt.h>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
