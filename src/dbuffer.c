@@ -82,6 +82,7 @@ Tn5250DBuffer *tn5250_dbuffer_copy(Tn5250DBuffer * dsp)
       free(This);
       return NULL;
    }
+   memcpy (This->data, dsp->data, dsp->w * dsp->h);
 
    ASSERT_VALID(This);
    return This;

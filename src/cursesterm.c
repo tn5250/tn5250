@@ -442,7 +442,9 @@ static int curses_terminal_getkey(Tn5250Terminal * This)
 
 static void curses_terminal_beep (Tn5250Terminal *This)
 {
+   TN5250_LOG (("beep\n"));
    beep ();
+   refresh ();
 }
 
 /*

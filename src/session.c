@@ -40,6 +40,8 @@ static void tn5250_session_handle_receive(Tn5250Session * This);
 static void tn5250_session_invite(Tn5250Session * This);
 static void tn5250_session_cancel_invite(Tn5250Session * This);
 static void tn5250_session_send_fields(Tn5250Session * This, int aidcode);
+static void tn5250_session_send_field(Tn5250Session *This, Tn5250Buffer *buf,
+                                      Tn5250Field *field);
 static void tn5250_session_process_stream(Tn5250Session * This);
 static void tn5250_session_write_error_code(Tn5250Session * This);
 static void tn5250_session_write_to_display(Tn5250Session * This);
@@ -134,6 +136,7 @@ void tn5250_session_main_loop(Tn5250Session * This)
 
       /* Handle keys from our key queue if we aren't X SYSTEM. */
       if (This->key_queue_head != This->key_queue_tail && !is_x_system) {
+	 TN5250_LOG (("Handling buffered key.\n"));
 	 tn5250_session_handle_key (This, This->key_queue[This->key_queue_head]);
 	 if (++ This->key_queue_head == TN5250_SESSION_KEY_QUEUE_SIZE)
 	    This->key_queue_head = 0;
@@ -402,6 +405,7 @@ static void tn5250_session_handle_key(Tn5250Session * This, int cur_key)
       send = 1;
       aidcode = TN5250_SESSION_AID_PGUP;
       break;
+
    case (K_ROLLUP):
       send = 1;
       aidcode = TN5250_SESSION_AID_PGDN;
@@ -433,8 +437,9 @@ static void tn5250_session_handle_key(Tn5250Session * This, int cur_key)
 
    default:
       TN5250_LOG(("HandleKey: cur_key = %c\n", cur_key));
-      tn5250_display_interactive_addch (This->display,
-	    tn5250_ascii2ebcdic(cur_key));
+      if (cur_key >= 0 && cur_key <= 255)
+	 tn5250_display_interactive_addch (This->display,
+	       tn5250_ascii2ebcdic(cur_key));
    }
    if (send) {
       tn5250_dbuffer_indicator_set(This->dsp, TN5250_DISPLAY_IND_X_SYSTEM);
@@ -526,7 +531,6 @@ static void tn5250_session_send_fields(Tn5250Session * This, int aidcode)
    int temp;
    Tn5250Buffer field_buf;
    Tn5250Field *field;
-   unsigned char *field_data;
    int X, Y, size;
 
    X = tn5250_display_cursor_x(This->display);
@@ -543,9 +547,7 @@ static void tn5250_session_send_fields(Tn5250Session * This, int aidcode)
 
    TN5250_LOG(("SendFields: row = %d; col = %d; aid = 0x%02x\n", Y, X, aidcode));
 
-   /* FIXME: Do we handle field resequencing? */
-   /* FIXME: Do we handle signed fields (changing the zone of the second-last
-    * digit and not transmitting the last digit)? */
+   /* FIXME: Implement field resequencing. */
    switch (This->read_opcode) {
    case CMD_READ_INPUT_FIELDS:
       TN5250_ASSERT(aidcode != 0);
@@ -553,11 +555,7 @@ static void tn5250_session_send_fields(Tn5250Session * This, int aidcode)
 	 field = This->table->field_list;
 	 if (field != NULL) {
 	    do {
-	       size = tn5250_field_length(field);
-	       field_data = tn5250_display_field_data (This->display, field);
-	       for (temp = 0; temp < size; temp++)
-		  tn5250_buffer_append_byte(&field_buf,
-			field_data[temp] == 0 ? 0x40 : field_data[temp]);
+	       tn5250_session_send_field (This, &field_buf, field);
 	       field = field->next;
 	    } while (field != This->table->field_list);
 	 }
@@ -569,11 +567,7 @@ static void tn5250_session_send_fields(Tn5250Session * This, int aidcode)
 	 field = This->table->field_list;
 	 if (field != NULL) {
 	    do {
-	       size = tn5250_field_length(field);
-	       field_data = tn5250_display_field_data (This->display, field);
-	       for (temp = 0; temp < size; temp++)
-		  tn5250_buffer_append_byte(&field_buf,
-			field_data[temp] == 0 ? 0x40 : field_data[temp]);
+	       tn5250_session_send_field (This, &field_buf, field);
 	       field = field->next;
 	    } while (field != This->table->field_list);
 	 }
@@ -585,28 +579,8 @@ static void tn5250_session_send_fields(Tn5250Session * This, int aidcode)
       field = This->table->field_list;
       if (field != NULL) {
 	 do {
-	    if (tn5250_field_mdt(field)) {
-	       TN5250_LOG(("Sending:\n"));
-	       tn5250_field_dump(field);
-	       tn5250_buffer_append_byte(&field_buf, SBA);
-	       tn5250_buffer_append_byte(&field_buf,
-					 tn5250_field_start_row(field) + 1);
-	       tn5250_buffer_append_byte(&field_buf,
-					 tn5250_field_start_col(field) + 1);
-
-	       size = tn5250_field_length(field);
-	       field_data = tn5250_display_field_data (This->display, field);
-
-	       /* Strip trailing NULs */
-	       while (size > 0 && field_data[size-1] == 0)
-		  size--;
-
-	       TN5250_LOG(("SendFields: size = %d\n", size));
-	       for (temp = 0; temp < size; temp++) {
-		  tn5250_buffer_append_byte(&field_buf,
-			field_data[temp] == 0 ? 0x40 : field_data[temp]);
-	       }
-	    }
+	    if (tn5250_field_mdt(field))
+	       tn5250_session_send_field (This, &field_buf, field);
 	    field = field->next;
 	 } while (field != This->table->field_list);
       }
@@ -623,11 +597,62 @@ static void tn5250_session_send_fields(Tn5250Session * This, int aidcode)
    tn5250_dbuffer_indicator_clear(This->dsp, TN5250_DISPLAY_IND_INSERT);
    tn5250_display_update(This->display);
 
-   tn5250_stream_send_packet(This->stream, tn5250_buffer_length(&field_buf), TN5250_RECORD_FLOW_DISPLAY,
-			     TN5250_RECORD_H_NONE,
-			     TN5250_RECORD_OPCODE_PUT_GET,
-			     tn5250_buffer_data(&field_buf));
+   tn5250_stream_send_packet(This->stream,
+	 tn5250_buffer_length(&field_buf),
+	 TN5250_RECORD_FLOW_DISPLAY,
+	 TN5250_RECORD_H_NONE,
+	 TN5250_RECORD_OPCODE_PUT_GET,
+	 tn5250_buffer_data(&field_buf));
    tn5250_buffer_free(&field_buf);
+}
+
+/*
+ *    Append a single field to the transmit buffer in the manner required
+ *    by the current read opcode.
+ */
+static void tn5250_session_send_field (Tn5250Session * This, Tn5250Buffer *buf, Tn5250Field *field)
+{
+   /* FIXME: Do we handle signed fields (changing the zone of the second-last
+    * digit and not transmitting the last digit)? */
+   int size, n;
+   unsigned char *data;
+   unsigned char c;
+
+   size = tn5250_field_length(field);
+   data = tn5250_display_field_data (This->display, field);
+
+   switch (This->read_opcode) {
+   case CMD_READ_INPUT_FIELDS:
+   case CMD_READ_IMMEDIATE:
+      if (tn5250_field_is_signed_num (field)) {
+	 for (n = 0; n < size - 1; n++)
+	    tn5250_buffer_append_byte(buf, data[n] == 0 ? 0x40 : data[n]);
+	 c = data[size-2];
+	 tn5250_buffer_append_byte(buf,
+	       tn5250_ebcdic2ascii(data[size-1]) == '-' ?
+	       (0xd0 | (0x0f & c)) : c);
+      } else {
+	 for (n = 0; n < size; n++)
+	    tn5250_buffer_append_byte(buf, data[n] == 0 ? 0x40 : data[n]);
+      }
+      break;
+
+   case CMD_READ_MDT_FIELDS:
+      TN5250_LOG(("Sending:\n"));
+      tn5250_field_dump(field);
+      tn5250_buffer_append_byte(buf, SBA);
+      tn5250_buffer_append_byte(buf, tn5250_field_start_row(field) + 1);
+      tn5250_buffer_append_byte(buf, tn5250_field_start_col(field) + 1);
+
+      /* Strip trailing NULs */
+      while (size > 0 && data[size-1] == 0)
+	 size--;
+
+      TN5250_LOG(("SendFields: size = %d\n", size));
+      for (n = 0; n < size; n++)
+	 tn5250_buffer_append_byte(buf, data[n] == 0 ? 0x40 : data[n]);
+      break;
+   }
 }
 
 static void tn5250_session_process_stream(Tn5250Session * This)

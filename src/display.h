@@ -78,6 +78,7 @@ extern void	  tn5250_display_field_adjust	      (Tn5250Display *This,
 						       Tn5250Field *field);
 extern void	  tn5250_display_field_exit	      (Tn5250Display *This);
 extern void	  tn5250_display_field_minus	      (Tn5250Display *This);
+extern void	  tn5250_display_field_plus	      (Tn5250Display *This);
 extern void	  tn5250_display_dup		      (Tn5250Display *This);
 extern void	  tn5250_display_interactive_addch    (Tn5250Display *This,
                                                        unsigned char ch);

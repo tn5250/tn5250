@@ -48,7 +48,6 @@ Tn5250Display *tn5250_display_new(int width, int height)
 
    tn5250_display_add_dbuffer(This, tn5250_dbuffer_new(width, height));
    tn5250_display_add_table(This, tn5250_table_new());
-
    return This;
 }
 
@@ -87,7 +86,7 @@ Tn5250DBuffer *tn5250_display_push_dbuffer(Tn5250Display * This)
 
    dbuf = tn5250_dbuffer_copy(This->display_buffers);
    tn5250_display_add_dbuffer(This, dbuf);
-   return dbuf;			/* Pointer is used as unique identifier in data stream. */
+   return dbuf;	/* Pointer is used as unique identifier in data stream. */
 }
 
 /*
@@ -100,8 +99,7 @@ Tn5250Table *tn5250_display_push_table(Tn5250Display * This)
 
    table = tn5250_table_copy(This->format_tables);
    tn5250_display_add_table(This, table);
-
-   return table;		/* Pointer is used as unique identifier in data stream. */
+   return table; /* Pointer is used as unique identifier in data stream. */
 }
 
 /*
@@ -408,7 +406,7 @@ void tn5250_display_interactive_addch(Tn5250Display * This, unsigned char ch)
    if (tn5250_field_is_num_only(field) || tn5250_field_is_signed_num(field)) {
       switch (ch) {
       case '+':
-	 tn5250_display_field_exit(This);
+	 tn5250_display_field_plus(This);
 	 return;
 
       case '-':
@@ -512,9 +510,17 @@ void tn5250_display_shift_right(Tn5250Display * This, Tn5250Field * field, unsig
  */
 void tn5250_display_field_adjust(Tn5250Display * This, Tn5250Field * field)
 {
-   /* FIXME: If the field is a signed numeric field, do we need to shift
-    * right anyway?  Old code seemed to think so. */
-   switch (tn5250_field_mand_fill_type(field)) {
+   int mand_fill_type;
+
+   /* Because of special processing during transmit and other weirdness,
+    * we need to shift signed number fields right regardless.
+    * (num only too?) */
+   mand_fill_type = tn5250_field_mand_fill_type(field);
+   if (tn5250_field_type(field) == TN5250_FIELD_SIGNED_NUM ||
+	 tn5250_field_type(field) == TN5250_FIELD_NUM_ONLY)
+      mand_fill_type = TN5250_FIELD_RIGHT_BLANK;
+
+   switch (mand_fill_type) {
    case TN5250_FIELD_NO_ADJUST:
    case TN5250_FIELD_MANDATORY_FILL:
       break;
@@ -525,30 +531,71 @@ void tn5250_display_field_adjust(Tn5250Display * This, Tn5250Field * field)
       tn5250_display_shift_right(This, field, tn5250_ascii2ebcdic(' '));
       break;
    }
+
    tn5250_field_set_mdt(field);
 }
 
 /*
  *    Process a field exit function.
- *    FIXME: If this is a signed field, put a plus on the field? is this
- *    right?
  */
 void tn5250_display_field_exit(Tn5250Display * This)
 {
    Tn5250Field *field;
+   unsigned char *data;
+   int i;
 
    field = tn5250_display_current_field(This);
    if (field == NULL || tn5250_field_is_bypass(field)) {
       tn5250_dbuffer_inhibit(This->display_buffers);
       return;
    }
+
+   /* NUL out remainder of field from cursor position. */
+   data = tn5250_display_field_data (This, field);
+   i = tn5250_field_count_left(field, tn5250_display_cursor_y(This),
+	 tn5250_display_cursor_x(This));
+   for (; i < tn5250_field_length(field); i++)
+      data[i] = 0;
+
    tn5250_display_field_adjust(This, field);
 
    if (tn5250_field_is_auto_enter(field)) {
       tn5250_display_q_aidcode (This, TN5250_SESSION_AID_ENTER);
       return;
    }
-   tn5250_display_set_cursor_next_field(This);
+
+   tn5250_display_set_cursor_next_field (This);
+}
+
+/*
+ *    Process a field plus function.
+ */
+void tn5250_display_field_plus(Tn5250Display * This)
+{
+   Tn5250Field *field;
+   unsigned char *data;
+   unsigned char c;
+   
+   field = tn5250_display_current_field (This);
+   if (field == NULL || 
+	 (tn5250_field_type(field) != TN5250_FIELD_SIGNED_NUM) &&
+	 (tn5250_field_type(field) != TN5250_FIELD_NUM_ONLY)) {
+      tn5250_dbuffer_inhibit(This->display_buffers);
+      return;
+   }
+
+   tn5250_display_field_exit(This);
+
+   /* For numeric only fields, we change the zone of the last digit if
+    * field minus is pressed.  For signed numeric fields, we change the
+    * sign position to a '-'. */
+   data = tn5250_display_field_data (This, field);
+   if (tn5250_field_type(field) == TN5250_FIELD_NUM_ONLY) {
+      c = data[tn5250_field_length (field) - 1];
+      if (isdigit (tn5250_ascii2ebcdic (c)))
+	 data[tn5250_field_length (field) - 1] = (c & 0x0f) | 0xf0;
+   } else
+      data[tn5250_field_length (field) - 1] = 0;
 }
 
 /*
@@ -556,9 +603,30 @@ void tn5250_display_field_exit(Tn5250Display * This)
  */
 void tn5250_display_field_minus(Tn5250Display * This)
 {
+   Tn5250Field *field;
+   unsigned char *data;
+   unsigned char c;
+   
+   field = tn5250_display_current_field (This);
+   if (field == NULL || 
+	 (tn5250_field_type(field) != TN5250_FIELD_SIGNED_NUM) &&
+	 (tn5250_field_type(field) != TN5250_FIELD_NUM_ONLY)) {
+      tn5250_dbuffer_inhibit(This->display_buffers);
+      return;
+   }
+
    tn5250_display_field_exit(This);
-   /* FIXME: Put a minus sign on the field.  See old code for
-    * tn5250_field_set_minus_zone in 0.14.0 and before. */
+
+   /* For numeric only fields, we change the zone of the last digit if
+    * field minus is pressed.  For signed numeric fields, we change the
+    * sign position to a '-'. */
+   data = tn5250_display_field_data (This, field);
+   if (tn5250_field_type(field) == TN5250_FIELD_NUM_ONLY) {
+      c = data[tn5250_field_length (field) - 1];
+      if (isdigit (tn5250_ascii2ebcdic (c)))
+	 data[tn5250_field_length (field) - 1] = (c & 0x0f) | 0xd0;
+   } else
+      data[tn5250_field_length (field) - 1] = tn5250_ascii2ebcdic('-');
 }
 
 /*
@@ -576,6 +644,7 @@ void tn5250_display_dup(Tn5250Display * This)
 {
    int y, x, i;
    Tn5250Field *field;
+   unsigned char *data;
    int curfield;
 
    field = tn5250_display_current_field (This);
@@ -591,9 +660,11 @@ void tn5250_display_dup(Tn5250Display * This)
       return;
    }
 
-   i = tn5250_field_count_left(field, y, x);
+   i = tn5250_field_count_left(field, tn5250_display_cursor_y(This),
+	 tn5250_display_cursor_x(This));
+   data = tn5250_display_field_data (This, field);
    for (; i < tn5250_field_length(field); i++)
-      tn5250_dbuffer_addch(This->display_buffers, 0x1C);
+      data[i] = 0x1c;
 
    if (tn5250_field_is_fer (field))
       tn5250_dbuffer_cursor_set (This->display_buffers,

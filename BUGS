@@ -31,5 +31,13 @@
     causes an assertion/core dump.
   </bug>
 
+  <bug>
+    <date>99.11.17.22.57.00</date>
+    <owner email="jasonf@nacs.net">Jay 'Eraserhead' Felice</owner>
+
+    If we undo the hack which ignores 'garbage' keys in session.c in the
+    key handler under the 'default' clause, we get two decimal 410s.  Why?
+  </bug>
+
 </bugs>
 <!-- vi:set sts=2 sw=2 autoindent: -->
