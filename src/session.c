@@ -190,10 +190,10 @@ static void tn5250_session_handle_keys(Tn5250Session *This)
       if (cur_key != -1) {
 	 if ((tn5250_display_indicators(This->dsp) & TN5250_DISPLAY_IND_X_SYSTEM) != 0) {
 	    /* We can handle system request here. */
-	    if (cur_key == K_SYSREQ) {
+	    if (cur_key == K_SYSREQ || cur_key == K_RESET) {
 	       /* Flush the keyboard queue. */
 	       This->key_queue_head = This->key_queue_tail = 0;
-	       tn5250_session_handle_key (This, K_SYSREQ);
+	       tn5250_session_handle_key (This, cur_key);
 	       break;
 	    }
 
@@ -233,17 +233,14 @@ static void tn5250_session_handle_key(Tn5250Session * This, int cur_key)
    TN5250_ASSERT(This->term != NULL);
 
    curfield = tn5250_table_current_field(This->table);
-   /* cur_key = tn5250_terminal_getkey(This->term); */
-   /* while (cur_key != -1) { */
 
    TN5250_LOG(("@key %d\n", cur_key));
    X = tn5250_display_cursor_x(This->dsp);
    Y = tn5250_display_cursor_y(This->dsp);
 
    if (tn5250_display_inhibited(This->dsp)) {
-      if (cur_key != K_RESET) {
+      if (cur_key != K_SYSREQ && cur_key != K_RESET) {
 	 /* FIXME: Terminal should beep at this point. */
-	 cur_key = tn5250_terminal_getkey(This->term);
 	 return;
       }
    }
@@ -251,6 +248,7 @@ static void tn5250_session_handle_key(Tn5250Session * This, int cur_key)
    case K_RESET:
       tn5250_display_uninhibit(This->dsp);
       break;
+
    case K_BACKSPACE:
    case K_LEFT:
       tn5250_display_left(This->dsp);
@@ -635,14 +633,6 @@ static void tn5250_session_handle_key(Tn5250Session * This, int cur_key)
       tn5250_session_send_fields(This, aidcode);
       send = 0;
    }
-/*      if ((tn5250_display_indicators(This->dsp) & TN5250_DISPLAY_IND_X_SYSTEM)
-	    != 0)
-	 break;
-      cur_key = tn5250_terminal_getkey(This->term);
-   } */
-
- /*  tn5250_terminal_update(This->term, This->dsp);
-   tn5250_terminal_update_indicators(This->term, This->dsp); */
 }
 
 /* 
