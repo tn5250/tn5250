@@ -42,8 +42,9 @@
 extern "C" {
 #endif
 
-#define TN3270_STREAM 0
-#define TN5250_STREAM 1
+#define TN3270_STREAM  0
+#define TN3270E_STREAM 1
+#define TN5250_STREAM  2
 
 struct _Tn5250Config;
 
@@ -54,9 +55,10 @@ struct Tn5250Header {
 };
 
 struct Tn3270Header {
-  int flowtype;
-  unsigned char flags;
-  unsigned char opcode;
+  unsigned char data_type;
+  unsigned char request_flag;
+  unsigned char response_flag;
+  int sequence;
 };
 
 union _StreamHeader {

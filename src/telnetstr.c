@@ -35,7 +35,7 @@
 
 static int telnet_stream_get_next(Tn5250Stream * This);
 static void telnet_stream_do_verb(Tn5250Stream * This, unsigned char verb, unsigned char what);
-static int telnet_stream_host_verb(SOCKET_TYPE sock, unsigned char verb,
+static int telnet_stream_host_verb(Tn5250Stream * This, unsigned char verb,
 	unsigned char what);
 static void telnet_stream_sb_var_value(Tn5250Buffer * buf, unsigned char *var, unsigned char *value);
 static void telnet_stream_sb(Tn5250Stream * This, unsigned char *sb_buf, int sb_len);
@@ -361,7 +361,7 @@ int tn3270_telnet_stream_init (Tn5250Stream *This)
    This->handle_receive = telnet_stream_handle_receive;
    This->send_packet = tn3270_stream_send_packet;
    This->destroy = telnet_stream_destroy;
-   This->streamtype = TN3270_STREAM;
+   This->streamtype = TN3270E_STREAM;
    return 0; /* Ok */
 }
 
@@ -485,7 +485,7 @@ static int telnet_stream_accept(Tn5250Stream * This, int masterfd)
    /* Commence TN5250 negotiations...
       Send DO options (New Environment, Terminal Type, etc.) */
 
-   if(This->streamtype == TN3270_STREAM)
+   if(This->streamtype == TN3270E_STREAM)
      {
        retCode = send(This->sockfd, hostDoTN3270E, sizeof(hostDoTN3270E), 0);
        if (WAS_ERROR_RET(retCode)) {
@@ -508,47 +508,53 @@ static int telnet_stream_accept(Tn5250Stream * This, int masterfd)
 	 return -1;
        }
 
-       retCode = send(This->sockfd, hostSBDevice, sizeof(hostSBDevice),0);
+       if(This->streamtype == TN3270E_STREAM)
+	 {
+	   retCode = send(This->sockfd, hostSBDevice, sizeof(hostSBDevice),0);
 
-       if (WAS_ERROR_RET(retCode)) {
-	 perror("telnetstr");
-	 return LAST_ERROR;
-       }
+	   if (WAS_ERROR_RET(retCode)) {
+	     perror("telnetstr");
+	     return LAST_ERROR;
+	   }
 
-       FD_ZERO(&fdr);
-       FD_SET(This->sockfd, &fdr);
-       tv.tv_sec = 5;
-       tv.tv_usec = 0;
-       TN_SELECT(This->sockfd + 1, &fdr, NULL, NULL, &tv);
-       if (FD_ISSET(This->sockfd, &fdr)) {
-	   
-	 if (!telnet_stream_handle_receive(This)) {
-	   retCode = LAST_ERROR;
-	   return retCode ? retCode : -1;
+	   FD_ZERO(&fdr);
+	   FD_SET(This->sockfd, &fdr);
+	   tv.tv_sec = 5;
+	   tv.tv_usec = 0;
+	   TN_SELECT(This->sockfd + 1, &fdr, NULL, NULL, &tv);
+	   if (FD_ISSET(This->sockfd, &fdr)) {
+	     
+	     if (!telnet_stream_handle_receive(This)) {
+	       retCode = LAST_ERROR;
+	       return retCode ? retCode : -1;
+	     }
+	   } else {
+	     return -1;
+	   }
+
+	   FD_ZERO(&fdr);
+	   FD_SET(This->sockfd, &fdr);
+	   tv.tv_sec = 5;
+	   tv.tv_usec = 0;
+	   TN_SELECT(This->sockfd + 1, &fdr, NULL, NULL, &tv);
+	   if (FD_ISSET(This->sockfd, &fdr)) {
+	     
+	     if (!telnet_stream_handle_receive(This)) {
+	       retCode = LAST_ERROR;
+	       return retCode ? retCode : -1;
+	     }
+	   } else {
+	     return -1;
+	   }
+	 } 
+       else 
+	 {
+	   goto neg5250;
 	 }
-       } else {
-	 return -1;
-       }
-
-       FD_ZERO(&fdr);
-       FD_SET(This->sockfd, &fdr);
-       tv.tv_sec = 5;
-       tv.tv_usec = 0;
-       TN_SELECT(This->sockfd + 1, &fdr, NULL, NULL, &tv);
-       if (FD_ISSET(This->sockfd, &fdr)) {
-	   
-	 if (!telnet_stream_handle_receive(This)) {
-	   retCode = LAST_ERROR;
-	   return retCode ? retCode : -1;
-	 }
-       } else {
-	 return -1;
-       }
-
      }
    else
      {
-
+     neg5250:
        for (i=0; host5250DoTable[i].cmd; i++) {
 	 retCode = send(This->sockfd, host5250DoTable[i].cmd, 
 			host5250DoTable[i].len, 0);
@@ -669,10 +675,13 @@ static int sendWill(SOCKET_TYPE sock, unsigned char what)
  * DESCRIPTION
  *    Process the telnet DO, DONT, WILL, or WONT escape sequence.
  *****/
-static int telnet_stream_host_verb(SOCKET_TYPE sock, unsigned char verb,
+static int telnet_stream_host_verb(Tn5250Stream * This, unsigned char verb,
 		unsigned char what)
 {
    int len, option=0, retval=0;
+   SOCKET_TYPE sock;
+
+   sock = This->sockfd;
 
    IACVERB_LOG("GotVerb(1)",verb,what);
    switch (verb) {
@@ -693,6 +702,10 @@ static int telnet_stream_host_verb(SOCKET_TYPE sock, unsigned char verb,
 
       case DONT:
       case WONT:
+	if(what == TN3270E) 
+	  {
+	    This->streamtype = TN3270_STREAM;
+	  }
 	break;
 
       case WILL:
@@ -1065,7 +1078,7 @@ static int telnet_stream_get_byte(Tn5250Stream * This)
       case TN5250_STREAM_STATE_HAVE_VERB:
 	TN5250_LOG(("HOST, This->status  = %d %d\n", HOST, This->status));
 	 if (This->status&HOST) {
-	    temp = telnet_stream_host_verb(This->sockfd, verb, (UCHAR) temp);
+	    temp = telnet_stream_host_verb(This, verb, (UCHAR) temp);
 	    if (WAS_ERROR_RET(temp)) {
 	       LOGERROR("send", LAST_ERROR);
 	       return -2;
@@ -1254,19 +1267,29 @@ tn3270_stream_send_packet(Tn5250Stream * This, int length,
 {
   Tn5250Buffer out_buf;
 
-   tn5250_buffer_init(&out_buf);
+  tn5250_buffer_init(&out_buf);
 
-   tn5250_buffer_append_data(&out_buf, data, length);
+  if(This->streamtype == TN3270E_STREAM)
+    {
+      tn5250_buffer_append_byte(&out_buf, header.h3270.data_type);
+      tn5250_buffer_append_byte(&out_buf, header.h3270.request_flag);
+      tn5250_buffer_append_byte(&out_buf, header.h3270.response_flag);
 
-   telnet_stream_escape(&out_buf);
+      tn5250_buffer_append_byte(&out_buf, 0x00);
+      tn5250_buffer_append_byte(&out_buf, 0x00);
+    }
+  
+  tn5250_buffer_append_data(&out_buf, data, length);
+      
+  telnet_stream_escape(&out_buf);
 
-   tn5250_buffer_append_byte(&out_buf, IAC);
-   tn5250_buffer_append_byte(&out_buf, EOR);
+  tn5250_buffer_append_byte(&out_buf, IAC);
+  tn5250_buffer_append_byte(&out_buf, EOR);
+   
+  telnet_stream_write(This, tn5250_buffer_data(&out_buf), 
+		      tn5250_buffer_length(&out_buf));
 
-   telnet_stream_write(This, tn5250_buffer_data(&out_buf), 
-		       tn5250_buffer_length(&out_buf));
-
-   tn5250_buffer_free(&out_buf);
+  tn5250_buffer_free(&out_buf);
 
 }
 
