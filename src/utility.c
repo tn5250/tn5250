@@ -502,7 +502,7 @@ int tn5250_parse_color(Tn5250Config *config, const char *colorname,
                         int *red, int *green, int *blue) {
 
     const char *p;
-    char colorspec[8];
+    char colorspec[16];
     int r, g, b;
 
     if ((p=tn5250_config_get(config, colorname)) == NULL) {
@@ -510,7 +510,7 @@ int tn5250_parse_color(Tn5250Config *config, const char *colorname,
     }
 
     strncpy(colorspec, p, sizeof(colorspec));
-    colorspec[7] = '\0';
+    colorspec[sizeof(colorspec)-1] = '\0';
 
     if (*colorspec != '#') {
           if (!strcasecmp(colorspec, "white")) {
