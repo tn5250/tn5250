@@ -696,6 +696,9 @@ static void tn5250_session_write_error_code(Tn5250Session * This)
    curX = tn5250_display_cursor_x(This->display);
    curY = tn5250_display_cursor_y(This->display);
 
+   /* FIXME: Use same code as WTD for writing data characters to display
+    * (?) */
+
    tn5250_display_set_cursor(This->display, 23, 0);
    done = 0;
    while (!done) {
