@@ -784,7 +784,7 @@ static void telnet_stream_sb(Tn5250Stream * This, unsigned char *sb_buf, int sb_
 	 printf("Error writing to socket: %s\n", strerror(LAST_ERROR));
 	 exit(5);
       }
-      TN5250_LOG(("SentSB:<IAC><SB><TERMTYPE><IS>%s<IAC><SE>\n"));
+      TN5250_LOG(("SentSB:<IAC><SB><TERMTYPE><IS>%s<IAC><SE>\n", termtype));
 
       This->status = This->status | TERMINAL;
    } else if (sb_buf[0] == NEW_ENVIRON) {
