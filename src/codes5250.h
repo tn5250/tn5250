@@ -22,9 +22,8 @@ extern "C" {
 #define CMD_WRITE_ERROR_CODE            	0x21
 #define CMD_READ_INPUT_FIELDS			0x42
 #define CMD_ROLL				0x23
-
-#define CMD_READ_MDT_FIELDS_ALT			0x82 /* FIXME: */
-#define CMD_READ_MDT_FIELDS_IMMEDIATE_ALT	0x83 /* FIXME: */
+#define CMD_READ_MDT_FIELDS_ALT			0x82
+#define CMD_READ_IMMEDIATE_ALT			0x83
 
 /* Orders - those tagged FIXME are not implemented: */
 #define SOH	0x01		/* Start of header */

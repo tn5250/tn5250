@@ -15,7 +15,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
 #include "tn5250-config.h"
 
 #ifdef USE_CURSES
@@ -117,9 +116,16 @@ struct _Tn5250TerminalPrivate {
    int is_xterm;
 };
 
-/*
+/****f* lib5250/tn5250_curses_terminal_new
+ * NAME
+ *    tn5250_curses_terminal_new
+ * SYNOPSIS
+ *    ret = tn5250_curses_terminal_new ();
+ * INPUTS
+ *    None
+ * DESCRIPTION
  *    Create a new curses terminal object.
- */
+ *****/
 Tn5250Terminal *tn5250_curses_terminal_new()
 {
    Tn5250Terminal *r = tn5250_new(Tn5250Terminal, 1);
@@ -154,6 +160,16 @@ Tn5250Terminal *tn5250_curses_terminal_new()
    return r;
 }
 
+/****i* lib5250/curses_terminal_init
+ * NAME
+ *    curses_terminal_init
+ * SYNOPSIS
+ *    curses_terminal_init (This);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static void curses_terminal_init(Tn5250Terminal * This)
 {
    char buf[6];
@@ -199,11 +215,31 @@ static void curses_terminal_init(Tn5250Terminal * This)
    This->data->quit_flag = 0;
 }
 
+/****i* lib5250/curses_terminal_term
+ * NAME
+ *    curses_terminal_term
+ * SYNOPSIS
+ *    curses_terminal_term (This);
+ * INPUTS
+ *    Tn5250Terminal  *    This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static void curses_terminal_term(Tn5250Terminal /*@unused@*/ * This)
 {
    endwin();
 }
 
+/****i* lib5250/curses_terminal_destroy
+ * NAME
+ *    curses_terminal_destroy
+ * SYNOPSIS
+ *    curses_terminal_destroy (This);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static void curses_terminal_destroy(Tn5250Terminal * This)
 {
    if (This->data != NULL)
@@ -211,6 +247,16 @@ static void curses_terminal_destroy(Tn5250Terminal * This)
    free(This);
 }
 
+/****i* lib5250/curses_terminal_width
+ * NAME
+ *    curses_terminal_width
+ * SYNOPSIS
+ *    ret = curses_terminal_width (This);
+ * INPUTS
+ *    Tn5250Terminal  *    This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static int curses_terminal_width(Tn5250Terminal /*@unused@*/ * This)
 {
    int y, x;
@@ -218,6 +264,16 @@ static int curses_terminal_width(Tn5250Terminal /*@unused@*/ * This)
    return x + 1;
 }
 
+/****i* lib5250/curses_terminal_height
+ * NAME
+ *    curses_terminal_height
+ * SYNOPSIS
+ *    ret = curses_terminal_height (This);
+ * INPUTS
+ *    Tn5250Terminal  *    This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static int curses_terminal_height(Tn5250Terminal /*@unused@*/ * This)
 {
    int y, x;
@@ -225,6 +281,16 @@ static int curses_terminal_height(Tn5250Terminal /*@unused@*/ * This)
    return y + 1;
 }
 
+/****i* lib5250/curses_terminal_flags
+ * NAME
+ *    curses_terminal_flags
+ * SYNOPSIS
+ *    ret = curses_terminal_flags (This);
+ * INPUTS
+ *    Tn5250Terminal  *    This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static int curses_terminal_flags(Tn5250Terminal /*@unused@*/ * This)
 {
    int f = 0;
@@ -233,6 +299,17 @@ static int curses_terminal_flags(Tn5250Terminal /*@unused@*/ * This)
    return f;
 }
 
+/****i* lib5250/curses_terminal_update
+ * NAME
+ *    curses_terminal_update
+ * SYNOPSIS
+ *    curses_terminal_update (This, display);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ *    Tn5250Display *      display    - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static void curses_terminal_update(Tn5250Terminal * This, Tn5250Display *display)
 {
    int my, mx;
@@ -244,7 +321,6 @@ static void curses_terminal_update(Tn5250Terminal * This, Tn5250Display *display
        || This->data->last_height != tn5250_display_height(display)) {
       clear();
       if(This->data->is_xterm) {
-	 refresh ();
 	 printf ("\x1b[8;%d;%dt", tn5250_display_height (display)+1,
 	       tn5250_display_width (display));
 	 fflush (stdout);
@@ -254,6 +330,7 @@ static void curses_terminal_update(Tn5250Terminal * This, Tn5250Display *display
  	 /* Make sure we get a SIGWINCH - We need curses to resize its
  	  * buffer. */
  	 raise (SIGWINCH);
+	 refresh ();
       }
       This->data->last_width = tn5250_display_width(display);
       This->data->last_height = tn5250_display_height(display);
@@ -305,6 +382,17 @@ static void curses_terminal_update(Tn5250Terminal * This, Tn5250Display *display
    refresh();
 }
 
+/****i* lib5250/curses_terminal_update_indicators
+ * NAME
+ *    curses_terminal_update_indicators
+ * SYNOPSIS
+ *    curses_terminal_update_indicators (This, display);
+ * INPUTS
+ *    Tn5250Terminal  *    This       - 
+ *    Tn5250Display *      display    - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static void curses_terminal_update_indicators(Tn5250Terminal /*@unused@*/ * This, Tn5250Display *display)
 {
    int inds = tn5250_display_indicators(display);
@@ -332,6 +420,16 @@ static void curses_terminal_update_indicators(Tn5250Terminal /*@unused@*/ * This
    refresh();
 }
 
+/****i* lib5250/curses_terminal_waitevent
+ * NAME
+ *    curses_terminal_waitevent
+ * SYNOPSIS
+ *    ret = curses_terminal_waitevent (This);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static int curses_terminal_waitevent(Tn5250Terminal * This)
 {
    fd_set fdr;
@@ -361,6 +459,16 @@ static int curses_terminal_waitevent(Tn5250Terminal * This)
    return result;
 }
 
+/****i* lib5250/curses_terminal_getkey
+ * NAME
+ *    curses_terminal_getkey
+ * SYNOPSIS
+ *    ret = curses_terminal_getkey (This);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static int curses_terminal_getkey(Tn5250Terminal * This)
 {
    int key = getch();
@@ -445,6 +553,16 @@ static int curses_terminal_getkey(Tn5250Terminal * This)
    }
 }
 
+/****i* lib5250/curses_terminal_beep
+ * NAME
+ *    curses_terminal_beep
+ * SYNOPSIS
+ *    curses_terminal_beep (This);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static void curses_terminal_beep (Tn5250Terminal *This)
 {
    TN5250_LOG (("CURSES: beep\n"));
@@ -452,12 +570,19 @@ static void curses_terminal_beep (Tn5250Terminal *This)
    refresh ();
 }
 
-/*
+/****i* lib5250/curses_terminal_get_esc_key
+ * NAME
+ *    curses_terminal_get_esc_key
+ * SYNOPSIS
+ *    ret = curses_terminal_get_esc_key (This, is_esc);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ *    int                  is_esc     - 
+ * DESCRIPTION
  *    If a vt100 escape key sequence was introduced (using either
- *      <Esc> or <Ctrl+g>), handle the next key in the sequence.
- */
-static int curses_terminal_get_esc_key(Tn5250Terminal * This,
-				       int is_esc)
+ *    <Esc> or <Ctrl+g>), handle the next key in the sequence.
+ *****/
+static int curses_terminal_get_esc_key(Tn5250Terminal * This, int is_esc)
 {
    int y, x, key, display_key;
    fd_set fdr;
@@ -625,10 +750,18 @@ static int curses_terminal_get_esc_key(Tn5250Terminal * This,
    return key;
 }
 
-/*
+/****f* lib5250/tn5250_curses_terminal_use_underscores
+ * NAME
+ *    tn5250_curses_terminal_use_underscores
+ * SYNOPSIS
+ *    ret = tn5250_curses_terminal_use_underscores (This, v);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ *    int                  v          - 
+ * DESCRIPTION
  *    Called by tn5250.c to determine whether we should use underscores or
- *      the terminal's underline attribute.
- */
+ *    the terminal's underline attribute.
+ *****/
 int tn5250_curses_terminal_use_underscores(Tn5250Terminal * This, int v)
 {
    int oldval = This->data->underscores;

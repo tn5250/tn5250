@@ -1,4 +1,27 @@
-2000-01-07 Jay 'Eraserhead' Felcie <jasonf@nacs.net>
+2000-01-11 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Reported by Phil Gregory - display is not inhibited and cursor is not in
+  proper place after Write Error Code.
+- Implemented Read Immediate Alternate and Read MDT Fields Alternate commands,
+  modified tn5250_session_query_reply to indicate that we now support them to
+  the host.
+- Implemented TD (Transparent Data) order.  There is apparently nowhere to
+  indicate this to the host. (This may have been the cause of earlier binary
+  data issues).
+- Implemented MC (Move Cursor) order.  This is now indicated to the host.
+- Move remaining keyboard handling from session.c to display.c, make
+  tn5250_display_waitevent NOT return keyboard events. (Might we want to
+  pass along ones we don't understand?  Nah...)
+- Save/restore message line when Write Error Code is used by the host to
+  inhibit display.  Also, use the correct message line (according to the
+  format table header).
+- Added refresh() call to cursesterm.c.  Hopefully, this will resolve the
+  80 -> 132 column switch refresh issues reported by some users.
+- Wrote a quick hack of a Perl script to insert Robodoc comment headers
+  for all the functions (and manually did all the structures).  Yeah, it's
+  ugly, but no-one produces a tool as good as Javadoc which works on C.
+
+2000-01-07 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 
 - tn5250_dbuffer_send_data_for_fields(): A *SET* bit inhibits the transmission
   of field data, not a clear one.  Also, fine point of spec, all three aid key

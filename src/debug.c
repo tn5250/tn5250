@@ -15,7 +15,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
 #include "tn5250-config.h"
 
 #ifndef NDEBUG
@@ -67,6 +66,16 @@ static int debug_terminal_waitevent(Tn5250Terminal *This);
 static int debug_terminal_getkey(Tn5250Terminal *This);
 static void debug_terminal_beep(Tn5250Terminal *This);
 
+/****f* lib5250/tn5250_debug_stream_init
+ * NAME
+ *    tn5250_debug_stream_init
+ * SYNOPSIS
+ *    ret = tn5250_debug_stream_init (This);
+ * INPUTS
+ *    Tn5250Stream *       This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 int tn5250_debug_stream_init (Tn5250Stream *This)
 {
    This->connect = debug_stream_connect;
@@ -78,6 +87,17 @@ int tn5250_debug_stream_init (Tn5250Stream *This)
    return 0; /* Ok */
 }
 
+/****f* lib5250/tn5250_debug_terminal_new
+ * NAME
+ *    tn5250_debug_terminal_new
+ * SYNOPSIS
+ *    ret = tn5250_debug_terminal_new (slave, dbgstream);
+ * INPUTS
+ *    Tn5250Terminal *     slave      - 
+ *    Tn5250Stream *       dbgstream  - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 Tn5250Terminal *tn5250_debug_terminal_new (Tn5250Terminal *slave, Tn5250Stream *dbgstream)
 {
    Tn5250Terminal *This = tn5250_new(Tn5250Terminal, 1);
@@ -108,11 +128,33 @@ Tn5250Terminal *tn5250_debug_terminal_new (Tn5250Terminal *slave, Tn5250Stream *
    return This;
 }
 
+/****f* lib5250/tn5250_debug_terminal_set_pause
+ * NAME
+ *    tn5250_debug_terminal_set_pause
+ * SYNOPSIS
+ *    tn5250_debug_terminal_set_pause (This, f);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ *    int                  f          - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 void tn5250_debug_terminal_set_pause (Tn5250Terminal *This, int f)
 {
    This->data->pauseflag = f;
 }
 
+/****i* lib5250/debug_stream_connect
+ * NAME
+ *    debug_stream_connect
+ * SYNOPSIS
+ *    ret = debug_stream_connect (This, to);
+ * INPUTS
+ *    Tn5250Stream *       This       - 
+ *    const char *         to         - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static int debug_stream_connect(Tn5250Stream * This, const char *to)
 {
    This->debugfile = fopen (to, "r");
@@ -121,12 +163,32 @@ static int debug_stream_connect(Tn5250Stream * This, const char *to)
    return 0;
 }
 
+/****i* lib5250/debug_stream_disconnect
+ * NAME
+ *    debug_stream_disconnect
+ * SYNOPSIS
+ *    debug_stream_disconnect (This);
+ * INPUTS
+ *    Tn5250Stream *       This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static void debug_stream_disconnect(Tn5250Stream * This)
 {
    if (This->debugfile != NULL)
       fclose (This->debugfile);
 }
 
+/****i* lib5250/debug_stream_handle_receive
+ * NAME
+ *    debug_stream_handle_receive
+ * SYNOPSIS
+ *    ret = debug_stream_handle_receive (This);
+ * INPUTS
+ *    Tn5250Stream *       This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static int debug_stream_handle_receive(Tn5250Stream * This)
 {
    return 1;
@@ -139,21 +201,61 @@ static void debug_stream_send_packet(Tn5250Stream * This, int length,
    /* noop */
 }
 
+/****i* lib5250/debug_stream_destroy
+ * NAME
+ *    debug_stream_destroy
+ * SYNOPSIS
+ *    debug_stream_destroy (This);
+ * INPUTS
+ *    Tn5250Stream *       This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static void debug_stream_destroy(Tn5250Stream *This)
 {
    /* noop */
 }
 
+/****i* lib5250/debug_terminal_init
+ * NAME
+ *    debug_terminal_init
+ * SYNOPSIS
+ *    debug_terminal_init (This);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static void debug_terminal_init(Tn5250Terminal *This)
 {
    (* (This->data->slaveterm->init)) (This->data->slaveterm);
 }
 
+/****i* lib5250/debug_terminal_term
+ * NAME
+ *    debug_terminal_term
+ * SYNOPSIS
+ *    debug_terminal_term (This);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static void debug_terminal_term(Tn5250Terminal *This)
 {
    (* (This->data->slaveterm->term)) (This->data->slaveterm);
 }
 
+/****i* lib5250/debug_terminal_destroy
+ * NAME
+ *    debug_terminal_destroy
+ * SYNOPSIS
+ *    debug_terminal_destroy (This);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static void debug_terminal_destroy(Tn5250Terminal /*@only@*/ *This)
 {
    (* (This->data->slaveterm->destroy)) (This->data->slaveterm);
@@ -161,39 +263,108 @@ static void debug_terminal_destroy(Tn5250Terminal /*@only@*/ *This)
    free (This);
 }
 
+/****i* lib5250/debug_terminal_width
+ * NAME
+ *    debug_terminal_width
+ * SYNOPSIS
+ *    ret = debug_terminal_width (This);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static int debug_terminal_width(Tn5250Terminal *This)
 {
    return (* (This->data->slaveterm->width)) (This->data->slaveterm);
 }
 
+/****i* lib5250/debug_terminal_height
+ * NAME
+ *    debug_terminal_height
+ * SYNOPSIS
+ *    ret = debug_terminal_height (This);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static int debug_terminal_height(Tn5250Terminal *This)
 {
    return (* (This->data->slaveterm->height)) (This->data->slaveterm);
 }
 
+/****i* lib5250/debug_terminal_flags
+ * NAME
+ *    debug_terminal_flags
+ * SYNOPSIS
+ *    ret = debug_terminal_flags (This);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static int debug_terminal_flags(Tn5250Terminal *This)
 {
    return (* (This->data->slaveterm->flags)) (This->data->slaveterm);
 }
 
+/****i* lib5250/debug_terminal_update
+ * NAME
+ *    debug_terminal_update
+ * SYNOPSIS
+ *    debug_terminal_update (This, display);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ *    Tn5250Display *      display    - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static void debug_terminal_update(Tn5250Terminal *This, Tn5250Display *display)
 {
    (* (This->data->slaveterm->update)) (This->data->slaveterm, display);
 }
 
+/****i* lib5250/debug_terminal_update_indicators
+ * NAME
+ *    debug_terminal_update_indicators
+ * SYNOPSIS
+ *    debug_terminal_update_indicators (This, display);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ *    Tn5250Display *      display    - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static void debug_terminal_update_indicators(Tn5250Terminal *This, Tn5250Display *display)
 {
    (* (This->data->slaveterm->update_indicators)) (This->data->slaveterm, display);
 }
 
+/****i* lib5250/debug_terminal_beep
+ * NAME
+ *    debug_terminal_beep
+ * SYNOPSIS
+ *    debug_terminal_beep (This);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static void debug_terminal_beep(Tn5250Terminal *This)
 {
    (* (This->data->slaveterm->beep)) (This->data->slaveterm);
 }
 
-/*
- * 	This is a hook for the Tn5250Terminal->waitevent method.
- */
+/****i* lib5250/debug_terminal_waitevent
+ * NAME
+ *    debug_terminal_waitevent
+ * SYNOPSIS
+ *    ret = debug_terminal_waitevent (This);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ * DESCRIPTION
+ *    This is a hook for the Tn5250Terminal->waitevent method.
+ *****/
 static int debug_terminal_waitevent(Tn5250Terminal *This)
 {
    char buf[256];
@@ -253,6 +424,16 @@ static int debug_terminal_waitevent(Tn5250Terminal *This)
    return (* (This->data->slaveterm->waitevent)) (This->data->slaveterm);
 }
 
+/****i* lib5250/debug_terminal_getkey
+ * NAME
+ *    debug_terminal_getkey
+ * SYNOPSIS
+ *    ret = debug_terminal_getkey (This);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static int debug_terminal_getkey(Tn5250Terminal *This)
 {
    int ret = This->data->keyq;
@@ -268,4 +449,3 @@ static int debug_terminal_getkey(Tn5250Terminal *This)
 
 #endif /* NDEBUG */
 
-/* vi:set cindent sts=3 sw=3: */

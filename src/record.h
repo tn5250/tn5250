@@ -22,15 +22,31 @@
 extern "C" {
 #endif
 
-   struct _Tn5250Record {
-      struct _Tn5250Record /*@dependent@*/ *prev;
-      struct _Tn5250Record /*@dependent@*/ *next;
+/****s* lib5250/Tn5250Record
+ * NAME
+ *    Tn5250Record
+ * SYNOPSIS
+ *    Tn5250Record *rec = tn5250_stream_get_record (stream);
+ *    unsigned char b;
+ *    while (!tn5250_record_is_chain_end (rec)) {
+ *	 b = tn5250_record_get_byte (rec);
+ *	 printf ("X'%02X' ", b);
+ *    }
+ *    tn5250_record_destroy (rec);
+ * DESCRIPTION
+ *    Handles a 5250-protocol communications record.
+ * SOURCE
+ */
+struct _Tn5250Record {
+   struct _Tn5250Record /*@dependent@*/ *prev;
+   struct _Tn5250Record /*@dependent@*/ *next;
 
-      Tn5250Buffer data;
-      int cur_pos;
-   };
+   Tn5250Buffer data;
+   int cur_pos;
+};
 
-   typedef struct _Tn5250Record Tn5250Record;
+typedef struct _Tn5250Record Tn5250Record;
+/******/
 
 #define TN5250_RECORD_FLOW_DISPLAY 0x00
 #define TN5250_RECORD_FLOW_STARTUP 0x90
@@ -61,12 +77,12 @@ extern "C" {
 #define TN5250_RECORD_OPCODE_PRINT_COMPLETE	1
 #define TN5250_RECORD_OPCODE_CLEAR		2
 
-   extern Tn5250Record /*@only@*/ *tn5250_record_new(void);
-   extern void tn5250_record_destroy(Tn5250Record /*@only@*/ * This);
+extern Tn5250Record /*@only@*/ *tn5250_record_new(void);
+extern void tn5250_record_destroy(Tn5250Record /*@only@*/ * This);
 
-   extern unsigned char tn5250_record_get_byte(Tn5250Record * This);
-   extern void tn5250_record_unget_byte(Tn5250Record * This);
-   extern int tn5250_record_is_chain_end(Tn5250Record * This);
+extern unsigned char tn5250_record_get_byte(Tn5250Record * This);
+extern void tn5250_record_unget_byte(Tn5250Record * This);
+extern int tn5250_record_is_chain_end(Tn5250Record * This);
 #define tn5250_record_length(This) \
    tn5250_buffer_length (&((This)->data))
 #define tn5250_record_append_byte(This,c) \
@@ -89,13 +105,15 @@ extern "C" {
    ((tn5250_record_flags((This)) & TN5250_RECORD_H_ATN) != 0)
 
 /* Manipulating lists of records (used in stream.c) */
-   extern Tn5250Record /*@null@*/ *tn5250_record_list_add(Tn5250Record /*@null@*/ * list, Tn5250Record /*@dependent@*/ * record);
-   extern Tn5250Record *tn5250_record_list_remove(Tn5250Record * list, Tn5250Record * record);
-   extern Tn5250Record *tn5250_record_list_destroy(Tn5250Record /*@only@*/ /*@null@*/ * list);
-   extern void tn5250_record_dump(Tn5250Record * This);
+extern Tn5250Record /*@null@*/ *tn5250_record_list_add(Tn5250Record /*@null@*/ * list, Tn5250Record /*@dependent@*/ * record);
+extern Tn5250Record *tn5250_record_list_remove(Tn5250Record * list, Tn5250Record * record);
+extern Tn5250Record *tn5250_record_list_destroy(Tn5250Record /*@only@*/ /*@null@*/ * list);
+extern void tn5250_record_dump(Tn5250Record * This);
 
 #ifdef __cplusplus
 }
 
 #endif
 #endif				/* RECORD_H */
+
+/* vi:set cindent sts=3 sw=3: */

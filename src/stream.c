@@ -15,7 +15,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
 #include "tn5250-config.h"
 #include <stddef.h>
 #include <stdlib.h>
@@ -51,6 +50,16 @@ static Tn5250StreamType stream_types[] = {
    { NULL, NULL }
 };
 
+/****f* lib5250/tn5250_stream_open
+ * NAME
+ *    tn5250_stream_open
+ * SYNOPSIS
+ *    ret = tn5250_stream_open (to);
+ * INPUTS
+ *    const char *         to         - `URL' of host to connect to.
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 Tn5250Stream *tn5250_stream_open (const char *to)
 {
    Tn5250Stream *This = tn5250_new(Tn5250Stream, 1);
@@ -107,6 +116,16 @@ Tn5250Stream *tn5250_stream_open (const char *to)
    return NULL;
 }
 
+/****f* lib5250/tn5250_stream_destroy
+ * NAME
+ *    tn5250_stream_destroy
+ * SYNOPSIS
+ *    tn5250_stream_destroy (This);
+ * INPUTS
+ *    Tn5250Stream *       This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 void tn5250_stream_destroy(Tn5250Stream * This)
 {
    Tn5250StreamVar *iter, *next;
@@ -132,6 +151,16 @@ void tn5250_stream_destroy(Tn5250Stream * This)
    free(This);
 }
 
+/****f* lib5250/tn5250_stream_get_record
+ * NAME
+ *    tn5250_stream_get_record
+ * SYNOPSIS
+ *    ret = tn5250_stream_get_record (This);
+ * INPUTS
+ *    Tn5250Stream *       This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 Tn5250Record *tn5250_stream_get_record(Tn5250Stream * This)
 {
    Tn5250Record *record;
@@ -152,98 +181,20 @@ Tn5250Record *tn5250_stream_get_record(Tn5250Stream * This)
    return record;
 }
 
-void tn5250_stream_query_reply(Tn5250Stream * This)
-{
-   unsigned char temp[61];
 
-   temp[0] = 0x00;		/* Cursor Row/Column (set to zero) */
-
-   temp[1] = 0x00;
-   temp[2] = 0x88;		/* Inbound Write Structured Field Aid */
-
-   temp[3] = 0x00;		/* Length of Query Reply */
-
-   temp[4] = 0x3A;
-   temp[5] = 0xD9;		/* Command class */
-
-   temp[6] = 0x70;		/* Command type - Query */
-
-   temp[7] = 0x80;		/* Flag byte */
-
-   temp[8] = 0x06;		/* Controller hardware class */
-
-   temp[9] = 0x00;
-   temp[10] = 0x01;		/* Controller code level (Version 1 Release 1.0 */
-
-   temp[11] = 0x01;
-   temp[12] = 0x00;
-   temp[13] = 0x00;		/* Reserved (set to zero) */
-
-   temp[14] = 0x00;
-   temp[15] = 0x00;
-   temp[16] = 0x00;
-   temp[17] = 0x00;
-   temp[18] = 0x00;
-   temp[19] = 0x00;
-   temp[20] = 0x00;
-   temp[21] = 0x00;
-   temp[22] = 0x00;
-   temp[23] = 0x00;
-   temp[24] = 0x00;
-   temp[25] = 0x00;
-   temp[26] = 0x00;
-   temp[27] = 0x00;
-   temp[28] = 0x00;
-   temp[29] = 0x01;		/* 5250 Display or 5250 emulation */
-
-   temp[30] = tn5250_ascii2ebcdic('5');
-   temp[31] = tn5250_ascii2ebcdic('2');
-   temp[32] = tn5250_ascii2ebcdic('5');
-   temp[33] = tn5250_ascii2ebcdic('1');
-   temp[34] = tn5250_ascii2ebcdic('0');
-   temp[35] = tn5250_ascii2ebcdic('1');
-   temp[36] = tn5250_ascii2ebcdic('1');
-   temp[37] = 0x02;		/* Keyboard ID (standard keyboard) */
-   temp[38] = 0x00;		/* Extended keyboard ID */
-   temp[39] = 0x00;		/* Reserved */
-   temp[40] = 0x00;		/* Display serial number */
-
-   temp[41] = 0x61;
-   temp[42] = 0x50;
-   temp[43] = 0x00;
-   temp[44] = 0x01;		/* Maximum number of input fields (256) */
-
-   temp[45] = 0x00;
-   temp[46] = 0x00;		/* Reserved (set to zero) */
-
-   temp[47] = 0x00;
-   temp[48] = 0x00;
-   temp[49] = 0x01;		/* Controller/Display Capability */
-
-   temp[50] = 0x10;
-   temp[51] = 0x00;		/* Reserved */
-
-   temp[52] = 0x00;
-   temp[53] = 0x00;
-   temp[54] = 0x00;		/* Reserved (set to zero) */
-
-   temp[55] = 0x00;
-   temp[56] = 0x00;
-   temp[57] = 0x00;
-   temp[58] = 0x00;
-   temp[59] = 0x00;
-   temp[60] = 0x00;
-
-   tn5250_stream_send_packet(This, 61, TN5250_RECORD_FLOW_DISPLAY, TN5250_RECORD_H_NONE,
-		 TN5250_RECORD_OPCODE_NO_OP, (unsigned char *) &temp[0]);
-
-}
-
-/*
+/****f* lib5250/tn5250_stream_setenv
+ * NAME
+ *    tn5250_stream_setenv
+ * SYNOPSIS
+ *    tn5250_stream_setenv (This, name, value);
+ * INPUTS
+ *    Tn5250Stream *       This       - 
+ *    const char *         name       -
+ *    const char *         value      -
+ * DESCRIPTION
  *    Set an 'environment' string.  This is made to look like setenv().
- */
-void tn5250_stream_setenv(Tn5250Stream * This, const char *name,
-			  const char *value)
+ *****/
+void tn5250_stream_setenv(Tn5250Stream * This, const char *name, const char *value)
 {
    Tn5250StreamVar *var;
 
@@ -284,9 +235,17 @@ void tn5250_stream_setenv(Tn5250Stream * This, const char *name,
    }
 }
 
-/*
+/****f* lib5250/tn5250_stream_getenv
+ * NAME
+ *    tn5250_stream_getenv
+ * SYNOPSIS
+ *    ret = tn5250_stream_getenv (This, name);
+ * INPUTS
+ *    Tn5250Stream *       This       - 
+ *    const char *         name       - 
+ * DESCRIPTION
  *    Retrieve the value of a 5250 environment string.
- */
+ *****/
 char *tn5250_stream_getenv(Tn5250Stream * This, const char *name)
 {
    Tn5250StreamVar *iter;
@@ -301,9 +260,17 @@ char *tn5250_stream_getenv(Tn5250Stream * This, const char *name)
    return NULL;
 }
 
-/*
+/****f* lib5250/tn5250_stream_unsetenv
+ * NAME
+ *    tn5250_stream_unsetenv
+ * SYNOPSIS
+ *    tn5250_stream_unsetenv (This, name);
+ * INPUTS
+ *    Tn5250Stream *       This       - 
+ *    const char *         name       - 
+ * DESCRIPTION
  *    Unset a 5250 environment string.
- */
+ *****/
 void tn5250_stream_unsetenv(Tn5250Stream * This, const char *name)
 {
    Tn5250StreamVar *iter;
@@ -330,4 +297,3 @@ void tn5250_stream_unsetenv(Tn5250Stream * This, const char *name)
    }
 }
 
-/* vi:set cindent sts=3 sw=3: */

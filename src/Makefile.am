@@ -65,4 +65,24 @@ lclint:
 config.h: tn5250-config.h
 	cat tn5250-config.h |sed -e 's/VERSION/TN5250_LIB_VERSION/g' -e '/PACKAGE/d' >config.h
 
+#
+# We generate our library docs using robodoc.
+#
+DOCFILES = $(lib5250_la_SOURCES) $(pkginclude_HEADERS)
+
+docs:
+	( rm -f index.xrefs ; \
+	  for file in $(DOCFILES) ; do \
+	    robodoc $$file ../doc/$$file.html GENXREF ../doc/$$file.xref ; \
+	    echo "../doc/$$file.xref" >>../doc/index.xrefs ; \
+	  done ; \
+	  for file in $(DOCFILES) ; do \
+	    robodoc $$file ../doc/$$file.html HTML -x ../doc/index.xrefs ; \
+	  done ; \
+	  robodoc ../doc/index.xrefs ../doc/index.html INDEX ; \
+	  rm -f ../doc/*.xref ../doc/index.xrefs )
+
+clean-local:
+	rm -f $(DOCFILES) *.xref index.xrefs index.html
+
 .PHONY: lclint

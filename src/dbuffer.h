@@ -22,36 +22,43 @@
 extern "C" {
 #endif
 
-#define TN5250_DISPLAY_IND_INHIBIT	   	0x0001
-#define TN5250_DISPLAY_IND_MESSAGE_WAITING	0x0002
-#define TN5250_DISPLAY_IND_X_SYSTEM	   	0x0004
-#define TN5250_DISPLAY_IND_X_CLOCK	   	0x0008
-#define TN5250_DISPLAY_IND_INSERT	   	0x0010
+/****s* lib5250/Tn5250DBuffer
+ * NAME
+ *    Tn5250DBuffer
+ * SYNOPSIS
+ *    Should only be accessed via the Tn5250Display object.
+ * DESCRIPTION
+ *    The display buffer keeps track of the current state of the display,
+ *    including the field list, the format table header, the current
+ *    cursor position, the home position of the cursor, and the master
+ *    Modified Data Tag (MDT).
+ * SOURCE
+ */
+struct _Tn5250DBuffer {
 
-   struct _Tn5250DBuffer {
- 
-      /* How we keep track of multiple saved display buffers */
-      struct _Tn5250DBuffer *	next;
-      struct _Tn5250DBuffer *	prev;
+   /* How we keep track of multiple saved display buffers */
+   struct _Tn5250DBuffer *	next;
+   struct _Tn5250DBuffer *	prev;
 
-      int w, h;
-      int cx, cy;		/* Cursor Position */
-      int tcx, tcy;		/* for set_new_ic */
-      unsigned char /*@notnull@*/ *	  data;
+   int w, h;
+   int cx, cy;		/* Cursor Position */
+   int tcx, tcy;		/* for set_new_ic */
+   unsigned char /*@notnull@*/ *	  data;
 
-      /* Stuff from the old Tn5250Table structure. */
-      struct _Tn5250Field /*@null@*/ *	  field_list;
-      int				  field_count;
-      int				  master_mdt;
+   /* Stuff from the old Tn5250Table structure. */
+   struct _Tn5250Field /*@null@*/ *	  field_list;
+   int				  field_count;
+   int				  master_mdt;
 
-      /* Header data (from SOH order) is saved here.  We even save data that
-       * we don't understand here so we can insert that into our generated
-       * WTD orders for save/restore screen. */
-      unsigned char *			  header_data;
-      int				  header_length;
-   };
+   /* Header data (from SOH order) is saved here.  We even save data that
+    * we don't understand here so we can insert that into our generated
+    * WTD orders for save/restore screen. */
+   unsigned char *			  header_data;
+   int				  header_length;
+};
 
-   typedef struct _Tn5250DBuffer Tn5250DBuffer;
+typedef struct _Tn5250DBuffer Tn5250DBuffer;
+/*******/
 
 /* Displays */
    extern Tn5250DBuffer /*@only@*/ /*@null@*/ *tn5250_dbuffer_new(int width, int height);
@@ -86,6 +93,8 @@ extern "C" {
    extern struct _Tn5250Field *tn5250_dbuffer_field_yx(Tn5250DBuffer *This, int y, int x);
    extern void tn5250_dbuffer_set_header_data(Tn5250DBuffer *This, unsigned char *data, int len);
    extern int tn5250_dbuffer_send_data_for_aid_key(Tn5250DBuffer *This, int k);
+   extern unsigned char *tn5250_dbuffer_field_data(Tn5250DBuffer *This, struct _Tn5250Field *field);
+   extern int tn5250_dbuffer_msg_line(Tn5250DBuffer *This);
 
 #define tn5250_dbuffer_field_count(This) ((This)->field_count)
 #define tn5250_dbuffer_mdt(This) ((This)->master_mdt)
