@@ -5,3 +5,5 @@
 #define CMD_3270_WRITE         0x01
 #define CMD_3270_ERASE_WRITE   0x05
 #define CMD_3270_READ_MODIFIED 0x06
+
+#define ORDER_3270_SF 0x1d
