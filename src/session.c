@@ -65,6 +65,9 @@ static void tn5250_session_write_structured_field(Tn5250Session * This);
 static void tn5250_session_read_screen_immediate(Tn5250Session * This);
 static void tn5250_session_read_input_fields(Tn5250Session * This);
 static void tn5250_session_read_mdt_fields(Tn5250Session * This);
+static void tn5250_session_dup(Tn5250Session * This);
+static int tn5250_session_field_minus (Tn5250Session *This);
+static int tn5250_session_field_exit (Tn5250Session *This);
 static int tn5250_session_valid_wtd_data_char (unsigned char c);
 
 Tn5250Session *tn5250_session_new()
@@ -372,6 +375,11 @@ static void tn5250_session_handle_key(Tn5250Session * This, int cur_key)
       send = 1;
       aidcode = TN5250_SESSION_AID_F24;
       break;
+   case (K_HELP):
+      send = 1;
+      aidcode = TN5250_SESSION_AID_HELP;
+      break;
+
    case (K_HOME):
       if (This->pending_insert) {
 	 tn5250_display_goto_ic(This->dsp);
@@ -467,43 +475,40 @@ static void tn5250_session_handle_key(Tn5250Session * This, int cur_key)
       break;
 
    case (K_FIELDEXIT):
-      curfield = tn5250_table_field_number(This->table, Y, X);
-      field = tn5250_table_field_n(This->table, curfield);
-      if (field == NULL || tn5250_field_is_bypass(field))
-	 tn5250_display_inhibit(This->dsp);
-      else {
-	 tn5250_table_field_exit(This->table, Y, X);
-	 curfield = tn5250_table_next_field(This->table);
-	 field = tn5250_table_field_n(This->table, curfield);
-	 tn5250_display_cursor_set(This->dsp,
-				   tn5250_field_start_row(field) - 1,
-				   tn5250_field_start_col(field) - 1);
-	 tn5250_terminal_update(This->term, This->dsp);
-	 if (tn5250_field_is_auto_enter(field)) {
-	    /* FIXME: Need to set the aidcode here */
-	    send = 1;
-	 }
+      if (tn5250_session_field_exit (This)) {
+	 /* This is an auto-enter field */
+	 send = 1;
+	 aidcode = TN5250_SESSION_AID_ENTER;
+      }
+      break;
+
+   case K_FIELDMINUS:
+      if (tn5250_session_field_minus (This)) {
+	 /* This is an auto-enter field */
+	 send = 1;
+	 aidcode = TN5250_SESSION_AID_ENTER;
       }
       break;
 
    case K_SYSREQ:
-      This->read_opcode = 0; /* We are out of the read. */
       tn5250_session_system_request(This);
       break;
 
    case K_ATTENTION:
-      This->read_opcode = 0; /* We are out of the read. */
       tn5250_session_attention(This);
       break;
 
    case K_PRINT:
       tn5250_session_print(This);
       break;
-      
+
+   case K_DUPLICATE:
+      tn5250_session_dup(This);
+      break;
+
    default:
       TN5250_LOG(("HandleKey: cur_key = %c\n", cur_key));
 
-      /* Field Exit driven by '-' and '+', for Numeric Only and Signed Numbers */
       curfield = tn5250_table_field_number(This->table, Y, X);
       tn5250_table_set_current_field(This->table, curfield);
       field = tn5250_table_field_n(This->table, curfield);
@@ -513,25 +518,32 @@ static void tn5250_session_handle_key(Tn5250Session * This, int cur_key)
 	 break;
       }
 
-      if (cur_key == '+' || cur_key == '-') {
-	 if (tn5250_field_is_num_only(field)
-	     || tn5250_field_is_signed_num(field)) {
-	    tn5250_table_field_exit(This->table, Y, X);
-	    if (cur_key == '-')
-	       tn5250_field_set_minus_zone(field);
-	    curfield = tn5250_table_next_field(This->table);
-	    tn5250_display_cursor_set(This->dsp,
-				 tn5250_field_start_row(field) - 1,
-				tn5250_field_start_col(field) - 1);
-	    tn5250_terminal_update(This->term, This->dsp);
-	    if (tn5250_field_is_auto_enter(field))
+      /* Field Exit driven by '-' and '+', for Numeric Only and Signed Numbers */
+      if (tn5250_field_is_num_only(field) || tn5250_field_is_signed_num(field)) {
+	 int do_break = 0;
+	 switch(cur_key) {
+	 case '+':
+	    if (tn5250_session_field_exit(This)) {
 	       send = 1;
+	       aidcode = TN5250_SESSION_AID_ENTER;
+	    }
+	    do_break = 1;
+	    break;
+
+	 case '-':
+	    if (tn5250_session_field_minus(This)) {
+	       send = 1;
+	       aidcode = TN5250_SESSION_AID_ENTER;
+	    }
+	    do_break = 1;
 	    break;
 	 }
-      }			/* End of '-' and '+' Field Exit Processing */
-      if (cur_key >= K_FIRST_SPECIAL || cur_key < ' ') {
-	 break;
+	 if (do_break)
+	    break;
       }
+
+      if (cur_key >= K_FIRST_SPECIAL || cur_key < ' ')
+	 break;
 
       fieldtype = tn5250_field_type(field);
 
@@ -731,7 +743,7 @@ static void tn5250_session_send_fields(Tn5250Session * This, int aidcode)
    tn5250_buffer_append_byte(&field_buf, Y + 1);
    tn5250_buffer_append_byte(&field_buf, X + 1);
 
-   TN5250_ASSERT(aidcode != 0);
+   /* We can have an aidcode of 0 if we are doing a Read Immediate */
    tn5250_buffer_append_byte(&field_buf, aidcode);
 
    TN5250_LOG(("SendFields: row = %d; col = %d; aid = 0x%02x\n", Y, X, aidcode));
@@ -741,6 +753,7 @@ static void tn5250_session_send_fields(Tn5250Session * This, int aidcode)
     * digit and not transmitting the last digit)? */
    switch (This->read_opcode) {
    case CMD_READ_INPUT_FIELDS:
+      TN5250_ASSERT(aidcode != 0);
       if (tn5250_table_mdt(This->table)) {
 	 field = This->table->field_list;
 	 if (field != NULL) {
@@ -773,6 +786,7 @@ static void tn5250_session_send_fields(Tn5250Session * This, int aidcode)
       break;
 
    case CMD_READ_MDT_FIELDS:
+      TN5250_ASSERT(aidcode != 0);
       field = This->table->field_list;
       if (field != NULL) {
 	 do {
@@ -1213,6 +1227,7 @@ static void tn5250_session_home(Tn5250Session * This)
 static void tn5250_session_system_request(Tn5250Session * This)
 {
    TN5250_LOG(("SystemRequest: entered.\n"));
+   This->read_opcode = 0; /* We are out of the read */
    tn5250_stream_send_packet(This->stream, 0, TN5250_RECORD_FLOW_DISPLAY,
 			     TN5250_RECORD_H_SRQ,
 			     TN5250_RECORD_OPCODE_NO_OP, NULL);
@@ -1221,6 +1236,7 @@ static void tn5250_session_system_request(Tn5250Session * This)
 static void tn5250_session_attention(Tn5250Session * This)
 {
    TN5250_LOG(("Attention: entered.\n"));
+   This->read_opcode = 0; /* We are out of the read. */
    tn5250_stream_send_packet(This->stream, 0, TN5250_RECORD_FLOW_DISPLAY, TN5250_RECORD_H_ATN,
 			     TN5250_RECORD_OPCODE_NO_OP, NULL);
 }
@@ -1659,6 +1675,93 @@ static void tn5250_session_print(Tn5250Session * This)
                              tn5250_buffer_data(&buf));
 
    tn5250_buffer_free(&buf);
+}
+
+/*
+ *    Process the field exit function.  Returns non-zero if this is an auto
+ *    enter field and the auto-enter feature should be invoked.
+ */
+static int tn5250_session_field_exit (Tn5250Session *This)
+{
+   int y, x, curfield;
+   Tn5250Field *field;
+
+   y = tn5250_display_cursor_y (This->dsp);
+   x = tn5250_display_cursor_x (This->dsp);
+
+   field = tn5250_table_field_yx(This->table, y, x);
+   if (field == NULL || tn5250_field_is_bypass(field))
+      tn5250_display_inhibit(This->dsp);
+   else {
+      tn5250_table_field_exit(This->table, y, x);
+      
+      if (tn5250_field_is_auto_enter(field))
+	 return 1;
+
+      curfield = tn5250_table_next_field2(This->table, y, x);
+      field = tn5250_table_field_n(This->table, curfield);
+      tn5250_display_cursor_set(This->dsp,
+				tn5250_field_start_row(field) - 1,
+				tn5250_field_start_col(field) - 1);
+      tn5250_terminal_update(This->term, This->dsp);
+   }
+   return 0;
+}
+
+/*
+ *    Process field minus function (either '-' in a signed numeric field or
+ *    the actual Field Minus key).
+ */
+static int tn5250_session_field_minus (Tn5250Session *This)
+{
+   int y, x, r;
+   Tn5250Field *field;
+
+   y = tn5250_display_cursor_y(This->dsp);
+   x = tn5250_display_cursor_x(This->dsp);
+   
+   field = tn5250_table_field_yx(This->table, y, x);
+   if (field == NULL || tn5250_field_is_bypass(field) 
+	 || !tn5250_field_is_signed_num(field)) {
+      tn5250_display_inhibit(This->dsp);
+      return 0;
+   }
+
+   r = tn5250_session_field_exit(This);
+   tn5250_field_set_minus_zone(field);
+   return r;
+}
+
+/*
+ *    Handle the Dup key ... fill the field from the cursor position to 
+ *    the end of the field with 0x1C.
+ */
+static void tn5250_session_dup(Tn5250Session * This)
+{
+   int y, x, i;
+   Tn5250Field *field;
+
+   y = tn5250_display_cursor_y(This->dsp);
+   x = tn5250_display_cursor_x(This->dsp);
+   
+   field = tn5250_table_field_yx(This->table, y, x);
+   if (field == NULL) {
+      tn5250_display_inhibit(This->dsp);
+      return;
+   }
+
+   /* Hmm, should we really go to operator error mode when operator
+    * hits Dup in a non-Dupable field? */
+   if (!tn5250_field_is_dup_enable(field)) {
+      tn5250_display_inhibit(This->dsp);
+      return;
+   }
+
+   i = tn5250_field_count_left(field, y, x);
+   for(; i < tn5250_field_length(field); i++) {
+      tn5250_field_put_char(field, i, 0x1C);
+      tn5250_display_addch(This->dsp, 0x1C);
+   }
 }
 
 /* vi:set cindent sts=3 sw=3: */
