@@ -1,3 +1,9 @@
+2000-02-11 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+- Removed all tn5250_display_update calls which occur during the processing
+  of the data stream, placed one at the end of the handling of the data
+  stream.  This should make more tolerable on slow connections by avoiding
+  unnecessary display updates.
+
 2000-02-10 Mike Madore <mmadore@blarg.net>
 - Moved printer session specific environment options inside the
   if(printsession) block.

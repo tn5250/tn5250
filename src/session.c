@@ -224,8 +224,10 @@ static void tn5250_session_handle_receive(Tn5250Session * This)
 	 TN5250_ASSERT(0);
       }
 
-      if (!tn5250_record_is_chain_end(This->record))
+      if (!tn5250_record_is_chain_end(This->record)) {
 	 tn5250_session_process_stream(This);
+	 tn5250_display_update (This->display);
+      }
    }
 }
 
@@ -244,7 +246,6 @@ static void tn5250_session_invite(Tn5250Session * This)
    TN5250_LOG(("Invite: entered.\n"));
    This->invited = 1;
    tn5250_display_indicator_clear(This->display, TN5250_DISPLAY_IND_X_CLOCK);
-   tn5250_display_update(This->display);
 }
 
 /****i* lib5250/tn5250_session_cancel_invite
@@ -261,7 +262,6 @@ static void tn5250_session_cancel_invite(Tn5250Session * This)
 {
    TN5250_LOG(("CancelInvite: entered.\n"));
    tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_X_CLOCK);
-   tn5250_display_update(This->display);
    tn5250_stream_send_packet(This->stream, 0, TN5250_RECORD_FLOW_DISPLAY, TN5250_RECORD_H_NONE,
 			     TN5250_RECORD_OPCODE_CANCEL_INVITE, NULL);
    This->invited = 0;
@@ -592,7 +592,6 @@ static void tn5250_session_write_error_code(Tn5250Session * This)
    tn5250_display_set_cursor(This->display, end_y, end_x);
 
    tn5250_display_inhibit(This->display);
-   tn5250_display_update(This->display);
 }
 
 /****i* lib5250/tn5250_session_handle_cc1
@@ -804,7 +803,6 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
    }
 
    tn5250_session_handle_cc2 (This, CC2);
-   tn5250_display_update(This->display);
 }
 
 /****i* lib5250/tn5250_session_handle_cc2
@@ -1054,7 +1052,6 @@ static void tn5250_session_message_on(Tn5250Session * This)
 {
    TN5250_LOG(("MessageOn: entered.\n"));
    tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_MESSAGE_WAITING);
-   tn5250_display_update(This->display);
 }
 
 /****i* lib5250/tn5250_session_message_off
@@ -1072,7 +1069,6 @@ static void tn5250_session_message_off(Tn5250Session * This)
    TN5250_LOG(("MessageOff: entered.\n"));
    tn5250_display_indicator_clear(This->display,
 				  TN5250_DISPLAY_IND_MESSAGE_WAITING);
-   tn5250_display_update(This->display);
 }
 
 /****i* lib5250/tn5250_session_roll
@@ -1107,7 +1103,6 @@ static void tn5250_session_roll(Tn5250Session * This)
       return;
 
    tn5250_display_roll(This->display, top, bot, lines);
-   tn5250_display_update(This->display);
 }
 
 /****i* lib5250/tn5250_session_start_of_field
@@ -1435,7 +1430,6 @@ static void tn5250_session_read_cmd (Tn5250Session * This, int readop)
       tn5250_display_uninhibit(This->display);
 
    This->read_opcode = readop;
-   tn5250_display_update(This->display);
 }
 
 /****i* lib5250/tn5250_session_query_reply
