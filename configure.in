@@ -253,4 +253,4 @@ esac
 AC_MSG_RESULT(${SUBDIRS_ADD:-none})
 AC_SUBST(SUBDIRS_ADD)
 
-AC_OUTPUT(Makefile src/Makefile doc/Makefile linux/Makefile freebsd/Makefile tn5250-config xt5250)
+AC_OUTPUT(Makefile src/Makefile doc/Makefile linux/Makefile freebsd/Makefile win32/Makefile tn5250-config xt5250)

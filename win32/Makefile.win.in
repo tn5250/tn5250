@@ -1,0 +1,125 @@
+#
+#  Directory that TN5250 should be installed into 
+#   (create the dir before doing "make install")
+#
+INSTALLDIR=@installdir@
+
+#
+#  Debugging options:
+#         -g = include debugging symbols (suitable for use with GDB)
+#   -DNDEBUG = The NDEBUG ("no debug") option disables the trace=
+#                 command which is used to send debugging traces to
+#                 the developers.  This option may improve performance.
+DEBUG=@debug@
+
+#  Cursor (i.e. Caret) types:
+#    -DLINE_CURSOR = underline-style cursor
+#    -DNOBLINK     = non-blinking block cursor
+# if neither of these is defined, the default windows cursor is used
+CURSOR=@cursor@
+
+#  
+#  OPENSSL_LIB=flags, etc needed to link to openssl libraries
+#  OPENSSL_INCLUDE=directories needed to include for openssl headers
+#
+OPENSSL_LIB=@openssl_lib@
+OPENSSL_INCLUDE=@openssl_include@
+
+#
+# Names of the object files needed to build lib5250.dll.
+#  
+DLL_OBJS=@lib5250_objs@
+
+#
+# Objects (aside from the DLL) needed to build "tn5250":
+#
+TN5250_OBJS = tn5250-win.o tn5250-res.o winterm.o
+
+# 
+# Objects (aside from lib5250.dll) needed to build "lp5250d":
+#
+LP5250D_OBJS = lp5250d-win.o tn5250-res.o
+
+
+#
+# You shouldn't need to change anything below this line:
+# -----------------------------------------------------------------------
+
+#
+# Directory where lib5250 sources are:
+#  
+SRCDIR=../src
+
+#
+# Programs:
+#
+CC=gcc
+WINDRES=windres
+RM=del
+DLLWRAP=dllwrap
+DLLTOOL=dlltool
+
+ARCH=-mwindows
+PGMS=tn5250.exe lp5250d.exe
+TN5250_LIBS=-L./ -l5250 $(OPENSSL_LIB) -lwsock32 -lcomdlg32 -lwinmm
+LP5250D_LIBS=$(TN5250_LIBS) -lwinspool
+INCLUDES=-I. -I$(SRCDIR) $(OPENSSL_INCLUDE)
+DEFINES=$(CURSOR) $(DEBUG)
+DLL_NAME = lib5250.dll
+DLL_EXP_DEF = lib5250.def
+DLL_EXP_LIB = lib5250.a
+DLL_LDLIBS = $(ARCH) $(INCLUDE) $(OPENSSL_LIB) -lwsock32
+DLL_LDFLAGS =
+DLLWRAP_FLAGS = --driver-name $(CC) --def $(DLL_EXP_DEF)
+
+all: $(DLL_NAME) $(DLL_EXP_LIB) $(PGMS)
+
+install: all strip do-install
+
+tn5250.exe: $(TN5250_OBJS)
+	$(CC) $(DEFINES) -o tn5250 $(TN5250_OBJS) $(ARCH) $(TN5250_LIBS)
+
+lp5250d.exe: $(LP5250D_OBJS)
+	$(CC) $(DEFINES) -o lp5250d $(LP5250D_OBJS) $(ARCH) $(LP5250D_LIBS)
+
+%.o: %.rc
+	$(WINDRES) -i $< -o $@ 
+
+%.o: $(SRCDIR)/%.c
+	$(CC) $(DEFINES) -c $< $(ARCH) $(INCLUDES)
+
+%.o: %.c
+	$(CC) $(DEFINES) -c $< $(ARCH) $(INCLUDES)
+
+$(DLL_NAME): $(DLL_OBJS) $(DLL_EXP_DEF)
+	$(DLLWRAP) $(DLLWRAP_FLAGS) -o $(DLL_NAME) \
+	$(DLL_OBJS) $(DLL_LDFLAGS) $(DLL_LDLIBS)
+
+$(DLL_EXP_LIB): $(DLL_EXP_DEF)
+	$(DLLTOOL) --dllname $(DLL_NAME) --def $(DLL_EXP_DEF) \
+	--output-lib $(DLL_EXP_LIB)
+
+$(DLL_EXP_DEF): $(DLL_OBJS)
+	$(DLLTOOL) --export-all --output-def $@ $(DLL_OBJS)
+
+strip:
+	strip *.exe
+	strip *.dll
+
+do-install:
+	copy tn5250.exe "$(INSTALLDIR)"
+	copy lp5250d.exe "$(INSTALLDIR)"
+	copy lib5250.dll "$(INSTALLDIR)"
+
+clean:
+	$(RM) *.o
+	$(RM) *.def
+	$(RM) *.a
+	$(RM) *.dll
+	$(RM) *.exe
+
+distclean: clean
+	$(RM) tn5250-config.h
+	$(RM) config.h
+	$(RM) Makefile.in
+	$(RM) Makefile
