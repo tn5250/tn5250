@@ -37,6 +37,7 @@
 
 static void scs2ascii_process34 (int *curpos);
 static void scs2ascii_ahpp (int *curpos);
+void scs2ascii_transparent ();
 
 unsigned char curchar;
 unsigned char nextchar;
@@ -51,6 +52,7 @@ main ()
   int ccp = 1;
   int width;
   int length;
+  int cpi;  /* This is unused */
   current_line = 1;
   mpp = 132;
 
@@ -121,7 +123,7 @@ main ()
 	  }
 	case 0x2B:
 	  {
-	    scs_process2b (&width, &length);
+	    scs_process2b (&width, &length, &cpi);
 	    break;
 	  }
 	case 0xFF:

@@ -81,6 +81,7 @@ Tn5250CharMap *map;
 int main()
 {
   int pagewidth, pagelength;  /* These are unused for now */
+  int cpi;  /* This is unused for now */
    current_line = 1;
    new_line = 1;
    new_page = 1;
@@ -163,7 +164,7 @@ int main()
 	    break;
 	 }
       case 0x2B:{
-	    scs_process2b(&pagewidth, &pagelength);
+	    scs_process2b(&pagewidth, &pagelength, &cpi);
 	    break;
 	 }
       case 0xFF:{

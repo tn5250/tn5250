@@ -50,7 +50,7 @@ int scs2pdf_ahpp (int *curpos, int *boldchars);
 int pdf_header ();
 int pdf_catalog (int objnum, int outlinesobject, int pageobject);
 int pdf_outlines (int objnum);
-int pdf_begin_stream (int objnum, int fontname);
+int pdf_begin_stream (int objnum, int fontname, int fontsize);
 int pdf_end_stream ();
 int pdf_stream_length (int objnum, int objlength);
 int pdf_pages (int objnum, int pagechildren, int pages);
@@ -87,6 +87,7 @@ main ()
   int column;
   int new_line = 1;
   int columncheck = 0;
+  int fontsize = 10, newfontsize;
   int boldchars, do_bold;
   char text[255];
   ObjectList = g_array_new (FALSE, FALSE, sizeof (int));
@@ -119,7 +120,7 @@ main ()
 
   g_array_append_val (ObjectList, filesize);
   objcount++;
-  filesize += pdf_begin_stream (objcount, COURIER);
+  filesize += pdf_begin_stream (objcount, COURIER, fontsize);
 #ifdef DEBUG
   fprintf (stderr, "objcount = %d\n", objcount);
 #endif
@@ -128,6 +129,7 @@ main ()
   column = 0;
   boldchars = 0;
   do_bold = 0;
+  newfontsize = 0;
 
   while (!feof (stdin))
     {
@@ -188,9 +190,11 @@ main ()
 	    if ((boldchars > 0) && (do_bold == 0))
 	      {
 		do_bold = 1;
+#ifdef DEBUG
 		fprintf (stderr, "Starting bold font\n");
+#endif
 		streamsize += pdf_process_char ('\0', 1);
-		sprintf (text, "\t\t/F%d 10 Tf\n", COURIER_BOLD);
+		sprintf (text, "\t\t/F%d %d Tf\n", COURIER_BOLD, fontsize);
 		fprintf (outfile, "%s", text);
 		streamsize += strlen (text);
 	      }
@@ -198,7 +202,19 @@ main ()
 	  }
 	case 0x2B:
 	  {
-	    scs_process2b (&pagewidth, &pagelength);
+	    scs_process2b (&pagewidth, &pagelength, &newfontsize);
+	    if (newfontsize > 0)
+	      {
+#ifdef DEBUG
+		fprintf (stderr, "Changing font size to %d\n", newfontsize);
+#endif
+		streamsize += pdf_process_char ('\0', 1);
+		sprintf (text, "\t\t/F%d %d Tf\n", COURIER, newfontsize);
+		fprintf (outfile, "%s", text);
+		streamsize += strlen (text);
+		fontsize = newfontsize;
+		newfontsize = 0;
+	      }
 	    break;
 	  }
 	case 0xFF:
@@ -227,7 +243,7 @@ main ()
 
 		g_array_append_val (ObjectList, filesize);
 		objcount++;
-		filesize += pdf_begin_stream (objcount, COURIER);
+		filesize += pdf_begin_stream (objcount, COURIER, fontsize);
 #ifdef DEBUG
 		fprintf (stderr, "objcount = %d\n", objcount);
 #endif
@@ -256,10 +272,12 @@ main ()
 		boldchars--;
 		if (boldchars == 0)
 		  {
+#ifdef DEBUG
 		    fprintf (stderr, "Ending bold font\n");
+#endif
 		    do_bold = 0;
 		    streamsize += pdf_process_char ('\0', 1);
-		    sprintf (text, "\t\t/F%d 10 Tf\n", COURIER);
+		    sprintf (text, "\t\t/F%d %d Tf\n", COURIER, fontsize);
 		    fprintf (outfile, "%s", text);
 		    streamsize += strlen (text);
 		  }
@@ -482,7 +500,7 @@ pdf_outlines (int objnum)
 }
 
 int
-pdf_begin_stream (int objnum, int fontname)
+pdf_begin_stream (int objnum, int fontname, int fontsize)
 {
   char text[255];
 
@@ -492,8 +510,8 @@ pdf_begin_stream (int objnum, int fontname)
 	   "\t\t/Length %d 0 R\n"
 	   "\t>>\n"
 	   "stream\n"
-	   "\tBT\n" "\t\t/F%d 10 Tf\n" "\t\t36 756 Td\n",
-	   objnum, objnum + 1, fontname);
+	   "\tBT\n" "\t\t/F%d %d Tf\n" "\t\t36 756 Td\n",
+	   objnum, objnum + 1, fontname, fontsize);
 
   fprintf (outfile, "%s", text);
 

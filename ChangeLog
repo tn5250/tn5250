@@ -1,3 +1,8 @@
+2002-03-18 James Rich <james@eaerich.com>
+- Changed scs.c to return the CPI value given.  Added the ability to change
+  CPI in scs2pdf.c.  Modified scs2ascii.c and scs2ps.c to use new function
+  arguments to scs_process2b().
+
 2002-03-18 Scott Klement <klemscot@klements.com>
 - Overrode the TRANSPARENT order in scs2ascii to use it's own routine
   instead of the one in scs.c.  The one in scs.c was writing data to
