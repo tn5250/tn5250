@@ -103,7 +103,11 @@ static void win32_terminal_destroy(Tn5250Terminal *This);
 void tn5250_win32_init_fonts (Tn5250Terminal *This,
                                  const char *myfont80, const char *myfont132);
 static void win32_terminal_font(Tn5250Terminal *This, const char *fontname,
-                         int cols, int rows);
+                         int cols, int rows, int fontwidth, int fontheight);
+void win32_parse_fontspec(const char *fontspec, char *fontname, 
+                          int maxlen, int *w, int *h);
+void win32_calc_default_font_size(HWND hwnd, 
+                          int cols, int rows, int *w, int *h);
 static int win32_terminal_width(Tn5250Terminal * This);
 static int win32_terminal_height(Tn5250Terminal * This);
 static int win32_terminal_flags(Tn5250Terminal * This);
@@ -150,7 +154,11 @@ struct _Tn5250TerminalPrivate {
    int		  show;
    int		  last_width, last_height;
    char *         font_80;
+   int		  font_80_h;
+   int		  font_80_w;
    char *         font_132;
+   int		  font_132_h;
+   int		  font_132_w;
    DWORD          k_buf[MAX_K_BUF_LEN];
    int            k_buf_len;
    int            font_height;
@@ -317,7 +325,11 @@ Tn5250Terminal *tn5250_win32_terminal_new(HINSTANCE hInst,
    r->data->last_width = 0;
    r->data->last_height = 0;
    r->data->font_80 = NULL;
+   r->data->font_80_h = 0;
+   r->data->font_80_w = 0;
    r->data->font_132 = NULL;
+   r->data->font_132_h = 0;
+   r->data->font_132_w = 0;
    r->data->display_ruler = 0;
    r->data->spacing = NULL;
    r->data->caretx = 0;
@@ -597,23 +609,176 @@ void tn5250_win32_set_beep (Tn5250Terminal *This, const char *beepfile)
 void tn5250_win32_init_fonts (Tn5250Terminal *This,
                                  const char *myfont80, const char *myfont132)
 {
+   int size;
+   int h, w;
+   int default_h, default_w;
+
+   win32_calc_default_font_size(This->data->hwndMain, 
+                                80, 25, &default_w, &default_h);
 
    if (myfont80 != NULL) {
-       This->data->font_80 = malloc(strlen(myfont80) + 6);
+       size = strlen(myfont80) + 1;
+       This->data->font_80 = malloc(size+1);
        TN5250_ASSERT (This->data->font_80 !=NULL);
-       strcpy(This->data->font_80, myfont80);
+       win32_parse_fontspec(myfont80, This->data->font_80, size, &w, &h);
+       This->data->font_80_h = h;
+       This->data->font_80_w = w;
    } else {
        This->data->font_80 = NULL;
-   }
-   if (myfont132 != NULL) {
-       This->data->font_132 = malloc(strlen(myfont132) + 6);
-       TN5250_ASSERT (This->data->font_132 !=NULL);
-       strcpy(This->data->font_132, myfont132);
-   } else {
-       This->data->font_132 = NULL;
+       This->data->font_80_h = 0;
+       This->data->font_80_w = 0;
    }
 
-   win32_terminal_font(This, This->data->font_80, 80, 25);
+   if (This->data->font_80_h == 0 || This->data->font_80_w == 0) {
+       This->data->font_80_h = default_h;
+       This->data->font_80_w = default_w;
+   }
+
+   win32_terminal_font(This, This->data->font_80, 80, 25, w, h);
+
+   if (myfont132 != NULL) {
+       size = strlen(myfont132) + 1;
+       This->data->font_132 = malloc(size+1);
+       TN5250_ASSERT (This->data->font_132 !=NULL);
+       win32_parse_fontspec(myfont132, This->data->font_132, size, &w, &h);
+       This->data->font_132_h = h;
+       This->data->font_132_w = w;
+   } else {
+       This->data->font_132 = NULL;
+       if (This->data->font_80!=NULL) {
+           This->data->font_132 =  malloc(strlen(This->data->font_80)+1);
+           TN5250_ASSERT (This->data->font_132 != NULL);
+           strcpy(This->data->font_132, This->data->font_80);
+       }
+       This->data->font_132_h = This->data->font_80_h;
+       This->data->font_132_w = This->data->font_80_w;
+   }
+
+   if (This->data->font_132_h == 0 || This->data->font_132_w == 0) {
+       This->data->font_132_h = default_h;
+       This->data->font_132_w = default_w;
+   }
+}
+
+
+/****i* lib5250/win32_parse_fontspec
+ * NAME
+ *  win32_parse_fontspec
+ * SYNOPSIS
+ *    win32_parse_fontspec ("System-5x10", fontname, sizeof(fontname), &w &h);
+ * INPUTS
+ *    const char  *       fontspec   - 
+ *    char        *       fontname   - 
+ *    int                 maxlen     - 
+ *    int         *       w          - 
+ *    int         *       h          - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
+void win32_parse_fontspec(const char *fontspec, char *fontname, 
+                          int maxlen, int *w, int *h) {
+
+    const char *p;
+    char height[11], width[11];
+    char ch;
+    int namelen = 0;
+    int widthlen = 0;
+    int heightlen = 0;
+    int state = 0;
+
+    p = fontspec;
+    *width = '\0';
+    *height = '\0';
+    *fontname = '\0';
+    
+    while (*p) {
+        ch = *p;
+        switch (state) {
+           case 0:
+              if (ch == ' ') 
+                  break;
+              else 
+                  state++;
+              /* FALLTHROUGH */
+
+           case 1:
+              if (ch == '-') {
+                  state++;
+              } else if (namelen<maxlen) {
+                  namelen++;
+                  fontname[namelen-1] = ch;
+                  fontname[namelen] = '\0';
+              }
+              break;
+
+           case 2:
+              if (ch == 'x' || ch == 'X') {
+                  state++;
+              } else if (widthlen < sizeof(width)) {
+                  widthlen ++;
+                  width[widthlen-1] = ch;
+                  width[widthlen] = '\0';
+              }
+              break;
+
+           case 3:
+              if (ch == 'x' || ch == 'X') {
+                  state++;
+              } else if (heightlen < sizeof(height)) {
+                  heightlen ++;
+                  height[heightlen-1] = ch;
+                  height[heightlen] = '\0';
+              }
+              break;
+        }
+
+        p++;
+    }
+
+    *h = atoi(height);
+    *w = atoi(width);
+
+    TN5250_LOG(("WIN32: font name=%s, height=%d, width=%d\n", fontname,*h,*w));
+    return;
+}
+
+
+/****i* lib5250/win32_calc_default_font_size
+ * NAME
+ *   win32_calc_default_font_size 
+ * SYNOPSIS
+ *    win32_calc_default_font_size (hwnd, cols, rows, &w, &h);
+ * INPUTS
+ *    HWND		  hwnd       -
+ *    int                 cols       -
+ *    int                 rows       -
+ *    int         *       w          - 
+ *    int         *       h          - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
+void win32_calc_default_font_size(HWND hwnd, 
+           int cols, int rows, int *w, int *h) {
+
+   RECT cr;
+   int cli_height, cli_width;
+
+   if (!GetClientRect(hwnd, &cr))
+         return;
+
+   TN5250_LOG(("WIN32: Rows = %d, Cols = %d\n", rows, cols));
+   TN5250_LOG(("WIN32: Client Rect  top=%d, bottom=%d, left=%d, right=%d\n",
+               cr.top, cr.bottom, cr.left, cr.right));
+
+   cli_height = (cr.bottom - cr.top) + 1;
+   cli_width  = (cr.right  - cr.left) + 1;
+
+   *h = cli_height / rows;
+   *w = cli_width / cols;
+
+   TN5250_LOG(("WIN32: defaulting font size to height=%d, width=%d\n",*h,*w));
+     
+   return;
 }
 
 
@@ -621,22 +786,23 @@ void tn5250_win32_init_fonts (Tn5250Terminal *This,
  * NAME
  *    win32_terminal_font
  * SYNOPSIS
- *    win32_terminal_font (This, "Arial", 80, 24);
+ *    win32_terminal_font (This, "Terminal", 80, 24, 8, 16);
  * INPUTS
  *    Tn5250Terminal  *    This       - The win32 terminal object.
  *    const char      *    fontname   - name of font to try
  *    int                  cols       - number of screen cols to size font for
  *    int                  rows       - number of screen rows to size font for
+ *    int                  fontwidth  - width of the font
+ *    int                  fontheight - height of the font
  * DESCRIPTION
- *    This takes the font name, columns & rows that you pass
+ *    This takes the font name, height & width that you pass
  *    and finds the closest match on the system.   It then
  *    re-sizes the terminal window to the size of the font
- *    that it calculated.
+ *    that it used.
  *****/
-static void win32_terminal_font(Tn5250Terminal *This, 
-               const char *fontname, int cols, int rows)  {
+static void win32_terminal_font(Tn5250Terminal *This, const char *fontname,
+                         int cols, int rows, int fontwidth, int fontheight)  {
 
-   int opt_height, opt_width;
    int cli_height, cli_width;
    int win_height, win_width;
    RECT cr, wr;
@@ -644,52 +810,32 @@ static void win32_terminal_font(Tn5250Terminal *This,
    TEXTMETRIC tm;
    HFONT oldfont;
 
+
+/* create a font using the size from our config data */
+
    hdc = GetDC(This->data->hwndMain);
-
-   /* calculate height of our entire window */
-
-   if (!GetWindowRect(This->data->hwndMain, &wr))
-       return;
-   win_height = (wr.bottom - wr.top ) + 1;
-   win_width =  (wr.right  - wr.left) + 1;
-
-
-   /* calculate height of the client portion of the window */
-
-   if (!GetClientRect(This->data->hwndMain, &cr))
-        return;
-   cli_height = (cr.bottom - cr.top ) + 1;
-   cli_width =  (cr.right  - cr.left) + 1;
-
-
-   /* figure out the optimal font size */
-
-   opt_height = cli_height / rows;
-   opt_width =  cli_width  / cols;
-
-
-   /* create a font using a size as close as possible to the optimal
-      size that we calculated */
-
-   This->data->font = CreateFont(opt_height, opt_width, 0, 0, FW_DONTCARE, 
+   This->data->font = CreateFont(fontheight, fontwidth, 0, 0, FW_DONTCARE, 
         FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, 
         CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, FIXED_PITCH|FF_DONTCARE, 
         fontname);
 
-   /* set the new font as active and get rid of the old one */
+/* set the new font as active and get rid of the old one */
 
    oldfont = SelectObject(hdc, This->data->font);
    DeleteObject(oldfont);
 
-   /* calculate the actual size of the font we selected */
+/* calculate the actual size of the font we selected */
 
    GetTextMetrics(hdc, &tm);
    ReleaseDC(This->data->hwndMain, hdc);
    This->data->font_height = tm.tmHeight + tm.tmExternalLeading;
    This->data->font_width = tm.tmAveCharWidth;
+   
+   TN5250_LOG(("WIN32: Using font size:  height=%d, width=%d\n", 
+               This->data->font_height, This->data->font_width));
 
 
-   /* set up the font spacing array for this font */
+/* set up the font spacing array for this font */
    {
       int x;
       if (This->data->spacing != NULL)
@@ -700,10 +846,24 @@ static void win32_terminal_font(Tn5250Terminal *This,
             This->data->spacing[x] = This->data->font_width;
    }
 
-   /* make our window size match the font size */
+
+/* Now figure out what size the Window should be with the new font */
+
+   if (!GetWindowRect(This->data->hwndMain, &wr))
+         return;
+   win_height = (wr.bottom - wr.top) + 1;
+   win_width = (wr.right - wr.left) + 1;
+
+   if (!GetClientRect(This->data->hwndMain, &cr))
+         return;
+   cli_height = (cr.bottom - cr.top) + 1;
+   cli_width  = (cr.right  - cr.left) + 1;
 
    win_height = (win_height - cli_height) + This->data->font_height * rows;
    win_width =  (win_width  - cli_width ) + This->data->font_width  * cols;
+
+
+/* re-calculate the position of the caret (text cursor) */
 
    if (globDisplay != NULL) {
         This->data->caretx = tn5250_display_cursor_x(globDisplay)
@@ -715,12 +875,17 @@ static void win32_terminal_font(Tn5250Terminal *This,
    if (This->data->hwndMain == GetFocus()) 
        win32_hide_caret(hdc, This);
 
+/* make the system resize the window */
+
    if ((!This->data->maximized)&&(!This->data->dont_auto_size)) {
         TN5250_LOG(("WIN32: Re-sizing window to %d by %d\n", win_width, 
                     win_height));
         SetWindowPos(This->data->hwndMain, NULL, 0, 0, win_width, win_height, 
                     SWP_NOMOVE | SWP_NOZORDER);
    }
+
+
+/* draw the new caret */
 
    if (This->data->hwndMain == GetFocus()) {
        hdc = GetDC(This->data->hwndMain);      
@@ -869,12 +1034,14 @@ static void win32_terminal_update(Tn5250Terminal * This, Tn5250Display *display)
               This->data->dont_auto_size = 0;
               win32_terminal_font(This, This->data->font_80, 
                   tn5250_display_width(display),
-                  tn5250_display_height(display)+1);
+                  tn5250_display_height(display)+1,
+                  This->data->font_80_w, This->data->font_80_h);
           } else {
-              This->data->dont_auto_size = 1;
+              This->data->dont_auto_size = 0;
               win32_terminal_font(This, This->data->font_132, 
                   tn5250_display_width(display),
-                  tn5250_display_height(display)+1);
+                  tn5250_display_height(display)+1,
+                  This->data->font_132_w, This->data->font_132_h);
           }
           This->data->last_height = tn5250_display_height(display);
           This->data->last_width  = tn5250_display_width (display);
@@ -1433,7 +1600,7 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
            if (h>0 && w>0) {
               win32_terminal_clear_screenbuf(hwnd, w, h, 1);
               if (globTerm!=NULL && globDisplay!=NULL) {
-                  globTerm->data->resized = 1;
+                  // globTerm->data->resized = 1;
                   win32_terminal_update(globTerm, globDisplay);
               }
            }
