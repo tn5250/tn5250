@@ -152,6 +152,31 @@ AC_CHECK_LIB(socket, main)
 AC_CHECK_LIB(nsl, main)
 
 dnl **
+dnl ** Check for OpenSSL library & associated crypto library
+dnl **
+AC_ARG_WITH(ssl,[  --with-ssl              compile support for OpenSSL encryption into emulator],[
+if test "$with_ssl" != "no"
+then
+     AC_CHECK_LIB(crypto,CRYPTO_num_locks)
+     if test "$ac_cv_lib_crypto_CRYPTO_num_locks" != "yes"
+     then
+             AC_MSG_ERROR([** Unable to find OpenSSL libraries!])
+     fi
+     AC_CHECK_LIB(ssl,SSL_library_init)
+     if test "$ac_cv_lib_ssl_SSL_library_init" != "yes"
+     then
+             AC_MSG_ERROR([** Unable to find OpenSSL libraries!])
+     fi
+fi
+],[
+     AC_CHECK_LIB(crypto,CRYPTO_num_locks)
+     if test "$ac_cv_lib_crypto_CRYPTO_num_locks" = "yes"
+     then
+          AC_CHECK_LIB(ssl,SSL_library_init)
+     fi
+])
+
+dnl **
 dnl ** --with-extra-libs: a must for debugging.
 dnl **
 AC_ARG_WITH(extra-libs,[  --with-extra-libs=libs  List of extra libraries to link against.  This is

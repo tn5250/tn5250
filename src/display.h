@@ -118,7 +118,7 @@ extern void	  tn5250_display_set_cursor_field     (Tn5250Display *This,
 						       Tn5250Field *field);
 extern void	  tn5250_display_set_cursor_home      (Tn5250Display *This);
 extern void	  tn5250_display_set_cursor_next_field(Tn5250Display *This);
-extern void       tn5250_display_set_curosr_prev_field(Tn5250Display *This);
+extern void       tn5250_display_set_cursor_prev_field(Tn5250Display *This);
 
 extern void	  tn5250_display_shift_right	      (Tn5250Display *This,
 						       Tn5250Field *field,
@@ -165,6 +165,9 @@ extern void       tn5250_display_kf_backtab	      (Tn5250Display *This);
 extern void	  tn5250_display_kf_end		      (Tn5250Display *This);
 extern void       tn5250_display_kf_home              (Tn5250Display *This);
 extern void	  tn5250_display_kf_delete            (Tn5250Display *This);
+extern void	  tn5250_display_kf_prevword          (Tn5250Display *This);
+extern void	  tn5250_display_kf_nextword          (Tn5250Display *This);
+extern void	  tn5250_display_kf_fieldhome         (Tn5250Display *This);
 
 #define tn5250_display_dbuffer(This) \
    ((This)->display_buffers)

@@ -109,6 +109,9 @@ extern "C" {
 #define K_DUPLICATE	0524	/* curses KEY_STAB (set tab - good as any) */
 #define K_FIELDMINUS	0526	/* curses KEY_CATAB (clear all tabs - g.a.a.) */
 #define K_FIELDPLUS     0520    /* curses KEY_SF */
+#define K_PREVWORD	0611	/* curses KEY_SLEFT (as good as any) */
+#define K_NEXTWORD	0622	/* curses KEY_SRIGHT (as good as any) */
+#define K_FIELDHOME	0607	/* curses KEY_SHOME (as good as any) */
 #define K_UNKNOW	0xffff
 
 struct _Tn5250Display;

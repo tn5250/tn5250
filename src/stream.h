@@ -38,6 +38,10 @@
 # include <winsock.h>  /* Need for SOCKET type.  GJS 3/3/2000 */
 #endif 
 
+#ifdef HAVE_LIBSSL
+#include <openssl/ssl.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -87,6 +91,11 @@ struct _Tn5250Stream {
    int state;
   long msec_wait;
 
+#ifdef HAVE_LIBSSL
+  SSL *ssl_handle;
+  SSL_CTX *ssl_context;
+#endif
+
 #ifndef NDEBUG
    FILE *debugfile;
 #endif
@@ -95,7 +104,7 @@ struct _Tn5250Stream {
 typedef struct _Tn5250Stream Tn5250Stream;
 /******/
 
-extern Tn5250Stream /*@only@*/ /*@null@*/ *tn5250_stream_open (const char *to);
+extern Tn5250Stream /*@only@*/ /*@null@*/ *tn5250_stream_open (const char *to, struct _Tn5250Config *config);
 extern int tn5250_stream_config (Tn5250Stream *This, struct _Tn5250Config *config);
 extern void tn5250_stream_destroy(Tn5250Stream /*@only@*/ * This);
 extern Tn5250Record /*@only@*/ *tn5250_stream_get_record(Tn5250Stream * This);

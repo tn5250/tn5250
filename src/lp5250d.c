@@ -83,14 +83,10 @@ int main(int argc, char *argv[])
 
     openlog("lp5250d", LOG_PID, LOG_DAEMON);
 
-    stream = tn5250_stream_open (tn5250_config_get(config, "host"));
+    stream = tn5250_stream_open (tn5250_config_get(config, "host"), config);
     if(stream == NULL) {
        syslog(LOG_INFO, "Couldn't connect to %s", 
 		         tn5250_config_get (config,"host"));
-       exit(1);
-    }
-    if (tn5250_stream_config (stream, config) == -1) {
-       syslog(LOG_INFO, "Couldn't connect config to stream?!");
        exit(1);
     }
        

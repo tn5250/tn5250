@@ -81,11 +81,8 @@ int main(int argc, char *argv[])
       tn5250_log_open (tn5250_config_get (config, "trace"));
 #endif
 
-   stream = tn5250_stream_open (tn5250_config_get (config, "host"));
+   stream = tn5250_stream_open (tn5250_config_get (config, "host"), config);
    if (stream == NULL)
-      goto bomb_out;
-
-   if (tn5250_stream_config (stream, config) == -1)
       goto bomb_out;
 
    display = tn5250_display_new ();
@@ -176,8 +173,13 @@ static void syntax()
 
    printf ("tn5250 - TCP/IP 5250 emulator\n\
 Syntax:\n\
-  tn5250 [options] HOST[:PORT]\n\
-\n\
+  tn5250 [options] HOST[:PORT]\n");
+#ifdef HAVE_LIBSSL
+   printf("\
+   To connect using ssl prefix HOST with 'ssl:'.  Example:
+      tn5250 +ssl_verify_server ssl:as400.example.com\n");
+#endif
+   printf ("\n\
 Options:\n\
    map=NAME                Character map (default is '37'):");
    m = tn5250_transmaps;
@@ -193,7 +195,12 @@ Options:\n\
    printf ("\
    trace=FILE              Log session to FILE.\n");
 #endif
-   printf ("
+#ifdef HAVE_LIBSSL
+   printf ("\
+   +/-ssl_verify_server    Verify/don't verify the server's SSL certificate\n\
+   ssl_ca_file=FILE        Use certificate authority (CA) certs from FILE\n");
+#endif
+   printf ("\
    +/-underscores          Use/don't use underscores instead of underline\n\
                            attribute.\n\
    +/-ruler                Draw a ruler pointing to the cursor position\n\

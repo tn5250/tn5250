@@ -1,3 +1,39 @@
+2001-09-28 Scott Klement <klemscot@klements.com>
+- Fixed bug in sslstream.c that would cause the emulator to segfault
+    if "This->config" was NULL.
+
+2001-09-28 Scott Klement <klemscot@klements.com>
+- Fixed bug in conf.c, where boolean keywords (+/-keyword) were
+    never being prefixed, and therefore only the last one in the
+    config file (for a given keyword name) was being used.
+
+2001-09-28 Scott Klement <klemscot@klements.com>
+- Added a "README.ssl" file to explain how to use SSL with tn5250.
+
+2001-09-28 Scott Klement <klemscot@klements.com>
+- Changed tn5250_stream_open to associate the config object with the
+    stream before calling stream_connect()
+- Added config keywords "ssl_verify_server" and "ssl_ca_file" to allow
+    tn5250 to verify the server's SSL certificate
+
+2001-09-25 Scott Klement <klemscot@klements.com>
+- Added an "SSL stream" object for encrypted streams
+- Added "ssl:" type to URL.  (tn5250 ssl:as400.whatever.com)
+- Added autoconf checks for OpenSSL libraries, to enable SSL code
+    when OpenSSL is found, and to ignore it when OpenSSL not found
+
+2001-09-04 Scott Klement <klemscot@klements.com>
+- Improved "next word" and "prev word" key handling
+- Added "field home" (Shift-Home) key handling
+- Mapped Shift-Home to this new key in XTerm
+
+2001-09-03 Scott Klement <klemscot@klements.com>
+- Added "next word" and "prev word" key handling
+- Mapped Shift-Left and Shift-Right to these new keys in XTerm
+
+2001-08-30 Carey Evans  <carey@paradise.net.nz>
+- Add new scs2ps.1 man page, and add +ruler option to tn5250.1 man page.
+
 2001-07-30 Carey Evans  <carey@paradise.net.nz>
 - Updated FieldExit and FieldPlus keys in man page.
 

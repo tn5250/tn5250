@@ -108,6 +108,8 @@ int tn5250_config_load (Tn5250Config *This, const char *filename)
    int done;
    int curitem;
    int loop;
+   int name_len, i;
+   char *name;
 
    /* It is not an error for a config file not to exist. */
    if ((f = fopen (filename, "r")) == NULL)
@@ -132,7 +134,20 @@ int tn5250_config_load (Tn5250Config *This, const char *filename)
 	 len = strlen (scan) - 1;
 	 while (len > 0 && isspace (scan[len]))
 	    scan[len--] = '\0';
-	 tn5250_config_set (This, scan, "1");
+
+	 for (i = 0, name_len = len + 3; i < prefix_stack_size; i++) {
+	    name_len += strlen (prefix_stack[i]) + 1;
+	 }
+	 if ((name = (char*)malloc (name_len)) == NULL)
+	    goto config_error;
+	 name[0] = '\0';
+	 for (i = 0; i < prefix_stack_size; i++) {
+	    strcat (name, prefix_stack[i]);
+	    strcat (name, ".");
+	 }
+         strcat(name, scan);
+	 tn5250_config_set (This, name, "1");
+	 free (name);
 
       } else if (*scan == '-') {
 	 scan++;
@@ -141,11 +156,21 @@ int tn5250_config_load (Tn5250Config *This, const char *filename)
 	 len = strlen (scan) - 1;
 	 while (len > 0 && isspace (scan[len]))
 	    scan[len--] = '\0';
-	 tn5250_config_set (This, scan, "0");
+	 for (i = 0, name_len = len + 3; i < prefix_stack_size; i++) {
+	    name_len += strlen (prefix_stack[i]) + 1;
+	 }
+	 if ((name = (char*)malloc (name_len)) == NULL)
+	    goto config_error;
+	 name[0] = '\0';
+	 for (i = 0; i < prefix_stack_size; i++) {
+	    strcat (name, prefix_stack[i]);
+	    strcat (name, ".");
+	 }
+         strcat(name, scan);
+	 tn5250_config_set (This, name, "0");
+	 free (name);
 
       } else if (strchr (scan, '=')) {
-	 int name_len, i;
-	 char *name;
 
 	 /* Set item. */
 

@@ -35,6 +35,9 @@
 
 /* External declarations of initializers for each type of stream. */
 extern int tn5250_telnet_stream_init (Tn5250Stream *This);
+#ifdef HAVE_LIBSSL
+extern int tn5250_ssl_stream_init (Tn5250Stream *This);
+#endif
 #ifndef NDEBUG
 extern int tn5250_debug_stream_init (Tn5250Stream *This);
 #endif
@@ -54,6 +57,11 @@ static Tn5250StreamType stream_types[] = {
 #endif
    { "telnet:", tn5250_telnet_stream_init },
    { "tn5250:", tn5250_telnet_stream_init },
+#ifdef HAVE_LIBSSL
+   { "ssl:", tn5250_ssl_stream_init },
+   { "telnet-ssl:", tn5250_ssl_stream_init },
+   { "telnets:", tn5250_ssl_stream_init },
+#endif
    { NULL, NULL }
 };
 
@@ -96,7 +104,7 @@ static void streamInit(Tn5250Stream *This, long timeout)
  *    The next protocol to add is SNA.  This will allow the emulator to use 
  *    APPC (LU 6.2) to establish a session with the AS/400.
  *****/
-Tn5250Stream *tn5250_stream_open (const char *to)
+Tn5250Stream *tn5250_stream_open (const char *to, Tn5250Config *config)
 {
    Tn5250Stream *This = tn5250_new(Tn5250Stream, 1);
    Tn5250StreamType *iter;
@@ -106,6 +114,9 @@ Tn5250Stream *tn5250_stream_open (const char *to)
    if (This != NULL) {
 
       streamInit(This, 0);
+
+      if (config != NULL)
+           tn5250_stream_config(This, config);
 
       /* Figure out the stream type. */
       iter = stream_types;

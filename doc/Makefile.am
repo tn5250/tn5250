@@ -1,6 +1,7 @@
 
 man_MANS =		scs2ascii.1\
  			scs2pdf.1\
+			scs2ps.1\
 			tn5250.1\
 			lp5250d.1
 
@@ -32,6 +33,7 @@ HTMLDOCS =		buffer.c.html\
 			session.h.html\
 			slangterm.c.html\
 			slangterm.h.html\
+			sslstream.c.html\
 			stream.c.html\
 			stream.h.html\
 			telnetstr.c.html\
