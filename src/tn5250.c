@@ -212,7 +212,7 @@ bomb_out:
 static int parse_options(int argc, char *argv[])
 {
    int arg;
-   while ((arg = getopt(argc, argv, "m:s:t:T:P:uVpwy:")) != EOF) {
+   while ((arg = getopt(argc, argv, "m:s:t:T:P:uVwy:")) != EOF) {
       switch (arg) {
       case 'm':
 	 mapname = optarg;
@@ -220,6 +220,7 @@ static int parse_options(int argc, char *argv[])
 
       case 'P':
 	 outputcommand = optarg;
+	 printsession = 1;
 	 break;
 
       case 's':
@@ -272,10 +273,6 @@ static int parse_options(int argc, char *argv[])
 	 exit(0);
 	 break;
 
-      case 'p':
-	 printsession = 1;
-	 break;
-
 #ifndef NDEBUG
       case 'w':
 	 debugpause = 0;
@@ -314,6 +311,8 @@ static void syntax()
 	  "Options:\n"
 	  "\t-m map      specify translation map\n"
 	  "\t-s name     specify session name\n"
+	  "\t-P cmd      Indicate this is a printer session and specify the\n"
+	  "\t            print output command.\n"
 #ifndef NDEBUG
 	  "\t-t file     specify trace file\n"
 #endif

@@ -1,12 +1,15 @@
-2000-01-20 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+2000-02-08 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+- Documented `-P cmd' option in usage message, removed `-p' option to 
+  indicate print session as `-P cmd' is required for a working session
+  anyway.
 
+2000-01-20 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 - Use 'TERM' to determine if terminal is an xterm or xterm-5250, as it
   *works* :) (Thanks to Frank Richter for pointing out bug).
 - Apply Frank Richter's cursor-position-on-status-line patch. 
 - Implement rest of keys for #defined USE_OWN_KEY_PARSING.
 
 2000-01-17 Jay 'Eraserhead' Felice <jasonf@nacs.net>
-
 - Finally object-orientized translation map stuff, but will have to be
   modified later to handle wide characters/DBCS characters/Unicode - 
   however we intend to support different character sets better.
@@ -42,7 +45,6 @@
   ugly, but no-one produces a tool as good as Javadoc which works on C.
 
 2000-01-07 Jay 'Eraserhead' Felice <jasonf@nacs.net>
-
 - tn5250_dbuffer_send_data_for_fields(): A *SET* bit inhibits the transmission
   of field data, not a clear one.  Also, fine point of spec, all three aid key
   bytes must be present before the 5294 controller will obey any of them.
