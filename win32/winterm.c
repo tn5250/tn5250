@@ -399,6 +399,7 @@ Tn5250Terminal *tn5250_win32_terminal_new(HINSTANCE hInst,
    r->data->dont_auto_size = 0;
    r->data->unix_like_copy = 0;
    r->data->resize_fonts = 0;
+   r->data->local_print = 0;
    r->data->caret_style = CARETSTYLE_NOBLINK;
    r->data->pd = NULL;
 
@@ -1241,15 +1242,12 @@ static void win32_do_terminal_update(HDC hdc, Tn5250Terminal *This,
       }			
 
       if (len>0) 
-          win32_terminal_draw_text(bmphdc, attr, text, len, mx, my,
-            This->data->spacing);
+          win32_terminal_draw_text(hdc, attr, text, len, mx, my,
+            This->data->spacing, map, ox, oy);
       len = 0;
 
    }
 
-   This->data->caretok = 0;
-
-   win32_terminal_update_indicators(This, display);
    return;
 }
 
