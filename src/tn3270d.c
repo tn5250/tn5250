@@ -73,18 +73,53 @@ int i;
 struct sockaddr_in clientname;
 size_t size;
 fd_set rset;
+Tn5250Config * config = NULL;
+int clientport;
+int manageport;
+GSList * addrlist;
 
 int
 main(void)
 {
   int rc;
 
+  config = tn5250_config_new();
+
+  if (tn5250_config_load(config, "tn3270d.conf") == -1) {
+    tn5250_config_unref(config);
+    exit(1);
+  }
+
+  clientport = tn5250_config_get_int(config, "clientport");
+  if(clientport == 0) {
+    clientport = DEFAULT_CLIENT_PORT;
+  }
+
+  manageport = tn5250_config_get_int(config, "manageport");
+  if(manageport == 0) {
+    manageport = DEFAULT_MANAGE_PORT;
+  }
+
+  addrlist = (GSList *)tn5250_config_get(config, "allowed");
+
   printf("Starting tn3270d server...\n");
   
+  printf("Client port     = %d\n", clientport);
+  printf("Management port = %d\n", manageport);
+
+  if(addrlist != NULL) {
+    GSList * iter = addrlist;
+    while(iter != NULL)
+      {
+	printf("Address = %s\n", iter->data);
+	iter = g_slist_next(iter);
+      }
+  }
+
   tn5250_daemon(0,0,1);
 
-  sock = tn5250_make_socket (CLIENT_PORT);
-  mgr_sock = tn5250_make_socket(MANAGE_PORT);
+  sock = tn5250_make_socket (clientport);
+  mgr_sock = tn5250_make_socket(manageport);
 
   /* Create the client socket and set it up to accept connections. */
   if (listen (sock, 1) < 0)

@@ -21,40 +21,52 @@
 #define MAX_PREFIX_STACK 50
 
 static void tn5250_config_str_destroy (Tn5250ConfigStr *This);
-static Tn5250ConfigStr *tn5250_config_str_new (const char *name, const char *value);
+static Tn5250ConfigStr *tn5250_config_str_new (const char *name, 
+					       const int type,
+					       const gpointer value);
 static Tn5250ConfigStr *tn5250_config_get_str (Tn5250Config *This, const char *name);
 
 /*** Tn5250ConfigStr ***/
 
 static void tn5250_config_str_destroy (Tn5250ConfigStr *This)
 {
-   if (This->name != NULL)
-      free (This->name);
-   if (This->value != NULL)
-      free (This->value);
-   free (This);
+  GSList * iter;
+
+  g_free (This->name);
+  
+  if(This->type == CONFIG_STRING) {
+    g_free (This->value);
+  } else {
+    iter = This->value;
+    while(iter != NULL)
+      {
+	g_free(iter->data);
+	iter = g_slist_next(iter);
+      }
+    g_slist_free(This->value);
+  }
+  free (This);
 }
 
-static Tn5250ConfigStr *tn5250_config_str_new (const char *name, const char *value)
+static Tn5250ConfigStr *tn5250_config_str_new (const char *name, 
+					       const int type,
+					       const gpointer value)
 {
-   Tn5250ConfigStr *This = tn5250_new (Tn5250ConfigStr, 1);
-   if (This == NULL)
-      return NULL;
+   Tn5250ConfigStr *This = g_new (Tn5250ConfigStr, 1);
 
-   This->name = (char *)malloc (strlen (name)+1);
-   if (This->name == NULL) {
-      free (This);
-      return NULL;
-   }
+   This->name = (char *)g_malloc (strlen (name)+1);
+
    strcpy (This->name, name);
 
-   This->value = (char *)malloc (strlen (value)+1);
-   if (This->value == NULL) {
-      free (This->name);
-      free (This);
-      return NULL;
+   This->type = type;
+
+   if(This->type == CONFIG_STRING) {
+     This->value = (char *)g_malloc (strlen (value)+1);
+
+     strcpy (This->value, value);
+   } else {
+     This->value = value;
    }
-   strcpy (This->value, value);
 
    return This;
 }
@@ -63,17 +75,10 @@ static Tn5250ConfigStr *tn5250_config_str_new (const char *name, const char *val
 
 Tn5250Config *tn5250_config_new ()
 {
-   Tn5250Config *This = tn5250_new (Tn5250Config, 1);
-   if (This == NULL)
-      return NULL;
+   Tn5250Config *This = g_new (Tn5250Config, 1);
 
    This->ref = 1;
    This->vars = NULL;
-
-   /* Set some default values. */
-   /* FIXME: Move this to a better place, like in display.c */
-   /*   tn5250_config_set (This, "env.TERM", "IBM-3179-2");  */
-   /*   tn5250_config_set (This, "map", "37"); */
 
    return This;
 }
@@ -86,19 +91,20 @@ Tn5250Config *tn5250_config_ref (Tn5250Config *This)
 
 void tn5250_config_unref (Tn5250Config *This)
 {
-   if (-- This->ref == 0) {
-      Tn5250ConfigStr *iter, *next;
+  GSList * next;
+  
+  if(-- This->ref == 0) {
+    next = This->vars;
 
-      /* Destroy all vars. */
-      if ((iter = This->vars) != NULL) {
-	 do {
-	    next = iter->next;
-	    tn5250_config_str_destroy (iter);
-	    iter = next;
-	 } while (iter != This->vars);
+    while(next != NULL)
+      {
+	tn5250_config_str_destroy(next->data);
+	next = g_slist_next(next);
       }
-      free (This);
-   }
+    g_slist_free(This->vars);
+    g_free(This);
+  }
+
 }
 
 int tn5250_config_load (Tn5250Config *This, const char *filename)
@@ -109,10 +115,10 @@ int tn5250_config_load (Tn5250Config *This, const char *filename)
    int len;
    int prefix_stack_size = 0;
    char *prefix_stack[MAX_PREFIX_STACK];
-   char * list[100]; 
+   GSList * list; 
    int done;
-   int curitem;
-   int loop;
+   char * curitem;
+   GSList * temp;
 
    /* It is not an error for a config file not to exist. */
    if ((f = fopen (filename, "r")) == NULL)
@@ -137,7 +143,7 @@ int tn5250_config_load (Tn5250Config *This, const char *filename)
 	 len = strlen (scan) - 1;
 	 while (len > 0 && isspace (scan[len]))
 	    scan[len--] = '\0';
-	 tn5250_config_set (This, scan, "1");
+	 tn5250_config_set (This, scan, CONFIG_STRING, "1");
 
       } else if (*scan == '-') {
 	 scan++;
@@ -146,7 +152,7 @@ int tn5250_config_load (Tn5250Config *This, const char *filename)
 	 len = strlen (scan) - 1;
 	 while (len > 0 && isspace (scan[len]))
 	    scan[len--] = '\0';
-	 tn5250_config_set (This, scan, "0");
+	 tn5250_config_set (This, scan, CONFIG_STRING, "0");
 
       } else if (strchr (scan, '=')) {
 	 int name_len, i;
@@ -164,10 +170,10 @@ int tn5250_config_load (Tn5250Config *This, const char *filename)
 	    name_len += strlen (prefix_stack[i]) + 1;
 	 }
 
-	 if ((name = (char*)malloc (name_len)) == NULL)
-	    goto config_error;
+	 name = (char*)g_malloc (name_len);
 
 	 name[0] = '\0';
+
 	 for (i = 0; i < prefix_stack_size; i++) {
 	    strcat (name, prefix_stack[i]);
 	    strcat (name, ".");
@@ -181,7 +187,7 @@ int tn5250_config_load (Tn5250Config *This, const char *filename)
 	    scan++;
 
 	 if (*scan != '=') {
-	    free (name);
+	    g_free (name);
 	    goto config_error;
 	 }
 	 scan++;
@@ -191,7 +197,7 @@ int tn5250_config_load (Tn5250Config *This, const char *filename)
 
 	 if(*scan == '[') {
 	   done = 0;
-	   curitem = 0;
+	   list = NULL;
 	   while(!done) {
 	     fgets (buf, sizeof(buf)-1, f);
 	     buf[sizeof (buf)-1] = '\0';
@@ -206,25 +212,22 @@ int tn5250_config_load (Tn5250Config *This, const char *filename)
 	     if(*scan == ']') {
 	       done = 1;
 	     } else {
-		list[curitem] = malloc(strlen(scan)+1);
-		strcpy(list[curitem],scan);
-		curitem++;
+		curitem = g_malloc(strlen(scan)+1);
+		strcpy(curitem, scan);
+		curitem[strlen(curitem)] = '\0';
+		list = g_slist_append(list, curitem);
 	     }
-	
 	   }
-	   for(loop=0;loop < curitem; loop++) {
-	     printf("%s\n", list[loop]);
-	   }
-
-
+	   tn5250_config_set(This, name, CONFIG_LIST, (gpointer)list); 
+	     
 	 } else {
 
 	   len = strlen (scan) - 1;
 	   while (len > 0 && isspace (scan[len]))
 	     scan[len--] = '\0';
 
-	   tn5250_config_set (This, name, scan);
-	   free (name);
+	   tn5250_config_set (This, name, CONFIG_STRING, scan);
+	   g_free (name);
 	 }
       } else if (strchr (scan, '{')) {
 
@@ -237,8 +240,7 @@ int tn5250_config_load (Tn5250Config *This, const char *filename)
 	    goto config_error; /* Missing section name. */
 
 	 TN5250_ASSERT (prefix_stack_size < MAX_PREFIX_STACK);
-	 prefix_stack[prefix_stack_size] = (char*)malloc (len+1);
-	 TN5250_ASSERT (prefix_stack[prefix_stack_size] != NULL);
+	 prefix_stack[prefix_stack_size] = (char*)g_malloc (len+1);
 
 	 memcpy (prefix_stack[prefix_stack_size], scan, len);
 	 prefix_stack[prefix_stack_size][len] = '\0';
@@ -258,8 +260,7 @@ int tn5250_config_load (Tn5250Config *This, const char *filename)
 	 TN5250_ASSERT (prefix_stack_size > 0);
 	 prefix_stack_size--;
 
-	 if (prefix_stack[prefix_stack_size] != NULL)
-	    free (prefix_stack[prefix_stack_size]);
+	 g_free (prefix_stack[prefix_stack_size]);
 
       } else
 	 goto config_error; /* Garbage line. */
@@ -269,14 +270,14 @@ int tn5250_config_load (Tn5250Config *This, const char *filename)
       goto config_error;
 
    fclose (f);
+
    return 0;
 
 config_error:
 
    while (prefix_stack_size > 0) {
       prefix_stack_size--;
-      if (prefix_stack[prefix_stack_size] != NULL)
-	 free (prefix_stack[prefix_stack_size]);
+      g_free (prefix_stack[prefix_stack_size]);
    }
    fclose (f);
    return -1;
@@ -295,24 +296,21 @@ int tn5250_config_load_default (Tn5250Config *This)
       perror (SYSCONFDIR "/tn5250rc");
       return -1;
    }
-   
+
    pwent = getpwuid (getuid ());
    if (pwent == NULL) {
       perror ("getpwuid");
       return -1;
    }
 
-   dir = (char *)malloc (strlen (pwent->pw_dir) + 12);
-   if (dir == NULL) {
-      perror ("malloc");
-      return -1;
-   }
+   dir = (char *)g_malloc (strlen (pwent->pw_dir) + 12);
 
    strcpy (dir, pwent->pw_dir);
    strcat (dir, "/.tn5250rc");
    if ((ec = tn5250_config_load (This, dir)) == -1)
       perror (dir);
-   free (dir);
+   g_free (dir);
+
    return ec;
 }
 
@@ -328,24 +326,23 @@ int tn5250_config_parse_argv (Tn5250Config *This, int argc, char **argv)
       if (argv[argn][0] == '+') {
 	 /* Set boolean option. */
 	 char *opt = argv[argn] + 1;
-	 tn5250_config_set (This, opt, "1");
+	 tn5250_config_set (This, opt, CONFIG_STRING, "1");
       } else if (argv[argn][0] == '-') {
 	 /* Clear boolean option. */
 	 char *opt = argv[argn] + 1;
-	 tn5250_config_set (This, opt, "0");
+	 tn5250_config_set (This, opt, CONFIG_STRING, "0");
       } else if (strchr (argv[argn], '=')) {
 	 /* Set string option. */
 	 char *opt;
 	 char *val = strchr (argv[argn], '=') + 1;
-	 opt = (char*)malloc (strchr(argv[argn], '=') - argv[argn] + 3);
-	 if (opt == NULL)
-	    return -1; /* FIXME: Produce error message. */
+	 opt = (char*)g_malloc (strchr(argv[argn], '=') - argv[argn] + 3);
+
 	 memcpy (opt, argv[argn], strchr(argv[argn], '=') - argv[argn] + 1);
 	 *strchr (opt, '=') = '\0';
-	 tn5250_config_set (This, opt, val);
+	 tn5250_config_set (This, opt, CONFIG_STRING, val);
       } else {
 	 /* Should be profile name/connect URL. */
-	 tn5250_config_set(This, "host", argv[argn]);
+	 tn5250_config_set(This, "host", CONFIG_STRING, argv[argn]);
 	 tn5250_config_promote(This, argv[argn]);
       }
       argn++;
@@ -370,28 +367,37 @@ int tn5250_config_get_bool (Tn5250Config *This, const char *name)
 	    || !strcmp (v,"false")));
 }
 
-void tn5250_config_set (Tn5250Config *This, const char *name, const char *value)
+int 
+tn5250_config_get_int (Tn5250Config *This, const char *name)
+{
+   const char *v = tn5250_config_get (This, name);
+   
+   if(v == NULL) {
+     return 0;
+   } else {
+     return(atoi(v));
+   }
+
+}
+
+void tn5250_config_set (Tn5250Config *This, const char *name, 
+			const int type, const  gpointer value)
 {
    Tn5250ConfigStr *str = tn5250_config_get_str (This, name);
 
    if (str != NULL) {
-      if (str->value != NULL)
-	 free (str->value);
-      str->value = (char*)malloc (strlen (value) + 1);
-      TN5250_ASSERT (str->value != NULL);
-      strcpy (str->value, value);
-      return;
+     if(str->type == CONFIG_STRING) {
+       g_free (str->value);
+       str->value = (char*)g_malloc (strlen (value) + 1);
+
+       strcpy (str->value, value);
+       return;
+     }
    }
 
-   str = tn5250_config_str_new (name,value);
-   if (This->vars == NULL)
-      This->vars = str->next = str->prev = str;
-   else {
-      str->next = This->vars;
-      str->prev = This->vars->prev;
-      str->next->prev = str;
-      str->prev->next = str;
-   }
+   str = tn5250_config_str_new (name,type, value);
+
+   This->vars = g_slist_append(This->vars, str);
 }
 
 void tn5250_config_unset (Tn5250Config *This, const char *name)
@@ -401,14 +407,8 @@ void tn5250_config_unset (Tn5250Config *This, const char *name)
    if ((str = tn5250_config_get_str (This, name)) == NULL)
       return; /* Not found */
 
-   if (This->vars == str)
-      This->vars = This->vars->next;
-   if (This->vars == str)
-      This->vars = NULL;
-   else {
-      str->next->prev = str->prev;
-      str->prev->next = str->next;
-   }
+   This->vars = g_slist_remove(This->vars, str);
+
    tn5250_config_str_destroy (str);
 }
 
@@ -417,33 +417,52 @@ void tn5250_config_unset (Tn5250Config *This, const char *name)
  */
 void tn5250_config_promote (Tn5250Config *This, const char *prefix)
 {
-   Tn5250ConfigStr *iter;
+   GSList * iter;
+   Tn5250ConfigStr * data;
+
    if ((iter = This->vars) == NULL)
       return;
+
    do {
-      if (strlen(prefix) <= strlen(iter->name) + 2
-	    && !memcmp (iter->name, prefix, strlen(prefix))
-	    && iter->name[strlen(prefix)] == '.') {
-	 tn5250_config_set (This, iter->name + strlen(prefix) + 1, iter->value);
-      }
-      iter = iter->next;
-   } while (iter != This->vars);
+     data = (Tn5250ConfigStr *)iter->data;
+     if (strlen(prefix) <= strlen( data->name ) + 2
+	 && !memcmp(data->name, prefix, strlen(prefix))
+	 && data->name[strlen(prefix)] == '.') {
+       tn5250_config_set(This, data->name 
+			 + strlen(prefix) + 1,
+			 data->type,
+			 data->value);
+     } 
+     iter = g_slist_next(iter);
+   } while(iter != NULL);
+
 }
 
 static Tn5250ConfigStr *tn5250_config_get_str (Tn5250Config *This, const char *name)
 {
-   Tn5250ConfigStr *iter;
+  GSList * node;
+  Tn5250ConfigStr * result;
 
-   if ((iter = This->vars) == NULL)
-      return NULL; /* No vars */
+  node = This->vars;
 
-   do {
-      if (!strcmp (iter->name, name))
-	 return iter;
-      iter = iter->next;
-   } while (iter != This->vars);
+  if ( node == NULL)
+    {
+      return(NULL);
+    }
 
-   return NULL; /* Not found */
+  do {
+    result = (Tn5250ConfigStr *)node->data;
+
+    if( !strcmp(result->name, name) )
+      {
+	return(result);
+      }
+    node = g_slist_next(node);
+  } while(node != NULL);
+
+  return(NULL);
+	  
+
 }
 
 /* vi:set sts=3 sw=3: */

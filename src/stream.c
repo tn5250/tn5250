@@ -288,7 +288,7 @@ void tn5250_stream_setenv(Tn5250Stream * This, const char *name, const char *val
    }
    strcpy (name_buf, "env.");
    strcat (name_buf, name);
-   tn5250_config_set (This->config, name_buf, value);
+   tn5250_config_set (This->config, name_buf, CONFIG_STRING, (gpointer)value);
    free (name_buf);
 }
 

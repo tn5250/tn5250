@@ -33,5 +33,5 @@
  * If you do not wish that, delete this exception notice. 
  */
 
-#define CLIENT_PORT 2023
-#define MANAGE_PORT 5023
+#define DEFAULT_CLIENT_PORT 2023
+#define DEFAULT_MANAGE_PORT 5023
