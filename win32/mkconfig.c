@@ -100,6 +100,8 @@ manual_def mredefs[] =
   {"VERSION",        DEF_VERSION},
   {NULL, -1},
 };
+
+char my_redef[128];
   
 int get_package_version(char *version, char *package, int maxlen);
 int get_makefile_var(const char *fn, const char *var, char *value, int maxlen);
@@ -116,6 +118,8 @@ int create_makefile(const char *infile, const char *outfile,
                      const char *debug, const char *cursor);
 void replacedata(const char *from, const char *to, char *line, int maxlen);
 int make_root_makefile(const char *fn);
+char *manual_redef(int redefnum, char with_openssl, const char *package, 
+                  const char *version);
 
 
 
@@ -510,86 +514,90 @@ int create_tn5250_config_h(const char *infile, const char *outfile,
       FILE *in;
       FILE *out;
       char rec[MAXBUFSIZE+1];
+      char *s;
       int changed, i;
+      struct stat st;
 
-      in = fopen(infile, "r");
-      if (in==NULL) {
-           fprintf(stderr, "%s: %s\n", infile, strerror(errno));
-           return -1;
-      }
+      if (stat(infile, &st)==0) {       /* tn5250-config.h.in found */
 
-      out = fopen(outfile, "w");
-      if (out==NULL) {
-           fprintf(stderr, "%s: %s\n", outfile, strerror(errno));
-           fclose(in);
-           return -1;
-      }
+           in = fopen(infile, "r");
+           if (in==NULL) {
+                fprintf(stderr, "%s: %s\n", infile, strerror(errno));
+                return -1;
+           }
 
-      while (fgets(rec, MAXBUFSIZE, in)!=NULL) {
-        changed = 0;
-        if (strstr(rec, "#undef")!=NULL) {
-            i = 0; 
-            while (redefs[i].from!=NULL) {
-               if (strstr(rec, redefs[i].from)!=NULL) {
-                    fprintf(out, "#define %s\n", redefs[i].to);
-                    changed=1;
-                    break;
-               }
-               i++;
-            }
-            if (!changed) {
-               i = 0;
-               while (mredefs[i].from!=NULL) {
-                  if (strstr(rec, mredefs[i].from)!=NULL) {
-                      switch (mredefs[i].def) {
-                        case DEF_HAVE_LIBCRYPTO:
-                          if (with_openssl=='y') {
-                               fprintf(out, "#define HAVE_LIBCRYPTO 1\n");
+           out = fopen(outfile, "w");
+           if (out==NULL) {
+                fprintf(stderr, "%s: %s\n", outfile, strerror(errno));
+                fclose(in);
+                return -1;
+           }
+
+           while (fgets(rec, MAXBUFSIZE, in)!=NULL) {
+             changed = 0;
+             if (strstr(rec, "#undef")!=NULL) {
+                 i = 0; 
+                 while (redefs[i].from!=NULL) {
+                    if (strstr(rec, redefs[i].from)!=NULL) {
+                         fprintf(out, "#define %s\n", redefs[i].to);
+                         changed=1;
+                         break;
+                    }
+                    i++;
+                 }
+                 if (!changed) {
+                    i = 0;
+                    while (mredefs[i].from!=NULL) {
+                       if (strstr(rec, mredefs[i].from)!=NULL) {
+                           s = manual_redef(mredefs[i].def, with_openssl, 
+                                 package, version);
+                           if (s[0]!='\0') {
                                changed = 1;
-                          }
-                          break;
-                        case DEF_HAVE_LIBSSL:
-                          if (with_openssl=='y') {
-                               fprintf(out, "#define HAVE_LIBSSL 1\n");
-                               changed = 1;
-                          }
-                          break;
-                        case DEF_SIZEOF_INT:
-                          fprintf(out, "#define SIZEOF_INT %d\n", sizeof(int));
-                          changed = 1;
-                          break;
-                        case DEF_SIZEOF_LONG:
-                          fprintf(out,"#define SIZEOF_LONG %d\n",sizeof(long));
-                          changed = 1;
-                          break;
-                        case DEF_SIZEOF_SHORT:
-                         fprintf(out,"#define SIZEOF_SHORT %d\n",sizeof(short));
-                          changed = 1;
-                          break;
-                        case DEF_PACKAGE:
-                          fprintf(out,"#define PACKAGE \"%s\"\n", package);
-                          changed = 1;
-                          break;
-                        case DEF_VERSION:
-                          fprintf(out,"#define VERSION \"%s\"\n", version);
-                          changed = 1;
-                          break;
-                      }
-                  }
-                  i++;
-               }
-            }
-        }
-        if (!changed)  {
-            fprintf(out, "%s", rec);
-        }
+                               fprintf(out, "%s\n", s);
+                           }
+                       }
+                       i++;
+                    }
+                 }
+             }
+             if (!changed)  {
+                 fprintf(out, "%s", rec);
+             }
+          }
+     
+          fclose(in);
+          fclose(out);
+
      }
+     else {       /* tn5250-config.h.in not found */
 
-     fclose(in);
-     fclose(out);
+           out = fopen(outfile, "w");
+           if (out==NULL) {
+                fprintf(stderr, "%s: %s\n", outfile, strerror(errno));
+                fclose(in);
+                return -1;
+           }
 
+           i = 0; 
+           while (redefs[i].from!=NULL) {
+                fprintf(out, "#define %s\n", redefs[i].to);
+		i++;
+           }
+      
+           i = 0;
+           while (mredefs[i].from!=NULL) {
+                s = manual_redef(mredefs[i].def, with_openssl, 
+                           package, version);
+                if (s[0]!='\0') {
+                      fprintf(out, "%s\n", s);
+                }
+		i++;
+           }
+
+           fclose(out);
+     }
      return 0;
-}
+}     
 
 
 /****f* create_config_h
@@ -781,4 +789,55 @@ int make_root_makefile(const char *fn) {
    fprintf(out, "\tmake -f win32\\Makefile install\n");
 
    fclose(out);
+}
+
+
+/****f* manual_redef
+ * NAME
+ *    manual_redef
+ * SYNOPSIS
+ *    manual_redef (DEF_HAVE_LIBCRYPTO, 1, "tn5250","0.16.3");
+ * INPUTS
+ *    int                redefnum     -
+ *    int                with_openssl -
+ *    const char    *    package      -
+ *    const char    *    version      -
+ * DESCRIPTION
+ *    Certain #define's that need to be put in config.h
+ *    require some calculations to determine what the macro
+ *    should be.   This calculates these "manual redefinitions"
+ *    and returns the string to put in the config.h file.
+ *****/
+char *manual_redef(int redefnum, char with_openssl, 
+                   const char *package, const char *version) {
+
+     switch (redefnum) {
+       case DEF_HAVE_LIBCRYPTO:
+         if (with_openssl=='y') {
+              strcpy(my_redef, "#define HAVE_LIBCRYPTO 1");
+         }
+         break;
+       case DEF_HAVE_LIBSSL:
+         if (with_openssl=='y') {
+              strcpy(my_redef, "#define HAVE_LIBSSL 1");
+         }
+         break;
+       case DEF_SIZEOF_INT:
+         sprintf(my_redef, "#define SIZEOF_INT %d\n", sizeof(int));
+         break;
+       case DEF_SIZEOF_LONG:
+         sprintf(my_redef, "#define SIZEOF_LONG %d\n", sizeof(long));
+         break;
+       case DEF_SIZEOF_SHORT:
+         sprintf(my_redef,"#define SIZEOF_SHORT %d\n",sizeof(short));
+         break;
+       case DEF_PACKAGE:
+         sprintf(my_redef,"#define PACKAGE \"%s\"\n", package);
+         break;
+       case DEF_VERSION:
+         sprintf(my_redef,"#define VERSION \"%s\"\n", version);
+         break;
+     }
+
+     return my_redef;
 }

@@ -1,3 +1,8 @@
+2002-03-15 Scott Klement <klemscot@klements.com>
+- Added code to win32\mkconfig.c that allows us to build tn5250
+   straight from CVS under Windows.  (Previously, it only worked
+   on versions that had been created with "make dist" under Un*x)
+
 2002-03-14 Scott Klement <klemscot@klements.com>
 - Removed Jay's changes to tn5250-config.in.  We don't use glib in
    the 0-16 branch of tn5250.
