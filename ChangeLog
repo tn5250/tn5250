@@ -1,3 +1,6 @@
+2000-05-24 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- SIGCHLD/SIGCLD #ifdef magic; should now compile on *BSD again.
+
 2000-05-23 Mike Madore <mmadore@turbolinux.com>
 - More work on 5250 server.  Server now runs as a daemon and you can connect
   to it multiple times with different tn5250 clients.
