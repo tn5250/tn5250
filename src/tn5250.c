@@ -198,7 +198,7 @@ Options:\n\
 #ifdef HAVE_LIBSSL
    printf ("\
    +/-ssl_verify_server    Verify/don't verify the server's SSL certificate\n\
-   ssl_ca_file=FILE        Use certificate authority (SA) certs from FILE\n");
+   ssl_ca_file=FILE        Use certificate authority (CA) certs from FILE\n");
 #endif
    printf ("\
    +/-underscores          Use/don't use underscores instead of underline\n\
