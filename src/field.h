@@ -209,6 +209,8 @@ typedef struct _Tn5250Field Tn5250Field;
         ((This)->continued_middle)
 #define tn5250_field_is_continued_last(This) \
         ((This)->continued_last)
+#define tn5250_field_is_wordwrap(This) \
+        ((This)->wordwrap)
 
 
 #define tn5250_field_attribute(This) \

@@ -775,6 +775,49 @@ tn5250_dbuffer_del (Tn5250DBuffer * This, int fieldid, int shiftcount)
 }
 
 
+/****f* lib5250/tn5250_dbuffer_del_this_field_only
+ * NAME
+ *    tn5250_dbuffer_del_this_field_only
+ * SYNOPSIS
+ *    tn5250_dbuffer_del_this_field_only (This, shiftcount);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ *    int                  shiftcount - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
+void
+tn5250_dbuffer_del_this_field_only (Tn5250DBuffer * This, int shiftcount)
+{
+  /* This function is actually the original tn5250_dbuffer_del() function
+   * without the continuous field support.  Generally, tn5250_dbuffer_del()
+   * should be used and not this function.  This function should only be
+   * when you need to delete a character from a single field within a
+   * continuous field group.  The only this should ever be necessary is
+   * when deleting a character from a wordwrap field.
+   */
+  int x = This->cx, y = This->cy, fwdx, fwdy, i;
+
+  for (i = 0; i < shiftcount; i++)
+    {
+      fwdx = x + 1;
+      fwdy = y;
+      if (fwdx == This->w)
+	{
+	  fwdx = 0;
+	  fwdy++;
+	}
+      This->data[y * This->w + x] = This->data[fwdy * This->w + fwdx];
+      x = fwdx;
+      y = fwdy;
+    }
+  This->data[y * This->w + x] = 0x00;
+
+  ASSERT_VALID (This);
+  return;
+}
+
+
 /****f* lib5250/tn5250_dbuffer_ins
  * NAME
  *    tn5250_dbuffer_ins
