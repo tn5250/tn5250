@@ -1,6 +1,6 @@
 ## Process this file with automake to produce Makefile.in
 
-DIST_SUBDIRS = src doc linux freebsd win32
+DIST_SUBDIRS = src doc linux freebsd win32 sun
 SUBDIRS = src doc @SUBDIRS_ADD@
 
 bin_SCRIPTS = tn5250-config\

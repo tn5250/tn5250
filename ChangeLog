@@ -1,4 +1,7 @@
 2002-03-15 Scott Klement <klemscot@klements.com>
+- Added sun subdir, contributed by Peter Turczak
+
+2002-03-15 Scott Klement <klemscot@klements.com>
 - Added code to win32\mkconfig.c that allows us to build tn5250
    straight from CVS under Windows.  (Previously, it only worked
    on versions that had been created with "make dist" under Un*x)
