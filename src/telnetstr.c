@@ -1037,7 +1037,8 @@ static int telnet_stream_get_byte(Tn5250Stream * This)
 	switch(temp) {
 	case IAC:
 	  This->state = TN5250_STREAM_STATE_DATA;
-	  
+	  break;
+
 	 case DO:
 	 case DONT:
 	 case WILL:
