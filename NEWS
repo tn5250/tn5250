@@ -1,0 +1,10 @@
+tn5250 NEWS
+------------------------------------------------------------------------------
+
+Mon Dec 06, 1999:
+	* A FAQ is now in existence, thanks to Philippe Petrinko.  You can
+	  browse the FAQ at http://perso.libertysurf.fr/plinux/tn5250-faq.html
+	* The CVS server is now serving up the mailing list archives, thanks
+	  to David Gibbs.   You can browse the archives at
+	  http://cvs.cleveland.lug.net/mail-archives/tn5250
+

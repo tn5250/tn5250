@@ -6,10 +6,9 @@ implementation for Linux, but it has been reportedly compiled on a number
 of other platforms.  Contributed keyboard maps and termcap entries for
 FreeBSD are in this tarball as well (see freebsd/README for more information).
 
-This, the 0.14.x series, has been substantially tested and a large amount of
-effort has gone into fixing lots of bugs.  During the course of the 0.13.x
-(developer-only) series, a lot of features were added to aid the developers
-in tracking problems that happened only on strange platforms.
+This, the 0.15.x series, is the development series and may cause severe
+headaches and stomach cramps, if only due to the quality of code :)  If you
+are looking for a stable emulator, get the latest 0.14.x version.
 
 Building and Installing
 =======================
@@ -56,9 +55,18 @@ exit immediately.
 Other Information
 =================
 
-Please send me any comments, questions, bug reports or patches. 
+Other information is available on the web.
 
-Michael Madore
-mmadore@blarg.net
-http://www.blarg.net/~mmadore
-February 14th, 1999
+http://perso.libertysurf.fr/plinux/tn5250-faq.html   - linux5250 FAQ
+http://cvs.cleveland.lug.net/mail-archives/tn5250/   - linux5250 List Archives
+http://www.blarg.net/~mmadore/                       - linux5250 Homepage
+http://cvs.cleveland.lug.net/module.pl?module=tn5250 - Developer Resources
+
+Comments, questions, bug reports and patches are much appreciated - please
+subscribe to the list and post them there if at all possible.  If that's too
+much trouble, email one of the maintainers below:
+
+Jason M. Felice <jasonf@nacs.net>
+Michael Madore <mmadore@blarg.net>
+
+Enjoy!
