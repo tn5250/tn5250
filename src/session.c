@@ -528,6 +528,8 @@ static void tn5250_session_process_stream(Tn5250Session * This)
       if (cur_command != ESC) {
 	 TN5250_LOG (("cur_command != ESC; cur_pos = %d\n",
 		  This->record->cur_pos));
+         TN5250_LOG (("Ignoring record!\n"));
+         return;
 	 TN5250_ASSERT(0);
       }
       cur_command = tn5250_record_get_byte(This->record);
@@ -572,6 +574,9 @@ static void tn5250_session_process_stream(Tn5250Session * This)
 	 break;
       case CMD_ROLL:
 	 tn5250_session_roll(This);
+	 break;
+      case 0x0a:
+         TN5250_LOG (("Ignoring record!\n"));
 	 break;
       default:
 	 TN5250_LOG(("Error: Unknown command 0x%02X.\n", cur_command));

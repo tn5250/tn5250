@@ -1,3 +1,7 @@
+2001-11-21 Scott Klement <klemscot@klements.com>
+- Once in a great while, the AS/400 sends some invalid records.
+    I changed session.c to just ignore them, to prevent a crash.
+
 2001-11-09 Scott Klement <klemscot@klements.com>
 - Added support for the 5250 newline key.  This key moves to the first
     field on the next line.  (We used to treat it the same as Enter)
