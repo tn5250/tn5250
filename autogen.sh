@@ -7,7 +7,7 @@
 aclocal || exit $?
 autoconf || autoconf || exit $?
 autoheader || autoheader || exit $?
-libtoolize --automake --force || exit $?
+libtoolize13 --automake --force || exit $?
 
 #
 # Sometimes we need to run automake twice, as it will fail the first time when
