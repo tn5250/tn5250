@@ -144,45 +144,55 @@ setAttribute(Tn5250Host * This, unsigned short attr)
 int 
 readMDTfields(Tn5250Host *This, int sendRMF)
 {
-   unsigned char flags;
-   int aidCode=0;
+  fd_set rset;
 
-   if (sendRMF) {
-      unsigned short wtdCtrl=0;
-      if (This->inputInhibited && !This->inSysInterrupt)
-         wtdCtrl = TN5250_SESSION_CTL_SET_BLINK 
-	   | TN5250_SESSION_CTL_UNLOCK;
-      sendReadMDT(This->stream, &This->buffer, wtdCtrl,
+  unsigned char flags;
+  int aidCode=0;
+
+  if (sendRMF) {
+    unsigned short wtdCtrl=0;
+    if (This->inputInhibited && !This->inSysInterrupt)
+      wtdCtrl = TN5250_SESSION_CTL_SET_BLINK 
+	| TN5250_SESSION_CTL_UNLOCK;
+    sendReadMDT(This->stream, &This->buffer, wtdCtrl,
 		TN5250_RECORD_OPCODE_PUT_GET);
-   }
-   This->wtd_set = FALSE;
+  }
+  This->wtd_set = FALSE;
 
-   while (!aidCode) {
-      if (!(tn5250_stream_handle_receive(This->stream))) {
-         /* We got disconnected or something. */
-         This->disconnected = TRUE;
-         return -1;
-      }
-      if (This->record) {
-         tn5250_record_destroy(This->record);
-         This->record = NULL;
-      }
-      if (This->stream->record_count>0)
-         This->record = tn5250_stream_get_record(This->stream);
-      else
-         continue;
-      if (flags=tn5250_record_flags(This->record))
-         aidCode = processFlags(This, flags, &This->record->data.data[10]);
-      else if (This->record->data.len>10) {
-         int hor, ver;
-         ver = tn5250_record_get_byte(This->record) - 1;
-         hor = tn5250_record_get_byte(This->record) - 1;
-         This->cursorPos = ver*This->maxcol + hor;
-         aidCode =  tn5250_record_get_byte(This->record);
-      }
-   }
-   /* Return error or AID code */
-   return aidCode;
+  while (!aidCode) {
+    FD_ZERO(&rset);
+    FD_SET(This->stream->sockfd, &rset);
+
+    if( select(This->stream->sockfd+1, &rset, NULL, NULL, NULL) < 0 ) {
+      syslog(LOG_INFO, "select: %s\n", strerror(errno));
+      exit(1);
+    }
+
+    if (!(tn5250_stream_handle_receive(This->stream))) {
+      /* We got disconnected or something. */
+      This->disconnected = TRUE;
+      return -1;
+    }
+    if (This->record) {
+      tn5250_record_destroy(This->record);
+      This->record = NULL;
+    }
+    if (This->stream->record_count>0)
+      This->record = tn5250_stream_get_record(This->stream);
+    else
+      continue;
+    if (flags=tn5250_record_flags(This->record))
+      aidCode = processFlags(This, flags, &This->record->data.data[10]);
+    else if (This->record->data.len>10) {
+      int hor, ver;
+      ver = tn5250_record_get_byte(This->record) - 1;
+      hor = tn5250_record_get_byte(This->record) - 1;
+      This->cursorPos = ver*This->maxcol + hor;
+      aidCode =  tn5250_record_get_byte(This->record);
+    }
+  }
+  /* Return error or AID code */
+  return aidCode;
 }
 
 int 
