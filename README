@@ -6,9 +6,9 @@ implementation for Linux, but it has been reportedly compiled on a number
 of other platforms.  Contributed keyboard maps and termcap entries for
 FreeBSD are in this tarball as well (see freebsd/README for more information).
 
-This, the 0.15.x series, is the development series and may cause severe
+This, the 0.17.x series, is the development series and may cause severe
 headaches and stomach cramps, if only due to the quality of code :)  If you
-are looking for a stable emulator, get the latest 0.14.x version.
+are looking for a stable emulator, get the latest 0.16.x version.
 
 Building from CVS
 =================
@@ -34,6 +34,24 @@ generated files may not work properly.
 You may receive an error the first time you run this script.  If so, run
 the script a second time to make sure you don't get an error (this is a bug
 with automake).
+
+Glib Dependency
+===============
+
+Versions 0.17.x and up also require a developers version of glib to be 
+installed.  On Linux, this means that you have to install the glib-devel
+package.   On FreeBSD, you need to install the glib12 port. (from the ports
+collection)
+
+On FreeBSD (and possibly some other systems) the "glib-config" script is
+installed as "glib12-config".  To allow tn5250 to find it, you need to set
+the GLIB_CONFIG environment variable.    
+
+For example, a csh/tcsh user might type:
+	setenv GLIB_CONFIG /usr/local/bin/glib12-config 
+or under sh/bash:
+	export GLIB_CONFIG=/usr/local/bin/glib12-config
+
 
 Building and Installing
 =======================
