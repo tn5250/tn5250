@@ -58,12 +58,13 @@ static void tn5250_session_start_of_field(Tn5250Session * This);
 static void tn5250_session_start_of_header(Tn5250Session * This);
 static void tn5250_session_set_buffer_address(Tn5250Session * This);
 static void tn5250_session_write_extended_attribute(Tn5250Session * This);
+static void tn5250_session_write_structured_field(Tn5250Session * This);
+static void tn5250_session_write_display_structured_field(Tn5250Session * This);
 static void tn5250_session_transparent_data(Tn5250Session * This);
 static void tn5250_session_move_cursor(Tn5250Session * This);
 static void tn5250_session_insert_cursor(Tn5250Session * This);
 static void tn5250_session_erase_to_address(Tn5250Session * This);
 static void tn5250_session_repeat_to_address(Tn5250Session * This);
-static void tn5250_session_write_structured_field(Tn5250Session * This);
 static void tn5250_session_read_screen_immediate(Tn5250Session * This);
 static void tn5250_session_read_cmd(Tn5250Session * This, int readop);
 static int tn5250_session_valid_wtd_data_char (unsigned char c);
@@ -206,6 +207,8 @@ void tn5250_session_send_error(Tn5250Session * This, unsigned long errorcode)
   header.h5250.opcode   = TN5250_RECORD_OPCODE_NO_OP;
 
   tn5250_stream_send_packet(This->stream, 4, header, &errorcode);
+
+  tn5250_record_skip_to_end(This->record);
 }
 
 /****i* lib5250/tn5250_session_handle_receive
@@ -774,6 +777,10 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
 	   tn5250_session_transparent_data(This);
 	   break;
 
+	 case WDSF:
+	   tn5250_session_write_display_structured_field(This);
+	   break;
+
 	 case MC:
 	   tn5250_session_move_cursor(This);
 	    break;
@@ -926,8 +933,6 @@ static void tn5250_session_clear_unit_alternate(Tn5250Session * This)
        errorcode = TN5250_NR_INVALID_CLEAR_UNIT_ALT;
 
        tn5250_session_send_error(This, errorcode);
-
-       tn5250_record_skip_to_end(This->record);
 
        return;
      }
@@ -1235,8 +1240,6 @@ static void tn5250_session_start_of_field(Tn5250Session * This)
 
        tn5250_session_send_error(This, errorcode);
 
-       tn5250_record_skip_to_end(This->record);
-
        return;
      }
 
@@ -1330,7 +1333,6 @@ static void tn5250_session_start_of_header(Tn5250Session * This)
      {
        errorcode = TN5250_NR_INVALID_SOH_LENGTH;
        tn5250_session_send_error(This, errorcode);
-       tn5250_record_skip_to_end(This->record);
        return;
      }
    TN5250_ASSERT((n > 0 && n <= 7));
@@ -1379,8 +1381,6 @@ static void tn5250_session_set_buffer_address(Tn5250Session * This)
 
        tn5250_session_send_error(This, errorcode);
 
-       tn5250_record_skip_to_end(This->record);
-
        return;
      }
 
@@ -1414,8 +1414,39 @@ static void tn5250_session_write_extended_attribute(Tn5250Session * This)
 
       tn5250_session_send_error(This, errorcode);
 
-      tn5250_record_skip_to_end(This->record);
+      return;
+    }
+}
 
+static void tn5250_session_write_display_structured_field(Tn5250Session * This)
+{
+  /*
+    This order is not really implemented.  We just do enough to checking so
+    we can handle data stream errors.
+  */
+  unsigned char type;
+  unsigned long errorcode;
+
+  type = tn5250_record_get_byte(This->record);
+
+  switch(type)
+    {
+    case DEFINE_SELECTION_FIELD:
+    case CREATE_WINDOW:
+    case UNREST_WIN_CURS_MOVE:
+    case DEFINE_SCROLL_BAR_FIELD:
+    case WRITE_DATA:
+    case PROGRAMMABLE_MOUSE_BUT:
+    case REM_GUI_SEL_FIELD:
+    case REM_GUI_WINDOW:
+    case REM_GUI_SCROLL_BAR_FIELD:
+    case REM_ALL_GUI_CONSTRUCTS:
+    case DRAW_ERASE_GRID_LINES:
+    case CLEAR_GRID_LINE_BUFFER:
+      break;
+    default:
+      errorcode = TN5250_NR_INVALID_SF_CLASS_TYPE;
+      tn5250_session_send_error(This, errorcode);
       return;
     }
 }
@@ -1452,8 +1483,6 @@ static void tn5250_session_transparent_data(Tn5250Session * This)
       
       tn5250_session_send_error(This, errorcode);
 
-      tn5250_record_skip_to_end(This->record);
-
       return;
     }
 
@@ -1489,8 +1518,6 @@ static void tn5250_session_move_cursor(Tn5250Session * This)
       
       tn5250_session_send_error(This, errorcode);
       
-      tn5250_record_skip_to_end(This->record);
-
       return;
     }
 }
@@ -1514,8 +1541,6 @@ static void tn5250_session_insert_cursor(Tn5250Session * This)
       
       tn5250_session_send_error(This, errorcode);
       
-      tn5250_record_skip_to_end(This->record);
-
       return;
     }
 
@@ -1564,8 +1589,6 @@ static void tn5250_session_erase_to_address(Tn5250Session * This)
       
       tn5250_session_send_error(This, errorcode);
        
-       tn5250_record_skip_to_end(This->record);
-
        return;
       
     }
@@ -1617,8 +1640,6 @@ static void tn5250_session_repeat_to_address(Tn5250Session * This)
 
        tn5250_session_send_error(This, errorcode);
        
-       tn5250_record_skip_to_end(This->record);
-
        return;
      }
       
@@ -1646,6 +1667,7 @@ static void tn5250_session_repeat_to_address(Tn5250Session * This)
 static void tn5250_session_write_structured_field(Tn5250Session * This)
 {
    unsigned char temp[5];
+   unsigned long errorcode;
 
    TN5250_LOG(("WriteStructuredField: entered.\n"));
 
@@ -1659,6 +1681,40 @@ static void tn5250_session_write_structured_field(Tn5250Session * This)
 	(temp[0] << 8) | temp[1]));
    TN5250_LOG(("WriteStructuredField: command class = 0x%02X\n", temp[2]));
    TN5250_LOG(("WriteStructuredField: command type = 0x%02X\n", temp[3]));
+
+   if(temp[2] != 0xD9)
+     {
+       errorcode = TN5250_NR_INVALID_SF_CLASS_TYPE;
+       tn5250_session_send_error(This, errorcode);
+       return;
+     }
+   else
+     {
+       switch(temp[3])
+	 {
+	 case DEFINE_AUDIT_WINDOW_TABLE:
+	 case DEFINE_COMMAND_KEY_FUNCTION:
+	 case READ_TEXT_SCREEN:
+	 case DEFINE_PENDING_OPERATIONS:
+	 case DEFINE_TEXT_SCREEN_FORMAT:
+	 case DEFINE_SCALE_TIME:
+	 case WRITE_TEXT_SCREEN:
+	 case DEFINE_SPECIAL_CHARACTERS:
+	 case PENDING_DATA:
+	 case DEFINE_OPERATOR_ERROR_MSGS:
+	 case DEFINE_PITCH_TABLE:
+	 case DEFINE_FAKE_DP_CMD_KEY_FUNC:
+	 case PASS_THROUGH:
+	 case SF_5250_QUERY:
+	 case SF_5250_QUERY_STATION_STATE:
+	   break;
+	   
+	 default:
+	   errorcode = TN5250_NR_INVALID_SF_CLASS_TYPE;
+	   tn5250_session_send_error(This, errorcode);
+	   return;
+	 }
+     }
 
    tn5250_session_query_reply(This);
 }
