@@ -121,43 +121,43 @@ int main()
    while (!feof(stdin)) {
       curchar = fgetc(stdin);
       switch (curchar) {
-      case TRANSPARENT:{
+      case SCS_TRANSPARENT:{
 	    scs2ascii_transparent();
 	    break;
 	 }
-      case RFF:{
+      case SCS_RFF:{
 	    scs2ascii_rff();
 	    break;
 	 }
-      case NOOP:{
+      case SCS_NOOP:{
 	    scs2ascii_noop();
 	    break;
 	 }
-      case CR:{
+      case SCS_CR:{
 	    scs2ascii_cr();
 	    break;
 	 }
-      case FF:{
+      case SCS_FF:{
 	    scs2ascii_ff();
 	    break;
 	 }
-      case NL:{
+      case SCS_NL:{
 	    scs2ascii_nl();
 	    break;
 	 }
-      case RNL:{
+      case SCS_RNL:{
 	    scs2ascii_rnl();
 	    break;
 	 }
-      case HT:{
+      case SCS_HT:{
 	    scs2ascii_ht();
 	    break;
 	 }
-      case 0x34:{
+      case SCS_0x34:{
 	    scs2ascii_process34();
 	    break;
 	 }
-      case 0x2B:{
+      case SCS_0x2B:{
 	    scs2ascii_process2b();
 	    break;
 	 }
