@@ -128,7 +128,7 @@ typedef struct _Tn5250Stream Tn5250Stream;
 /******/
 
 
-extern Tn5250Stream /*@only@*/ /*@null@*/ *tn5250_stream_open (const char *to);
+extern Tn5250Stream /*@only@*/ /*@null@*/ *tn5250_stream_open (const char *to, struct _Tn5250Config *config);
 extern int tn5250_stream_config (Tn5250Stream *This, struct _Tn5250Config *config);
 extern void tn5250_stream_destroy(Tn5250Stream /*@only@*/ * This);
 extern Tn5250Record /*@only@*/ *tn5250_stream_get_record(Tn5250Stream * This);

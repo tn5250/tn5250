@@ -1,3 +1,9 @@
+2001-09-28 Scott Klement <klemscot@klements.com>
+- Changed tn5250_stream_open to associate the config object with the
+    stream before calling stream_connect()
+- Added config keywords "ssl_verify_server" and "ssl_ca_file" to allow
+    tn5250 to verify the server's SSL certificate 
+
 2001-09-25 Scott Klement <klemscot@klements.com>
 - Added an "SSL stream" object for encrypted streams
 - Added "ssl:" type to URL.  (tn5250 ssl:as400.whatever.com)
