@@ -146,6 +146,9 @@ static void tn5250_wtd_context_convert_nosrc (Tn5250WTDContext *This)
 
    TN5250_LOG (("wtd_context_convert entered.\n"));
 
+   tn5250_wtd_context_putc (This, ESC);
+   tn5250_wtd_context_putc (This, CMD_RESTORE_SCREEN);
+
    /* Since we don't know the unit's prior state, we clear the unit. */
    tn5250_wtd_context_putc (This, ESC);
    if (tn5250_dbuffer_width (This->dst) != 80) {
