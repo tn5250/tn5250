@@ -1,3 +1,8 @@
+2000-06-15 Mike Madore <mmadore@turbolinux.com>
+- Changed send_packet functions to accept a union for header parameters instead
+  of seperate parameters.  This will make it easier to handle tn3270e, which
+  had different header requirements than 5250.
+	
 2000-06-14 Mike Madore <mmadore@turbolinux.com>
 - Added logic to check for clear print buffer in printsession.c.  Need to test
   to see if it fixes Scott's problem.

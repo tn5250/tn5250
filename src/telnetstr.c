@@ -49,12 +49,10 @@ static void telnet_stream_destroy(Tn5250Stream *This);
 static void telnet_stream_disconnect(Tn5250Stream * This);
 static int telnet_stream_handle_receive(Tn5250Stream * This);
 static void telnet_stream_send_packet(Tn5250Stream * This, int length,
-				      int flowtype, unsigned char flags, 
-				      unsigned char opcode,
+				      StreamHeader header,
 				      unsigned char *data);
 static void tn3270_stream_send_packet(Tn5250Stream * This, int length,
-				      int flowtype, unsigned char flags,
-				      unsigned char opcode,
+				      StreamHeader header,
 				      unsigned char * data);
 
 #define SEND    1
@@ -1196,11 +1194,18 @@ static void telnet_stream_write(Tn5250Stream * This, unsigned char *data, int si
  *    Send a packet, prepending a header and escaping any naturally
  *    occuring IAC characters.
  *****/
-static void telnet_stream_send_packet(Tn5250Stream * This, int length, int flowtype, unsigned char flags,
-			       unsigned char opcode, unsigned char *data)
+static void telnet_stream_send_packet(Tn5250Stream * This, int length, 
+				      StreamHeader header, unsigned char *data)
 {
    Tn5250Buffer out_buf;
    int n;
+   int flowtype;
+   unsigned char flags;
+   unsigned char opcode;
+
+   flowtype = header.h5250.flowtype;
+   flags = header.h5250.flags;
+   opcode = header.h5250.opcode;
 
    length = length + 10;
 
@@ -1243,8 +1248,7 @@ static void telnet_stream_send_packet(Tn5250Stream * This, int length, int flowt
 
 void
 tn3270_stream_send_packet(Tn5250Stream * This, int length,
-			  int flowtype, unsigned char flags,
-			  unsigned char opcode,
+			  StreamHeader header,
 			  unsigned char * data)
 {
   Tn5250Buffer out_buf;

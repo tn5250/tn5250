@@ -285,10 +285,15 @@ static void tn5250_session_invite(Tn5250Session * This)
  *****/
 static void tn5250_session_cancel_invite(Tn5250Session * This)
 {
+  StreamHeader header;
+
+  header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
+  header.h5250.flags    = TN5250_RECORD_H_NONE;
+  header.h5250.opcode   = TN5250_RECORD_OPCODE_CANCEL_INVITE;
+
    TN5250_LOG(("CancelInvite: entered.\n"));
    tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_X_CLOCK);
-   tn5250_stream_send_packet(This->stream, 0, TN5250_RECORD_FLOW_DISPLAY, TN5250_RECORD_H_NONE,
-			     TN5250_RECORD_OPCODE_CANCEL_INVITE, NULL);
+   tn5250_stream_send_packet(This->stream, 0, header, NULL);
    This->invited = 0;
 }
 
@@ -310,6 +315,8 @@ static void tn5250_session_send_fields(Tn5250Session * This, int aidcode)
    Tn5250Field *field;
    Tn5250DBuffer *dbuffer;
    int X, Y, size;
+   StreamHeader header;
+
 
    X = tn5250_display_cursor_x(This->display);
    Y = tn5250_display_cursor_y(This->display);
@@ -384,12 +391,14 @@ static void tn5250_session_send_fields(Tn5250Session * This, int aidcode)
    tn5250_display_indicator_clear(This->display, TN5250_DISPLAY_IND_INSERT);
    tn5250_display_update(This->display);
 
+   header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
+   header.h5250.flags    = TN5250_RECORD_H_NONE;
+   header.h5250.opcode   = TN5250_RECORD_OPCODE_PUT_GET;
+
    tn5250_stream_send_packet(This->stream,
-	 tn5250_buffer_length(&field_buf),
-	 TN5250_RECORD_FLOW_DISPLAY,
-	 TN5250_RECORD_H_NONE,
-	 TN5250_RECORD_OPCODE_PUT_GET,
-	 tn5250_buffer_data(&field_buf));
+			     tn5250_buffer_length(&field_buf),
+			     header,
+			     tn5250_buffer_data(&field_buf));
    tn5250_buffer_free(&field_buf);
 }
 
@@ -955,6 +964,7 @@ static void tn5250_session_read_immediate(Tn5250Session * This)
 static int tn5250_session_handle_aidkey (Tn5250Session *This, int key)
 {
    Tn5250Buffer buf;
+   StreamHeader header;
 
    switch (key) {
    case TN5250_SESSION_AID_PRINT:
@@ -965,25 +975,36 @@ static int tn5250_session_handle_aidkey (Tn5250Session *This, int key)
       tn5250_buffer_append_byte (&buf,
 	    tn5250_display_cursor_x(This->display) + 1);
       tn5250_buffer_append_byte (&buf, key);
+
+      header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
+      header.h5250.flags    = TN5250_RECORD_H_NONE;
+      header.h5250.opcode   = TN5250_RECORD_OPCODE_NO_OP;
+
       tn5250_stream_send_packet(This->stream, tn5250_buffer_length(&buf), 
-                             TN5250_RECORD_FLOW_DISPLAY,
-                             TN5250_RECORD_H_NONE,
-                             TN5250_RECORD_OPCODE_NO_OP, 
-                             tn5250_buffer_data(&buf));
+				header,
+				tn5250_buffer_data(&buf));
       tn5250_buffer_free (&buf);
       break;
 
    case TN5250_SESSION_AID_SYSREQ:
       This->read_opcode = 0; /* We are out of the read */
-      tn5250_stream_send_packet(This->stream, 0, TN5250_RECORD_FLOW_DISPLAY,
-	    TN5250_RECORD_H_SRQ, TN5250_RECORD_OPCODE_NO_OP, NULL);
+
+      header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
+      header.h5250.flags    = TN5250_RECORD_H_SRQ;
+      header.h5250.flags    = TN5250_RECORD_OPCODE_NO_OP;
+
+      tn5250_stream_send_packet(This->stream, 0, header, NULL);
       tn5250_display_indicator_set (This->display, TN5250_DISPLAY_IND_X_SYSTEM);
       break;
 
    case TN5250_SESSION_AID_ATTN:
       This->read_opcode = 0; /* We are out of the read. */
-      tn5250_stream_send_packet(This->stream, 0, TN5250_RECORD_FLOW_DISPLAY,
-	    TN5250_RECORD_H_ATN, TN5250_RECORD_OPCODE_NO_OP, NULL);
+
+      header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
+      header.h5250.flags    = TN5250_RECORD_H_ATN;
+      header.h5250.opcode   = TN5250_RECORD_OPCODE_NO_OP;
+
+      tn5250_stream_send_packet(This->stream, 0, header, NULL);
       tn5250_display_indicator_set (This->display, TN5250_DISPLAY_IND_X_SYSTEM);
       break;
 
@@ -1042,6 +1063,7 @@ static void tn5250_session_output_only(Tn5250Session * This)
 static void tn5250_session_save_screen(Tn5250Session * This)
 {
    Tn5250Buffer buffer;
+   StreamHeader header;
 
    TN5250_LOG(("SaveScreen: entered.\n"));
 
@@ -1058,9 +1080,12 @@ static void tn5250_session_save_screen(Tn5250Session * This)
       tn5250_buffer_append_byte (&buffer, 0x00);  /* FIXME: ? CC2 */
    }
 
+   header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
+   header.h5250.flags    = TN5250_RECORD_H_NONE;
+   header.h5250.opcode   = TN5250_RECORD_OPCODE_SAVE_SCR;
+
    tn5250_stream_send_packet (This->stream, tn5250_buffer_length (&buffer),
-	 TN5250_RECORD_FLOW_DISPLAY, TN5250_RECORD_H_NONE,
-	 TN5250_RECORD_OPCODE_SAVE_SCR, tn5250_buffer_data (&buffer));
+	 header, tn5250_buffer_data (&buffer));
    tn5250_buffer_free (&buffer);
 }
 
@@ -1371,6 +1396,7 @@ static void tn5250_session_read_screen_immediate(Tn5250Session * This)
    int row, col;
    int buffer_size;
    unsigned char *buffer;
+   StreamHeader header;
 
    TN5250_LOG(("ReadScreenImmediate: entered.\n"));
 
@@ -1386,9 +1412,12 @@ static void tn5250_session_read_screen_immediate(Tn5250Session * This)
       }
    }
 
+   header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
+   header.h5250.flags    = TN5250_RECORD_H_NONE;
+   header.h5250.opcode   = TN5250_RECORD_OPCODE_NO_OP;
+
    tn5250_stream_send_packet(This->stream, buffer_size,
-			     TN5250_RECORD_FLOW_DISPLAY,
-	       TN5250_RECORD_H_NONE, TN5250_RECORD_OPCODE_NO_OP, buffer);
+			     header, buffer);
 
    g_free(buffer);
 }
@@ -1446,6 +1475,7 @@ static void tn5250_session_query_reply(Tn5250Session * This)
    unsigned char temp[61];
    const char *scan;
    int dev_type, dev_model, i;
+   StreamHeader header;
 
    TN5250_LOG(("Sending QueryReply.\n"));
 
@@ -1545,8 +1575,11 @@ static void tn5250_session_query_reply(Tn5250Session * This)
    temp[59] = 0x00;
    temp[60] = 0x00;
 
-   tn5250_stream_send_packet(This->stream, 61, TN5250_RECORD_FLOW_DISPLAY,
-	 TN5250_RECORD_H_NONE, TN5250_RECORD_OPCODE_NO_OP,
+   header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
+   header.h5250.flags    = TN5250_RECORD_H_NONE;
+   header.h5250.opcode   = TN5250_RECORD_OPCODE_NO_OP;
+
+   tn5250_stream_send_packet(This->stream, 61, header,
 	 (unsigned char *) temp);
 }
 
