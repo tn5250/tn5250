@@ -29,6 +29,7 @@
 #define IDM_EDIT_PASTE  40004
 #define IDM_EDIT_SELECT_ALL 40005
 #define IDM_APP_PRINT   40006
+#define IDM_VIEW_FONT   40007
 
 #define IDD_DIALOG_CONNECT              101
 #define IDC_EDIT_HOST                   1000
