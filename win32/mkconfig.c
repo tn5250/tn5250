@@ -106,7 +106,6 @@ int create_config_h(const char *infile, const char *outfile,
                         const char *version);
 int create_makefile(const char *infile, const char *outfile,
                      const char *openssl_lib, const char *openssl_inc,
-                     const char *glib_lib, const char *glib_include,
                      const char *innosetupdir,
                      const char *lib5250_objs, const char *installdir,
                      const char *package, const char *version,
@@ -115,7 +114,6 @@ void replacedata(const char *from, const char *to, char *line, int maxlen);
 int make_root_makefile(const char *fn);
 char *manual_redef(int redefnum, char with_openssl, char binary_release,
                   const char *package, const char *version, char netshare400);
-int get_glib_info(const char *args, char *value, int maxlen);
 
 
 
@@ -126,8 +124,6 @@ int main(unsigned argc, char **argv) {
    char innosetupdir[MAXBUFSIZE+1];
    char openssl_lib[MAXBUFSIZE+1];
    char openssl_include[MAXBUFSIZE+1];
-   char glib_libs[MAXBUFSIZE+1];
-   char glib_include[MAXBUFSIZE+1];
    char temp[MAXBUFSIZE+1];
    char installdir[MAXBUFSIZE+1];
    char package[SMALLBUFSIZE+1], version[SMALLBUFSIZE+1];
@@ -162,18 +158,7 @@ if (argc>=2 && !strcmp(argv[1],"netshare400"))
    strcpy(lib5250_objs, lib5250_sources);
    replaceall(lib5250_objs, ".c", ".o");
 
- /* find out about GLIB support */
-
-   rc = get_glib_info("--libs glib-2.0", glib_libs, MAXBUFSIZE);
-   if (rc < 0) {
-       exit(1);
-   }
-   rc = get_glib_info("--cflags glib-2.0", glib_include, MAXBUFSIZE);
-   if (rc < 0) {
-       exit(1);
-   }
-
-
+ 
 /* find out about making a binary release */
 
    do {
@@ -239,7 +224,7 @@ if (argc>=2 && !strcmp(argv[1],"netshare400"))
 
    printf("Creating Makefile...\n");
    if (create_makefile("Makefile.win.in", "Makefile", openssl_lib,
-         openssl_include, glib_libs, glib_include, innosetupdir, lib5250_objs, 
+         openssl_include, innosetupdir, lib5250_objs, 
          installdir, package, version, debug)<0) {
          exit(1);
    }
@@ -247,7 +232,7 @@ if (argc>=2 && !strcmp(argv[1],"netshare400"))
    if (ns400=='n') {
       printf("Creating Win32 script for InnoSetup 2...\n");
       if (create_makefile("tn5250_innosetup.iss.in", "tn5250_innosetup.iss", 
-            openssl_lib, openssl_include, glib_libs, glib_include, innosetupdir,
+            openssl_lib, openssl_include, innosetupdir,
             lib5250_objs, installdir, package, version, debug)<0) {
             exit(1);
       }
@@ -255,7 +240,7 @@ if (argc>=2 && !strcmp(argv[1],"netshare400"))
    else {
       printf("Creating Netshare400 script for InnoSetup 2...\n");
       if (create_makefile("tn5250_innosetup.iss.in", "tn5250_innosetup.iss", 
-            openssl_lib, openssl_include, glib_libs, glib_include, innosetupdir,
+            openssl_lib, openssl_include, innosetupdir,
             lib5250_objs, installdir, package, version, debug)<0) {
             exit(1);
       }
@@ -718,8 +703,6 @@ int create_config_h(const char *infile, const char *outfile,
  *    const char  *      outfile      -
  *    const char  *      openssl_lib  -
  *    const char  *      openssl_inc  -
- *    const char  *      glib_libs    -
- *    const char  *      glib_include -
  *    const char  *      innosetupdir -
  *    const char  *      lib5250_objs -
  *    const char  *      installdir   -
@@ -739,7 +722,6 @@ int create_config_h(const char *infile, const char *outfile,
  *****/
 int create_makefile(const char *infile, const char *outfile,
                      const char *openssl_lib, const char *openssl_inc,
-                     const char *glib_libs, const char *glib_include,
                      const char *innosetupdir,
                      const char *lib5250_objs, const char *installdir,
                      const char *package, const char *version,
@@ -769,8 +751,6 @@ int create_makefile(const char *infile, const char *outfile,
          replacedata("@openssl_include@", openssl_inc,     rec, MAXBUFSIZE);
          replacedata("@lib5250_objs@",    lib5250_objs,    rec, MAXBUFSIZE);
          replacedata("@debug@",           debug,           rec, MAXBUFSIZE);
-         replacedata("@GLIB_LIBS@",	  glib_libs,       rec, MAXBUFSIZE);
-         replacedata("@GLIB_INCLUDE@",	  glib_include,    rec, MAXBUFSIZE);
          replacedata("@inno_setup_dir@",  innosetupdir,    rec, MAXBUFSIZE);
          fputs(rec, out);
      }
@@ -929,66 +909,4 @@ char *manual_redef(int redefnum, char with_openssl, char binary_release,
 }
 
 
-/****f* get_glib_info
- * NAME
- *    get_glib_info
- * SYNOPSIS
- *    ret = get_glib_info ("--libs glib-2.0", value, 1024);
- * INPUTS
- *    const char  *      args   -
- *    char        *      value  -
- *    int                maxlen -
- * DESCRIPTION
- *     Executes the pkg-config command with the given args,
- *     and returns the result as a string value.
- *****/
-int get_glib_info(const char *args, char *value, int maxlen) {
 
-     char *pkgconf = "pkg-config";
-     char *workfile = "glibinfo.txt";
-     char *cmd;
-     struct stat st;
-     int rc;
-     FILE *f;
-
-     cmd = malloc(strlen(args) + strlen(pkgconf) + strlen(workfile) + 6);
-     if (cmd == NULL) {
-           fprintf(stderr, "mkconfig: get_glib_info: Out of memory!\n");
-           return -1;
-     }
-
-     sprintf(cmd, "%s %s > %s", pkgconf, args, workfile);
-     if (system(cmd) < 0) {
-         fprintf(stderr, "mkconfig: get_glib_info: error running pkg-config.\n"
-                         "          Maybe glib isn't installed? or isn't in "
-                         "your path?\n");
-        free(cmd);
-        return -1;
-     }
-     free(cmd);
-
-     if (stat(workfile, &st) < 0) {
-         fprintf(stderr, "mkconfig: get_glib_info: stat: %s\n", 
-               strerror(errno));
-         return -1;
-     }
-
-     f = fopen(workfile, "r");
-     if (f == NULL) {
-         fprintf(stderr, "mkconfig: get_glib_info: fopen: %s\n", 
-               strerror(errno));
-     }
-   
-     if (st.st_size > maxlen) 
-           st.st_size = maxlen;
-   
-     fread(value, st.st_size, 1, f);
-
-     fclose(f);
-
-     strtrim(value);
-
-     return 0;
-}
-
-      

@@ -1,3 +1,6 @@
+2005-04-04 Marc-Antoine Ruel <maruel@users.sf.net>
+- Fixed win32 port.
+
 2005-04-04 James Rich <james@eaerich.com>
 - Finish menubar support.  This does not include menu items yet, so it is
   not terribly useful.  Menu items will attach to the menubars once they
