@@ -1,3 +1,9 @@
+2000-10-30 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Applied patch from Dave McKenzie fixing cursor positioning issues when the
+  screen is sent in more than one WTD.
+- Added makefile rules and support files for building python language bindings
+  using swig.
+
 2000-07-19 Mike Madore <mmadore@turbolinux.com>
 - Send negative response if we get an invalid command.
 	

@@ -353,4 +353,9 @@ void tn5250_stream_unsetenv(Tn5250Stream * This, const char *name)
    g_free (name_buf);
 }
 
+int tn5250_stream_socket_handle (Tn5250Stream *This)
+{
+   return (int) This->sockfd;
+}
+
 /* vi:set sts=3 sw=3: */

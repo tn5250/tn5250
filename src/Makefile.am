@@ -11,6 +11,8 @@ else
 LIBSOURCES =		
 endif
 
+BUILT_SOURCES		= _tn5250.i _tn5250_wrap.c
+
 lib_LTLIBRARIES =	lib5250.la
 
 bin_PROGRAMS =		scs2ascii\
@@ -29,12 +31,28 @@ lib5250_la_SOURCES =	buffer.c\
 			session.c\
 			slangterm.c\
 			stream.c\
+			terminal.c\
 			telnetstr.c\
 			utility.c\
 			version.c\
 			wtd.c
 
 lib5250_la_LIBADD =	@with_extra_libs@
+
+# Here's where we build the python module.
+if PYTHON
+pysodir =		@PYTHON_PREFIX@/lib/python@PYTHON_VERSION@/lib-dynload
+pyso_LTLIBRARIES =	lib_tn5250module.la
+INCLUDES +=		-I@PYTHON_PREFIX@/include/python@PYTHON_VERSION@
+
+# For some icky reason, automake or libtool pukes on the below line.  So we
+# just add all the SOURCES (sigh).
+# lib_tn5250module_la_LIBADD =	lib5250.la
+
+lib_tn5250module_la_SOURCES =	_tn5250_wrap.c\
+			$(lib5250_la_SOURCES)
+endif
+
 
 tn5250_SOURCES = 	tn5250.c\
 		        $(LIBSOURCES)
@@ -74,12 +92,21 @@ include_HEADERS =	tn5250.h
 
 noinst_HEADERS =	getopt.h\
 			transmaps.h\
-			tn5250-private.h
+			tn5250-private.h\
+			swig-5250.h
 
 EXTRA_DIST =		.lclintrc\
 			transmaps\
 			getopt.c
 
+# This hack probably only works with gcc
+_tn5250.i: swig-5250.h
+	$(CC) -E -P $(CFLAGS) swig-5250.h |sed -e '/^[ 	]*$$/d' \
+		>_tn5250.i
+
+_tn5250_wrap.c: _tn5250.i _tn5250_extra.i
+	$(SWIG) -python _tn5250.i
+	
 lclint:
 	@echo "lint checking with lclint... "
 	@( lclint tn5250.c $(lib5250_la_SOURCES) > lclint.err 2>&1 ; \
@@ -109,6 +136,11 @@ docs:
 
 clean-local:
 	rm -f *~ *.xref index.xrefs index.html
+
+if PYTHON
+install-exec-local:
+	( cd $(pysodir) && ln -sf lib_tn5250module.so _tn5250module.so )
+endif
 
 .PHONY: lclint
 

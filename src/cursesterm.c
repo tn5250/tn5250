@@ -1053,7 +1053,7 @@ static int curses_terminal_getkey (Tn5250Terminal *This)
 
    /* Retreive all keys from the keyboard buffer. */
    while (This->data->k_buf_len < MAX_K_BUF_LEN && (ch = getch ()) != ERR) {
-      TN5250_LOG(("curses_getch: recevied 0x%02X.\n", ch));
+      TN5250_LOG(("curses_getch: received 0x%02X.\n", ch));
 
       /* FIXME: Here would be the proper place to get mouse events :) */
      
