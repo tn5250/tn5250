@@ -68,6 +68,15 @@
     Also, field-minus in this field still does strange things, but not the
     same strange things in tn5250 as other emulators.
   </bug>
+
+  <bug>
+    <date>2000.04.14.22.28.50</date>
+    <owner email="jasonf@nacs.net">Jay 'Eraserhead' Felice</owner>
+
+    We ignore the rest of the AS/400's NEW_ENVIRON request and just send
+    all variables we know about.  It seems to work, but may cause problems
+    in the future.
+  </bug>
     
 </bugs>
 <!-- vi:set sts=2 sw=2 autoindent: -->
