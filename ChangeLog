@@ -1,3 +1,7 @@
+2002-03-25 Scott Klement <klemscot@klements.com>
+- Changed the win32_terminal_waitevent func so that it's compatible
+  with the debug.c code.
+
 2002-03-20 James Rich <james@eaerich.com>
 - Cleaned up scs2pdf.c and added comments to explain how it works.
 - Added more CPI mappings to scs.c
