@@ -1396,8 +1396,8 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                           "by many people.  See the AUTHORS file for\n"
                           "details.\n"
                           "\n"
-                          "For license information, see the LICENSE file "
-                          "that was installed with this software.\n"
+                          "For license information, see the COPYING file "
+                          "that was include with this software.\n"
 #ifdef HAVE_LIBSSL
                           "\n"
                           "OpenSSL:\n"
@@ -1408,7 +1408,7 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                           "This product includes software written by Tim "
                           "Hudson (tjh@cryptsoft.com).\n"
                           "\n"
-                          "For OpenSSL license information, see the LICENSE "
+                          "For OpenSSL license information, see the COPYING "
                           "file that was included in the OpenSSL package.\n"
 #endif
                           ,PACKAGE, VERSION);
