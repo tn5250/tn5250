@@ -1,3 +1,7 @@
+2002-03-14 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- tn5250-config script now reports usable cflags and libs (including flags
+  for the glib we were built against).
+
 2002-03-13 James Rich <james@eaerich.com>
 - Changed scs2pdf.c to correctly handle AHPP commands with guidance from
   Frank Richter <frichter@esda.com>.  AHPP can be to cause some characters
