@@ -121,7 +121,7 @@ void tn5250_buffer_log(Tn5250Buffer * This, const char *prefix)
    unsigned char c;
    unsigned char a;
    int n;
-   Tn5250CharMap *map = tn5250_char_map_new ("en");
+   Tn5250CharMap *map = tn5250_char_map_new ("37");
 
    TN5250_LOG (("Dumping buffer (length=%d):\n", This->len));
    for (pos = 0; pos < This->len;) {

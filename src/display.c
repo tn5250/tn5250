@@ -45,7 +45,7 @@ Tn5250Display *tn5250_display_new()
    This->session = NULL;
    This->key_queue_head = This->key_queue_tail = 0;
    This->saved_msg_line = NULL;
-   This->map = tn5250_char_map_new("en");
+   This->map = tn5250_char_map_new("37");
 
    tn5250_display_add_dbuffer(This, tn5250_dbuffer_new(80, 24));
    return This;
@@ -1540,7 +1540,7 @@ void tn5250_display_save_msg_line (Tn5250Display *This)
  * NAME
  *    tn5250_display_set_char_map
  * SYNOPSIS
- *    tn5250_display_set_char_map (display, "en");
+ *    tn5250_display_set_char_map (display, "37");
  * INPUTS
  *    Tn5250Display *      display    - Pointer to the display object.
  *    const char *         name       - Name of translation map to use.

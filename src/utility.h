@@ -38,7 +38,7 @@ typedef unsigned char Tn5250Char;
  * NAME
  *    Tn5250CharMap
  * SYNOPSIS
- *    Tn5250CharMap *map = tn5250_char_map_new ("en");
+ *    Tn5250CharMap *map = tn5250_char_map_new ("37");
  *    ac = tn5250_char_map_to_local(map,ec);
  *    ec = tn5250_char_map_to_host(map,ac);
  *    if (tn5250_char_map_printable_p (map,ec))
@@ -55,8 +55,8 @@ typedef unsigned char Tn5250Char;
  */
 struct _Tn5250CharMap {
    const char *name;
-   const unsigned char *to_local_map;
    const unsigned char *to_host_map;
+   const unsigned char *to_local_map;
 };
 
 typedef struct _Tn5250CharMap Tn5250CharMap;

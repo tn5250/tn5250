@@ -1,3 +1,11 @@
+2000-02-13 Mike Madore <mmadore@blarg.net>
+- Added call to clear_unit when we receive a Restore Screen opcode (0x05). 
+  This seems to fix the problem where the screen is not properly restored when
+  exiting from help windows.
+- Removed printing functionality from tn5250.c
+- Fixed translation map bugs.  To and from translation were reversed.  Also
+  replaced references to en with 37.
+
 2000-02-13 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 - Replaced src/transmaps with the new submission by Carey Evans which will
   translate to different ISO code-pages (based on closest match to IBM

@@ -30,7 +30,7 @@ char remotehost[20];
 char sessionname[20];
 char transformname[20];
 char outputcommand[30];
-char *mapname = NULL;
+char *mapname = "37";
 
 int main(int argc, char *argv[])
 {
@@ -45,6 +45,7 @@ int main(int argc, char *argv[])
         perror("tn5250_daemon");
         exit(2);
     }
+
 
     stream = tn5250_stream_open (remotehost);
     if(stream == NULL) {
@@ -65,8 +66,6 @@ int main(int argc, char *argv[])
        tn5250_stream_setenv(stream, "IBMTRANSFORM", "0");
     tn5250_print_session_set_fd(printsess, tn5250_stream_socket_handle(stream));
     tn5250_print_session_set_stream(printsess, stream);
-    if (mapname == NULL)
-      mapname = "en";
     tn5250_print_session_set_char_map(printsess, mapname);
     tn5250_print_session_set_output_command(printsess, outputcommand);
     tn5250_print_session_main_loop(printsess);

@@ -64,7 +64,7 @@ int ccp;
 
 int main()
 {
-   Tn5250CharMap *map = tn5250_char_map_new ("en");
+   Tn5250CharMap *map = tn5250_char_map_new ("37");
    current_line = 1;
    new_line = 1;
    mpp = 132;

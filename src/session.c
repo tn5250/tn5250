@@ -500,6 +500,7 @@ static void tn5250_session_process_stream(Tn5250Session * This)
       case CMD_RESTORE_SCREEN:
 	 /* Ignored, the data following this should be a valid
 	  * Write To Display command. */
+	 tn5250_session_clear_unit(This);
 	 break;
       case CMD_WRITE_ERROR_CODE:
 	 tn5250_session_write_error_code(This);
