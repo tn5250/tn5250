@@ -38,34 +38,30 @@ lib5250_la_SOURCES =	buffer.c\
 
 lib5250_la_LIBADD =	@with_extra_libs@
 
-tn5250_SOURCES = 	tn5250.c\
-		        $(LIBSOURCES)
+tn5250_SOURCES = 	tn5250.c
 
 tn5250_LDADD = 		@with_extra_libs@ lib5250.la
 
-scs2ascii_SOURCES =	scs2ascii.c\
-			$(LIBSOURCES)
+scs2ascii_SOURCES =	scs2ascii.c
 
 scs2ascii_LDADD =	@with_extra_libs@ lib5250.la
 
-lp5250d_SOURCES =	lp5250d.c\
-			$(LIBSOURCES)
+lp5250d_SOURCES =	lp5250d.c
 
 lp5250d_LDADD =		@with_extra_libs@ lib5250.la
 
 tn5250d_SOURCES =	tn5250d.c\
-			host5250.c\
-			$(LIBSOURCES)
+			host5250.c
 
 tn5250d_LDADD =		@with_extra_libs@ lib5250.la
 
 tn3270d_SOURCES = 	tn3270d.c\
-			host3270.c\
-			$(LIBSOURCES)
+			host3270.c
 
 tn3270d_LDADD =		@with_extra_libs@ lib5250.la
 
 pkginclude_HEADERS = 	buffer.h\
+			codes3270.h\
 		 	codes5250.h\
 			conf.h\
 			config.h\
@@ -74,6 +70,8 @@ pkginclude_HEADERS = 	buffer.h\
 			dbuffer.h\
 			display.h\
 			field.h\
+			host3270.h\
+			host5250.h\
 			printsession.h\
 			record.h\
 			scs.h\
@@ -81,6 +79,8 @@ pkginclude_HEADERS = 	buffer.h\
 			slangterm.h\
 			stream.h\
 			terminal.h\
+			tn3270d.h\
+			tn5250d.h\
 			utility.h\
 			wtd.h
 

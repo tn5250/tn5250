@@ -72,9 +72,9 @@ extern "C" {
 #define WDSF	0x15		/* Write to Display Structured Field on 5494 */ /* FIXME: */
 #define SF	0x1D		/* Start of field */
 
-/******************************************************************
+/*
  * Operator Error Codes see 5494 User's Guide (GA27-3960-03) 2.3.4
- ******************************************************************/
+ */
  
 #define ERR_DONT_KNOW		0x01
 #define ERR_BYPASS_FIELD	0x04
@@ -126,9 +126,9 @@ extern "C" {
  #define MSG_SBCS_WRONG_TYPE	"Field requires double-byte characters."
 #endif
 
-/*************************************************************************
+/*
  * More error codes - Data Stream Negative Responses (SC30-3533-04) 13.4 *
- *************************************************************************/
+ */
  
 #define DSNR_RESEQ_ERR	  03
 #define DSNR_INVCURSPOS	0x22

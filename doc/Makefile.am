@@ -21,6 +21,7 @@ HTMLDOCS =		buffer.c.html\
 			display.h.html\
 			field.c.html\
 			field.h.html\
+			host5250.h.html\
 			index.html\
 			printsession.c.html\
 			printsession.h.html\
@@ -35,6 +36,7 @@ HTMLDOCS =		buffer.c.html\
 			stream.h.html\
 			telnetstr.c.html\
 			terminal.h.html\
+			tn5250d.h.html\
 			utility.c.html\
 			utility.h.html\
 			version.c.html\
