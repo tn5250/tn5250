@@ -8,7 +8,9 @@ bin_SCRIPTS = tn5250-config\
 
 pkgdata_DATA = dialogrc\
 	       XTerm
-	       
+
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = tn5250.pc
 
 aclocal_DATA = tn5250.m4
 
@@ -25,4 +27,5 @@ EXTRA_DIST = acconfig.h\
 	XTerm\
 	dialogrc\
 	tn5250.m4\
-	README.ssl
+	README.ssl \
+	tn5250.pc.in
