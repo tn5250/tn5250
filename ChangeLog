@@ -1,3 +1,6 @@
+2005-03-26 James Rich <james@eaerich.com>
+- Fixed reverse cursor progression.
+
 2005-03-25 James Rich <james@eaerich.com>
 - Fixed the handling of Erase To Address order.  Forced the region of created
   windows to be cleared whether we receive the erase order or not.
