@@ -122,6 +122,7 @@ struct _Tn5250TerminalPrivate {
    int		  k_map_len;
 #endif
    int		  quit_flag : 1;
+   int		  have_underscores : 1;
    int		  underscores : 1;
    int		  is_xterm : 1;
 };
@@ -266,6 +267,7 @@ Tn5250Terminal *tn5250_curses_terminal_new()
       return NULL;
    }
 
+   r->data->have_underscores = 0;
    r->data->underscores = 0;
    r->data->quit_flag = 0;
    r->data->last_width = 0;
@@ -346,8 +348,12 @@ static void curses_terminal_init(Tn5250Terminal * This)
    This->data->quit_flag = 0;
 
    /* Determine if the terminal supports underlining. */
-   if (tgetstr ("us", NULL) == NULL)
-      This->data->underscores = 1;
+   if (This->data->have_underscores == 0) {
+      if (tgetstr ("us", NULL) == NULL)
+	 This->data->underscores = 1;
+      else
+	 This->data->underscores = 0;
+   }
 
 #ifdef USE_OWN_KEY_PARSING
    /* Allocate and populate an array of escape code => key code 
@@ -394,6 +400,30 @@ static void curses_terminal_init(Tn5250Terminal * This)
       This->data->k_map[This->data->k_map_len-1].k_str[0] =
 	 This->data->k_map[This->data->k_map_len-s-1].k_str[0] = 0;
 #endif
+}
+
+/****i* lib5250/tn5250_curses_terminal_use_underscores
+ * NAME
+ *    tn5250_curses_terminal_use_underscores
+ * SYNOPSIS
+ *    tn5250_curses_terminal_use_underscores (This, f);
+ * INPUTS
+ *    Tn5250Terminal  *    This       - The curses terminal object.
+ *    int                  f          - Flag to use underscores
+ * DESCRIPTION
+ *    This function instructs the curses terminal to use underscore
+ *    characters (`_') for blank cells in under-lined fields instead of
+ *    using the curses underline attribute.  This is necessary on terminals
+ *    which don't support the underline attribute.
+ *
+ *    If this is not explicitly set, the curses terminal will determine
+ *    if it should use underscores by checking for the "us" termcap 
+ *    capability.  This may not always produce the desired effect.
+ *****/
+void tn5250_curses_terminal_use_underscores (Tn5250Terminal *This, int u)
+{
+   This->data->have_underscores = 1;
+   This->data->underscores = u;
 }
 
 /****i* lib5250/curses_terminal_term
