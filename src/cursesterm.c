@@ -569,9 +569,14 @@ static void curses_terminal_update(Tn5250Terminal * This, Tn5250Display *display
 	    if (curs_attr == 0x00) {	/* NONDISPLAY */
 	       addch(attribute_map[0] | ' ');
 	    } else {
-	       if ((c < 0x40 && c > 0x00) || c == 0xff) { /* UNPRINTABLE */
+               /* UNPRINTABLE -- print block */
+               if ((c==0x1f) || (c==0x3F)) {
 		  c = ' ';
 		  curs_attr ^= A_REVERSE;
+               }
+               /* UNPRINTABLE -- print blank */
+	       else if ((c < 0x40 && c > 0x00) || c == 0xff) { 
+		  c = ' ';
 	       } else {
 		  c = tn5250_char_map_to_local (tn5250_display_char_map (display), c);
 	       }
