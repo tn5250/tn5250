@@ -37,7 +37,6 @@
 #include "tn5250-config.h"
 
 #if defined(WIN32) || defined(WINE)
-#undef VERSION
 #include <windows.h>
 #include <winsock.h>
 #endif

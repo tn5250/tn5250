@@ -28,6 +28,10 @@ static Tn5250ConfigStr *tn5250_config_get_str (Tn5250Config *This, const char *n
 static void tn5250_config_replace_vars(char *buf, int maxlen);
 static void tn5250_config_replacedata(const char *from, const char *to, 
                                char *line, int maxlen);
+#ifdef WIN32
+#define snprintf _snprintf
+#define vsnprintf _vsnprintf
+#endif
 
 /*** Tn5250ConfigStr ***/
 
@@ -312,6 +316,60 @@ config_error:
    return -1;
 }
 
+#ifdef __WIN32__
+/*
+ *    Load default configuration files.
+ *    Win32 version -- Looks for a file in the same dir as the .exe
+ *            file called "tn5250rc".
+ */
+int tn5250_config_load_default (Tn5250Config *This)
+{
+#define PATHSIZE 1024
+   LPTSTR apppath;
+   LPTSTR dir;
+   DWORD rc;
+   DWORD len;
+   LPTSTR lpMsgBuf;
+
+   apppath = malloc(PATHSIZE+1);
+   TN5250_ASSERT(apppath!=NULL);
+
+   if (GetModuleFileName(NULL, apppath, PATHSIZE)<1) {
+       FormatMessage(
+          FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM,
+          NULL, 
+          GetLastError(),
+          MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+          lpMsgBuf,
+          0, NULL
+       );
+       TN5250_LOG(("GetModuleFileName Error: %s\n", lpMsgBuf));
+       MessageBox(NULL, lpMsgBuf, "TN5250", MB_OK);
+       LocalFree(lpMsgBuf);
+       return -1;
+   }
+
+   if (strrchr(apppath, '\\')) {
+        len = strrchr(apppath, '\\') - apppath;
+        apppath[len+1] = '\0';
+   }
+
+   dir = malloc(strlen(apppath) + 15);
+   TN5250_ASSERT(apppath!=NULL);
+
+   strcpy(dir, apppath);
+   strcat(dir, "tn5250rc");
+   free(apppath);
+
+   TN5250_LOG(("Config File = %s\n", dir));
+
+   rc = tn5250_config_load(This, dir);
+   free(dir);
+   return rc;
+}
+
+#else
+   
 /*
  *    Load default configuration files.
  */
@@ -342,6 +400,7 @@ int tn5250_config_load_default (Tn5250Config *This)
 
    return ec;
 }
+#endif
 
 int tn5250_config_parse_argv (Tn5250Config *This, int argc, char **argv)
 {
