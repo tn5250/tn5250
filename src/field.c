@@ -220,7 +220,8 @@ int tn5250_field_count_right (Tn5250Field *This, int y, int x)
  */
 int tn5250_field_valid_char (Tn5250Field *field, int ch)
 {
-   TN5250_LOG(("HandleKey: fieldtype = %d\n", tn5250_field_type (field)));
+   TN5250_LOG(("HandleKey: fieldtype = %d; char = '%c'.\n",
+	    tn5250_field_type (field), ch));
    switch (tn5250_field_type (field)) {
    case TN5250_FIELD_ALPHA_SHIFT:
       return 1;
@@ -236,7 +237,7 @@ int tn5250_field_valid_char (Tn5250Field *field, int ch)
       return 1;
 
    case TN5250_FIELD_NUM_ONLY:
-      return (tn5250_isnumeric(ch) ||
+      return (isdigit (ch) ||
 	  ch == '+' ||
 	  ch == ',' ||
 	  ch == '.' ||

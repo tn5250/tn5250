@@ -1,3 +1,13 @@
+1999-11-21 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- utility.c: Removed tn5250_isnumeric, only called from one place, and
+  isdigit works just fine there as that code already checks for ,. -+
+- display.c: Two stoopid bugs in tn5250_display_shift_right, one stoopid
+  bug making it's appearence in tn5250_display_field_minus and
+  tn5250_display_field_plus.  Number Only fields now work with positive
+  or negative numbers.  Fixed some confusion as to whether the character
+  was currently ebcdic or ascii in tn5250_display_interactive_addch.
+
 1999-11-17 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 
 - Field Exit and Field + are now seperate functions. '+' in numeric field
