@@ -90,7 +90,7 @@ tn5250_terminal_beep (Tn5250Terminal * This)
 int
 tn5250_terminal_enhanced (Tn5250Terminal * This)
 {
-  return (*((This)->enhanced)) ((This));
+  return (This)->enhanced == NULL ? 0 : (*((This)->enhanced)) ((This));
 }
 
 int
