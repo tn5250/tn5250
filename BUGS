@@ -27,23 +27,6 @@
     <date>99.10.01.16.45.00</date>
     <owner email="c.evans@clear.net.nz">Carey Evans</owner>
 
-    The Display Program Messages display at signon shows up breifly, then all
-    clears except for the title.
-  </bug>
-
-  <bug>
-    <date>99.10.01.16.45.00</date>
-    <owner email="c.evans@clear.net.nz">Carey Evans</owner>
-    
-    ILE programs using stdin (like REXX), and similar commands like WRKDOMCSL
-    and Java programs, don't clear the entry field at the bottom of the screen
-    once the command has completed.
-  </bug>
-
-  <bug>
-    <date>99.10.01.16.45.00</date>
-    <owner email="c.evans@clear.net.nz">Carey Evans</owner>
-
     System Request provides too many options.  For some reason, the AS/400 thinks
     there is a host system to be able to return to.
   </bug>

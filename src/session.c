@@ -945,34 +945,34 @@ static void tn5250_session_handle_cc1 (Tn5250Session *This, unsigned char cc1)
    int null_non_bypass = 0;
    Tn5250Field *iter;
 
-   switch (cc1 & 0x07) {
+   switch (cc1 & 0xE0) {
    case 0x00:
       lock_kb = 0;
       break;
 
-   case 0x01:
+   case 0x40:
       reset_non_bypass_mdt = 1;
       break;
 
-   case 0x02:
+   case 0x60:
       reset_all_mdt = 1;
       break;
 
-   case 0x03:
+   case 0x80:
       null_non_bypass_mdt = 1;
       break;
 
-   case 0x04:
+   case 0xA0:
       reset_non_bypass_mdt = 1;
       null_non_bypass = 1;
       break;
 
-   case 0x05:
+   case 0xC0:
       reset_non_bypass_mdt = 1;
       null_non_bypass_mdt = 1;
       break;
 
-   case 0x06:
+   case 0xE0:
       reset_all_mdt = 1;
       null_non_bypass = 1;
       break;
@@ -1518,8 +1518,9 @@ static void tn5250_session_set_buffer_address(Tn5250Session * This)
 
 static void tn5250_session_repeat_to_address(Tn5250Session * This)
 {
-   unsigned char temp[4];
-   int X, Y, curcol, count;
+   unsigned char temp[3];
+   int x, y, ins_loc;
+   Tn5250Field  *field;
 
    TN5250_LOG(("RepeatToAddress: entered.\n"));
 
@@ -1530,15 +1531,21 @@ static void tn5250_session_repeat_to_address(Tn5250Session * This)
    TN5250_LOG(("RepeatToAddress: row = %d; col = %d; char = 0x%02X\n",
 	temp[0], temp[1], temp[2]));
 
-   X = tn5250_display_cursor_x(This->dsp) + 1;
-   Y = tn5250_display_cursor_y(This->dsp) + 1;
+   while(1) {
+      y = tn5250_display_cursor_y(This->dsp);
+      x = tn5250_display_cursor_x(This->dsp);
 
-   TN5250_LOG(("RepeatToAddress: currow = %d\n", Y));
-
-   count = temp[1] - X + 1 + (temp[0] - Y) * tn5250_display_width(This->dsp);
-
-   for (curcol = 0; curcol < count; curcol++)
       tn5250_display_addch(This->dsp, temp[2]);
+
+      field = tn5250_table_field_yx(This->table,y,x);
+      if(field != NULL) {
+	 ins_loc = tn5250_field_count_left(field,y,x);
+	 tn5250_field_put_char(field,ins_loc,temp[2]);
+      }
+
+      if(y == temp[0] - 1 && x == temp[1] - 1)
+	 break;
+   }
 }
 
 static void tn5250_session_insert_cursor(Tn5250Session * This)
