@@ -338,10 +338,15 @@ static void tn5250_wtd_context_write_field (Tn5250WTDContext *This, Tn5250Field 
       tn5250_wtd_context_putc (This, (unsigned char)(field->FFW & 0x00ff));
 
       /* Put the field control word(s). */
+      /* Remove this for now while we transition to using individual field
+       * attributes.
+       */
+      /*
       if (field->FCW != 0) {
 	 tn5250_wtd_context_putc (This, (unsigned char)(field->FCW >> 8));
 	 tn5250_wtd_context_putc (This, (unsigned char)(field->FCW & 0x00ff));
       }
+      */
    }
 
 

@@ -1314,7 +1314,9 @@ static void tn5250_session_start_of_field(Tn5250Session * This)
 	 TN5250_ASSERT(field != NULL);
 
 	 field->FFW = (FFW1 << 8) | FFW2;
-	 field->FCW = (FCW1 << 8) | FCW2;
+
+	 /* Don't use this FCW anymore, use individual attributes */
+	 /* field->FCW = (FCW1 << 8) | FCW2; */
 	 field->attribute = Attr;
 	 field->length =(Length1 << 8) | Length2;
 	 field->start_row = Y;
