@@ -1,3 +1,8 @@
+2003-08-14 Scott Klement <klemscot@klements.com>
+- Added a pseudo-AID code for the TESTREQ function.  And added code
+   to send a packet with TRQ bit set when it's pressed.  (We had mapping
+   in the terminal for this, but no code in display.c or session.c!)
+
 2003-08-12 Scott Klement <klemscot@klements.com>
 - Fixed one place in telnetstr.c where we allocated with malloc() but
    freed with g_free().
