@@ -370,10 +370,6 @@ int tn5250_char_map_printable_p(Tn5250CharMap *map, Tn5250Char data)
    case 0x0e: 
    case 0x0f: 
      */
-     /* These should cause an RX1251 on the AS/400 */
-   case 0x10:
-   case 0x12:
-   case 0x15:
       return 0;                                                               
    }
    return 1;
