@@ -40,7 +40,6 @@ extern "C" {
    void tn5250_settransmap(char *map);
    int tn5250_printable(unsigned char data);
    int tn5250_attribute(unsigned char data);
-   int tn5250_isnumeric(char data);
 
 #define TN5250_MAKESTRING(expr) #expr
 #ifndef NDEBUG

@@ -114,20 +114,6 @@ int tn5250_attribute(unsigned char data)
    return ((data & 0xE0) == 0x20);
 }
 
-int tn5250_isnumeric(char data)
-{
-   char list[] = "0123456789 +-,.";
-   int rc;
-
-   rc = 0;
-   if (strchr(list, data))
-      rc = 1;
-
-   return (rc);
-
-}
-
-
 #ifndef NDEBUG
 FILE *tn5250_logfile = NULL;
 

@@ -438,8 +438,7 @@ static void tn5250_session_handle_key(Tn5250Session * This, int cur_key)
    default:
       TN5250_LOG(("HandleKey: cur_key = %c\n", cur_key));
       if (cur_key >= 0 && cur_key <= 255)
-	 tn5250_display_interactive_addch (This->display,
-	       tn5250_ascii2ebcdic(cur_key));
+	 tn5250_display_interactive_addch (This->display, cur_key);
    }
    if (send) {
       tn5250_dbuffer_indicator_set(This->dsp, TN5250_DISPLAY_IND_X_SYSTEM);

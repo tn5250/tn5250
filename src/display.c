@@ -399,8 +399,8 @@ void tn5250_display_interactive_addch(Tn5250Display * This, unsigned char ch)
       return;
    }
    /* Upcase the character if this is a monocase field. */
-   if (tn5250_field_is_monocase(field) && isalpha(tn5250_ebcdic2ascii(ch)))
-      ch = tn5250_ascii2ebcdic(toupper(tn5250_ebcdic2ascii(ch)));
+   if (tn5250_field_is_monocase(field) && isalpha(ch))
+      ch = toupper(ch);
 
    /* '+' and '-' keys activate field exit/field minus for numeric fields. */
    if (tn5250_field_is_num_only(field) || tn5250_field_is_signed_num(field)) {
@@ -416,6 +416,7 @@ void tn5250_display_interactive_addch(Tn5250Display * This, unsigned char ch)
    }
    /* Make sure this is a valid data character for this field type. */
    if (!tn5250_field_valid_char(field, ch)) {
+      TN5250_LOG (("Inhibiting: invalid character for field type.\n"));
       tn5250_dbuffer_inhibit(This->display_buffers);
       return;
    }
@@ -427,6 +428,7 @@ void tn5250_display_interactive_addch(Tn5250Display * This, unsigned char ch)
    /* Don't allow the user to enter data in the sign portion of a signed
     * number field. */
    if (end_of_field && tn5250_field_is_signed_num(field)) {
+      TN5250_LOG (("Inhibiting: last character of signed num field.\n"));
       tn5250_dbuffer_inhibit(This->display_buffers);
       return;
    }
@@ -436,9 +438,10 @@ void tn5250_display_interactive_addch(Tn5250Display * This, unsigned char ch)
       int shiftcount = tn5250_field_count_right(field,
 					   tn5250_display_cursor_y(This),
 					  tn5250_display_cursor_x(This));
-      tn5250_dbuffer_ins(This->display_buffers, ch, shiftcount);
+      tn5250_dbuffer_ins(This->display_buffers, tn5250_ascii2ebcdic(ch),
+	    shiftcount);
    } else
-      tn5250_dbuffer_addch(This->display_buffers, ch);
+      tn5250_dbuffer_addch(This->display_buffers, tn5250_ascii2ebcdic(ch));
    tn5250_field_set_mdt(field);
 
    /* If at the end of the field and not a fer field, advance to the
@@ -485,23 +488,28 @@ void tn5250_display_shift_right(Tn5250Display * This, Tn5250Field * field, unsig
    ptr = tn5250_display_field_data(This, field);
    end = tn5250_field_length(field) - 1;
 
-   /* FIXME: Are we really supposed to be doing this with num only fields? */
-   if (tn5250_field_is_num_only(field) || tn5250_field_is_signed_num(field))
+   tn5250_field_set_mdt(field);
+
+   /* Don't adjust the sign position of signed num type fields. */
+   if (tn5250_field_is_signed_num(field))
       end--;
 
    /* Left fill the field until the first non-null or non-blank character. */
    for (n = 0; n <= end && (ptr[n] == 0 || ptr[n] == 0x40); n++)
       ptr[n] = fill;
 
+   /* If the field is entirely blank and we don't do this, we spin forever. */
+   if (n > end)
+      return;
+
    /* Shift the contents of the field right one place and put the fill char in
     * position 0 until the data is right-justified in the field. */
    while (ptr[end] == 0 || ptr[end] == 0x40) {
-      for (n = end; n > 1; n--)
+      for (n = end; n > 0; n--)
 	 ptr[n] = ptr[n - 1];
       ptr[0] = fill;
    }
 
-   tn5250_field_set_mdt(field);
 }
 
 /*
@@ -575,6 +583,8 @@ void tn5250_display_field_plus(Tn5250Display * This)
    Tn5250Field *field;
    unsigned char *data;
    unsigned char c;
+
+   TN5250_LOG (("Field+ entered.\n"));
    
    field = tn5250_display_current_field (This);
    if (field == NULL || 
@@ -587,12 +597,12 @@ void tn5250_display_field_plus(Tn5250Display * This)
    tn5250_display_field_exit(This);
 
    /* For numeric only fields, we change the zone of the last digit if
-    * field minus is pressed.  For signed numeric fields, we change the
-    * sign position to a '-'. */
+    * field plus is pressed.  For signed numeric fields, we change the
+    * sign position to a '+'. */
    data = tn5250_display_field_data (This, field);
    if (tn5250_field_type(field) == TN5250_FIELD_NUM_ONLY) {
       c = data[tn5250_field_length (field) - 1];
-      if (isdigit (tn5250_ascii2ebcdic (c)))
+      if (isdigit (tn5250_ebcdic2ascii (c)))
 	 data[tn5250_field_length (field) - 1] = (c & 0x0f) | 0xf0;
    } else
       data[tn5250_field_length (field) - 1] = 0;
@@ -606,6 +616,8 @@ void tn5250_display_field_minus(Tn5250Display * This)
    Tn5250Field *field;
    unsigned char *data;
    unsigned char c;
+
+   TN5250_LOG (("Field- entered.\n"));
    
    field = tn5250_display_current_field (This);
    if (field == NULL || 
@@ -623,7 +635,7 @@ void tn5250_display_field_minus(Tn5250Display * This)
    data = tn5250_display_field_data (This, field);
    if (tn5250_field_type(field) == TN5250_FIELD_NUM_ONLY) {
       c = data[tn5250_field_length (field) - 1];
-      if (isdigit (tn5250_ascii2ebcdic (c)))
+      if (isdigit (tn5250_ebcdic2ascii (c)))
 	 data[tn5250_field_length (field) - 1] = (c & 0x0f) | 0xd0;
    } else
       data[tn5250_field_length (field) - 1] = tn5250_ascii2ebcdic('-');
