@@ -1,3 +1,8 @@
+2003-02-11 Scott Klement <klemscot@klements.com>
+- Fixed (hopefully!) home key behavior after an IC order was received.
+- Fixed newline behavior when there's a non-bypass field in the first
+    position of the new line.
+
 2002-11-26 Scott Klement <klemscot@klements.com>
 - Added a 'Select All' option to Win32 Edit menu
 
