@@ -1,3 +1,7 @@
+2000-04-27 Mike Madore <mmadore@turbolinux.com>
+- Applied Scott Klement's patches to improve handling of undisplayable 
+  characters.
+	
 2000-04-14 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 - Removed accidentally released debugging code from new config stuff.
 - Do not require a host if +/-version or +/-help is specified.
