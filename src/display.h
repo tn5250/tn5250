@@ -29,6 +29,7 @@ extern "C" {
 #define TN5250_DISPLAY_IND_X_SYSTEM	   	0x0004
 #define TN5250_DISPLAY_IND_X_CLOCK	   	0x0008
 #define TN5250_DISPLAY_IND_INSERT	   	0x0010
+#define TN5250_DISPLAY_IND_FER			0x0020
 
 struct _Tn5250Terminal;
 struct _Tn5250DBuffer;
@@ -55,14 +56,15 @@ struct _Tn5250Display {
    struct _Tn5250Session *session;
    struct _Tn5250CharMap *map;
    int indicators;
-   int indicators_dirty : 1;
-   int pending_insert : 1;
 
    unsigned char *saved_msg_line;
 
    /* Queued keystroke ring buffer. */
    int key_queue_head, key_queue_tail;
    int key_queue[TN5250_DISPLAY_KEYQ_SIZE];
+
+   int indicators_dirty : 1;
+   int pending_insert : 1;
 };
 
 typedef struct _Tn5250Display Tn5250Display;

@@ -29,3 +29,11 @@ xt5250*VT100.Translations: #override\n\
         Shift <Key>Tab: string("\033[Z") \n\
         ~Shift <Key>Delete: string("\033[3~") \n\
         ~Shift <Key>Insert: string("\033[2~") 
+
+! Something I did installed a file which turned off underLine
+! and turned on colorULMode in my ~/.Xdefaults.  This, obviously, is not
+! very useful for xt5250.  I wish I knew how this works better -JMF
+
+xt5250.VT100*underLine: True
+xt5250.VT100*colorULMode: off
+

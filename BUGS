@@ -32,28 +32,18 @@
   </bug>
 
   <bug>
-    <date>99.11.17.22.57.00</date>
-    <owner email="jasonf@nacs.net">Jay 'Eraserhead' Felice</owner>
-
-    If we undo the hack which ignores 'garbage' keys in session.c in the
-    key handler under the 'default' clause, we get two decimal 410s.  Why?
-  </bug>
-
-  <bug>
     <date>2000.01.16.22.48.21</date>
     <owner email="c.evans@clear.net.nz">Carey Evans</owner>
     
     In an unsigned numeric field-exit required field, the cursor remains
     on the last character, but on pressing field exit, the last character
     is erased.
-  </bug>
 
-  <bug>
-    <date>2000.01.16.22.48.21</date>
-    <owner email="c.evans@clear.net.nz">Carey Evans</owner>
-  
-    Using Alt- or the Escape key still doesn't work right - tn5250 doesn't
-    notice the key until another key is pressed.
+    Elaboration: There seems to be an additional FER state used for FER
+    fields on most emulators; we don't support that yet.  When the last
+    character in the field is typed, turn on FER flag.  When backspace/
+    left arrow is typed, turn off FER flag.  Otherwise, inhibit
+    display.
   </bug>
 
   <bug>

@@ -252,7 +252,8 @@ static Key curses_vt100[] = {
    { K_FIELDEXIT,	"\033\130" }, /* ESC X */
    { K_NEWLINE,         "\033\012" }, /* ESC ^J */
    { K_NEWLINE,         "\033\015" }, /* ESC ^M */
-   /* FIXME: { K_INSERT, "\033" + tgetstr("dc",NULL) } ( ESC DEL ) */
+   { K_INSERT,		"\033\177" }, /* ESC DEL */
+   /* K_INSERT = ESC+DEL handled in code below. */
 };
 #endif
 
@@ -339,7 +340,8 @@ static void curses_terminal_init(Tn5250Terminal * This)
 
    /* Determine if we're talking to an xterm ;) */
    if ((str = getenv("TERM")) != NULL &&
-	 (!strcmp (str, "xterm") || !strcmp (str, "xterm-5250"))) 
+	 (!strcmp (str, "xterm") || !strcmp (str, "xterm-5250")
+	  || !strcmp (str, "xterm-color"))) 
       This->data->is_xterm = 1;
 
    /* Initialize colors if the terminal supports it. */
@@ -360,7 +362,7 @@ static void curses_terminal_init(Tn5250Terminal * This)
    /* Allocate and populate an array of escape code => key code 
     * mappings. */
    This->data->k_map_len = sizeof (curses_vt100) / sizeof (Key)
-      + sizeof (curses_caps) / sizeof (Key);
+      + sizeof (curses_caps) / sizeof (Key) + 1;
    This->data->k_map = (Key*)malloc (sizeof (Key)*This->data->k_map_len);
 
    c = sizeof (curses_caps) / sizeof (Key);
@@ -374,10 +376,19 @@ static void curses_terminal_init(Tn5250Terminal * This)
 	 This->data->k_map[i].k_str[0] = '\0';
    }
 
+   /* Populate vt100 escape codes. */
    for (i = 0; i < sizeof (curses_vt100) / sizeof (Key); i++) {
       This->data->k_map[i + c].k_code = curses_vt100[i].k_code;
       strcpy (This->data->k_map[i + c].k_str, curses_vt100[i].k_str);
    }
+
+   /* Damn the exceptions to the rules. (ESC + DEL) */
+   This->data->k_map[This->data->k_map_len-1].k_code = K_INSERT;
+   if ((str = tgetstr ("kD", NULL)) != NULL) {
+      This->data->k_map[This->data->k_map_len-1].k_str[0] = '\033';
+      strcpy (This->data->k_map[This->data->k_map_len-1].k_str + 1, str);
+   } else
+      This->data->k_map[This->data->k_map_len-1].k_str[0] = 0;
 #endif
 }
 
@@ -571,21 +582,21 @@ static void curses_terminal_update_indicators(Tn5250Terminal /*@unused@*/ * This
 
    memset(ind_buf, ' ', sizeof(ind_buf));
    memcpy(ind_buf, "5250", 4);
-   if ((inds & TN5250_DISPLAY_IND_MESSAGE_WAITING) != 0) {
+   if ((inds & TN5250_DISPLAY_IND_MESSAGE_WAITING) != 0)
       memcpy(ind_buf + 23, "MW", 2);
-   }
-   if ((inds & TN5250_DISPLAY_IND_INHIBIT) != 0) {
+   if ((inds & TN5250_DISPLAY_IND_INHIBIT) != 0)
       memcpy(ind_buf + 9, "X II", 4);
-   } else if ((inds & TN5250_DISPLAY_IND_X_CLOCK) != 0) {
+   else if ((inds & TN5250_DISPLAY_IND_X_CLOCK) != 0)
       memcpy(ind_buf + 9, "X CLOCK", 7);
-   } else if ((inds & TN5250_DISPLAY_IND_X_SYSTEM) != 0) {
+   else if ((inds & TN5250_DISPLAY_IND_X_SYSTEM) != 0)
       memcpy(ind_buf + 9, "X SYSTEM", 8);
-   }
-   if ((inds & TN5250_DISPLAY_IND_INSERT) != 0) {
+   if ((inds & TN5250_DISPLAY_IND_INSERT) != 0)
       memcpy(ind_buf + 30, "IM", 2);
-   }
+   if ((inds & TN5250_DISPLAY_IND_FER) != 0)
+      memcpy(ind_buf + 33, "FER", 3);
    sprintf(ind_buf+72,"%03.3d/%03.3d",tn5250_display_cursor_x(display)+1,
       tn5250_display_cursor_y(display)+1);
+
    attrset( (attr_t)COLOR_PAIR(COLOR_WHITE) );
    mvaddnstr(tn5250_display_height(display), 0, ind_buf, 80);
    move(tn5250_display_cursor_y(display), tn5250_display_cursor_x(display));
@@ -1020,6 +1031,13 @@ static int curses_terminal_getkey (Tn5250Terminal *This)
    /* Retreive all keys from the keyboard buffer. */
    while (This->data->k_buf_len < MAX_K_BUF_LEN && (ch = getch ()) != ERR) {
       TN5250_LOG(("curses_getch: recevied 0x%02X.\n", ch));
+
+      /* FIXME: Here would be the proper place to get mouse events :) */
+     
+      /* HACK! Why are we gettings these 0410s still?  ncurses bug? */
+      if (ch < 0 || ch > 255)
+	 continue;
+
       This->data->k_buf[This->data->k_buf_len++] = ch;
    }
 
