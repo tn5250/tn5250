@@ -114,17 +114,28 @@ void tn5250_display_destroy(Tn5250Display * This)
 int tn5250_display_config(Tn5250Display *This, Tn5250Config *config)
 {
    const char *v;
+   const char *termtype;
 
    tn5250_config_ref (config);
    if (This->config != NULL)
       tn5250_config_unref (This->config);
    This->config = config;
 
+   /* Set a terminal type if necessary */
+   termtype = tn5250_config_get(config, "env.TERM");
+
+   if(termtype == NULL) {
+       tn5250_config_set(config, "env.TERM", "IBM-3179-2");
+   }
+
    /* Set the new character map. */
    if (This->map != NULL)
       tn5250_char_map_destroy (This->map);
-   if ((v = tn5250_config_get (config, "map")) == NULL)
-      return -1; /* FIXME: An error message would be nice. */
+   if ((v = tn5250_config_get (config, "map")) == NULL) {
+     tn5250_config_set(config, "map", "37");
+     v = tn5250_config_get(config, "map");
+   }
+
    This->map = tn5250_char_map_new (v);
    if (This->map == NULL)
       return -1; /* FIXME: An error message would be nice. */
