@@ -1,3 +1,7 @@
+2001-11-01 Scott Klement <klemscot@klements.com>
+- We were ignoring the "NO_ADJUST" attribute of "numeric-only" fields,
+    which caused the AS/400 to misinterpret the value of some numbers.
+
 2001-10-30 Scott Klement <klemscot@klements.com>
 - Implemented SSL client certificates, for use when the AS/400 
     requires client authentication.

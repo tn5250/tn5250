@@ -787,11 +787,9 @@ void tn5250_display_field_adjust(Tn5250Display * This, Tn5250Field * field)
    int mand_fill_type;
 
    /* Because of special processing during transmit and other weirdness,
-    * we need to shift signed number fields right regardless.
-    * (num only too?) */
+    * we need to shift signed number fields right regardless. */
    mand_fill_type = tn5250_field_mand_fill_type(field);
-   if (tn5250_field_type(field) == TN5250_FIELD_SIGNED_NUM ||
-	 tn5250_field_type(field) == TN5250_FIELD_NUM_ONLY)
+   if (tn5250_field_type(field) == TN5250_FIELD_SIGNED_NUM) 
       mand_fill_type = TN5250_FIELD_RIGHT_BLANK;
 
    switch (mand_fill_type) {
@@ -1201,13 +1199,8 @@ void tn5250_display_kf_field_minus(Tn5250Display * This)
     * signed numeric fields, we change the sign position to a '-'. */
    data = tn5250_display_field_data (This, field);
    if (tn5250_field_type(field) == TN5250_FIELD_NUM_ONLY) {
-      if (data[0] != 0x00 && data[0] != 0x40) {
-	 /* FIXME: Explain why to the user. */
-	 tn5250_display_inhibit(This);
-      } else {
          int i = tn5250_field_length (field) - 1;
-	 if (data[i]&0x20) data[i]&=0xDF;
-      }
+         data[i] = (data[i]&0x0F) | 0xd0;
    } else
       data[tn5250_field_length (field) - 1] = tn5250_char_map_to_remote (This->map, '-');
 
