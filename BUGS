@@ -24,14 +24,6 @@
   </bug>
 
   <bug>
-    <date>99.11.15.22.50.00</date>
-    <owner email="jasonf@nacs.net">Jay 'Eraserhead' Felice</owner>
-
-    System request at signon screen (which is apparently ignored by the 400)
-    causes an assertion/core dump.
-  </bug>
-
-  <bug>
     <date>2000.01.16.22.48.21</date>
     <owner email="c.evans@clear.net.nz">Carey Evans</owner>
     
