@@ -47,6 +47,7 @@ process_client(int sockfd)
   Tn5250Host * host;
   int aidkey;
 
+
   hoststream = tn5250_stream_host(sockfd, 0);
 
   if(hoststream != NULL) {
@@ -77,6 +78,7 @@ Tn5250Config * config = NULL;
 int clientport;
 int manageport;
 GSList * addrlist;
+GSList * permitlist;
 
 int
 main(void)
@@ -102,19 +104,12 @@ main(void)
 
   addrlist = (GSList *)tn5250_config_get(config, "allowed");
 
+  permitlist = build_addr_list(addrlist);
+
   printf("Starting tn3270d server...\n");
   
   printf("Client port     = %d\n", clientport);
   printf("Management port = %d\n", manageport);
-
-  if(addrlist != NULL) {
-    GSList * iter = addrlist;
-    while(iter != NULL)
-      {
-	printf("Address = %s\n", iter->data);
-	iter = g_slist_next(iter);
-      }
-  }
 
   tn5250_daemon(0,0,1);
 
@@ -167,8 +162,16 @@ main(void)
 	}
       } 
 
-      syslog(LOG_INFO, "Incoming connection...\n");
-      
+      if(valid_client(permitlist, sn.sin_addr.s_addr)) {
+	syslog(LOG_INFO, "Accepting connection from %s\n", 
+	       inet_ntoa(sn.sin_addr));
+      } else {
+	syslog(LOG_INFO, "Rejecting connection from %s\n",
+	       inet_ntoa(sn.sin_addr));
+	close(sockfd);
+	continue;
+      }
+
       if( (childpid = fork()) < 0) {
 	perror("fork");
       } else if(childpid > 0) {
