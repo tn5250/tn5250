@@ -378,7 +378,7 @@ static int telnet_stream_connect(Tn5250Stream * This, const char *to)
    serv_addr.sin_family = AF_INET;
 
    /* Figure out the internet address. */
-   address = (char *)malloc (strlen (to)+1);
+   address = (char *)g_malloc (strlen (to)+1);
    strcpy (address, to);
    if (strchr (address, ':'))
       *strchr (address, ':') = '\0';
