@@ -50,14 +50,14 @@ process_client(int sockfd)
   hoststream = tn5250_stream_host(sockfd, 0);
 
   if(hoststream != NULL) {
+    syslog(LOG_INFO, "Successful connection.\n");
     host = tn5250_host_new(hoststream);
-    printf("Successful connection\n");
     aidkey = SendTestScreen(host);
     tn5250_host_destroy(host);
-    printf("aidkey = %d\n", aidkey);
+    syslog(LOG_INFO, "AidKey = %d\n", aidkey);
     _exit(0);
   } else {
-    printf("Connection failed.\n");
+    syslog(LOG_INFO, "Connection failed.\n");
     _exit(1);
   }
 }
@@ -183,3 +183,5 @@ main(void)
   
   return(0);
 }
+
+

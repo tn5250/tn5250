@@ -88,7 +88,7 @@ Tn5250WTDContext *tn5250_wtd_context_new (Tn5250Buffer *buffer, Tn5250DBuffer *s
 void tn5250_wtd_context_destroy (Tn5250WTDContext *This)
 {
    TN5250_ASSERT (This != NULL);
-   free (This);
+   g_free (This);
 }
 
 /****f* lib5250/tn5250_wtd_context_set_ic

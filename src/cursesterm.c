@@ -265,7 +265,7 @@ Tn5250Terminal *tn5250_curses_terminal_new()
 
    r->data = tn5250_new(struct _Tn5250TerminalPrivate, 1);
    if (r->data == NULL) {
-      free(r);
+      g_free(r);
       return NULL;
    }
 
@@ -362,7 +362,7 @@ static void curses_terminal_init(Tn5250Terminal * This)
     * mappings. */
    This->data->k_map_len = (sizeof (curses_vt100) / sizeof (Key)) * 2
       + sizeof (curses_caps) / sizeof (Key) + 1;
-   This->data->k_map = (Key*)malloc (sizeof (Key)*This->data->k_map_len);
+   This->data->k_map = (Key*)g_malloc (sizeof (Key)*This->data->k_map_len);
 
    c = sizeof (curses_caps) / sizeof (Key);
    s = sizeof (curses_vt100) / sizeof (Key);
@@ -457,11 +457,11 @@ static void curses_terminal_destroy(Tn5250Terminal * This)
 {
 #ifdef USE_OWN_KEY_PARSING
    if (This->data->k_map != NULL)
-      free(This->data->k_map);
+      g_free(This->data->k_map);
 #endif
    if (This->data != NULL)
-      free(This->data);
-   free(This);
+      g_free(This->data);
+   g_free(This);
 }
 
 /****i* lib5250/curses_terminal_width

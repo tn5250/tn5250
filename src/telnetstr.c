@@ -324,7 +324,6 @@ static int telnet_stream_connect(Tn5250Stream * This, const char *to)
 
    /* Figure out the internet address. */
    address = (char *)malloc (strlen (to)+1);
-   TN5250_ASSERT (address != NULL);
    strcpy (address, to);
    if (strchr (address, ':'))
       *strchr (address, ':') = '\0';
@@ -335,7 +334,7 @@ static int telnet_stream_connect(Tn5250Stream * This, const char *to)
       if (pent != NULL)
 	 serv_addr.sin_addr.s_addr = *((u_long *) (pent->h_addr));
    }
-   free (address);
+   g_free (address);
    if (serv_addr.sin_addr.s_addr == INADDR_NONE)
       return LAST_ERROR;
 
