@@ -59,6 +59,7 @@ static Tn5250StreamType stream_types[] = {
 
 static void streamInit(Tn5250Stream *This, long timeout)
 {
+  This->config = NULL;
    This->connect = NULL;
    This->disconnect = NULL;
    This->handle_receive = NULL;
