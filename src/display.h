@@ -67,6 +67,8 @@ struct _Tn5250Display {
    int indicators;
 
    unsigned char *saved_msg_line;
+   unsigned char *msg_line;
+   int msg_len;
 
    /* Queued keystroke ring buffer. */
    int key_queue_head, key_queue_tail;
@@ -136,6 +138,9 @@ extern void	  tn5250_display_make_wtd_data        (Tn5250Display *This,
 						       struct _Tn5250Buffer *b,
 						       struct _Tn5250DBuffer *);
 extern void	  tn5250_display_save_msg_line	      (Tn5250Display *This);
+extern void	  tn5250_display_set_msg_line	      (Tn5250Display *This,
+                                                       const unsigned char *m,
+                                                       int msglen);
 extern void	  tn5250_display_set_char_map	      (Tn5250Display *This,
                                                        const char *name);
 
