@@ -1,3 +1,8 @@
+2000-06-21 Mike Madore <mmadore@turbolinux.com>
+- Fixed off by one errors when checking screen position validity.  Emulator was
+  erroneously sending negative responses when output was to the last row of the
+  screen.
+	
 2000-06-20 Mike Madore <mmadore@turbolinux.com>
 - Modified the following functions so that they now send a negative response
   when they encounter illegal parameters:
