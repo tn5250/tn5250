@@ -10,6 +10,31 @@ This, the 0.15.x series, is the development series and may cause severe
 headaches and stomach cramps, if only due to the quality of code :)  If you
 are looking for a stable emulator, get the latest 0.14.x version.
 
+Building from CVS
+=================
+
+Skip to ``Building and Installing'' below if you got these sources from a
+.tar.gz release file or a CVS snapshot (as opposed to using `cvs checkout'
+or `cvs update' to retreive the sources).
+
+Certain files, such as the libtool support files and some shell scripts
+which replace possibly missing commands on the target system are not in
+CVS because we don't maintain them.  They can be installed with the
+following command:
+
+   ./autogen.sh
+
+This command requires current versions of the following packages, and the
+generated files may not work properly.
+
+   automake
+   autoconf
+   libtool
+
+You may receive an error the first time you run this script.  If so, run
+the script a second time to make sure you don't get an error (this is a bug
+with automake).
+
 Building and Installing
 =======================
 
