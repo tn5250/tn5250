@@ -30,8 +30,9 @@ Tn5250Session *sess = NULL;
 Tn5250Stream *stream = NULL;
 Tn5250Terminal *term = NULL;
 Tn5250Display *display = NULL;
+int use_underscores = -1;
 
-static char sopts[] = "m:s:t:Vwy:";
+static char sopts[] = "m:s:t:uVwy:";
 
 /* FIXME: This should be moved into session.[ch] or something. */
 static struct valid_term {
@@ -74,6 +75,8 @@ int main(int argc, char *argv[])
 
 #ifdef USE_CURSES
       term = tn5250_curses_terminal_new();
+      if (use_underscores != -1)
+	 tn5250_curses_terminal_use_underscores(term,use_underscores);
 #endif
 #ifdef USE_SLANG
       term = tn5250_slang_terminal_new();
@@ -148,6 +151,10 @@ static int parse_options(int argc, char *argv[])
       switch (arg) {
       case 'm':
 	 mapname = optarg;
+	 break;
+
+      case 'u':
+	 use_underscores = 1;
 	 break;
 
       case 's':
@@ -245,7 +252,8 @@ Options:\n\
 #ifndef NDEBUG
 "   -t FILE                 Log session to FILE.\n"
 #endif
-"   -V                      Show emulator version and exit.\n\
+"   -u                      Use underscores instead of underline attribute.\n\
+   -V                      Show emulator version and exit.\n\
    -y TYPE                 Emulate IBM terminal type (default: depends)");
    p = valid_terms;
    while (p->name) {

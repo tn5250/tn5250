@@ -39,6 +39,8 @@ extern "C" {
 #endif
 
    extern Tn5250Terminal /*@null@*/ /*@only@*/ *tn5250_curses_terminal_new(void);
+   extern void tn5250_curses_terminal_use_underscores (Tn5250Terminal *This,
+						       int use_underscores);
 
 #ifdef __cplusplus
 }

@@ -9,6 +9,9 @@
 2000-04-07 Mike Madore <mmadore@turbolinux.com>
 - Created a tests directory and placed the DDS and RPG source file from James 
   Rich <james.rich@m.cc.utah.edu> there.
+
+2000-04-05 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+- Added the -u option back to force underscores on.
 	
 2000-04-03 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 - `tic' not running shouldn't make the install fail; also 5250.terminfo
