@@ -79,12 +79,6 @@ int main(int argc, char *argv[])
       tn5250_log_open (tn5250_config_get (config, "trace"));
 #endif
 
-   {
-      FILE *log = fopen("/dev/tty1","w");
-      fprintf (log, "host = '%s'\r\n", tn5250_config_get (config, "host"));
-      fclose (log);
-   }
-
    stream = tn5250_stream_open (tn5250_config_get (config, "host"));
    if (stream == NULL)
       goto bomb_out;

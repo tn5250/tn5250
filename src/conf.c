@@ -317,9 +317,10 @@ int tn5250_config_parse_argv (Tn5250Config *This, int argc, char **argv)
       argn++;
    }
 
-   /* FIXME: Produce an error message. */
-   if (!tn5250_config_get (This, "host"))
-      return -1;
+   if (!tn5250_config_get (This, "host")
+	 && !tn5250_config_get(This, "help")
+	 && !tn5250_config_get (This, "version"))
+      return -1; /* FIXME: Produce an error message. */
 
    return 0;
 }
