@@ -1226,7 +1226,10 @@ static void tn5250_session_start_of_field(Tn5250Session * This)
    startx = tn5250_display_cursor_x(This->display)+1;
    starty = tn5250_display_cursor_y(This->display)+1;
 
-   if( (starty * width + startx + length) > width*height)
+   TN5250_LOG(("starty = %d width = %d startx = %d length = %d height = %d\n",
+	       starty, width, startx, length, height));
+
+   if( ((starty-1) * width + startx + length) > width*height)
      {
        errorcode = TN5250_NR_INVALID_ROW_COL_ADDR;
 
@@ -1438,7 +1441,7 @@ static void tn5250_session_transparent_data(Tn5250Session * This)
   l2 = tn5250_record_get_byte (This->record);
   td_len = (l1 << 8) | l2;
 
-  end = cury * width + curx + td_len;
+  end = (cury-1) * width + curx + td_len;
 
   TN5250_LOG (("TD order (length = X'%04X').\n",
 	       td_len));
@@ -1552,8 +1555,8 @@ static void tn5250_session_erase_to_address(Tn5250Session * This)
   length = tn5250_record_get_byte(This->record);
   width = tn5250_display_width(This->display);
   height = tn5250_display_height(This->display);
-  start = cury * width + curx;
-  end   = y * width + x;
+  start = (cury-1) * width + curx;
+  end   = (y-1) * width + x;
 
   if(end < start || length < 2 || length > 5)
     {
@@ -1600,8 +1603,8 @@ static void tn5250_session_repeat_to_address(Tn5250Session * This)
    x = tn5250_display_cursor_x(This->display)+1;
    width = tn5250_display_width(This->display);
    height = tn5250_display_height(This->display);
-   start = y * width + x;
-   end   = temp[0] * width + temp[1];
+   start = (y-1) * width + x;
+   end   = (temp[0]-1) * width + temp[1];
 
    TN5250_LOG(("RepeatToAddress: row = %d; col = %d; char = 0x%02X\n",
 	temp[0], temp[1], temp[2]));
