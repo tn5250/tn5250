@@ -1,3 +1,7 @@
+2000-02-09 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+- Removed config.guess and config.sub from CVS since they should be
+  provided by autogen.sh.
+
 2000-02-08 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 - Documented `-P cmd' option in usage message, removed `-p' option to 
   indicate print session as `-P cmd' is required for a working session

@@ -16,4 +16,3 @@ EXTRA_DIST = acconfig.h\
 	BUGS\
 	dialogrc\
 	XTerm
-
