@@ -1560,16 +1560,41 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                           " Jason M. Felice, and Scott Klement\n"
                           "\n"
                           "Portions of this software were contributed "
+#ifdef BINARY_RELEASE
+                          "by many people.  See the AUTHORS.txt file for\n"
+                          "details.\n"
+                          "\n"
+                          "For license information, see the COPYING.txt file "
+                          "that was include with this software.\n"
+#else
                           "by many people.  See the AUTHORS file for\n"
                           "details.\n"
                           "\n"
                           "For license information, see the COPYING file "
                           "that was include with this software.\n"
+#endif
+
 #ifdef HAVE_LIBSSL
+#ifdef BINARY_RELEASE
                           "\n"
                           "OpenSSL:\n"
                           "This product includes software developed by the "
-                          "OpenSSL Toolkit (http://www.openssl.org/)\n"
+                          "OpenSSL Project for use in the OpenSSL Toolkit "
+                          "(http://www.openssl.org/)\n"
+                          "This product includes cryptographic software "
+                          "written by Eric Young (eay@crypsoft.com).\n"
+                          "This product includes software written by Tim "
+                          "Hudson (tjh@cryptsoft.com).\n"
+	                  "\n"
+                          "For OpenSSL license information, see the "
+                          "COPYING.txt file that was installed with "
+                          "this software."
+#else
+                          "\n"
+                          "OpenSSL:\n"
+                          "This product includes software developed by the "
+                          "OpenSSL Project for use in the OpenSSL Toolkit "
+                          "(http://www.openssl.org/)\n"
                           "This product includes cryptographic software "
                           "written by Eric Young (eay@crypsoft.com).\n"
                           "This product includes software written by Tim "
@@ -1577,6 +1602,7 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                           "\n"
                           "For OpenSSL license information, see the LICENSE "
                           "file that was included in the OpenSSL package.\n"
+#endif
 #endif
                           ,PACKAGE, VERSION);
                   return 0;

@@ -1,3 +1,8 @@
+2002-04-07 Scott Klement <klemscot@klements.com>
+- Changed the Win32 configure program, Makefile, etc to include the
+  procedure for building a binary-release setup program.
+- Added some files to the Win32 dir for use with a binary setup program.
+
 2002-04-06 Scott Klement <klemscot@klements.com>
 - Made the font switching behavior in the Windows terminal behave more
   like it does in cursesterm.

@@ -40,6 +40,12 @@ TN5250_OBJS = tn5250-win.o tn5250-res.o winterm.o
 #
 LP5250D_OBJS = lp5250d-win.o tn5250-res.o
 
+#
+# The Inno Setup program is used to create a setup program
+# for binary releases.  
+#
+INNO_SETUP_DIR = @inno_setup_dir@
+
 
 #
 # You shouldn't need to change anything below this line:
@@ -76,6 +82,8 @@ all: $(DLL_NAME) $(DLL_EXP_LIB) $(PGMS)
 
 install: all strip do-install
 
+release: clean install do-release
+
 tn5250.exe: $(TN5250_OBJS)
 	$(CC) $(DEFINES) -o tn5250 $(TN5250_OBJS) $(ARCH) $(TN5250_LIBS)
 
@@ -110,6 +118,8 @@ do-install:
 	copy tn5250.exe "$(INSTALLDIR)"
 	copy lp5250d.exe "$(INSTALLDIR)"
 	copy lib5250.dll "$(INSTALLDIR)"
+	copy ..\AUTHORS "$(INSTALLDIR)\AUTHORS.txt"
+	type ..\COPYING > "$(INSTALLDIR)\COPYING.txt"
 
 clean:
 	$(RM) *.o
@@ -123,3 +133,11 @@ distclean: clean
 	$(RM) config.h
 	$(RM) Makefile.in
 	$(RM) Makefile
+	$(RM) tn5250_innosetup.iss
+	$(RM) glib_info.txt
+
+do-release:
+	type "C:\openssl-0.9.6b\LICENSE" >> "$(INSTALLDIR)\COPYING.txt"
+	copy ..\..\windocs\windocs.pdf "$(INSTALLDIR)\manual.pdf"
+	copy afterinstall.txt "$(INSTALLDIR)\AFTERINSTALL.TXT"
+	$(INNO_SETUP_DIR)\iscc tn5250_innosetup.iss
