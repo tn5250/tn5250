@@ -6,8 +6,8 @@
 # Copyright (C) 1999,2000  Carey Evans
 #
 #   This file is part of TN5250.
- *
- * TN5250 is free software; you can redistribute it and/or modify
+# 
+#  TN5250 is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU Lesser General Public License as published by
 #   the Free Software Foundation; either version 2.1 of the License, or
 #   (at your option) any later version.
@@ -71,7 +71,17 @@ my @conv = ( [ 'ISO-8859-1', 37, 256, 273, 277, 278, 280, 284, 285,
 	     [ 'ISO-8859-7', 875 ],   # Greek
 	     [ 'ISO-8859-8', 424 ],   # Hebrew
 	     [ 'ISO-8859-9', 1026 ],  # Turkey Latin5
-	     [ 'JIS_X0201',  290 ] ); # Katakana Extended
+	     [ 'JIS_X0201',  290   ]);# Katakana Extended
+
+my @conv2 =( [ 'windows-1252', 37, 256, 273, 277, 278, 280, 284, 285, 
+               297, 500, 871 ],       # West European (for Win32)
+	     [ 'windows-1250', 870 ], # East European (for Win32)
+	     [ 'windows-1254', 905 ], # Turkey Latin3 (for Win32)
+	     [ 'windows-1251', 880 ], # Cyrillic (for Win32)
+	     [ 'windows-1256', 420 ], # Arabic (for Win32)
+	     [ 'windows-1253', 875 ], # Greek (for Win32)
+	     [ 'windows-1255', 424 ], # Hebrew (for Win32)
+	     [ 'windows-1254', 1026 ]);# Turkey Latin5 (for Win32)
 
 # Convert the table above to a simple list of translation maps needed.
 my @sets = ();
@@ -79,6 +89,12 @@ foreach (@conv) {
   my $unix_enc = shift @$_;
   foreach (@$_) {
     push @sets, [$_, $unix_enc, sprintf('IBM%03d', $_)];
+  }
+}
+foreach (@conv2) {
+  my $win32_enc = shift @$_;
+  foreach (@$_) {
+    push @sets, ["win$_", $win32_enc, sprintf('IBM%03d', $_)];
   }
 }
 
@@ -131,7 +147,7 @@ Tn5250CharMap tn5250_transmaps [] = {
 __EOT__
 
 foreach (@hdrs) {
-  printf "    {\"%d\", %s, %s},\n", @$_;
+  printf "    {\"%s\", %s, %s},\n", @$_;
 }
 
 print "    {NULL, NULL, NULL}};\n";
