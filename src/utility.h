@@ -112,6 +112,10 @@ extern FILE * tn5250_logfile;
 #define TN5250_LOG(args)
 #endif
 
+#include "conf.h"
+
+int tn5250_parse_color(Tn5250Config *config, const char *colorname, 
+                        int *r, int *g, int *b);
 #ifdef __cplusplus
 }
 #endif
