@@ -1,3 +1,7 @@
+2000-07-18 Mike Madore <mmadore@turbolinux.com>
+- Preliminary fix for emulator hang when pressing attention key from the
+  sysrequest menu.
+	
 2000-07-11 Mike Madore <mmadore@turbolinux.com>
 - Preliminary fix for emulator hang when pressing sys-request from the 
   sysrequest menu.
