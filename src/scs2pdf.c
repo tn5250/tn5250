@@ -24,6 +24,23 @@
 #include "scs.h"
 #include <glib.h>
 
+/* Define a default page size of 8.5x11 inches.  These numbers are a little
+ * magic.  The iSeries sends a page size in terms of characters per inch,
+ * but PDF uses points.  The ratio of the numbers below and 1440 is the
+ * same ratio as 612 and 72.  So multiplying the ratio of numbers below over
+ * 1440 by 72 will result in a 8.5x11 inch page,
+ * i.e. (12240/1440) = (612/72) = 8.5 = page width
+ *
+ * Note that the 1440 constant came from Michael Madore.
+ */
+#define DEFAULT_PAGE_WIDTH 12240
+#define DEFAULT_PAGE_LENGTH 15840
+/* Define a maximum number of columns that fit in the default page size
+ * above.  If the page size is not specified and we are given more characters
+ * to print on a line than MAX_COLUMNS we increase the page width.
+ */
+#define MAX_COLUMNS 80
+
 int scs2pdf_process34 (int *curpos);
 int scs2pdf_ahpp (int *curpos);
 
@@ -45,6 +62,8 @@ int pdf_process_char (char character, int flush);
 unsigned char curchar;
 unsigned char nextchar;
 
+int columncount;
+
 GArray *ObjectList;
 
 FILE *outfile;
@@ -52,13 +71,8 @@ FILE *outfile;
 int
 main ()
 {
-  Tn5250CharMap *map = tn5250_char_map_new ("37");
-  /* Set a good default value for the page size.  The page size is the
-   * retrieved value divided by 1440 to get inches, then multiplied
-   * by 72 to get points.  So the numbers below are for an 8.5x11 inch
-   * paper.
-   */
-  int pagewidth = 12240, pagelength = 15840;
+  Tn5250CharMap *map;
+  int pagewidth, pagelength;
   int objcount = 0;
   int filesize = 0;
   int streamsize = 0;
@@ -69,7 +83,9 @@ main ()
   int newpage = 0;
   int column;
   int new_line = 1;
+  int columncheck = 0;
   ObjectList = g_array_new (FALSE, FALSE, sizeof (int));
+  columncount = 0;
 
   if ((getenv ("TN5250_PDF")) != NULL)
     {
@@ -83,6 +99,15 @@ main ()
   else
     {
       outfile = stdout;
+    }
+
+  if ((getenv ("TN5250_CCSIDMAP")) != NULL)
+    {
+      map = tn5250_char_map_new (getenv ("TN5250_CCSIDMAP"));
+    }
+  else
+    {
+      map = tn5250_char_map_new ("37");
     }
 
   filesize += pdf_header ();
@@ -131,6 +156,11 @@ main ()
 	case SCS_NL:
 	  {
 	    new_line = scs_nl ();
+	    if (columncount > columncheck)
+	      {
+		columncheck = columncount;
+		columncount = 0;
+	      }
 	    break;
 	  }
 	case SCS_RNL:
@@ -187,6 +217,7 @@ main ()
 		pagenumber++;
 		newpage = 0;
 		column = 0;
+		columncount = 0;
 	      }
 	    if (new_line)
 	      {
@@ -195,6 +226,7 @@ main ()
 		fprintf (outfile, "0 -12 Td\n");
 		streamsize += 9;
 		column = 0;
+		columncount = 0;
 	      }
 	    streamsize += pdf_process_char (tn5250_char_map_to_local (map,
 								      curchar),
@@ -248,6 +280,22 @@ main ()
   fprintf (stderr, "font objcount = %d\n", objcount);
 #endif
 
+  if ((pagewidth == 0) && (columncheck > MAX_COLUMNS))
+    {
+      for (i = 0; i < 15; i++)
+	{
+	  if (columncheck < (MAX_COLUMNS + (5 * i)))
+	    {
+#ifdef DEBUG
+	      fprintf (stderr, "columncheck = %d, pagewidth = %d\n",
+		       columncheck,
+		       pagewidth);
+#endif
+	      break;
+	    }
+	  pagewidth = DEFAULT_PAGE_WIDTH + (720 * i);
+	}
+    }
   g_array_append_val (ObjectList, filesize);
   objcount++;
   filesize += pdf_pages (objcount, objcount + 1, pagenumber);
@@ -471,10 +519,25 @@ pdf_page (int objnum, int parent, int contents, int procset, int font,
   /* PDF uses 72 points per inch so 8.5x11 in. page is 612x792 points
    * You can set MediaBox to [0 0 612 792] to force this
    */
+  if (pagewidth == 0)
+    {
+#ifdef DEBUG
+      fprintf (stderr, "No page width given, using default.\n");
+#endif
+      pagewidth = DEFAULT_PAGE_WIDTH;
+    }
+  if (pagelength == 0)
+    {
+#ifdef DEBUG
+      fprintf (stderr, "No page length given, using default.\n");
+#endif
+      pagelength = DEFAULT_PAGE_LENGTH;
+    }
   width = (pagewidth / 1440.0) * 72;
   length = (pagelength / 1440.0) * 72;
 #ifdef DEBUG
-  fprintf (stderr, "Setting page to %f by %f points\n", width, length);
+  fprintf (stderr, "Setting page to %d (%f) by %d (%f) points\n",
+	   (int) width, width, (int) length, length);
 #endif
   sprintf (text,
 	   "%d 0 obj\n"
@@ -593,6 +656,11 @@ pdf_process_char (char character, int flush)
   if (character == '(' || character == ')')
     {
       byteswritten = pdf_process_char ('\\', 0);
+    }
+
+  if (character != '\\')
+    {
+      columncount++;
     }
 
   if (bufloc >= 247 || flush == 1)
