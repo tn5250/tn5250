@@ -1,6 +1,6 @@
-2000-05-31 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
-- Updated version to 0.16.0pre1, did tag-and-branch versions.
-- Released 0.16.0pre1 and 0.17.0
+2000-06-01 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Applied Scott Klement's fix for aidkey handling in tn5250_display_do_aidkey
+  (slightly modified to handle attention, also).
 
 2000-05-30 Mike Madore <mmadore@turbolinux.com>
 - Noticed that Jason is a wise guy ;-)
