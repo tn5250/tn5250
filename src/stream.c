@@ -90,6 +90,7 @@ static void streamInit(Tn5250Stream *This, long timeout)
  *    ret = tn5250_stream_open (to);
  * INPUTS
  *    const char *         to         - `URL' of host to connect to.
+ *    Tn5250Config     *   config     - config to associate w/stream
  * DESCRIPTION
  *    Opens a 5250 stream to the specified host.  URL is of the format 
  *    [protocol]:host:[port], where protocol is currently one of the following:
@@ -106,7 +107,7 @@ static void streamInit(Tn5250Stream *This, long timeout)
  *    The next protocol to add is SNA.  This will allow the emulator to use 
  *    APPC (LU 6.2) to establish a session with the AS/400.
  *****/
-Tn5250Stream *tn5250_stream_open (const char *to)
+Tn5250Stream *tn5250_stream_open (const char *to, Tn5250Config *config)
 {
    Tn5250Stream *This = tn5250_new(Tn5250Stream, 1);
    Tn5250StreamType *iter;
@@ -116,6 +117,9 @@ Tn5250Stream *tn5250_stream_open (const char *to)
    if (This != NULL) {
 
       streamInit(This, 0);
+
+      if (config != NULL) 
+           tn5250_stream_config(This, config);
 
       /* Figure out the stream type. */
       iter = stream_types;

@@ -1,5 +1,7 @@
 /* TN5250 - An implementation of the 5250 telnet protocol.
- * Copyright (C) 1997 Michael Madore
+ * Copyright (C) 2001 Scott Klement
+ *
+ * parts of this were copied from telnetstr.c which is (C) 1997 Michael Madore
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -354,12 +356,27 @@ int tn5250_ssl_stream_init (Tn5250Stream *This)
 {
    TN5250_LOG(("tn5250_ssl_stream_init() entered.\n"));
 
+/*  initialize SSL library */
+
    SSL_load_error_strings();
    SSL_library_init();
+
+/*  create a new SSL context */
+
    This->ssl_context = SSL_CTX_new(SSLv23_client_method());
    if (This->ssl_context==NULL) {
         DUMP_ERR_STACK ();
         return -1;
+   }
+
+/* if a certificate authority file is defined, load it into this context */
+
+   if (tn5250_config_get (This->config, "ssl_ca_file")) {
+        if (SSL_CTX_load_verify_locations(This->ssl_context, 
+                  tn5250_config_get (This->config, "ssl_ca_file"), NULL)<1) {
+            DUMP_ERR_STACK ();
+            return -1;
+        }
    }
 
    This->ssl_handle = NULL;
@@ -388,12 +405,27 @@ int tn5250_ssl_stream_init (Tn5250Stream *This)
 int tn3270_ssl_stream_init (Tn5250Stream *This)
 {
 
+/* initialize SSL library */
+
    SSL_load_error_strings();
    SSL_library_init();
+
+/* create a new SSL context */
+
    This->ssl_context = SSL_CTX_new(SSLv23_client_method());
    if (This->ssl_context==NULL) {
         DUMP_ERR_STACK ();
         return -1;
+   }
+
+/* if a certificate authority file is defined, load it into this context */
+
+   if (tn5250_config_get (This->config, "ssl_ca_file")) {
+        if (SSL_CTX_load_verify_locations(This->ssl_context, 
+                  tn5250_config_get (This->config, "ssl_ca_file"), NULL)<1) {
+            DUMP_ERR_STACK ();
+            return -1;
+        }
    }
 
    This->ssl_handle = NULL;
@@ -425,6 +457,8 @@ static int ssl_stream_connect(Tn5250Stream * This, const char *to)
    u_long ioctlarg = 1;
    char *address;
    int r;
+   X509 *server_cert;
+   long certvfy;
 
    TN5250_LOG(("tn5250_ssl_stream_connect() entered.\n"));
 
@@ -445,6 +479,7 @@ static int ssl_stream_connect(Tn5250Stream * This, const char *to)
    }
    g_free (address);
    if (serv_addr.sin_addr.s_addr == INADDR_NONE) {
+      TN5250_LOG(("sslstream: Host lookup failed!\n"));
       return -1;
    }
 
@@ -458,6 +493,7 @@ static int ssl_stream_connect(Tn5250Stream * This, const char *to)
 	    serv_addr.sin_port = pent->s_port;
       }
       if (serv_addr.sin_port == 0) {
+          TN5250_LOG(("sslstream: Port lookup failed!\n"));
           return -1;
       }
    } else {
@@ -472,29 +508,59 @@ static int ssl_stream_connect(Tn5250Stream * This, const char *to)
    This->ssl_handle = SSL_new(This->ssl_context);
    if (This->ssl_handle==NULL) {
         DUMP_ERR_STACK ();
+        TN5250_LOG(("sslstream: SSL_new() failed!\n"));
         return -1;
    }
 
    This->sockfd = socket(AF_INET, SOCK_STREAM, 0);
    if (WAS_INVAL_SOCK(This->sockfd)) {
+      TN5250_LOG(("sslstream: socket() failed, errno=%d\n", errno));
       return -1;
    }
 
    if ((r=SSL_set_fd(This->ssl_handle, This->sockfd))==0) {
       errnum = SSL_get_error(This->ssl_handle, r);
       DUMP_ERR_STACK ();
+      TN5250_LOG(("sslstream: SSL_set_fd() failed, errnum=%d\n", errnum));
       return errnum;
    }
 
    r = connect(This->sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
    if (WAS_ERROR_RET(r)) {
+      TN5250_LOG(("sslstream: connect() failed, errno=%d\n", errno));
       return -1;
    }
 
    if ((r=SSL_connect(This->ssl_handle)<1)) {
         errnum = SSL_get_error(This->ssl_handle, r);
         DUMP_ERR_STACK ();
+        TN5250_LOG(("sslstream: SSL_connect() failed, errnum=%d\n", errnum));
         return errnum;
+   }
+
+   TN5250_LOG(("Connected with SSL\n"));
+   TN5250_LOG(("Using %s cipher with a %d bit secret key\n", 
+          SSL_get_cipher_name(This->ssl_handle),
+          SSL_get_cipher_bits(This->ssl_handle, NULL) ));
+
+   server_cert = SSL_get_peer_certificate (This->ssl_handle);
+
+   if (server_cert == NULL) {
+        TN5250_LOG(("sslstream: Server did not present a certificate!\n"));
+        return -1;
+   }
+   else {
+        TN5250_LOG(("SSL Certificate issued by: %s\n",
+           X509_NAME_oneline(X509_get_issuer_name(server_cert), 0,0) ));
+        certvfy = SSL_get_verify_result(This->ssl_handle);
+        if (certvfy == X509_V_OK) {
+           TN5250_LOG(("SSL Certificate successfully verified!\n"));
+        } else {
+           TN5250_LOG(("SSL Certificate verification failed, reason: %d\n", 
+		certvfy));
+           if (tn5250_config_get_bool (This->config, "ssl_verify_server")) 
+                return -1;
+        }
    }
    
    /* Set socket to non-blocking mode. */
