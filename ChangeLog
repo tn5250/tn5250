@@ -1,3 +1,7 @@
+2005-04-06 James Rich <james@eaerich.com>
+- Fix seg fault that occurred due to unitialized menubar_count in the
+  dbuffer struct.
+
 2005-04-05 James Rich <james@eaerich.com>
 - Fix up menubars, begin menu items.
 

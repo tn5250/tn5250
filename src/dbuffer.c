@@ -66,6 +66,7 @@ tn5250_dbuffer_new (int width, int height)
   This->entry_field_count = 0;
   This->window_count = 0;
   This->scrollbar_count = 0;
+  This->menubar_count = 0;
   This->field_list = NULL;
   This->window_list = NULL;
   This->master_mdt = 0;
