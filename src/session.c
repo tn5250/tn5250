@@ -643,6 +643,16 @@ static void tn5250_session_send_field (Tn5250Session * This, Tn5250Buffer *buf, 
       tn5250_buffer_append_byte(buf, tn5250_field_start_row(field) + 1);
       tn5250_buffer_append_byte(buf, tn5250_field_start_col(field) + 1);
 
+      /* For signed numeric fields, if the second-last character is a digit
+       * and the last character is a '-', zone shift the second-last char.
+       * In any case, don't send the sign position. */
+      if (tn5250_field_is_signed_num (field)) {
+	 size--;
+	 if (size > 1 && data[size] == tn5250_ascii2ebcdic('-') &&
+	       isdigit (tn5250_ebcdic2ascii (data[size-1])))
+	    data[size-1] = (0xd0 | (0x0f & data[size-1]));
+      }
+      
       /* Strip trailing NULs */
       while (size > 0 && data[size-1] == 0)
 	 size--;
