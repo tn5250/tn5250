@@ -61,6 +61,18 @@
 - Added $loginname$ replacement in config files.  (that string is
    replaced by the current user's name)
 
+2002-01-18 Scott Klement <klemscot@klements.com>
+- Added Win32 support.  It's not 100% finished, but enough of it is
+   done that people can try it / report bugs / suggestions.
+
+2002-01-18 Scott Klement <klemscot@klements.com>
+- Minor changes to lib5250 code so that it will compile on MS Windows
+- Fixed problem where source would not compile with NDEBUG defined.
+- Removed the (apparently redundant) calls to terminal_update_indicators
+   from display.c.
+- Added check to see if system has UCHAR already defined to eliminate
+   a compiler warning.
+
 2001-12-14 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - Added Python bindings for the PrintSession and Record "classes".  Started
   work to resolve Python reference counting issues with objects shared
