@@ -14,7 +14,7 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 ..
-.TH TN5250 1 "28 May 2000"
+.TH TN5250 1 "6 Dec 2000"
 .SH NAME
 tn5250 \- an implementation of the 5250 telnet protocol
 .SH SYNOPSIS
@@ -94,6 +94,11 @@ default depends on whether the terminal supports colour, and whether
 it is large enough to support the large terminal size.  See
 .B Display Types
 below for valid model names.
+.TP
+.BI env. VARIABLE = VALUE
+Set any other environment variables controlling the terminal session.
+A list of relevant variables is given in section 5 of
+.BR RFC2877 .
 .TP
 .B +/\-underscores
 Force or disable the use of underscore characters instead of the underline
@@ -301,8 +306,9 @@ Please report any bugs you find to the mailing list at
 .RI < linux5250@midrange.com >.
 .SH "SEE ALSO"
 .BR lp5250d (1),
-.BR http://www.blarg.net/~mmadore/5250.html ,
+.BR http://www.linux-sna.org/software/5250/ ,
 .BR RFC1205 ,
+.BR RFC2877 ,
 .BR II10918 .
 .SH COPYRIGHT
 .B tn5250
