@@ -35,7 +35,7 @@
 
 static int telnet_stream_get_next(Tn5250Stream * This);
 static void telnet_stream_do_verb(Tn5250Stream * This, unsigned char verb, unsigned char what);
-static int telnet_stream_host_verb(SOCKET_TYPE sock, unsigned char verb,
+static int telnet_stream_host_verb(Tn5250Stream * This, unsigned char verb,
 	unsigned char what);
 static void telnet_stream_sb_var_value(Tn5250Buffer * buf, unsigned char *var, unsigned char *value);
 static void telnet_stream_sb(Tn5250Stream * This, unsigned char *sb_buf, int sb_len);
@@ -394,6 +394,7 @@ static int telnet_stream_accept(Tn5250Stream * This, int masterfd)
    struct sockaddr_in serv_addr;
    fd_set fdr;
    struct timeval tv;
+   int negotiating;
 
 #ifndef WINELIB
    u_long ioctlarg=1L;
@@ -534,16 +535,19 @@ static int sendWill(SOCKET_TYPE sock, unsigned char what)
  * SYNOPSIS
  *    telnet_stream_host_verb (This, verb, what);
  * INPUTS
- *    SOCKET_TYPE	sock	-
+ *    Tn5250Stream *	This	-
  *    unsigned char	verb	-
  *    unsigned char	what	-
  * DESCRIPTION
  *    Process the telnet DO, DONT, WILL, or WONT escape sequence.
  *****/
-static int telnet_stream_host_verb(SOCKET_TYPE sock, unsigned char verb,
+static int telnet_stream_host_verb(Tn5250Stream * This, unsigned char verb,
 		unsigned char what)
 {
    int len, option=0, retval=0;
+   SOCKET_TYPE sock;
+
+   sock = This->sockfd;
 
    IACVERB_LOG("GotVerb(1)",verb,what);
    switch (verb) {
@@ -879,7 +883,7 @@ static int telnet_stream_get_byte(Tn5250Stream * This)
       case TN5250_STREAM_STATE_HAVE_VERB:
 	TN5250_LOG(("HOST, This->status  = %d %d\n", HOST, This->status));
 	 if (This->status&HOST) {
-	    temp = telnet_stream_host_verb(This->sockfd, verb, (UCHAR) temp);
+	    temp = telnet_stream_host_verb(This, verb, (UCHAR) temp);
 	    if (WAS_ERROR_RET(temp)) {
 	       LOGERROR("send", LAST_ERROR);
 	       return -2;

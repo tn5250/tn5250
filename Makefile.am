@@ -1,6 +1,7 @@
 ## Process this file with automake to produce Makefile.in
 
-SUBDIRS = src doc linux freebsd
+DIST_SUBDIRS = src doc linux freebsd
+SUBDIRS = src doc @SUBDIRS_ADD@
 
 bin_SCRIPTS = tn5250-config\
 	      xt5250

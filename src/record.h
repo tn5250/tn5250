@@ -99,6 +99,7 @@ extern void tn5250_record_destroy(Tn5250Record /*@only@*/ * This);
 extern unsigned char tn5250_record_get_byte(Tn5250Record * This);
 extern void tn5250_record_unget_byte(Tn5250Record * This);
 extern int tn5250_record_is_chain_end(Tn5250Record * This);
+extern void tn5250_record_skip_to_end(Tn5250Record * This);
 #define tn5250_record_length(This) \
    tn5250_buffer_length (&((This)->data))
 #define tn5250_record_append_byte(This,c) \

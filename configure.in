@@ -1,6 +1,11 @@
 dnl ** Process this file with autoconf to produce a configure script.
 AC_INIT(src/tn5250.c)
 
+dnl * Checks for programs.
+AC_PROG_CC
+AC_PROG_GCC_TRADITIONAL
+AM_PROG_LIBTOOL
+
 dnl ** Automake Intialization
 AM_INIT_AUTOMAKE(tn5250, 0.16.1)
 AM_CONFIG_HEADER(src/tn5250-config.h)
@@ -32,14 +37,8 @@ LIBS="$CFLAGS -L$with_wine -lwine"
 ])
 
   
-dnl ** Checks for programs.
-AC_PROG_CC
-AC_PROG_GCC_TRADITIONAL
-AM_PROG_LIBTOOL
-
 AC_PATH_PROG(DIALOG,dialog,no)
-if test x$DIALOG = xno
-then
+if test x$DIALOG = xno ; then
 	AC_PATH_PROG(DIALOG,whiptail,no)
 fi
 AC_SUBST(DIALOG)
@@ -187,13 +186,27 @@ AC_CHECK_SIZEOF(short, 2)
 AC_CHECK_SIZEOF(int, 4)
 AC_CHECK_SIZEOF(long, 4)
 
-dnl *
-dnl *	 Export $sysconfdir as @SYSCONFDIR@ so tn5250 can find it's
-dnl *	 default config file.
-dnl *
-eval SYSCONFDIR="$sysconfdir"
-eval SYSCONFDIR="$SYSCONFDIR"
-SYSCONFDIR="`echo "$sysconfdir" |sed 's/^NONE/\/usr\/local/'`"
-AC_DEFINE_UNQUOTED(SYSCONFDIR,"$SYSCONFDIR")
+dnl * Decide whether to use OS-specific directories.
+AC_CANONICAL_HOST
+AC_ARG_ENABLE(os-dir,
+       [--enable-os-dir=DIR    Also install the OS-specific files in DIR.  If
+                         DIR is not given, determine it automatically.  If
+                         DIR is 'no', don't install OS-specific files.],
+       [], [enable_os_dir=yes])
+
+AC_MSG_CHECKING(for OS specific directory)
+SUBDIRS_ADD=
+case "$enable_os_dir" in
+       freebsd) SUBDIRS_ADD=freebsd ;;
+       linux) SUBDIRS_ADD=linux ;;
+       yes)
+               case "$host_os" in
+                       freebsd*) SUBDIRS_ADD=freebsd ;;
+                       linux*) SUBDIRS_ADD=linux ;;
+               esac
+       ;;
+esac
+AC_MSG_RESULT(${SUBDIRS_ADD:-none})
+AC_SUBST(SUBDIRS_ADD)
 
 AC_OUTPUT(Makefile src/Makefile doc/Makefile linux/Makefile freebsd/Makefile tn5250-config xt5250)

@@ -2,7 +2,7 @@
 .ig
 Man page for tn5250.
 
-Copyright (C) 1999, 2000 Carey Evans.
+Copyright (C) 1999 - 2001 Carey Evans.
 
 You can redistribute and/or modify this document under the terms of 
 the GNU General Public License as published by the Free Software
@@ -14,7 +14,7 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 ..
-.TH TN5250 1 "28 May 2000"
+.TH TN5250 1 "30 Jul 2001"
 .SH NAME
 tn5250 \- an implementation of the 5250 telnet protocol
 .SH SYNOPSIS
@@ -94,6 +94,11 @@ default depends on whether the terminal supports colour, and whether
 it is large enough to support the large terminal size.  See
 .B Display Types
 below for valid model names.
+.TP
+.BI env. VARIABLE = VALUE
+Set any other environment variables controlling the terminal session.
+A list of relevant variables is given in section 5 of
+.BR RFC2877 .
 .TP
 .B +/\-underscores
 Force or disable the use of underscore characters instead of the underline
@@ -187,13 +192,13 @@ Print@C-p, M-p
 Help@M-h
 SysReq@C-c, M-s
 Clear@M-c
-FieldExit@C-k, C-x, M-x
+FieldExit@C-k, M-x
 TestReq@C-t
 Toggle@M-t
 Erase@C-e
 Attn@C-a, M-a
 Dup@M-d
-Field+@+ [2], same as FieldExit
+Field+@C-x, + [2]
 Field-@M-m, - [2]
 NewLine@C-M-j
 Next Field@tab, C-i
@@ -290,27 +295,30 @@ CCSID:Unix encoding:Description
 871:ISO-8859-1:Iceland
 875:ISO-8859-7:Greek
 880:ISO-8859-5:Cyrillic
-905:ISO-8859-3:Turkey - Latin3
-1026:ISO-8859-9:Turkey - Latin5
+905:ISO-8859-3:Turkey \- Latin3
+1026:ISO-8859-9:Turkey \- Latin5
 .TE
 .PP
 If possible, configure your terminal to use the appropriate encoding
 if your AS/400 uses any of these CCSIDs.
 .SH BUGS
-Please report any bugs you find to the mailing list at
-.RI < linux5250@midrange.com >.
+Please report any bugs you find to the bug tracker or to the linux5250
+mailing list.  See the
+.B tn5250
+web site for more details.
 .SH "SEE ALSO"
 .BR lp5250d (1),
-.BR http://www.blarg.net/~mmadore/5250.html ,
+.BR http://tn5250.sourceforge.net/ ,
 .BR RFC1205 ,
+.BR RFC2877 ,
 .BR II10918 .
 .SH COPYRIGHT
 .B tn5250
 is copyright
 .if t \(co
-1997 - 2000 Michael Madore.  This manpage is copyright
+1997 \- 2001 Michael Madore.  This manpage is copyright
 .if t \(co
-1999, 2000 Carey Evans.
+1999 \- 2001 Carey Evans.
 .PP
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -327,10 +335,6 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 .SH AUTHORS
 .B tn5250
-was written by Michael Madore
-.RI < mmadore@blarg.net >,
-Jay Felice
-.RI < jasonf@nacs.net >
+was written by Michael Madore, Jay Felice
 and others; see the AUTHORS file for details.
-This manual page was written by Carey Evans
-.RI < c.evans@clear.net.nz >.
+This manual page was written by Carey Evans.

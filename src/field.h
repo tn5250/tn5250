@@ -74,6 +74,8 @@ struct _Tn5250Field {
    int start_row;
    int start_col;
    int length;
+
+   void *script_slot;
 };
 
 typedef struct _Tn5250Field Tn5250Field;

@@ -24,29 +24,6 @@
   </bug>
 
   <bug>
-    <date>99.11.15.22.50.00</date>
-    <owner email="jasonf@nacs.net">Jay 'Eraserhead' Felice</owner>
-
-    System request at signon screen (which is apparently ignored by the 400)
-    causes an assertion/core dump.
-  </bug>
-
-  <bug>
-    <date>2000.01.16.22.48.21</date>
-    <owner email="c.evans@clear.net.nz">Carey Evans</owner>
-    
-    In an unsigned numeric field-exit required field, the cursor remains
-    on the last character, but on pressing field exit, the last character
-    is erased.
-
-    Elaboration: There seems to be an additional FER state used for FER
-    fields on most emulators; we don't support that yet.  When the last
-    character in the field is typed, turn on FER flag.  When backspace/
-    left arrow is typed, turn off FER flag.  Otherwise, inhibit
-    display.
-  </bug>
-
-  <bug>
     <date>2000.01.16.22.48.21</date>
     <owner email="c.evans@clear.net.nz">Carey Evans</owner>
   

@@ -53,6 +53,8 @@ extern const char *	      tn5250_config_get		 (Tn5250Config *This,
 							  const char *name);
 extern int		      tn5250_config_get_bool	 (Tn5250Config *This,
 						          const char *name);
+extern int                    tn5250_config_get_int      (Tn5250Config *This,
+                                                         const char *name);
 extern void		      tn5250_config_set		 (Tn5250Config *This,
 							  const char *name,
 							  const char *value);

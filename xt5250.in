@@ -21,11 +21,14 @@ get_host () {
   XT5250_HOST=""
   while [ $# -ne 0 ] ; do
     case "$1" in
-      -help)
+      -h|--help)
         exec "$bindir/tn5250";;
-      -version)
-        exec "$bindir/tn5250" -version;;
-      -*|*=*)
+      -V|--version)
+        exec "$bindir/tn5250" -V;;
+      -m|-s|-t|-y)
+	shift
+	;;
+      -*)
 	;;
       *)
         if [ -z "$XT5250_HOST" ] ; then XT5250_HOST="$1" ; fi
@@ -43,6 +46,10 @@ if [ "$1" = "-BOOT" ] ; then
   #
   if [ -z "$XT5250_HOST" ] ; then
     if [ "$DIALOG" != "no" ] ; then
+      #
+      # we have dialog, but does it support backtitle?
+      #
+      $DIALOG --help 2>&1 | grep -q backtitle && bt_arg="--backtitle xt5250"
       # 
       # We have a copy of `dialog', so use it.
       #
@@ -52,7 +59,7 @@ if [ "$1" = "-BOOT" ] ; then
       fi
       while [ -z "$XT5250_HOST" ] ; do
         exec 3>&1
-	XT5250_HOST="`$DIALOG --backtitle "xt5250" --title "Connect to Host" \
+	XT5250_HOST="`$DIALOG $bt_arg --title "Connect to Host" \
 	  --inputbox "Enter the name or IP address of the host to connect to:" \
 	  7 60 2>&1 1>&3`"
 	ret=$?
@@ -66,9 +73,9 @@ if [ "$1" = "-BOOT" ] ; then
 	# neither works, we just silently fail without setting the window title.
 	#
 	if command -v printf >/dev/null 2>&1 ; then
-	  printf '\033]2;xt5250 - '"$XT5250_HOST"'\07'
+	  printf '\033]0;xt5250 - '"$XT5250_HOST"'\07'
 	else
-	  echo -e '\033]2;xt5250 - '"$XT5250_HOST"'\07'
+	  echo -e '\033]0;xt5250 - '"$XT5250_HOST"'\07'
 	fi
       done
     else

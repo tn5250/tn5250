@@ -2,7 +2,7 @@
 .ig
 Man page for lp5250d.
 
-Copyright (C) 1999, 2000 Carey Evans.
+Copyright (C) 1999 - 2001 Carey Evans.
 
 You can redistribute and/or modify this document under the terms of 
 the GNU General Public License as published by the Free Software
@@ -14,24 +14,15 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 ..
-.TH LP5250D 1 "28 May 2000"
+.TH LP5250D 1 "17 Jun 2001"
 .SH NAME
 lp5250d \- start an AS/400 printer session
 .SH SYNOPSIS
 .B lp5250d
-.RB [\| \-t
-.IR tracefile \|]
-.RB [\| \-m
-.IR "translation map" \|]
-.RB [\| \-s
-.IR "session name" \|]
-.RB [\| \-T
-.IR "transform name" \|]
-.RB [\| \-P
-.IR "output command" \|]
-.RI host [\| :port \|]
-.PP
-.B lp5250d \-V
+.RI [\| OPTIONS \|]
+.IR host [\|: port \|]
+.br
+.B lp5250d \-version
 .SH "DESCRIPTION"
 .B lp5250d
 connects to an AS/400 over TCP/IP and provides a printer session
@@ -51,20 +42,17 @@ later versions.  For V3R2, V3R7, V4R1 and V4R2, please see informational APAR
 II10918.
 .SH OPTIONS
 .TP
-.BI \-t\  tracefile
+.BI trace= FILE
 Log all
 .B lp5250d
 actions to
 .IR tracefile .
 This file will get very large.
 .TP
-.BI \-m\  "translation map"
+.BI map= CCSID
 Set the translation table between ASCII and EBCDIC.  This should match
-the normal CCSID of the AS/400; for machines sold in the United
-States, Canada, the Netherlands, Portugal, Brazil, New Zealand and
-Australia this will be 37.  For the United Kingdom it will probably be
-285.  The default for
-.B tn5250
+the normal CCSID of the AS/400.  The default for
+.B lp5250d
 is
 .BR 37 .
 .sp
@@ -74,31 +62,40 @@ in
 .BR tn5250 (1)
 for a list of supported values.
 .TP
-.BI \-s\  "session name"
+.BI env.DEVNAME= NAME
 Set the device name for the AS/400 to assign to the 5250 session.
 This should be up to ten characters long and consist of only letters
 and numbers.  It will be converted to uppercase and used as the name
 of the 5250-compatible device on the AS/400.  There may only be one
 session active with any given name at one time.
 .TP
-.BI \-P\  "output command"
+.BI outputcommand= COMMAND
 Set the command that will be receive printer output.  The default
 command is
 .RB ` "scs2ascii |lpr" '.
 .TP
-.BI \-T\  "transform name"
+.BI env.IBMMFRTYPMDL= NAME
 Set the name of the host print transform description to use on the
 AS/400.  This is the same as the MFRTYPMDL parameter on the CRTDEVPRT
 command.  See the CL Reference or the online help for a list of valid
 values.
 .TP
-.B \-V
+.BI env. VARIABLE = VALUE
+Set any other environment variables controlling the printer session.
+A list of relevant variables is given in section 7 of
+.BR RFC2877 .
+More generally, the variables are the parameters of the
+.B CRTDEVPRT
+command, with a prefix of
+.BR IBM .
+.TP
+.B \-version
 Display the version of
 .B lp5250d
 and exit.
 .SH EXAMPLES
 .TP
-.I "lp5250d -s LINPRT1 -T '*HP4' as400sys"
+.I "lp5250d env.DEVNAME=LINPRT1 env.IBMMFRTYPMDL='*HP4' as400sys"
 Connect to
 .I as400sys
 as the printer
@@ -106,29 +103,32 @@ as the printer
 using host print transform on the AS/400 to print to an HP Laserjet or
 compatible using lpr.
 .TP
-.I "lp5250d -s LINPRT1 -T '*OKI184IBM' -P 'scs2ascii | lpr -Poki' as400sys"
+.I "lp5250d env.DEVNAME=LINPRT1 env.IBMMFRTYPMDL='*OKI184IBM' outputcommand=''scs2ascii | lpr -Poki' as400sys"
 Print to an Okidata Microline 184 Turbo on the local print queue named
 .RB ` oki '.
 .TP
-.I "lp5250d -s PDFPRT -P 'scs2pdf > scs$$.pdf' as400sys"
+.I "lp5250d env.DEVNAME=PDFPRT outputcommand='scs2pdf > scs$$.pdf' as400sys"
 Convert spooled files info PDF files.
 .SH BUGS
-Please report any bugs you find to the tn5250 mailing list at
-.RI < linux5250@midrange.com >.
+Please report any bugs you find to the bug tracker or to the linux5250
+mailing list.  See the
+.B tn5250
+web site for more details.
 .SH "SEE ALSO"
 .BR tn5250 (1),
 .BR scs2ascii (1),
 .BR scs2pdf (1),
+.BR http://tn5250.sourceforge.net/ ,
 .BR RFC1205 ,
-.BR II10918 ,
-.BR http://www.blarg.net/~mmadore/5250.html .
+.BR RFC2877 ,
+.BR II10918 .
 .SH COPYRIGHT
 .B tn5250
 is copyright
 .if t \(co
-1997 - 2000 Michael Madore.  This manpage is copyright
+1997 \- 2001 Michael Madore.  This manpage is copyright
 .if t \(co
-1999, 2000 Carey Evans.
+1999 \- 2001 Carey Evans.
 .PP
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -145,10 +145,6 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 .SH AUTHORS
 .B tn5250
-was written by Michael Madore
-.RI < mmadore@blarg.net >,
-Jay Felice
-.RI < jasonf@nacs.net >
+was written by Michael Madore, Jay Felice
 and others; see the AUTHORS file for details.
-This manual page was written by Carey Evans
-.RI < c.evans@clear.net.nz >.
+This manual page was written by Carey Evans.

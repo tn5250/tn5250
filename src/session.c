@@ -34,6 +34,8 @@
 
 #include "tn5250-private.h"
 
+static void tn5250_session_send_error(Tn5250Session * This,
+                                     unsigned long errorcode);
 static void tn5250_session_handle_receive(Tn5250Session * This);
 static void tn5250_session_invite(Tn5250Session * This);
 static void tn5250_session_cancel_invite(Tn5250Session * This);
@@ -55,6 +57,12 @@ static void tn5250_session_roll(Tn5250Session * This);
 static void tn5250_session_start_of_field(Tn5250Session * This);
 static void tn5250_session_start_of_header(Tn5250Session * This);
 static void tn5250_session_set_buffer_address(Tn5250Session * This);
+static void tn5250_session_write_extended_attribute(Tn5250Session * This);
+static void tn5250_session_write_display_structured_field(Tn5250Session * This);
+static void tn5250_session_transparent_data(Tn5250Session * This);
+static void tn5250_session_move_cursor(Tn5250Session * This);
+static void tn5250_session_insert_cursor(Tn5250Session * This);
+static void tn5250_session_erase_to_address(Tn5250Session * This);
 static void tn5250_session_repeat_to_address(Tn5250Session * This);
 static void tn5250_session_write_structured_field(Tn5250Session * This);
 static void tn5250_session_read_screen_immediate(Tn5250Session * This);
@@ -186,6 +194,23 @@ void tn5250_session_main_loop(Tn5250Session * This)
       }
    }
 }
+
+void tn5250_session_send_error(Tn5250Session * This, unsigned long errorcode)
+{
+
+  errorcode = htonl(errorcode);
+
+  TN5250_LOG(("Sending negative response = %x", errorcode));
+
+  tn5250_stream_send_packet(This->stream, 4, 
+                           TN5250_RECORD_FLOW_DISPLAY,
+                           TN5250_RECORD_H_ERR,
+                           TN5250_RECORD_OPCODE_NO_OP,
+                           (unsigned char *)&errorcode);
+
+  tn5250_record_skip_to_end(This->record);
+}
+
 
 /****i* lib5250/tn5250_session_handle_receive
  * NAME
@@ -494,6 +519,7 @@ static void tn5250_session_send_field (Tn5250Session * This, Tn5250Buffer *buf, 
 static void tn5250_session_process_stream(Tn5250Session * This)
 {
    int cur_command;
+   unsigned long errorcode;
 
    TN5250_LOG(("ProcessStream: entered.\n"));
    while (!tn5250_record_is_chain_end(This->record)) {
@@ -549,7 +575,10 @@ static void tn5250_session_process_stream(Tn5250Session * This)
 	 break;
       default:
 	 TN5250_LOG(("Error: Unknown command 0x%02X.\n", cur_command));
-	 TN5250_ASSERT(0);
+
+         errorcode = TN5250_NR_INVALID_COMMAND;
+
+         tn5250_session_send_error(This, errorcode);
       }
    }
 
@@ -737,37 +766,28 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
 #endif
 	 switch (cur_order) {
 
-	 case TD: /* Transparent Data order */
-	    {
-	       unsigned char l1, l2;
-	       unsigned td_len;
+         case WEA:
+            tn5250_session_write_extended_attribute(This);
+            break;
+         case TD:
+            tn5250_session_transparent_data(This);
+            break;
 
-	       l1 = tn5250_record_get_byte (This->record);
-	       l2 = tn5250_record_get_byte (This->record);
-	       td_len = (l1 << 8) | l2;
-	       TN5250_LOG (("TD order (length = X'%04X').\n",
-			td_len));
-
-	       while (td_len > 0) {
-		  l1 = tn5250_record_get_byte (This->record);
-		  tn5250_display_addch (This->display,l1);
-		  td_len--;
-	       }
-	    }
-	    break;
+         case WDSF:
+            tn5250_session_write_display_structured_field(This);
+            break;
 
 	 case MC:
-	    end_y = tn5250_record_get_byte (This->record) - 1;
-	    end_x = tn5250_record_get_byte (This->record) - 1;
-	    TN5250_LOG (("MC order (y = X'%02X', x = X'%02X').\n", end_y, end_x));
+            tn5250_session_move_cursor(This);
 	    break;
 
 	 case IC:
-	    end_y = tn5250_record_get_byte (This->record) - 1;
-	    end_x = tn5250_record_get_byte (This->record) - 1;
-	    TN5250_LOG (("IC order (y = X'%02X', x = X'%02X').\n", end_y, end_x));
-	    tn5250_display_set_pending_insert (This->display, end_y, end_x);
+            tn5250_session_insert_cursor(This);
 	    break;
+
+         case EA:
+            tn5250_session_erase_to_address(This);
+            break;
 
 	 case RA:
 	    tn5250_session_repeat_to_address(This);
@@ -899,10 +919,19 @@ static void tn5250_session_clear_unit(Tn5250Session * This)
 static void tn5250_session_clear_unit_alternate(Tn5250Session * This)
 {
    unsigned char c;
+   unsigned long errorcode;
    TN5250_LOG(("tn5250_session_clear_unit_alternate entered.\n"));
    c = tn5250_record_get_byte(This->record);
    TN5250_LOG(("tn5250_session_clear_unit_alternate, parameter is 0x%02X.\n",
 	(int) c));
+   if(c != 0x00 && c != 0x80)
+     {
+       errorcode = TN5250_NR_INVALID_CLEAR_UNIT_ALT;
+
+       tn5250_session_send_error(This, errorcode);
+
+       return;
+     }
    tn5250_display_clear_unit_alternate(This->display);
    This->read_opcode = 0;
 }
@@ -978,17 +1007,21 @@ static int tn5250_session_handle_aidkey (Tn5250Session *This, int key)
       break;
 
    case TN5250_SESSION_AID_SYSREQ:
-      This->read_opcode = 0; /* We are out of the read */
+      /*     This->read_opcode = 0;*/ /* We are out of the read */
+      tn5250_display_indicator_set (This->display, TN5250_DISPLAY_IND_X_SYSTEM);
       tn5250_stream_send_packet(This->stream, 0, TN5250_RECORD_FLOW_DISPLAY,
 	    TN5250_RECORD_H_SRQ, TN5250_RECORD_OPCODE_NO_OP, NULL);
-      tn5250_display_indicator_set (This->display, TN5250_DISPLAY_IND_X_SYSTEM);
+      tn5250_display_indicator_clear(This->display,
+                                    TN5250_DISPLAY_IND_X_SYSTEM);
       break;
 
    case TN5250_SESSION_AID_ATTN:
-      This->read_opcode = 0; /* We are out of the read. */
+      /*     This->read_opcode = 0;*/ /* We are out of the read. */
+      tn5250_display_indicator_set (This->display, TN5250_DISPLAY_IND_X_SYSTEM);
       tn5250_stream_send_packet(This->stream, 0, TN5250_RECORD_FLOW_DISPLAY,
 	    TN5250_RECORD_H_ATN, TN5250_RECORD_OPCODE_NO_OP, NULL);
-      tn5250_display_indicator_set (This->display, TN5250_DISPLAY_IND_X_SYSTEM);
+      tn5250_display_indicator_clear(This->display,
+                                    TN5250_DISPLAY_IND_X_SYSTEM);
       break;
 
    default:
@@ -1122,9 +1155,14 @@ static void tn5250_session_start_of_field(Tn5250Session * This)
    unsigned char Length1, Length2, cur_char;
    int input_field;
    int endrow, endcol;
+   int width;
+   int height;
+   unsigned long errorcode;
+   int startx;
+   int starty;
+   int length;
 
    TN5250_LOG(("StartOfField: entered.\n"));
-
 
    cur_char = tn5250_record_get_byte(This->record);
 
@@ -1168,6 +1206,26 @@ static void tn5250_session_start_of_field(Tn5250Session * This)
 
    Length1 = tn5250_record_get_byte(This->record);
    Length2 = tn5250_record_get_byte(This->record);
+
+   length = (Length1 << 8) | Length2;
+
+   width = tn5250_display_width(This->display);
+   height = tn5250_display_height(This->display);
+
+   startx = tn5250_display_cursor_x(This->display)+1;
+   starty = tn5250_display_cursor_y(This->display)+1;
+
+   TN5250_LOG(("starty = %d width = %d startx = %d length = %d height = %d\n",
+              starty, width, startx, length, height));
+
+   if( ((starty-1) * width + startx - 1 + length) > width*height)
+     {
+       errorcode = TN5250_NR_INVALID_ROW_COL_ADDR;
+
+       tn5250_session_send_error(This, errorcode);
+
+       return;
+     }
 
    if (input_field) {
       /* FIXME: `This address is either determined by the contents of the
@@ -1245,6 +1303,7 @@ static void tn5250_session_start_of_header(Tn5250Session * This)
 {
    int i, n;
    unsigned char *ptr = NULL;
+   unsigned long errorcode;
 
    TN5250_LOG (("StartOfHeader: entered.\n"));
    
@@ -1252,6 +1311,12 @@ static void tn5250_session_start_of_header(Tn5250Session * This)
    tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_X_SYSTEM);
 
    n = tn5250_record_get_byte (This->record);
+   if(n < 0 || n > 7)
+     {
+       errorcode = TN5250_NR_INVALID_SOH_LENGTH;
+       tn5250_session_send_error(This, errorcode);
+       return;
+     }
    TN5250_ASSERT((n > 0 && n <= 7));
    if (n > 0) {
       ptr = (unsigned char *)malloc (n);
@@ -1283,9 +1348,25 @@ static void tn5250_session_start_of_header(Tn5250Session * This)
 static void tn5250_session_set_buffer_address(Tn5250Session * This)
 {
    int X, Y;
+   int width;
+   int height;
+   unsigned long errorcode;
 
    Y = tn5250_record_get_byte(This->record);
    X = tn5250_record_get_byte(This->record);
+
+   width = tn5250_display_width(This->display);
+   height = tn5250_display_height(This->display);
+
+   if(Y == 0 || Y > height || X == 0 || X > width)
+     {
+       errorcode = TN5250_NR_INVALID_ROW_COL_ADDR;
+
+       tn5250_session_send_error(This, errorcode);
+
+       return;
+     }
+
 
    /* Since we can't handle it yet... */
    TN5250_ASSERT( (X == 0 && Y == 1) ||
@@ -1293,6 +1374,208 @@ static void tn5250_session_set_buffer_address(Tn5250Session * This)
 
    tn5250_display_set_cursor(This->display, Y - 1, X - 1);
    TN5250_LOG(("SetBufferAddress: row = %d; col = %d\n", Y, X));
+}
+
+static void tn5250_session_write_extended_attribute(Tn5250Session * This)
+{
+  /*
+     This order is not really implemented.  It is just here for catching data
+     stream errors.
+ */
+  unsigned char attrtype;
+  unsigned char attr;
+  unsigned long errorcode;
+
+  attrtype = tn5250_record_get_byte(This->record);
+  attr = tn5250_record_get_byte(This->record);
+
+  if(attrtype != 0x01
+     && attrtype != 0x03
+     && attrtype != 0x05)
+    {
+      errorcode = TN5250_NR_INVALID_EXT_ATTR_TYPE;
+
+      tn5250_session_send_error(This, errorcode);
+
+      return;
+    }
+}
+
+static void tn5250_session_write_display_structured_field(Tn5250Session * This)
+{
+  /*
+    This order is not really implemented.  We just do enough to checking so
+    we can handle data stream errors.
+  */
+  unsigned char type;
+  unsigned long errorcode;
+
+  type = tn5250_record_get_byte(This->record);
+
+  switch(type)
+    {
+    case DEFINE_SELECTION_FIELD:
+    case CREATE_WINDOW:
+    case UNREST_WIN_CURS_MOVE:
+    case DEFINE_SCROLL_BAR_FIELD:
+    case WRITE_DATA:
+    case PROGRAMMABLE_MOUSE_BUT:
+    case REM_GUI_SEL_FIELD:
+    case REM_GUI_WINDOW:
+    case REM_GUI_SCROLL_BAR_FIELD:
+    case REM_ALL_GUI_CONSTRUCTS:
+    case DRAW_ERASE_GRID_LINES:
+    case CLEAR_GRID_LINE_BUFFER:
+      break;
+    default:
+      errorcode = TN5250_NR_INVALID_SF_CLASS_TYPE;
+      tn5250_session_send_error(This, errorcode);
+      return;
+    }
+}
+
+static void tn5250_session_transparent_data(Tn5250Session * This)
+{
+  unsigned char l1, l2;
+  unsigned td_len;
+  int width;
+  int height;
+  int curx;
+  int cury;
+  int end;
+  int errorcode;
+
+  width = tn5250_display_width(This->display);
+  height = tn5250_display_height(This->display);
+
+  curx = tn5250_display_cursor_x(This->display);
+  cury = tn5250_display_cursor_y(This->display);
+
+  l1 = tn5250_record_get_byte (This->record);
+  l2 = tn5250_record_get_byte (This->record);
+  td_len = (l1 << 8) | l2;
+
+  end = (cury-1) * width + curx + td_len;
+
+  TN5250_LOG (("TD order (length = X'%04X').\n",
+              td_len));
+
+  if(end > width*height)
+    {
+      errorcode = TN5250_NR_INVALID_ROW_COL_ADDR;
+
+      tn5250_session_send_error(This, errorcode);
+
+      return;
+    }
+
+  while (td_len > 0) {
+    l1 = tn5250_record_get_byte (This->record);
+    tn5250_display_addch (This->display,l1);
+    td_len--;
+  }
+
+}
+
+static void tn5250_session_move_cursor(Tn5250Session * This)
+{
+  /*
+    FIXME:  This function is not really implemented.  It is just here to
+     catch errors in the data stream.
+  */
+  unsigned char x = 0xff, y = 0xff;
+  int width;
+  int height;
+  unsigned long errorcode;
+
+  y = tn5250_record_get_byte (This->record) - 1;
+  x = tn5250_record_get_byte (This->record) - 1;
+  TN5250_LOG (("MC order (y = X'%02X', x = X'%02X').\n", y, x));
+ 
+  width = tn5250_display_width(This->display);
+  height = tn5250_display_height(This->display);
+
+  if(y == 0 || y > height || x == 0 || x > width)
+    {
+      errorcode = TN5250_NR_INVALID_ROW_COL_ADDR;
+
+      tn5250_session_send_error(This, errorcode);
+
+      return;
+    }
+}
+
+static void tn5250_session_insert_cursor(Tn5250Session * This)
+{
+  unsigned char x = 0xff, y = 0xff;
+  int width;
+  int height;
+  unsigned long errorcode;
+
+  y = tn5250_record_get_byte (This->record);
+  x = tn5250_record_get_byte (This->record);
+
+  width = tn5250_display_width(This->display);
+  height = tn5250_display_height(This->display);
+
+  if(y == 0 || y > height || x == 0 || x > width)
+    {
+      errorcode = TN5250_NR_INVALID_ROW_COL_ADDR;
+
+      tn5250_session_send_error(This, errorcode);
+
+      return;
+    }
+
+  y--;
+  x--;
+
+  TN5250_LOG (("IC order (y = X'%02X', x = X'%02X').\n", y, x));
+
+  tn5250_display_set_pending_insert (This->display, y, x);
+}
+
+static void tn5250_session_erase_to_address(Tn5250Session * This)
+{
+  /*
+    FIXME:  This function is not completely implemented.  It is mostly just
+    here to check for invalid characters in the data stream.
+  */
+
+  int x;
+  int y;
+  int length;
+  int curx;
+  int cury;
+  unsigned long errorcode;
+  int start;
+  int end;
+  int width;
+  int height;
+
+  TN5250_LOG(("EraseToAddress: entered.\n"));
+  
+  curx = tn5250_display_cursor_x(This->display)+1;
+  cury = tn5250_display_cursor_y(This->display)+1;
+
+  y = tn5250_record_get_byte(This->record);
+  x = tn5250_record_get_byte(This->record);
+  length = tn5250_record_get_byte(This->record);
+  width = tn5250_display_width(This->display);
+  height = tn5250_display_height(This->display);
+  start = (cury-1) * width + curx;
+  end   = (y-1) * width + x;
+
+  if(end < start || length < 2 || length > 5)
+    {
+      errorcode = TN5250_NR_INVALID_ROW_COL_ADDR;
+
+      tn5250_session_send_error(This, errorcode);
+
+       return;
+
+    }
+
 }
 
 /****i* lib5250/tn5250_session_repeat_to_address
@@ -1311,14 +1594,38 @@ static void tn5250_session_repeat_to_address(Tn5250Session * This)
    int x, y, ins_loc;
    Tn5250Field  *field;
 
+   unsigned long errorcode;
+   int width;
+   int height;
+   int start;
+   int end;
+
    TN5250_LOG(("RepeatToAddress: entered.\n"));
 
    temp[0] = tn5250_record_get_byte(This->record);
    temp[1] = tn5250_record_get_byte(This->record);
    temp[2] = tn5250_record_get_byte(This->record);
 
+   y = tn5250_display_cursor_y(This->display)+1;
+   x = tn5250_display_cursor_x(This->display)+1;
+   width = tn5250_display_width(This->display);
+   height = tn5250_display_height(This->display);
+   start = (y-1) * width + x;
+   end   = (temp[0]-1) * width + temp[1];
+
    TN5250_LOG(("RepeatToAddress: row = %d; col = %d; char = 0x%02X\n",
 	temp[0], temp[1], temp[2]));
+
+   if(temp[0] == 0 || temp[0] > height
+      || temp[1] == 0 || temp[1] > width
+      || end < start)
+     {
+       errorcode = TN5250_NR_INVALID_ROW_COL_ADDR;
+
+       tn5250_session_send_error(This, errorcode);
+
+       return;
+     }
 
    while(1) {
       y = tn5250_display_cursor_y(This->display);
@@ -1344,6 +1651,7 @@ static void tn5250_session_repeat_to_address(Tn5250Session * This)
 static void tn5250_session_write_structured_field(Tn5250Session * This)
 {
    unsigned char temp[5];
+   unsigned long errorcode;
 
    TN5250_LOG(("WriteStructuredField: entered.\n"));
 
@@ -1357,6 +1665,40 @@ static void tn5250_session_write_structured_field(Tn5250Session * This)
 	(temp[0] << 8) | temp[1]));
    TN5250_LOG(("WriteStructuredField: command class = 0x%02X\n", temp[2]));
    TN5250_LOG(("WriteStructuredField: command type = 0x%02X\n", temp[3]));
+
+   if(temp[2] != 0xD9)
+     {
+       errorcode = TN5250_NR_INVALID_SF_CLASS_TYPE;
+       tn5250_session_send_error(This, errorcode);
+       return;
+     }
+   else
+     {
+       switch(temp[3])
+        {
+        case DEFINE_AUDIT_WINDOW_TABLE:
+        case DEFINE_COMMAND_KEY_FUNCTION:
+        case READ_TEXT_SCREEN:
+        case DEFINE_PENDING_OPERATIONS:
+        case DEFINE_TEXT_SCREEN_FORMAT:
+        case DEFINE_SCALE_TIME:
+        case WRITE_TEXT_SCREEN:
+        case DEFINE_SPECIAL_CHARACTERS:
+        case PENDING_DATA:
+        case DEFINE_OPERATOR_ERROR_MSGS:
+        case DEFINE_PITCH_TABLE:
+        case DEFINE_FAKE_DP_CMD_KEY_FUNC:
+        case PASS_THROUGH:
+        case SF_5250_QUERY:
+        case SF_5250_QUERY_STATION_STATE:
+          break;
+
+        default:
+          errorcode = TN5250_NR_INVALID_SF_CLASS_TYPE;
+          tn5250_session_send_error(This, errorcode);
+          return;
+        }
+     }
 
    tn5250_session_query_reply(This);
 }

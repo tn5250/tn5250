@@ -33,10 +33,6 @@
   </item>
 
   <item>
-    Add Scheme/guile scripting language support.
-  </item>
-
-  <item>
     Move SCS ``library functions'' from scs2ascii.c to scs.c, make them part
     of the library.  Include tn5250/scs.h from tn5250.h
 

@@ -6,10 +6,6 @@ implementation for Linux, but it has been reportedly compiled on a number
 of other platforms.  Contributed keyboard maps and termcap entries for
 FreeBSD are in this tarball as well (see freebsd/README for more information).
 
-This, the 0.15.x series, is the development series and may cause severe
-headaches and stomach cramps, if only due to the quality of code :)  If you
-are looking for a stable emulator, get the latest 0.14.x version.
-
 Building from CVS
 =================
 
@@ -72,10 +68,11 @@ Other Information
 
 Other information is available on the web.
 
+http://tn5250.sourceforge.net/                       - linux5250 Homepage
+http://www.midrange.com/linux5250.shtml              - linux5250 List Info
+http://archive.midrange.com/linux5250/index.htm      - linux5250 List Archives
+http://sourceforge.net/projects/tn5250/              - linux5250 at Sourceforge
 http://perso.libertysurf.fr/plinux/tn5250-faq.html   - linux5250 FAQ
-http://cvs.cleveland.lug.net/mail-archives/tn5250/   - linux5250 List Archives
-http://www.blarg.net/~mmadore/                       - linux5250 Homepage
-http://cvs.cleveland.lug.net/module.pl?module=tn5250 - Developer Resources
 
 Comments, questions, bug reports and patches are much appreciated - please
 subscribe to the list and post them there if at all possible.  If that's too

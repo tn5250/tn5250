@@ -1,3 +1,40 @@
+2001-07-30 Carey Evans  <carey@paradise.net.nz>
+- Updated FieldExit and FieldPlus keys in man page.
+
+2001-07-16 Scott Klement <klemscot@klements.com>
+- Added support for a simple "ruler" (like the "rule lines" in CAE/400)
+   to try it, add '+ruler' to your tn5250rc.
+
+2001-06-29 Scott Klement <klemscot@klements.com>
+- Applied Martin Rowe's patch to fix 80 to 132 col screen resizing when
+    changing fonts. (along with my own update to his patch)
+    
+2001-06-20 Carey Evans  <carey@paradise.net.nz>
+- Add --enable-os-dir option to configure.in for selecting linux or
+  freebsd directory.
+- Change xt5250.in to set xterm icon name as well as window title; patch
+  from Richard Griswold.
+
+2001-06-17 Carey Evans  <carey@paradise.net.nz>
+- Update man pages and README to refer to SourceForge web pages.
+
+2001-06-02 Scott Klement <klemscot@klements.com>
+- Applied Carey Evans' patch to clean up configure.in and use 
+   sysconfdir properly.
+- Installed a termcap-neutral version of XTerm for BSD compatability
+- Changed configure.in to install linux dir for linux and freebsd 
+   diredtory for freebsd.
+- Misc other fixes for FreeBSD compatability
+
+2001-06-02  Carey Evans  <carey@paradise.net.nz>
+- Add variant of LaMont Jones' patch from Debian bug #97380, removing
+  preprocessor conditionals from within printf() for usage message, to
+  work with gcc 3.0.
+
+2001-05-29 Scott Klement <klemscot@klements.com>
+- Fixed bug where SYSCONFDIR wasn't being run through 'eval' in 
+   configure script.
+
 2001-01-23 Scott Klement <klemscot@klements.com>
 - Wired Field+ to C-x in cursesterm.c
 - Made keys to exit FER state match those on an IBM 3487
@@ -7,33 +44,96 @@
    -10 in these "numeric only" fields.
 
 2001-01-18 Scott Klement <klemscot@klements.com>
-- Fix for sign not being set when field minus / field plus pressed in an
-  auto-enter field.
+- Fix for sign not being set when field minus / field plus 
+   pressed in an auto-enter field.
 
-2000-12-22 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
-- Applied patch from Scott Klement for lp5250d stability.
-- Applied patch from Scott for using config-file method for lp5250d in 0.16.x.
+2001-01-04 Scott Klement <klemscot@klements.com>
+- Added xterm font support requested by Frank Richter
+- to use: set the font_80 and font_132 config options in ~/.tn5250rc
 
-2000-12-19 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
-- Okay, really applied second patch from Dave McKenzie *sigh*
-- Applied patch from Carey Evans to fix option parsing in xt5250.
-- Changed src/Makefile.am for compatibility with robodoc 3.2.2.
-- Released 0.16.1
+2000-12-27 Rich Duzenbury <theduz@theduz.com>
+- Added Experimental scs2ps (SCS to Postscript) program.  
+- call by:  cat myscsfile | scs2ps
 
 2000-12-06 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Applied Cary Evans' patch updating man pages.
 - Fixed text of LGPL exception clause in src/*.[ch]
 
+2000-11-27 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Applied Carey Evans' patch fixing configure script under ash.
+
 2000-11-10 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
-- Apply Scott's patch for fixing behavior of `Delete' key.
+- Apply Scott Klement's patch for fixing `Delete' key behavior.
 
 2000-10-31 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - Patch from Scott Klement to beep when a message is received.
 - Second patch from Dave McKenzie fixing cursor positioning issues when the
   emulator is sent more than one WTD.
- 
+
+2000-10-30 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Fix for install-exec-local bug when python bindings not enabled.
+
+2000-10-30 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Applied patch from Dave McKenzie fixing cursor positioning issues when the
+  screen is sent in more than one WTD.
+- Added makefile rules and support files for building python language bindings
+  using swig.
+
+2000-07-19 Mike Madore <mmadore@turbolinux.com>
+- Send negative response if we get an invalid command.
+	
+2000-07-18 Mike Madore <mmadore@turbolinux.com>
+- Preliminary fix for emulator hang when pressing attention key from the
+  sysrequest menu.
+	
+2000-07-11 Mike Madore <mmadore@turbolinux.com>
+- Preliminary fix for emulator hang when pressing sys-request from the 
+  sysrequest menu.
+	
+2000-07-08 Mike Madore <mmadore@turbolinux.com>
+- Applied Scott Klement's patch to use the config file system for lp5250d
+	
+2000-06-30 Mike Madore <mmadore@turbolinux.com>
+- Applied Scott Klement's fix for the broken SYSREQ function.
+	
+2000-06-28 Mike Madore <mmadore@turbolinux.com>
+- Preliminary fix for Scott Klement's bogus negative response error.
+- Cleaned up some compiler warnings.
+	
+2000-06-21 Mike Madore <mmadore@turbolinux.com>
+- Fixed off by one errors when checking screen position validity.  Emulator was
+  erroneously sending negative responses when output was to the last row of the
+  screen.
+- Add more validity checking of orders and commands.  The emualtor now produces
+  the same error messages as a real terminal while running Scott Klement's 
+  test program.
+	
+2000-06-20 Mike Madore <mmadore@turbolinux.com>
+- Modified the following functions so that they now send a negative response
+  when they encounter illegal parameters:
+     start_of_header
+     repeat_to_address 
+     insert_cursor
+     and others...
+  This fixes a number of the assertions when viewing 'non-printable' 
+  characters.  There are still several of these cases to code for, so it's 
+  possible to get assertions if you view binary data.
+	
+2000-06-15 Mike Madore <mmadore@turbolinux.com>
+- Fixed bug with missing break statement in telnetstr.c.  Was causing IAC
+  escapes to fail.
+	
+2000-06-14 Mike Madore <mmadore@turbolinux.com>
+- Added logic to check for clear print buffer in printsession.c.  Need to test
+  to see if it fixes Scott's problem.
+	
 2000-06-01 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
-- Applied Scott Klement's fix for aidkey handling in tn5250_display_do_aidkey
-  (slightly modified to handle attention, also).
+- Applied Scott Klement's fix (slightly modified) for accepting appropriate
+  aidcodes when there is no read, etc.  (Crashing issues).
+	
+2000-05-31 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Updated version to 0.16.0pre1, did tag-and-branch versions.
+- Released 0.16.0pre1 and 0.17.0
 
 2000-05-30 Mike Madore <mmadore@turbolinux.com>
 - Noticed that Jason is a wise guy ;-)

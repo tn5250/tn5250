@@ -99,6 +99,18 @@ int main(int argc, char *argv[])
 	    tn5250_config_get_bool (config, "underscores")
 	    );
    }
+   if (tn5250_config_get (config, "ruler")) {
+      tn5250_curses_terminal_display_ruler(term,
+           tn5250_config_get_bool (config, "ruler")
+           );
+   }
+   if ((tn5250_config_get (config, "font_80"))
+       && (tn5250_config_get (config, "font_132"))) {
+      tn5250_curses_terminal_set_xterm_font (term,
+            tn5250_config_get (config, "font_80"),
+            tn5250_config_get (config, "font_132")
+            );
+   }
 #endif
 #ifdef USE_SLANG
    term = tn5250_slang_terminal_new();
@@ -176,12 +188,15 @@ Options:\n\
       m++; i++;
    }
    printf ("\n\
-   env.DEVNAME=NAME         Use NAME as session name (default: none).\n"
+   env.DEVNAME=NAME         Use NAME as session name (default: none).\n");
 #ifndef NDEBUG
-"   trace=FILE              Log session to FILE.\n"
+   printf ("\
+   trace=FILE              Log session to FILE.\n");
 #endif
-"   +/-underscores          Use/don't use underscores instead of underline\n\
+   printf ("
+   +/-underscores          Use/don't use underscores instead of underline\n\
                            attribute.\n\
+   +/-ruler                Draw a ruler pointing to the cursor position\n\
    +/-version              Show emulator version and exit.\n\
    env.NAME=VALUE          Set telnet environment string NAME to VALUE.\n\
    env.TERM=TYPE           Emulate IBM terminal type (default: depends)");

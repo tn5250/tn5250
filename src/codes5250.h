@@ -72,9 +72,40 @@ extern "C" {
 #define WDSF	0x15		/* Write to Display Structured Field on 5494 */ /* FIXME: */
 #define SF	0x1D		/* Start of field */
 
-/*
+/* Write to display structued field types */
+#define DEFINE_SELECTION_FIELD   0x50
+#define CREATE_WINDOW            0x51
+#define UNREST_WIN_CURS_MOVE     0x52
+#define DEFINE_SCROLL_BAR_FIELD  0x53
+#define WRITE_DATA               0x54
+#define PROGRAMMABLE_MOUSE_BUT   0x55
+#define REM_GUI_SEL_FIELD        0x58
+#define REM_GUI_WINDOW           0x59
+#define REM_GUI_SCROLL_BAR_FIELD 0x5B
+#define REM_ALL_GUI_CONSTRUCTS   0x5F
+#define DRAW_ERASE_GRID_LINES    0x60
+#define CLEAR_GRID_LINE_BUFFER   0x61
+
+/* Write structured field types */
+#define DEFINE_AUDIT_WINDOW_TABLE   0x30
+#define DEFINE_COMMAND_KEY_FUNCTION 0x31
+#define READ_TEXT_SCREEN            0x32
+#define DEFINE_PENDING_OPERATIONS   0x33
+#define DEFINE_TEXT_SCREEN_FORMAT   0x34
+#define DEFINE_SCALE_TIME           0x35
+#define WRITE_TEXT_SCREEN           0x36
+#define DEFINE_SPECIAL_CHARACTERS   0x37
+#define PENDING_DATA                0x38
+#define DEFINE_OPERATOR_ERROR_MSGS  0x39
+#define DEFINE_PITCH_TABLE          0x3A
+#define DEFINE_FAKE_DP_CMD_KEY_FUNC 0x3B
+#define PASS_THROUGH                0x3F
+#define SF_5250_QUERY               0x70
+#define SF_5250_QUERY_STATION_STATE 0x72
+
+/******************************************************************
  * Operator Error Codes see 5494 User's Guide (GA27-3960-03) 2.3.4
- */
+ ******************************************************************/
  
 #define ERR_DONT_KNOW		0x01
 #define ERR_BYPASS_FIELD	0x04
@@ -126,9 +157,9 @@ extern "C" {
  #define MSG_SBCS_WRONG_TYPE	"Field requires double-byte characters."
 #endif
 
-/*
+/*************************************************************************
  * More error codes - Data Stream Negative Responses (SC30-3533-04) 13.4 *
- */
+ *************************************************************************/
  
 #define DSNR_RESEQ_ERR	  03
 #define DSNR_INVCURSPOS	0x22

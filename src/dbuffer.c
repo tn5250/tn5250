@@ -77,6 +77,8 @@ Tn5250DBuffer *tn5250_dbuffer_new(int width, int height)
    This->header_data = NULL;
    This->header_length = 0;
 
+   This->script_slot = NULL;
+
    This->data = tn5250_new(unsigned char, width * height);
    if (This->data == NULL) {
       free(This);

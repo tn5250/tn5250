@@ -72,6 +72,7 @@ Tn5250Field *tn5250_field_copy(Tn5250Field * This)
    memcpy(fld, This, sizeof(Tn5250Field));
    fld->next = NULL;
    fld->prev = NULL;
+   fld->script_slot = NULL;
    return fld;
 }
 

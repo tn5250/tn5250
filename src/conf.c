@@ -70,11 +70,6 @@ Tn5250Config *tn5250_config_new ()
    This->ref = 1;
    This->vars = NULL;
 
-   /* Set some default values. */
-   /* FIXME: Move this to a better place, like in display.c */
-   /*   tn5250_config_set (This, "env.TERM", "IBM-3179-2");  */
-   /*   tn5250_config_set (This, "map", "37"); */
-
    return This;
 }
 
@@ -368,6 +363,19 @@ int tn5250_config_get_bool (Tn5250Config *This, const char *name)
 	    || !strcmp (v, "no")
 	    || !strcmp (v,"0")
 	    || !strcmp (v,"false")));
+}
+
+int
+tn5250_config_get_int (Tn5250Config *This, const char *name)
+{
+   const char *v = tn5250_config_get (This, name);
+  
+   if(v == NULL) {
+     return 0;
+   } else {
+     return(atoi(v));
+   }
+
 }
 
 void tn5250_config_set (Tn5250Config *This, const char *name, const char *value)

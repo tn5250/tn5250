@@ -1,12 +1,5 @@
 # This is just a copy of the "cons25" entry for syscons from the standard
 # FreeBSD termcap file, except that we've added definitions for F13-F24.
-#
-# One problem with this termcap is simply that backtab and F14 appear
-# to use the same escape sequence...  ESC [ Z
-#
-# So, rather than use this, I've been using kbdcontrol to map F13-F24
-#  so that they send "C-g !" for F1, "C-g @" for F2, etc.
-#
 5250|ibm5250|tn5250:\
 	:al=\E[L:am:bs:NP:cd=\E[J:ce=\E[K:cl=\E[H\E[J:cm=\E[%i%d;%dH:co#80:\
 	:dc=\E[P:dl=\E[M:do=\E[B:bt=\E[Z:ho=\E[H:ic=\E[@:li#25:cb=\E[1K:\
@@ -22,3 +15,16 @@
 	:DO=\E[%dB:LE=\E[%dD:RI=\E[%dC:UP=\E[%dA:cv=\E[%i%dd:ch=\E[%i%d`:bw:\
 	:mb=\E[5m:md=\E[1m:mh=\E[30;1m:mr=\E[7m:me=\E[m:bl=^G:ut:it#8:km:
 	:ac=l\332m\300k\277j\331u\264t\303v\301w\302q\304x\263n\305`^Da\260f\370g\361~\371.^Y-^Xh\261I^U0\333y\363z\362:
+#
+# 5250 xterm w/colors and underlines.   In older (pre 4.1) versions of FreeBSD
+#    I had problems with underlines and color not playing nicely together. 
+#    if this happens to you, enable the alternate definition below...
+#
+xterm-5250|xt5250-color:\
+	:kB=\E[Z:bt=\E[Z:tc=xterm-color:
+#
+# 5250 xterm w/colors, but not underlines.  Use the +underscores option
+#    in tn5250 to simulate underlines.
+#
+#xterm-5250|xt5250-color:\
+#	:kB=\E[Z:bt=\E[Z:us@:ue@:tc=xterm-color:

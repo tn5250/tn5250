@@ -14,6 +14,7 @@ endif
 lib_LTLIBRARIES =	lib5250.la
 
 bin_PROGRAMS =		scs2ascii\
+			 scs2ps\
 			tn5250\
 			lp5250d\
 			tn5250d\
@@ -39,6 +40,7 @@ lib5250_la_SOURCES =	buffer.c\
 lib5250_la_LIBADD =	@with_extra_libs@
 
 tn5250_SOURCES = 	tn5250.c
+INCLUDES = -DSYSCONFDIR=\"$(sysconfdir)\"
 
 tn5250_LDADD = 		@with_extra_libs@ lib5250.la
 
@@ -59,6 +61,9 @@ tn3270d_SOURCES = 	tn3270d.c\
 			host3270.c
 
 tn3270d_LDADD =		@with_extra_libs@ lib5250.la
+
+scs2ps_SOURCES =	scs2ps.c
+scs2ps_LDADD =		@with_extra_libs@ lib5250.la
 
 pkginclude_HEADERS = 	buffer.h\
 			codes3270.h\

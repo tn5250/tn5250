@@ -100,6 +100,8 @@ static int curses_terminal_waitevent(Tn5250Terminal * This) /*@modifies This@*/;
 static int curses_terminal_getkey(Tn5250Terminal * This) /*@modifies This@*/;
 static int curses_terminal_get_esc_key(Tn5250Terminal * This, int is_esc) /*@modifies This@*/;
 static void curses_terminal_beep(Tn5250Terminal * This);
+static int curses_terminal_is_ruler(Tn5250Terminal *This, Tn5250Display *display, int x, int y);
+
 
 #ifdef USE_OWN_KEY_PARSING
 struct _Key {
@@ -121,10 +123,13 @@ struct _Tn5250TerminalPrivate {
    Key *	  k_map;
    int		  k_map_len;
 #endif
+   char *         font_80;
+   char *         font_132;
    int		  quit_flag : 1;
    int		  have_underscores : 1;
    int		  underscores : 1;
    int		  is_xterm : 1;
+   int            display_ruler : 1;
 };
 
 #ifdef USE_OWN_KEY_PARSING
@@ -275,6 +280,9 @@ Tn5250Terminal *tn5250_curses_terminal_new()
    r->data->last_width = 0;
    r->data->last_height = 0;
    r->data->is_xterm = 0;
+   r->data->font_80 = NULL;
+   r->data->font_132 = NULL;
+   r->data->display_ruler = 0;
 
 #ifdef USE_OWN_KEY_PARSING
    r->data->k_buf_len = 0;
@@ -428,6 +436,53 @@ void tn5250_curses_terminal_use_underscores (Tn5250Terminal *This, int u)
    This->data->underscores = u;
 }
 
+/****i* lib5250/tn5250_curses_terminal_display_ruler
+ * NAME
+ *    tn5250_curses_terminal_display_ruler
+ * SYNOPSIS
+ *    tn5250_curses_terminal_display_ruler (This, f);
+ * INPUTS
+ *    Tn5250Terminal  *    This       - The curses terminal object.
+ *    int                  f          - Flag, set to 1 to show ruler
+ * DESCRIPTION
+ *    Call this function to tell a curses terminal to display a
+ *    "ruler" that pinpoints where the cursor is on a given screen.
+ *****/
+void tn5250_curses_terminal_display_ruler (Tn5250Terminal *This, int f)
+{
+   This->data->display_ruler = f;
+}
+
+/****i* lib5250/tn5250_curses_terminal_set_xterm_font
+ * NAME
+ *  tn5250_curses_terminal_set_xterm_font
+ * SYNOPSIS
+ *    tn5250_curses_terminal_set_xterm_font (This, font80, font132);
+ * INPUTS
+ *    Tn5250Terminal  *    This       - curses terminal object
+ *    const char  *       font80     - string to send when using 80 col font
+ *    const char  *       font132    - string to send when using 132 col font
+ * DESCRIPTION
+ *    When using an xterm, it is sometimes desirable to change fonts when
+ *    switching from 80 to 132 col mode.  If this is not explicitly set,
+ *    no font-change will be sent to the xterm.
+ *
+ *    Font changes consist of "\x1b]50;<font string>\x07".  You only need
+ *    specify the "<font string>" portion as an argument to this function.
+ *****/
+void tn5250_curses_terminal_set_xterm_font (Tn5250Terminal *This,
+                                 const char *font80, const char *font132)
+{
+   This->data->font_80 = malloc(strlen(font80) + 6);
+   TN5250_ASSERT (This->data->font_80 !=NULL);
+   This->data->font_132 = malloc(strlen(font132) + 6);
+   TN5250_ASSERT (This->data->font_132 !=NULL);
+   sprintf(This->data->font_80, "\x1b]50;%s\x07", font80);
+   sprintf(This->data->font_132, "\x1b]50;%s\x07", font132);
+   TN5250_LOG(("font_80 = %s.\n",This->data->font_80));
+   TN5250_LOG(("font_132 = %s.\n",This->data->font_132));
+}
+
 /****i* lib5250/curses_terminal_term
  * NAME
  *    curses_terminal_term
@@ -459,6 +514,10 @@ static void curses_terminal_destroy(Tn5250Terminal * This)
    if (This->data->k_map != NULL)
       free(This->data->k_map);
 #endif
+   if (This->data->font_80 !=NULL)
+      free(This->data->font_80);
+   if (This->data->font_132 !=NULL)
+      free(This->data->font_132);
    if (This->data != NULL)
       free(This->data);
    free(This);
@@ -538,6 +597,12 @@ static void curses_terminal_update(Tn5250Terminal * This, Tn5250Display *display
        || This->data->last_height != tn5250_display_height(display)) {
       clear();
       if(This->data->is_xterm) {
+         if (This->data->font_132!=NULL) {
+               if (tn5250_display_width (display)>100)
+                    printf(This->data->font_132);
+               else
+                    printf(This->data->font_80);
+         }
 	 printf ("\x1b[8;%d;%dt", tn5250_display_height (display)+1,
 	       tn5250_display_width (display));
 	 fflush (stdout);
@@ -563,11 +628,19 @@ static void curses_terminal_update(Tn5250Terminal * This, Tn5250Display *display
 	 c = tn5250_display_char_at(display, y, x);
 	 if ((c & 0xe0) == 0x20) {	/* ATTRIBUTE */
 	    a = (c & 0xff);
-	    addch(attribute_map[0] | ' ');
+               if (curses_terminal_is_ruler(This, display, x, y)) {
+                  addch( A_REVERSE | attribute_map[0] | ' ');
+               } else {
+                 addch(attribute_map[0] | ' ');
+               }
 	 } else {		/* DATA */
 	    curs_attr = attribute_map[a - 0x20];
 	    if (curs_attr == 0x00) {	/* NONDISPLAY */
-	       addch(attribute_map[0] | ' ');
+               if (curses_terminal_is_ruler(This, display, x, y)) {
+                  addch( A_REVERSE | attribute_map[0] | ' ');
+               } else {
+                 addch(attribute_map[0] | ' ');
+               }
 	    } else {
                /* UNPRINTABLE -- print block */
                if ((c==0x1f) || (c==0x3F)) {
@@ -593,6 +666,9 @@ static void curses_terminal_update(Tn5250Terminal * This, Tn5250Display *display
 			c = '_';
 		  }
 	       }
+               if (curses_terminal_is_ruler(This, display, x, y)) {
+                 curs_attr |= A_REVERSE;
+               }
 	       addch((chtype)(c | curs_attr));
 	    }
 	 }			/* if ((c & 0xe0) ... */
@@ -604,6 +680,37 @@ static void curses_terminal_update(Tn5250Terminal * This, Tn5250Display *display
    /* This performs the refresh () */
    curses_terminal_update_indicators(This, display);
 }
+
+
+/****i* lib5250/curses_terminal_is_ruler
+ * NAME
+ *    curses_terminal_is_ruler
+ * SYNOPSIS
+ *    curses_terminal_is_ruler (display, x, y);
+ * INPUTS
+ *    Tn5250Terminal *     This       -
+ *    Tn5250Display *      display    -
+ *    int                 x          - position of char on X axis
+ *    int                 y          - position of char on Y axis
+ * DESCRIPTION
+ *    Returns 1 if a char on the screen should be displayed as part
+ *    of the ruler, or 0 if it should not.
+ *****/
+static int curses_terminal_is_ruler(Tn5250Terminal *This,
+               Tn5250Display *display, int x, int y) {
+
+   if (!(This->data->display_ruler)) return 0;
+
+   if (x==tn5250_display_cursor_x(display)) {
+        return 1;
+   }
+   if (y==tn5250_display_cursor_y(display)) {
+        return 1;
+   }
+
+   return 0;
+}
+
 
 /****i* lib5250/curses_terminal_update_indicators
  * NAME
