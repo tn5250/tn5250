@@ -1,5 +1,8 @@
 2005-02-24 James Rich <james@eaerich.com>
 - Added more descriptive comments to tn5250_session_query_reply().
+- Changed tn5250_terminal_enhanced() to return 0 if NULL as suggested by
+  Marc-Antoine Ruel.
+- Added preliminary selection field support.
 
 2005-02-23 James Rich <james@eaerich.com>
 - Applied several fixes from Marc-Antoine Ruel for multi-threading issues

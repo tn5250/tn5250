@@ -15,6 +15,7 @@ lib5250_la_SOURCES =	buffer.c\
 			dbuffer.c\
 			display.c\
 			field.c\
+			menu.c\
 			printsession.c\
 			record.c\
 			scrollbar.c\
@@ -81,6 +82,7 @@ pkginclude_HEADERS = 	buffer.h\
 			dbuffer.h\
 			display.h\
 			field.h\
+			menu.h\
 			printsession.h\
 			record.h\
 			scrollbar.h\

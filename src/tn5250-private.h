@@ -83,6 +83,7 @@
 #include "printsession.h"
 #include "display.h"
 #include "macro.h"
+#include "menu.h"
 #include "debug.h"
 #include "wtd.h"
 #include "window.h"
