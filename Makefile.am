@@ -15,6 +15,8 @@ aclocal_DATA = tn5250.m4
 aclocaldir = $(datadir)/aclocal
 
 EXTRA_DIST = acconfig.h\
+	tn5250.spec.in\
+	tn5250.spec\
 	tn5250-48x48.xpm\
 	tn5250-48x48.png\
 	tn5250-62x48.xpm\
