@@ -12,10 +12,6 @@
   </item>
 
   <item>
-    More complete keyboard handling
-  </item>
-
-  <item>
     Implement all field types
   </item>
 
@@ -48,11 +44,6 @@
   <item>
     Move SCS ``library functions'' from scs2ascii.c to scs.c, make them part
     of the library.  Include tn5250/scs.h from tn5250.h
-  </item>
-
-  <item>
-    Properly include/don't include cursesterm.h/slangterm.h based on values in
-    tn5250/config.h
   </item>
 
   <item>

@@ -1,0 +1,88 @@
+Notes on keyboard mapping under FreeBSD:
+
+Mapping the keys:
+
+This approach (which is the one that I ended up using) works with the standard
+syscons termcap entry -- you do not need to modify your termcap, or change
+your terminal type to use it.
+
+1) First and foremost, it should be noted that the keyboard mapping that
+       I've done here only works on the console, using the syscons (default)
+       driver.  (If someone who is running the pcvt driver makes a similar
+       map, please send it to me, we'll try to send it in future distributions.)
+
+2) It is important to note that changing your keyboard map will change it
+       for all of your virtual terminals.  If you're using tn5250 in one
+       session, and switch to another session to do something else, you will
+       probably find that some keys do strange things.  I tried to set things
+       up so that pressing SHIFT with the remapped key will cause it to behave
+       in its default manner...  However, if this becomes too much of a 
+       nuisance for you, you may want to attempt to get yourself by with just
+       modifying your termcap entry, and learning a few control or escape
+       sequences for special AS/400 functions.  See "changing your termcap"
+       below.
+ 
+3) Each key is read by the syscons driver, and associated with a specific
+       ASCII code or key according to the keyboard map that you currently
+       have loaded.  The keyboard maps that come with FreeBSD are stored
+       in /usr/share/syscons/keymap.  I have provided a keyboard map called
+       "us.5250.kbd" which is based on the United States ISO keyboard thats
+       included with FreeBSD (us.iso.kbd).  If you're living in another 
+       country, or would like to make your own customization to this map,
+       it can be edited with vi, or the text editor of your choice.
+
+       Use "kbdcontrol -l <mapname>" to load a new keyboard map.
+
+       You can use "diff" to see what I changed between the files
+       us.5250.kbd and /usr/share/syscons/keymap/us.iso.kbd to see
+       what modifications I made, if you'd like to use that as a template
+       for making a keyboard map for another country.
+ 
+4) Function keys (fkey01-fkey63 in the keymap file) can be mapped to send
+       a string.  This allows us to make F13-F24 work without changing our
+       termcap, and allows us to send more than one character (such as
+       C-g H for Help, or C-g ! for F13) to the emulator.  
+
+       In my keyboard map, I disabled function keys 62-64 (normally the
+       "Windows95 keys") so I could assign strings to some of the other
+       keyboard keys.
+
+       Use "kbdcontrol -f <n> <string>" to map a function key to a string,
+       or "kbdcontrol -F" to reset the function keys to their default values.
+
+       Example:   kbdcontrol -f 5 "You pressed F5"  
+
+5) I created a script  "5250keys" that will load my keyboard map, and then
+       assign the strings for the various function keys.  
+
+6) You'll want to do:  
+        kbdcontrol -F
+        kbdcontrol -l /usr/share/syscons/keymap/us.iso.kbd 
+                      (or whatever map you use)
+
+   To set your keyboard back to normal after using tn5250.  In fact, you may
+   want to write a script that alters your keyboard mapping, runs tn5250,
+   then sets things back to normal...
+
+
+
+Changing your termcap:
+
+** THIS STEP IS NOT NECESSARY IF THE METHOD ABOVE WORKS FOR YOU **
+
+The first method I tried for remapping the keys was creating a new termcap
+entry for tn5250.  This method had a few advantages...  The main one being
+that only the tty that was running tn5250 had to change its keyboard map.
+There were also some disadvantages:
+
+   (1) Backtab and F14 conflict.  They send the same escape sequence, 
+         so they can't be mapped to do different things.
+   (2) You can't map "modifier" keys, such as control keys to do things
+         by themselves.  You also can't map special keys such as  
+         "scroll lock" or "the + on the keypad" to do things.
+
+Therefore, I abandoned the "termcap approach".  However, I have included
+a sample termcap file with this distribution, in case you want to play 
+with it yourself. 
+
+

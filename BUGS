@@ -27,22 +27,8 @@
     <date>99.10.01.16.45.00</date>
     <owner email="c.evans@clear.net.nz">Carey Evans</owner>
 
-    System Request provides too many options.  For some reason, the AS/400 thinks
-    there is a host system to be able to return to.
-  </bug>
-
-  <bug>
-    <date>99.10.13.15.23.00</date>
-    <owner email="jasonf@nacs.net">Jay 'Eraserhead' Felice</owner>
-
-    Field minus (ESC M) not wired to anything.
-  </bug>
-
-  <bug>
-    <date>99.10.13.15.23.00</date>
-    <owner email="jasonf@nacs.net">Jay 'Eraserhead' Felice</owner>
-
-    DUP key isn't wired to anything.
+    System Request provides too many options.  For some reason, the AS/400
+    thinks there is a host system to be able to return to.
   </bug>
 
 </bugs>
