@@ -483,15 +483,15 @@ tn5250_dbuffer_clear_table (Tn5250DBuffer * This)
    * FIXME
    */
   /*
-  This->window_list = tn5250_window_list_destroy (This->window_list);
-  This->scrollbar_list = tn5250_scrollbar_list_destroy (This->scrollbar_list);
-  */
+     This->window_list = tn5250_window_list_destroy (This->window_list);
+     This->scrollbar_list = tn5250_scrollbar_list_destroy (This->scrollbar_list);
+   */
   This->field_count = 0;
   This->entry_field_count = 0;
   /*
-  This->window_count = 0;
-  This->scrollbar_count = 0;
-  */
+     This->window_count = 0;
+     This->scrollbar_count = 0;
+   */
   This->master_mdt = 0;
   This->header_length = 0;
   if (This->header_data != NULL)

@@ -2208,7 +2208,6 @@ tn5250_session_erase_to_address (Tn5250Session * This)
   int end;
   int width;
   int height;
-  int i, j;
 
   TN5250_LOG (("EraseToAddress: entered.\n"));
 
@@ -2220,8 +2219,8 @@ tn5250_session_erase_to_address (Tn5250Session * This)
   length = tn5250_record_get_byte (This->record);
   width = tn5250_display_width (This->display);
   height = tn5250_display_height (This->display);
-  start = (cury - 1) * width + curx;
-  end = (y - 1) * width + x;
+  start = ((cury - 1) * width) + curx;
+  end = ((y - 1) * width) + x;
 
   if (end < start || length < 2 || length > 5)
     {
@@ -2244,40 +2243,7 @@ tn5250_session_erase_to_address (Tn5250Session * This)
 
   if (attribute == 0xFF)
     {
-      if (cury == y)
-	{
-	  for (j = curx; j <= x; j++)
-	    {
-	      tn5250_display_addch (This->display, ' ');
-	    }
-	}
-      else
-	{
-	  for (i = cury; i <= y; i++)
-	    {
-	      if (i == cury)
-		{
-		  for (j = curx; j <= width; j++)
-		    {
-		      tn5250_display_addch (This->display, ' ');
-		    }
-		}
-	      else if (i == y)
-		{
-		  for (j = 1; j <= x; j++)
-		    {
-		      tn5250_display_addch (This->display, ' ');
-		    }
-		}
-	      else
-		{
-		  for (j = 1; j <= width; j++)
-		    {
-		      tn5250_display_addch (This->display, ' ');
-		    }
-		}
-	    }
-	}
+      tn5250_display_erase_region (This->display, cury, curx, y, x, 1, width);
     }
 
   /* the docs say:
@@ -2576,11 +2542,11 @@ tn5250_session_query_reply (Tn5250Session * This)
       temp[4] = 0x3A;
     }
 
-  temp[5] = 0xD9;	/* Command class */
+  temp[5] = 0xD9;		/* Command class */
 
-  temp[6] = 0x70;	/* Command type - Query */
+  temp[6] = 0x70;		/* Command type - Query */
 
-  temp[7] = 0x80;	/* Flag byte */
+  temp[7] = 0x80;		/* Flag byte */
 
   /* The following bytes are supposed to correspond to table 89 of section
    * 15.27.2 5250 QUERY Command of the Functions Reference manual.
@@ -2594,13 +2560,13 @@ tn5250_session_query_reply (Tn5250Session * This)
    * I don't know where the X'0600' came from, but it appears to be
    * working.
    */
-  temp[8] = 0x06;	/* Controller hardware class */
-  temp[9] = 0x00;	/* 0x600 - Other WSF or another 5250 emulator */
+  temp[8] = 0x06;		/* Controller hardware class */
+  temp[9] = 0x00;		/* 0x600 - Other WSF or another 5250 emulator */
 
   /* Here the docs use X'040310' for version 4 release 3.1.  But it doesn't
    * appear to make any difference.
    */
-  temp[10] = 0x01;	/* Controller code level (Version 1 Release 1.0 */
+  temp[10] = 0x01;		/* Controller code level (Version 1 Release 1.0 */
   temp[11] = 0x01;
   temp[12] = 0x00;
 
@@ -3428,6 +3394,19 @@ tn5250_session_create_window_structured_field (Tn5250Session * This,
   tn5250_dbuffer_add_window (tn5250_display_dbuffer (This->display), window);
   tn5250_terminal_create_window (This->display->terminal, This->display,
 				 window);
+
+  /* Forcibly erase the region of the screen that the window covers.  I
+   * thought that the iSeries would always send an Erase To Address command
+   * after each Create Window command, but that isn't the case.  The weird
+   * part is that sometimes we do get the erase command, and sometimes we
+   * don't.  I have no idea why.
+   */
+  tn5250_display_erase_region (This->display, window->row + 1,
+			       window->column + 2,
+			       window->row + window->height + 1,
+			       window->column + window->column + 2,
+			       window->column + 2,
+			       window->column + window->width + 2);
   return;
 }
 

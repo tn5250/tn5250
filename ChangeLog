@@ -1,3 +1,7 @@
+2005-03-25 James Rich <james@eaerich.com>
+- Fixed the handling of Erase To Address order.  Forced the region of created
+  windows to be cleared whether we receive the erase order or not.
+
 2005-03-24 James Rich <james@eaerich.com>
 - Fixed seg fault that was occurring in lp5250d due to unreferencing a non-
   existant config object.

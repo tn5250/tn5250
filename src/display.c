@@ -2373,4 +2373,73 @@ void tn5250_display_set_char_map (Tn5250Display * This, const char *name)
    return;
 }
 
-/* vi:set sts=3 sw=3: */
+
+/****f* lib5250/tn5250_display_erase_region
+ * NAME
+ *    tn5250_display_erase_region
+ * SYNOPSIS
+ *    tn5250_display_erase_region (This, startrow, startcol, endrow, endcol,
+ *                                 leftedge, rightedge);
+ * INPUTS
+ *    Tn5250Display *      This       - 
+ *    unsigned int         startrow   - 
+ *    unsigned int         startcol   - 
+ *    unsigned int         endrow     - 
+ *    unsigned int         endcol     - 
+ *    unsigned int         leftedge   - 
+ *    unsigned int         rightedge  - 
+ * DESCRIPTION
+ *    Erase a region of the buffer
+ *****/
+void
+tn5250_display_erase_region (Tn5250Display * This, unsigned int startrow,
+			     unsigned int startcol, unsigned int endrow,
+			     unsigned int endcol, unsigned int leftedge,
+			     unsigned int rightedge)
+{
+  int i, j;
+
+  if (startrow == endrow)
+    {
+      for (j = startcol - 1; j < endcol; j++)
+	{
+	  This->display_buffers->
+	    data[((startrow - 1) * This->display_buffers->w) + j] =
+	    tn5250_char_map_to_remote (This->map, ' ');
+	}
+    }
+  else
+    {
+      for (i = startrow - 1; i < endrow; i++)
+	{
+	  if (i == (startrow - 1))
+	    {
+	      for (j = startcol - 1; j < rightedge; j++)
+		{
+		  This->display_buffers->data[(i * This->display_buffers->w) +
+					      j] =
+		    tn5250_char_map_to_remote (This->map, ' ');
+		}
+	    }
+	  else if (i == (endrow - 1))
+	    {
+	      for (j = leftedge - 1; j < endcol; j++)
+		{
+		  This->display_buffers->data[(i * This->display_buffers->w) +
+					      j] =
+		    tn5250_char_map_to_remote (This->map, ' ');
+		}
+	    }
+	  else
+	    {
+	      for (j = leftedge - 1; j < rightedge; j++)
+		{
+		  This->display_buffers->data[(i * This->display_buffers->w) +
+					      j] =
+		    tn5250_char_map_to_remote (This->map, ' ');
+		}
+	    }
+	}
+    }
+  return;
+}

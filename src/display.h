@@ -171,6 +171,12 @@ extern void	  tn5250_display_kf_nextfld 	      (Tn5250Display *This);
 extern void	  tn5250_display_kf_fieldhome 	      (Tn5250Display *This);
 extern void	  tn5250_display_kf_newline 	      (Tn5250Display *This);
 
+  void tn5250_display_erase_region (Tn5250Display * This,
+				    unsigned int startrow,
+				    unsigned int startcol, unsigned int endrow,
+				    unsigned int endcol, unsigned int leftedge,
+				    unsigned int rightedge);
+
 
 #define tn5250_display_dbuffer(This) \
    ((This)->display_buffers)
