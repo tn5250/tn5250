@@ -1,3 +1,8 @@
+2002-04-09 Scott Klement <klemscot@klements.com>
+- Added that color support to cursesterm.  In cursesterm, the hex color
+  code must match one of the 16 basic colors, or it will fall back to the
+  default values.  
+
 2002-04-08 Scott Klement <klemscot@klements.com>
 - Added support for color keywords.   The keywords are: green, white,
   red, turquoise, yellow, pink and blue.  They can either be set to
