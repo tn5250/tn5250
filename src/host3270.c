@@ -75,7 +75,7 @@ void writeToDisplay(Tn5250Host *This)
       return;
    buff = &This->buffer;
    if (This->inputInhibited && !This->inSysInterrupt) {
-      ctrlchar = TN3270_SESSION_CTL_UNLOCK;
+      ctrlchar = TN3270_SESSION_CTL_KEYBOARD_RESTORE;
       This->inputInhibited = FALSE;
    }
    tn5250_buffer_append_byte(buff, CMD_3270_WRITE);
@@ -99,26 +99,35 @@ void appendBlock2Ebcdic(Tn5250Buffer * buff,
    }
 }
 
-
-void sendReadMDT(Tn5250Stream *This, Tn5250Buffer * buff, 
-		 unsigned char ctrlchar)
+void sendReadMDT(Tn5250Stream *This, Tn5250Buffer * buff)
 {
 
   syslog(LOG_INFO, "Sending Read Modified command.");
 
+  tn5250_buffer_init(buff);
   tn5250_buffer_append_byte(buff, CMD_3270_READ_MODIFIED);
-  tn5250_buffer_append_byte(buff, ctrlchar);
   tn3270_stream_send_packet(This,
 			    tn5250_buffer_length(buff),
 			    tn5250_buffer_data(buff));
-  /*
-  tn5250_stream_send_packet(This, 
-			    tn5250_buffer_length(buff),
-			    TN5250_RECORD_FLOW_DISPLAY, 
-			    TN5250_RECORD_H_NONE, opcode, 
-			    tn5250_buffer_data(buff));
-  */
-  tn5250_buffer_free(buff);
+}
+
+void
+EraseWrite(Tn5250Host *This)
+{
+  Tn5250Buffer * buff;
+  unsigned char ctrlchar;
+
+  buff = &This->buffer;
+  This->inputInhibited = FALSE;
+  ctrlchar = TN3270_SESSION_CTL_KEYBOARD_RESTORE
+    | TN3270_SESSION_CTL_RESET_MDT
+    | TN3270_SESSION_CTL_RESET;
+
+  tn5250_buffer_append_byte(buff, CMD_3270_ERASE_WRITE);
+  tn5250_buffer_append_byte(buff, ctrlchar);
+  This->clearState = FALSE;
+  This->wtd_set = TRUE;
+  This->lastattr = -1;
 }
 
 void 
@@ -128,7 +137,7 @@ setBufferAddr(Tn5250Host *This, int row, int col)
   unsigned char addr2;
   unsigned short int address;
 
-  address = (row-1)*80+(col-1);
+  address = (row)*80+(col-1);
 
   addr1 = (address >> 6) | 0xC0;
   addr2 = address & 0x3F;
@@ -155,10 +164,21 @@ setAttribute(Tn5250Host * This, unsigned short attr)
    This->curattr = attr;
 }
 
+void
+sendWrite(Tn5250Host *This)
+{
+  tn3270_stream_send_packet(This->stream,
+			    tn5250_buffer_length(&This->buffer),
+			    tn5250_buffer_data(&This->buffer));
+
+}
+
 int 
 readMDTfields(Tn5250Host *This, int sendRMF)
 {
   fd_set rset;
+  int hor;
+  int ver;
 
   unsigned char flags;
   int aidCode=0;
@@ -168,8 +188,8 @@ readMDTfields(Tn5250Host *This, int sendRMF)
   if (sendRMF) {
     unsigned char ctrlchar=0;
     if (This->inputInhibited && !This->inSysInterrupt)
-      ctrlchar = TN3270_SESSION_CTL_UNLOCK;
-    sendReadMDT(This->stream, &This->buffer, ctrlchar);
+      ctrlchar = TN3270_SESSION_CTL_KEYBOARD_RESTORE;
+    sendReadMDT(This->stream, &This->buffer);
   }
   This->wtd_set = FALSE;
 
@@ -195,15 +215,11 @@ readMDTfields(Tn5250Host *This, int sendRMF)
       This->record = tn5250_stream_get_record(This->stream);
     else
       continue;
-    if (flags=tn5250_record_flags(This->record))
-      aidCode = processFlags(This, flags, &This->record->data.data[10]);
-    else if (This->record->data.len>10) {
-      int hor, ver;
-      ver = tn5250_record_get_byte(This->record) - 1;
-      hor = tn5250_record_get_byte(This->record) - 1;
-      This->cursorPos = ver*This->maxcol + hor;
-      aidCode =  tn5250_record_get_byte(This->record);
-    }
+
+    ver = tn5250_record_get_byte(This->record) - 1;
+    hor = tn5250_record_get_byte(This->record) - 1;
+    This->cursorPos = ver*This->maxcol + hor;
+    aidCode =  tn5250_record_get_byte(This->record);
   }
   /* Return error or AID code */
   return aidCode;
@@ -376,7 +392,7 @@ sendWriteErrorCode(Tn5250Host *This, char *msg, unsigned char opcode)
       tbuf.len = 0;
       opcode = TN5250_RECORD_OPCODE_INVITE;
    }
-   sendReadMDT(This->stream, &tbuf, 0);
+   sendReadMDT(This->stream, &tbuf);
 }
 
 typedef struct {
@@ -455,7 +471,7 @@ processSRQ(Tn5250Stream *This)
    restoreScreen(This, &record->data);
    tn5250_record_destroy(record);
    tn5250_buffer_init(&tbuf);
-   sendReadMDT(This, &tbuf, 0);
+   sendReadMDT(This, &tbuf);
    return 0;
 }
 
@@ -578,6 +594,7 @@ static char ascii_banner[][560]={
 
  syslog(LOG_INFO, "Sending test screen."); 
 
+ EraseWrite(This);
  for(currow = 0; currow < 16; currow++) 
    { 
      setBufferAddr(This, currow+3, 1);
@@ -587,7 +604,9 @@ static char ascii_banner[][560]={
    }
  This->inputInhibited = This->inSysInterrupt = FALSE;
  
- return( readMDTfields(This, 1) );
+ sendWrite(This);
+
+ return( readMDTfields(This, 0));
  
 }
 
