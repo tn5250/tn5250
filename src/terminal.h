@@ -108,6 +108,7 @@ extern "C" {
       void (*update_indicators) (struct _Tn5250Terminal * This, Tn5250DBuffer * dsp);
       int (*waitevent) (struct _Tn5250Terminal * This);
       int (*getkey) (struct _Tn5250Terminal * This);
+      void (* beep) (struct _Tn5250Terminal * This);
    };
 
 #ifndef _TN5250_TERMINAL_PRIVATE_DEFINED
@@ -132,6 +133,7 @@ extern "C" {
 #define tn5250_terminal_waitevent(This) \
 	   (* ((This)->waitevent)) ((This))
 #define tn5250_terminal_getkey(This) (* ((This)->getkey)) ((This))
+#define tn5250_terminal_beep(This) (* ((This)->beep)) ((This))
 
 #ifdef __cplusplus
 }

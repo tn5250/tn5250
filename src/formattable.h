@@ -27,7 +27,6 @@ extern "C" {
       /* How we keep track of multiple saved format tables */
       struct _Tn5250Table *	next;
       struct _Tn5250Table *     prev;
-      unsigned char		id; /* Saved buffer id */
 
       Tn5250Field /*@null@*/ *field_list;
       int numfields;

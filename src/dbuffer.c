@@ -181,19 +181,6 @@ void tn5250_dbuffer_addch(Tn5250DBuffer * This, unsigned char c)
    ASSERT_VALID(This);
 }
 
-void tn5250_dbuffer_mvaddnstr(Tn5250DBuffer * This, int y, int x,
-			      const unsigned char *str, int l)
-{
-   int ocx = This->cx, ocy = This->cy;
-   tn5250_dbuffer_cursor_set(This, y, x);
-   for (; l; l--, str++)
-      tn5250_dbuffer_addch(This, *str);
-   This->cy = ocy;
-   This->cx = ocx;
-
-   ASSERT_VALID(This);
-}
-
 void tn5250_dbuffer_indicator_set(Tn5250DBuffer * This, int inds)
 {
    TN5250_LOG(("tn5250_dbuffer_indicator_set: setting indicators X'%02X'.\n", inds));

@@ -712,10 +712,9 @@ static void tn5250_session_write_error_code(Tn5250Session * This)
 	 if (cur_order > 0 && cur_order < 0x40)
 	    TN5250_LOG(("\n"));
 #endif				/* NDEBUG */
-	 if (cur_order == IC) {
+	 if (cur_order == IC)
 	    tn5250_session_insert_cursor(This);
-	    This->pending_insert = 1;
-	 } else if (cur_order == ESC) {
+	 else if (cur_order == ESC) {
 	    done = 1;
 	    tn5250_record_unget_byte(This->record);
 	 } else if (tn5250_printable(cur_order))
@@ -826,7 +825,6 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
 	 switch (cur_order) {
 	 case (IC):
 	    tn5250_session_insert_cursor(This);
-	    This->pending_insert = 1;
 	    break;
 	 case (RA):
 	    tn5250_session_repeat_to_address(This);
@@ -873,22 +871,20 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
       done = 0;
       if (field != NULL) {
 	 do {
-	    if (tn5250_field_is_bypass (field)) {
+	    if (!tn5250_field_is_bypass (field)) {
 	       tn5250_display_set_cursor_field (This->display, field);
-	       field = NULL;
+	       done = 1;
 	       break;
 	    }
 	    field = field->next;
 	 } while (field != This->display->format_tables->field_list);
       }
-      if (field == NULL)
+      if (!done)
 	 tn5250_dbuffer_cursor_set(This->dsp, 0, 0);
    }
 
-   TN5250_LOG(("WriteToDisplay: CTL = 0x%02X\n", CC2));
    if (CC2 & TN5250_SESSION_CTL_MESSAGE_ON)
       tn5250_dbuffer_indicator_set(This->dsp, TN5250_DISPLAY_IND_MESSAGE_WAITING);
-
    if ((CC2 & TN5250_SESSION_CTL_MESSAGE_OFF) && !(CC2 & TN5250_SESSION_CTL_MESSAGE_ON))
       tn5250_dbuffer_indicator_clear(This->dsp, TN5250_DISPLAY_IND_MESSAGE_WAITING);
 
@@ -902,10 +898,8 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
 
    if ((CC2 & TN5250_SESSION_CTL_ALARM) != 0)
       tn5250_display_beep (This->display);
-
-   if ((CC2 & TN5250_SESSION_CTL_UNLOCK) != 0) {
+   if ((CC2 & TN5250_SESSION_CTL_UNLOCK) != 0)
       tn5250_dbuffer_indicator_clear(This->dsp, TN5250_DISPLAY_IND_X_SYSTEM);
-   }
 
    tn5250_display_update(This->display);
 }
@@ -1027,39 +1021,41 @@ static void tn5250_session_output_only(Tn5250Session * This)
 
 static void tn5250_session_save_screen(Tn5250Session * This)
 {
-   unsigned char outbuf[4];
+   unsigned char outbuf[2 + sizeof(Tn5250DBuffer*) + sizeof(Tn5250Table*)];
    int n;
 
    TN5250_LOG(("SaveScreen: entered.\n"));
 
    outbuf[0] = 0x04;
    outbuf[1] = 0x12;
-   outbuf[2] = tn5250_display_push_dbuffer(This->display);
-   outbuf[3] = tn5250_display_push_table(This->display);
+   *((Tn5250DBuffer**)&outbuf[2]) = tn5250_display_push_dbuffer(This->display);
+   *((Tn5250Table**)&outbuf[2+sizeof(Tn5250DBuffer*)]) =
+      tn5250_display_push_table(This->display);
 
    This->dsp = This->display->display_buffers;
    This->table = This->display->format_tables;
 
-   TN5250_LOG(("SaveScreen: display buffer = %d; format buffer = %d\n",
-	outbuf[2], outbuf[3]));
-
-   tn5250_stream_send_packet(This->stream, 4, TN5250_RECORD_FLOW_DISPLAY, TN5250_RECORD_H_NONE,
-			     TN5250_RECORD_OPCODE_SAVE_SCR, outbuf);
+   tn5250_stream_send_packet(This->stream, sizeof(outbuf),
+	 TN5250_RECORD_FLOW_DISPLAY, TN5250_RECORD_H_NONE,
+	 TN5250_RECORD_OPCODE_SAVE_SCR, outbuf);
 }
 
 static void tn5250_session_restore_screen(Tn5250Session * This)
 {
    int screen, format;
+   int i;
+   unsigned char rdata[sizeof (Tn5250DBuffer*) + sizeof (Tn5250Table*)];
 
    TN5250_LOG(("RestoreScreen: entered.\n"));
 
-   screen = tn5250_record_get_byte(This->record);
-   format = tn5250_record_get_byte(This->record);
+   for (i = 0; i < sizeof(rdata); i++)
+      rdata[i] = tn5250_record_get_byte(This->record);
 
    TN5250_LOG(("RestoreScreen: screen = %d; format = %d\n", screen, format));
 
-   tn5250_display_restore_dbuffer (This->display, screen);
-   tn5250_display_restore_table (This->display, format);
+   tn5250_display_restore_dbuffer (This->display, *((Tn5250DBuffer**)rdata));
+   tn5250_display_restore_table (This->display,
+	 *((Tn5250Table**)(rdata + sizeof(Tn5250DBuffer*))));
 
    This->dsp = This->display->display_buffers;
    This->table = This->display->format_tables;
@@ -1305,6 +1301,7 @@ static void tn5250_session_insert_cursor(Tn5250Session * This)
    TN5250_LOG(("InsertCursor: row = %d; col = %d\n", cur_char1, cur_char2));
 
    tn5250_dbuffer_set_temp_ic(This->dsp, cur_char1 - 1, cur_char2 - 1);
+   This->pending_insert = 1;
 }
 
 static void tn5250_session_write_structured_field(Tn5250Session * This)
