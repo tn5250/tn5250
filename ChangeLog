@@ -1,3 +1,7 @@
+2000-02-10 Mike Madore <mmadore@blarg.net>
+- Moved printer session specific environment options inside the
+  if(printsession) block.
+
 2000-02-09 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 - Removed config.guess and config.sub from CVS since they should be
   provided by autogen.sh.
