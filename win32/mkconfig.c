@@ -69,6 +69,7 @@ replace_undef redefs[] =
 #define DEF_SIZEOF_SHORT   5
 #define DEF_PACKAGE        6
 #define DEF_VERSION        7
+#define DEF_BINARY         8
 
 struct _manual_def {
      char *from;
@@ -85,6 +86,7 @@ manual_def mredefs[] =
   {"SIZEOF_SHORT",   DEF_SIZEOF_SHORT},
   {"PACKAGE",        DEF_PACKAGE},
   {"VERSION",        DEF_VERSION},
+  {"BINARY_RELEASE", DEF_BINARY},
   {NULL, -1},
 };
 
@@ -96,18 +98,21 @@ void replaceall(char *str, const char *from, const char *to);
 void strtrim(char *str);
 void get_path(const char *prompt, const char *file, char *path, int maxlen);
 int create_tn5250_config_h(const char *infile, const char *outfile, 
-                   char with_openssl, const char *package, const char *version);
+                   char with_openssl, char binary_release, 
+                   const char *package, const char *version);
 int create_config_h(const char *infile, const char *outfile, 
                         const char *version);
 int create_makefile(const char *infile, const char *outfile,
                      const char *openssl_lib, const char *openssl_inc,
                      const char *glib_lib, const char *glib_include,
+                     const char *innosetupdir,
                      const char *lib5250_objs, const char *installdir,
+		     const char *package, const char *version,
                      const char *debug, const char *cursor);
 void replacedata(const char *from, const char *to, char *line, int maxlen);
 int make_root_makefile(const char *fn);
-char *manual_redef(int redefnum, char with_openssl, const char *package, 
-                  const char *version);
+char *manual_redef(int redefnum, char with_openssl, char binary_release,
+                  const char *package, const char *version);
 int get_glib_info(const char *args, char *value, int maxlen);
 
 
@@ -116,6 +121,7 @@ int main(unsigned argc, char **argv) {
 
    char lib5250_sources[MAXBUFSIZE+1];
    char lib5250_objs[MAXBUFSIZE+1];
+   char innosetupdir[MAXBUFSIZE+1];
    char openssl_lib[MAXBUFSIZE+1];
    char openssl_include[MAXBUFSIZE+1];
    char glib_libs[MAXBUFSIZE+1];
@@ -124,7 +130,7 @@ int main(unsigned argc, char **argv) {
    char installdir[MAXBUFSIZE+1];
    char package[SMALLBUFSIZE+1], version[SMALLBUFSIZE+1];
    char cursor[SMALLBUFSIZE+1], debug[SMALLBUFSIZE+1];
-   char with_openssl;
+   char with_openssl, binary_release='n';
    int ch, rc;
 
 
@@ -163,10 +169,29 @@ int main(unsigned argc, char **argv) {
    }
 
 
+/* find out about making a binary release */
+
+   do {
+        printf("Are you going to build a binary setup package? (Y/N) ");
+        fgets(temp, MAXBUFSIZE, stdin);
+        binary_release = *temp;
+        binary_release = tolower(binary_release);
+   } while (binary_release!='y' && binary_release!='n');
+
+   if (binary_release=='y') {
+      fprintf(stdout, "\nNOTE: We use Inno Setup 2 to build a setup package\n");
+      get_path("Enter the dir where the Inno Setup script compiler is:",
+                   "\\iscc.exe", innosetupdir, MAXBUFSIZE);
+   } else {
+      innosetupdir[0] = '\0';
+   }
+   
+
+
  /* find out if OpenSSL is around, and if we should use it: */
 
    do {
-        printf("Do you wish to compile in OpenSSL support? (Y/N) ");
+        printf("\nDo you wish to compile in OpenSSL support? (Y/N) ");
         fgets(temp, MAXBUFSIZE, stdin);
         with_openssl = *temp;
         with_openssl = tolower(with_openssl);
@@ -192,7 +217,7 @@ int main(unsigned argc, char **argv) {
   /* Make a tn5250-configure.h file */
 
    if (create_tn5250_config_h(TN5250_CONFIG_H_IN, "tn5250-config.h", 
-           with_openssl, package, version) < 0) {
+           with_openssl, binary_release, package, version) < 0) {
         exit(1);
    }
 
@@ -206,8 +231,14 @@ int main(unsigned argc, char **argv) {
    strcpy(cursor, "-DNOBLINK");
 
    if (create_makefile("Makefile.win.in", "Makefile", openssl_lib,
-         openssl_include, glib_libs, glib_include, lib5250_objs, 
-         installdir, debug, cursor)<0) {
+         openssl_include, glib_libs, glib_include, innosetupdir, lib5250_objs, 
+         installdir, package, version, debug, cursor)<0) {
+         exit(1);
+   }
+
+   if (create_makefile("tn5250_innosetup.iss.in", "tn5250_innosetup.iss", 
+         openssl_lib, openssl_include, glib_libs, glib_include, innosetupdir,
+         lib5250_objs, installdir, package, version, debug, cursor)<0) {
          exit(1);
    }
 
@@ -502,11 +533,12 @@ void get_path(const char *prompt, const char *file, char *path, int maxlen) {
  * SYNOPSIS
  *    x = create_tn5250_config_h ("config.h.in", "config.h", 'y', pkg, ver);
  * INPUTS
- *    const char  *      infile       -
- *    const char  *      outfile      -
- *    char               with_openssl -
- *    const char  *      package      -
- *    const char  *      version      -
+ *    const char  *    infile         -
+ *    const char  *    outfile        -
+ *    char             with_openssl   -
+ *    char             binary_release -
+ *    const char  *    package        -
+ *    const char  *    version        -
  * DESCRIPTION
  *    Create a create a config.h file.  This is really a quick,
  *    minimal routine to allow us to get by without having autoconf
@@ -514,7 +546,8 @@ void get_path(const char *prompt, const char *file, char *path, int maxlen) {
  *    options for a Win32 compile.
  *****/
 int create_tn5250_config_h(const char *infile, const char *outfile, 
-               char with_openssl, const char *package, const char *version) {
+               char with_openssl, char binary_release, const char *package, 
+               const char *version) {
 
       FILE *in;
       FILE *out;
@@ -555,7 +588,7 @@ int create_tn5250_config_h(const char *infile, const char *outfile,
                     while (mredefs[i].from!=NULL) {
                        if (strstr(rec, mredefs[i].from)!=NULL) {
                            s = manual_redef(mredefs[i].def, with_openssl, 
-                                 package, version);
+                                 binary_release, package, version);
                            if (s[0]!='\0') {
                                changed = 1;
                                fprintf(out, "%s\n", s);
@@ -592,7 +625,7 @@ int create_tn5250_config_h(const char *infile, const char *outfile,
            i = 0;
            while (mredefs[i].from!=NULL) {
                 s = manual_redef(mredefs[i].def, with_openssl, 
-                           package, version);
+                           binary_release, package, version);
                 if (s[0]!='\0') {
                       fprintf(out, "%s\n", s);
                 }
@@ -664,8 +697,13 @@ int create_config_h(const char *infile, const char *outfile,
  *    const char  *      outfile      -
  *    const char  *      openssl_lib  -
  *    const char  *      openssl_inc  -
+ *    const char  *      glib_libs    -
+ *    const char  *      glib_include -
+ *    const char  *      innosetupdir -
  *    const char  *      lib5250_objs -
  *    const char  *      installdir   -
+ *    const char  *      package      -
+ *    const char  *      version      -
  *    const char  *      debug        -
  *    const char  *      cursor       -
  * DESCRIPTION
@@ -682,7 +720,9 @@ int create_config_h(const char *infile, const char *outfile,
 int create_makefile(const char *infile, const char *outfile,
                      const char *openssl_lib, const char *openssl_inc,
                      const char *glib_libs, const char *glib_include,
+                     const char *innosetupdir,
                      const char *lib5250_objs, const char *installdir,
+		     const char *package, const char *version,
                      const char *debug, const char *cursor) {
 
      FILE *in,*out;
@@ -702,6 +742,8 @@ int create_makefile(const char *infile, const char *outfile,
      }
 
      while (fgets(rec, MAXBUFSIZE, in)!=NULL) {
+         replacedata("@PACKAGE@",         package,         rec, MAXBUFSIZE);
+         replacedata("@VERSION@",         version,         rec, MAXBUFSIZE);
          replacedata("@installdir@",      installdir,      rec, MAXBUFSIZE);
          replacedata("@openssl_lib@",     openssl_lib,     rec, MAXBUFSIZE);
          replacedata("@openssl_include@", openssl_inc,     rec, MAXBUFSIZE);
@@ -710,6 +752,7 @@ int create_makefile(const char *infile, const char *outfile,
          replacedata("@cursor@",          cursor,          rec, MAXBUFSIZE);
          replacedata("@GLIB_LIBS@",	  glib_libs,       rec, MAXBUFSIZE);
          replacedata("@GLIB_INCLUDE@",	  glib_include,    rec, MAXBUFSIZE);
+         replacedata("@inno_setup_dir@",  innosetupdir,    rec, MAXBUFSIZE);
          fputs(rec, out);
      }
 
@@ -806,17 +849,18 @@ int make_root_makefile(const char *fn) {
  * SYNOPSIS
  *    manual_redef (DEF_HAVE_LIBCRYPTO, 1, "tn5250","0.16.3");
  * INPUTS
- *    int                redefnum     -
- *    int                with_openssl -
- *    const char    *    package      -
- *    const char    *    version      -
+ *    int                redefnum       -
+ *    int                with_openssl   -
+ *    int                binary_release -
+ *    const char    *    package        -
+ *    const char    *    version        -
  * DESCRIPTION
  *    Certain #define's that need to be put in config.h
  *    require some calculations to determine what the macro
  *    should be.   This calculates these "manual redefinitions"
  *    and returns the string to put in the config.h file.
  *****/
-char *manual_redef(int redefnum, char with_openssl, 
+char *manual_redef(int redefnum, char with_openssl, char binary_release,
                    const char *package, const char *version) {
 
      switch (redefnum) {
@@ -844,6 +888,11 @@ char *manual_redef(int redefnum, char with_openssl,
          break;
        case DEF_VERSION:
          sprintf(my_redef,"#define VERSION \"%s\"\n", version);
+         break;
+       case DEF_BINARY:
+         if (binary_release=='y') {
+              strcpy(my_redef, "#define BINARY_RELEASE 1");
+         }
          break;
      }
 

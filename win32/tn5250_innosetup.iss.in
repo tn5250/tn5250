@@ -1,0 +1,44 @@
+[Setup]
+AppName=@PACKAGE@
+AppVerName=@PACKAGE@ @VERSION@
+AppPublisher=The Linux Tn5250 Project
+AppPublisherURL=http://tn5250.sourceforge.net
+AppSupportURL=http://tn5250.sourceforge.net
+AppUpdatesURL=http://tn5250.sourceforge.net
+DefaultDirName={pf}\TN5250
+DefaultGroupName=TN5250
+AllowNoIcons=yes
+AlwaysCreateUninstallIcon=yes
+LicenseFile=@installdir@\COPYING.TXT
+InfoAfterFile=@installdir@\AFTERINSTALL.TXT
+OutputDir=@installdir@
+OutputBaseFilename=@PACKAGE@-@VERSION@-setup
+; uncomment the following line if you want your installation to run on NT 3.51 too.
+; MinVersion=4,3.51
+
+[Tasks]
+Name: "desktopicon"; Description: "Create a &desktop icon"; GroupDescription: "Additional icons:"; MinVersion: 4,4
+
+[Files]
+Source: "@installdir@\TN5250.EXE"; DestDir: "{app}"; CopyMode: alwaysoverwrite
+Source: "@installdir@\LP5250D.EXE"; DestDir: "{app}"; CopyMode: alwaysoverwrite
+Source: "@installdir@\LIB5250.DLL"; DestDir: "{app}"; CopyMode: alwaysoverwrite
+Source: "@installdir@\COPYING.TXT"; DestDir: "{app}"; CopyMode: alwaysoverwrite
+Source: "@installdir@\AUTHORS.TXT"; DestDir: "{app}"; CopyMode: alwaysoverwrite
+Source: "@installdir@\MANUAL.PDF"; DestDir: "{app}"; CopyMode: alwaysoverwrite
+
+[INI]
+Filename: "{app}\TN5250.url"; Section: "InternetShortcut"; Key: "URL"; String: "http://tn5250.sourceforge.net"
+
+[Icons]
+Name: "{group}\Tn5250"; Filename: "{app}\TN5250.EXE"
+Name: "{group}\Tn5250 on the Web"; Filename: "{app}\TN5250.url"
+Name: "{group}\Tn5250 Manual (PDF)"; Filename: "{app}\MANUAL.PDF"
+Name: "{userdesktop}\Tn5250"; Filename: "{app}\TN5250.EXE"; MinVersion: 4,4; Tasks: desktopicon
+
+[Run]
+Filename: "{app}\TN5250.EXE"; Description: "Launch Tn5250"; Flags: nowait postinstall skipifsilent
+
+[UninstallDelete]
+Type: files; Name: "{app}\TN5250.url"
+
