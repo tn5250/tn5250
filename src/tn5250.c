@@ -21,9 +21,6 @@
 char *remotehost;
 char *mapname = "37";
 char *sessionname = NULL;
-#if USE_CURSES
-int underscores = 0;
-#endif
 int printsession = 0;
 char *transformname = NULL;
 char *outputcommand = NULL;
@@ -38,11 +35,7 @@ Tn5250Stream *stream = NULL;
 Tn5250Terminal *term = NULL;
 Tn5250Display *display = NULL;
 
-#ifdef USE_CURSES
-static char sopts[] = "m:s:t:T:P:uVwy:";
-#else
 static char sopts[] = "m:s:t:T:P:Vwy:";
-#endif
 
 /* FIXME: This should be moved into session.[ch] or something. */
 static struct valid_term {
@@ -95,9 +88,6 @@ int main(int argc, char *argv[])
 #endif
       if (term == NULL)
 	 goto bomb_out;
-#ifdef USE_CURSES
-      tn5250_curses_terminal_use_underscores(term, underscores);
-#endif
 #ifndef NDEBUG
       /* Shrink-wrap the terminal with the debug terminal, if appropriate. */
       if (strlen (remotehost) >= 6
@@ -201,12 +191,6 @@ static int parse_options(int argc, char *argv[])
 	 sessionname = optarg;
 	 break;
 
-#if USE_CURSES
-      case 'u':
-	 underscores = 1;
-	 break;
-#endif
-
 #ifndef NDEBUG
       case 't':
 	 { 
@@ -303,10 +287,6 @@ Options:\n\
    -T NAME                 Use NAME as print transformation.\n"
 #ifndef NDEBUG
 "   -t FILE                 Log session to FILE.\n"
-#endif
-#ifdef USE_CURSES
-"   -u                      Use underscores instead of terminal underline\n\
-                           attribute.\n"
 #endif
 "   -V                      Show emulator version and exit.\n\
    -y TYPE                 Emulate IBM terminal type (default: depends)");

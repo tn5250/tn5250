@@ -17,6 +17,8 @@
   previous IC position (if one was sent).
 - Properly implemented backspace to wrap to last cell of previous field
   (and inhibit display if pressed while not on field).
+- Detect whether terminal supports underlining at run-time from the
+  termcap entry.  Remove '-u' option and function.
 
 2000-02-12 Mike Madore <mmadore@blarg.net>
 - Removed file descriptor 0 from select() in
