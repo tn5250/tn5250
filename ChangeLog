@@ -1,4 +1,8 @@
 2000-05-16 Mike Madore <mmadore@turbolinux.com>
+- Tracked down the last of the unitialized variable bugs.  The emulator now 
+  runs on UnixWare 7, although the key handling isn't correct.
+	
+2000-05-16 Mike Madore <mmadore@turbolinux.com>
 - One more UnixWare fix.  This time to the curses terminal initialization.
   I set the r->conf member to NULL.  Fixes a segfault.  Did the same thing to
   the session and streamInit code in the last update.

@@ -52,7 +52,6 @@ static void telnet_stream_send_packet(Tn5250Stream * This, int length,
 	      int flowtype, unsigned char flags, unsigned char opcode,
 				      unsigned char *data);
 
-
 #define SEND    1
 #define IS      0
 #define INFO    2
@@ -370,6 +369,7 @@ static int telnet_stream_connect(Tn5250Stream * This, const char *to)
    }
    /* Set socket to non-blocking mode. */
 #ifdef FIONBIO
+   TN5250_LOG(("Non-Blocking\n"));
    TN_IOCTL(This->sockfd, FIONBIO, &ioctlarg);
 #endif
 
@@ -523,7 +523,7 @@ static int telnet_stream_host_verb(SOCKET_TYPE sock, unsigned char verb,
 {
    int len, option=0, retval=0;
 
-   IACVERB_LOG("GotVerb",verb,what);
+   IACVERB_LOG("GotVerb(1)",verb,what);
    switch (verb) {
       case DO:
 	switch (what) {
@@ -598,7 +598,7 @@ static void telnet_stream_do_verb(Tn5250Stream * This, unsigned char verb, unsig
    unsigned char reply[3];
    int ret;
 
-   IACVERB_LOG("GotVerb", verb, what);
+   IACVERB_LOG("GotVerb(2)", verb, what);
    reply[0] = IAC;
    reply[2] = what;
    switch (verb) {
@@ -646,7 +646,7 @@ static void telnet_stream_do_verb(Tn5250Stream * This, unsigned char verb, unsig
     *
     * Actually, I don't even remember what that comment means -JMF */
 
-   IACVERB_LOG("GotVerb",verb,what);
+   IACVERB_LOG("GotVerb(3)",verb,what);
    ret = TN_SEND(This->sockfd, (char *) reply, 3, 0);
    if (WAS_ERROR_RET(ret)) {
       printf("Error writing to socket: %s\n", strerror(LAST_ERROR));
@@ -855,7 +855,7 @@ static int telnet_stream_get_byte(Tn5250Stream * This)
 	 break;
 
       case TN5250_STREAM_STATE_HAVE_VERB:
-
+	TN5250_LOG(("HOST, This->status  = %d %d\n", HOST, This->status));
 	 if (This->status&HOST) {
 	    temp = telnet_stream_host_verb(This->sockfd, verb, (UCHAR) temp);
 	    if (WAS_ERROR_RET(temp)) {
