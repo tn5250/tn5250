@@ -73,7 +73,7 @@ process_client(int sockfd)
   Tn5250Host * host;
   int aidkey;
 
-  hoststream = tn5250_stream_host(sockfd, 1000);
+  hoststream = tn5250_stream_host(sockfd, 0);
 
   if(hoststream != NULL) {
     host = tn5250_host_new(hoststream);
@@ -97,6 +97,7 @@ fd_set active_fd_set, read_fd_set;
 int i;
 struct sockaddr_in clientname;
 size_t size;
+int connected;
 
 #define PORT 2023
 
@@ -116,15 +117,26 @@ main(void)
       exit (EXIT_FAILURE);
     }
   
+  connected = 0;
+
   while(1) 
     {
       snsize = sizeof(sn);
-      sockfd = accept(sock, (struct sockaddr *)&sn, &snsize);
+      
+      do {
+	sockfd = accept(sock, (struct sockaddr *)&sn, &snsize);
 
-      if(sockfd < 0) {
-	perror("accept");
-	exit(1);
-      }
+	if(sockfd < 0) {
+	  if(errno == EINTR) {
+	    connected = 0;
+	  } else {
+	    syslog(LOG_INFO, "accept: %s\n", strerror(errno));
+	    exit(1);
+	  }
+	} else {
+	  connected = 1;
+	}
+      } while(!connected);
 
       printf("Incoming connection...\n");
       

@@ -58,8 +58,7 @@ sig_child(int signum)
   int pid;
   int status;
 
-  while( pid = waitpid(-1, &status, WNOHANG) > 0)
-    ;
+  while( pid = waitpid(-1, &status, NULL) > 0);
 
 }
 
@@ -115,11 +114,15 @@ int tn5250_daemon(int nochdir, int noclose, int ignsigcld)
 
 
     if(ignsigcld) {
+      sa.sa_handler = sig_child;
+      sigemptyset(&sa.sa_mask);
+      sa.sa_flags = SA_RESTART;
+
 #ifdef SIGCHLD
-      signal(SIGCHLD,sig_child);
+      sigaction(SIGCHLD, &sa, NULL);
 #else
 #ifdef SIGCLD
-      signal(SIGCLD,sig_child);
+      sigaction(SIGCLD, &sa, NULL);
 #endif
 #endif
     }
