@@ -1,3 +1,7 @@
+2000-12-22 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Applied patch from Scott Klement for lp5250d stability.
+- Applied patch from Scott for using config-file method for lp5250d in 0.16.x.
+
 2000-12-19 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - Okay, really applied second patch from Dave McKenzie *sigh*
 - Applied patch from Carey Evans to fix option parsing in xt5250.
