@@ -443,8 +443,6 @@ scs_spps (int *pagewidth, int *pagelength)
 {
   int width, length;
 
-  fprintf (stderr, "SPPS = ");
-
   width = fgetc (stdin);
   width = (width << 8) + fgetc (stdin);
   *pagewidth = width;
@@ -453,8 +451,9 @@ scs_spps (int *pagewidth, int *pagelength)
   length = (length << 8) + fgetc (stdin);
   *pagelength = length;
 
+#ifdef DEBUG
   fprintf (stderr, "SPPS (width = %d) (length = %d)\n", width, length);
-
+#endif
 }
 
 void
