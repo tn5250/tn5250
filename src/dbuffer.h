@@ -100,6 +100,8 @@ typedef struct _Tn5250DBuffer Tn5250DBuffer;
    extern void tn5250_dbuffer_roll(Tn5250DBuffer * This, int top, int bot, int lines);
 
    extern unsigned char tn5250_dbuffer_char_at(Tn5250DBuffer * This, int y, int x);
+   extern void tn5250_dbuffer_prevword(Tn5250DBuffer * This);
+   extern void tn5250_dbuffer_nextword(Tn5250DBuffer * This);
 
 #define tn5250_dbuffer_width(This) ((This)->w)
 #define tn5250_dbuffer_height(This) ((This)->h)

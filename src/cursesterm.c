@@ -247,6 +247,9 @@ static Key curses_vt100[] = {
    { K_NEWLINE,         "\033\012" }, /* ESC ^J */
    { K_NEWLINE,         "\033\015" }, /* ESC ^M */
    { K_INSERT,		"\033\177" }, /* ESC DEL */
+
+   { K_NEXTWORD,	"\033\025" }, /* ESC Ctrl-U */
+   { K_PREVWORD,	"\033\010" }, /* ESC Ctrl-H */
    /* K_INSERT = ESC+DEL handled in code below. */
 };
 #endif
@@ -1014,6 +1017,13 @@ static int curses_terminal_get_esc_key(Tn5250Terminal * This, int is_esc)
       break;
    case '+':
       key = K_F24;
+      break;
+
+   case K_CTRL('U'):
+      key = K_NEXTWORD;
+      break;
+   case K_CTRL('H'):
+      key = K_PREVWORD;
       break;
 
       /* AS/400 strangeness */
