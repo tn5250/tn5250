@@ -146,13 +146,55 @@ fi
 dnl ** Check for libraries
 AC_CHECK_LIB(socket, main)
 AC_CHECK_LIB(nsl, main)
+ 
+dnl **
+dnl ** Check for OpenSSL include files.
+dnl ** They can be in any of a number of standard places.   Most
+dnl ** operating systems want them in /usr/include or /usr/local/include,
+dnl ** but the default OpenSSL install puts them in
+dnl ** ${PREFIX}/ssl/include/openssl
+checksslinclude() {
+    if test -f "$1/include/openssl/ssl.h"; then
+        sslincludedir="-I$1/include"
+        return 0
+    fi
+    return 1
+}
+AC_MSG_CHECKING([for OpenSSL headers])
+AC_ARG_WITH(ssl,[  --with-ssl=DIR          compile support for OpenSSL encryption into emulator],[
+if test "$with_ssl" != "no"; then
+    if test "$with_ssl" != "yes"; then
+         checksslinclude "$with_ssl"
+    else
+        for topdir in /usr/local /usr /usr/pkg /usr/lib /var/ssl /opt; do
+            for subdir in $topdir $topdir/openssl $topdir/ssl; do
+                checksslinclude "$subdir" && break 2
+            done
+        done
+     fi
+     if test -z $sslincludedir; then
+          AC_MSG_ERROR([** Unable to find OpenSSL headers! Specify --with-ssl=DIR to specify a location.])
+     fi
+fi
+],[
+      for topdir in /usr/local /usr /usr/pkg /usr/lib /var/ssl /opt; do
+          for subdir in $topdir $topdir/openssl $topdir/ssl; do
+              checksslinclude "$subdir" && break 2
+          done
+      done
+])
+if test -z $sslincludedir; then
+     AC_MSG_RESULT([not found])
+else
+     AC_MSG_RESULT([$sslincludedir])
+fi
 
 dnl **
-dnl **  Check for OpenSSL library & associated crypto library
+dnl ** Check for OpenSSL libraries.
+dnl ** happily, we don't have to hunt for them thanks to ldconfig!
 dnl **
-AC_ARG_WITH(ssl,[  --with-ssl              compile support for OpenSSL encryption into emulator],[
-if test "$with_ssl" != "no"
-then
+if test -n $sslincludedir; then
+     CPPFLAGS="$CPPFLAGS $sslincludedir"
      AC_CHECK_LIB(crypto,CRYPTO_num_locks)
      if test "$ac_cv_lib_crypto_CRYPTO_num_locks" != "yes"
      then
@@ -164,13 +206,64 @@ then
              AC_MSG_ERROR([** Unable to find OpenSSL libraries!])
      fi
 fi
-],[
-     AC_CHECK_LIB(crypto,CRYPTO_num_locks)
-     if test "$ac_cv_lib_crypto_CRYPTO_num_locks" = "yes"
-     then
-          AC_CHECK_LIB(ssl,SSL_library_init)
-     fi
-])
+
+dnl **
+dnl ** Is OpenSSL going to require Kerberos?
+dnl **
+dnl ** In RedHat 9 (and who knows where else?) OpenSSL is compiled with
+dnl ** kerberos support, and so it has to be able to find the krb5.h
+dnl ** file... which naturally isn't in the standard /usr/include dir
+dnl ** since that would be much too easy.
+dnl **
+checkkrb5config() {
+   if test -x "$1/krb5-config"; then
+       krb5includedir="`$1/krb5-config --cflags`"
+       return 0
+   fi
+   if test -x "$1/bin/krb5-config"; then
+       krb5includedir="`$1/bin/krb5-config --cflags`"
+       return 0
+   fi
+   return 1
+}
+if test -n "$sslincludedir"; then
+   AC_MSG_CHECKING([if OpenSSL needs krb5.h])
+   needkrb5=yes
+   AC_TRY_COMPILE([
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+],[SSL_CTX *ssl_context=NULL;],[needkrb5=no])
+   if test $needkrb5 = "yes"; then
+       krb5config="`which krb5config 2> /dev/null`"
+       if test -z "$krb5config"; then
+           krb5config="nonexistent"
+       fi
+       if test -x "$krb5config"; then
+           krb5includedir="`$krb5config --cflags`"
+       else
+           for topdir in /usr/local /usr /opt /usr/lib /usr/pkg; do
+               for subdir in $topdir $topdir/kerberos $topdir/krb5; do
+                    checkkrb5config "$subdir" && break 2
+               done
+           done
+       fi
+       if test -n $krb5includedir; then
+           CPPFLAGS="$CPPFLAGS $krb5includedir"
+           needkrb5=no
+	   AC_TRY_COMPILE([
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+],[SSL_CTX *ssl_context=NULL;],[needkrb5=yes])
+       fi
+   fi
+   AC_MSG_RESULT([$needkrb5])
+fi
 
 dnl **
 dnl ** --with-extra-libs: a must for debugging.
