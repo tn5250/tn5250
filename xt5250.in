@@ -11,85 +11,102 @@ exec_prefix="@exec_prefix@"
 bindir="@bindir@"
 datadir="@datadir@"
 pkgdatadir="$datadir/tn5250"
+if [ -z "$DIALOG" ] ; then DIALOG="@DIALOG@" ; fi
 
-if [ "$1" = "-BOOT" ]
-then
-  shift
-  #
-  # Figure out if we've got a host name to connect to, if not, and if we
-  # can find a copy of `dialog', use it to prompt for the host name.
-  #
-
-  while [ $# -ne 0 ]
-  do
+#
+# Figure out if we've got a host name to connect to, if not, and if we
+# can find a copy of `dialog', use it to prompt for the host name.
+#
+get_host () {
+  XT5250_HOST=""
+  while [ $# -ne 0 ] ; do
     case "$1" in
+      -h|--help)
+        exec "$bindir/tn5250";;
+      -V|--version)
+        exec "$bindir/tn5250 -V";;
       -m|-s|-t|-y)
-	args="$args $1 $2"
 	shift
 	;;
       -*)
-	args="$args $1"
 	;;
       *)
-	host="$1"
+        if [ -z "$XT5250_HOST" ] ; then XT5250_HOST="$1" ; fi
 	;;
     esac
     shift
   done
+}
+
+if [ "$1" = "-BOOT" ] ; then
+  shift
 
   #
   # If the host wasn't provided, prompt for it.
   #
-  if [ "$host" = "" ]
-  then
-    if which dialog >/dev/null 2>&1
-    then
+  if [ -z "$XT5250_HOST" ] ; then
+    if [ "$DIALOG" != "no" ] ; then
       # 
       # We have a copy of `dialog', so use it.
       #
-      if [ -f "$pkgdatadir/dialogrc" ]
-      then
-	export DIALOGRC="$pkgdatadir/dialogrc"
+      if [ -f "$pkgdatadir/dialogrc" ] ; then
+	DIALOGRC="$pkgdatadir/dialogrc"
+	export DIALOGRC
       fi
-      while [ "$host" = "" ]
-      do
-	dialog --backtitle "xt5250" --title "Connect to Host" \
+      while [ -z "$XT5250_HOST" ] ; do
+        exec 3>&1
+	XT5250_HOST="`$DIALOG --backtitle "xt5250" --title "Connect to Host" \
 	  --inputbox "Enter the name or IP address of the host to connect to:" \
-	  7 60 2>/tmp/xt5250.$$ || {
-	  rm -f /tmp/xt5250.$$
-	  exit 1
-	}
-	host="`cat /tmp/xt5250.$$`"
-	rm -f /tmp/xt5250.$$
+	  7 60 2>&1 1>&3`"
+	ret=$?
+	exec 3>&-
+	if [ $ret -ne 0 ] ; then exit 1 ; fi
+
+	#
+	# Set the window title (if we can)
+	#
+	# Only GNU echo supports -e/-n flags, so use printf if available.  If
+	# neither works, we just silently fail without setting the window title.
+	#
+	if command -v printf >/dev/null 2>&1 ; then
+	  printf '\033]2;xt5250 - '"$XT5250_HOST"'\07'
+	else
+	  echo -e '\033]2;xt5250 - '"$XT5250_HOST"'\07'
+	fi
       done
     else
       #
       # We don't have a copy of `dialog', so we must use the
       # shell's `read' function.  Oh, well.
       #
-      while [ "$host" = "" ]
-      do
+      while [ -z "$XT5250_HOST" ] ; do
 	echo "Enter name of host to connect to (Ctrl+C to cancel):"
-	read host
+	read XT5250_HOST
       done
     fi
+  else
+    XT5250_HOST=""
   fi
 
-  exec "$bindir/tn5250" $args "$host"
+  if [ -z "$XT5250_HOST" ] ; then
+    exec "$bindir/tn5250" "$@"
+  else
+    exec "$bindir/tn5250" "$@" "$XT5250_HOST"
+  fi
   # If the exec fails:
-  echo "$(basename $0): Can't exec $bindir/tn5250." >&2
+  echo "${0##*/}: Can't exec $bindir/tn5250." >&2
   exit 1
-fi
-
-#
-# Load the required X resources.
-#
-if [ -f "$pkgdatadir/xt5250.keys" ]
-then
-  xrdb "$pkgdatadir/xt5250.keys"
 fi
 
 #
 # Start the xterm, and run us again so we can setup inside the xterm.
 #
-exec xterm -name "xt5250" -bg black -fg white -tn xterm-5250 -e "$0" -BOOT "$@"
+get_host "$@"
+XUSERFILESEARCHPATH="$pkgdatadir/%N"
+export XUSERFILESEARCHPATH XT5250_HOST
+
+exec xterm -name "xt5250" -bg black -fg white -T "xt5250 - $XT5250_HOST" \
+  -tn xterm-5250 -e "$0" -BOOT "$@"
+# If the exec fails:
+echo "${0##*/}: Can't exec xterm." >&2
+exit 1

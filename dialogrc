@@ -29,7 +29,7 @@ shadow_color = (BLACK,BLACK,ON)
 dialog_color = (GREEN,BLACK,OFF)
 
 # Dialog box title color
-title_color = (YELLOW,BLACK,ON)
+title_color = (WHITE,BLACK,ON)
 
 # Dialog box border color
 border_color = (GREEN,BLACK,ON)

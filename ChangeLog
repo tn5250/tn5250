@@ -1,5 +1,14 @@
 2000-01-06 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 
+- Carey Evans' suggestions for new xt5250 script portability, security
+  incorporated.
+- xt5250: Now changes window title to name of host.
+- cursesterm.c: Now obeys the information returned from ENQ about what
+  type of terminal, and only uses xterm resize escape when on an xterm
+  again.
+
+2000-01-05 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
 - Extensively modified xt5250 script to prompt for hostname if not given,
   automagically use xrdb to load the keyboard mappings.  Inspired by Henri
   (Thanks!)
@@ -17,7 +26,7 @@
 
 - Happy Y2K!
 - Changed handling of Field+ and Field- in regards to number-only-type
-  fields.
+  fields per discussions on list.
 - No longer ignores the function key bits in the format table header.  This
   means that we won't transmit the field data for a function key unless the
   AS/400 has requested it.
@@ -40,7 +49,7 @@
   host again.
 - Removed some files which are generated, added autogen.sh script to generate
   those files when you check out sources from CVS repository.
-- Some funky sed-basd magic with config.h/tn5250-config.h resolves issue with
+- Some funky sed-based magic with config.h/tn5250-config.h resolves issue with
   VERSION and PACKAGE multiply-defined in pacakages which use lib5250.
 - Removed tn5250_session_set_terminal, now use tn5250_display_set_terminal.
 
