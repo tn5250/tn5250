@@ -1,3 +1,7 @@
+2001-11-21 Scott Klement <klemscot@klements.com>
+- Once in a great while, the AS/400 sends some invalid records.  
+    I changed session.c to just ignore them, to prevent a crash.
+
 2001-11-11 Carey Evans  <carey@paradise.net.nz>
 - Add tn5250rc.5 man page, including all options from tn5250.1 and
     lp5250d.1, and refer the last two to tn5250rc.5.
