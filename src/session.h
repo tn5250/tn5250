@@ -54,6 +54,11 @@ extern "C" {
 #define TN5250_SESSION_AID_PRINT	0xF6
 #define TN5250_SESSION_AID_RECORD_BS	0xF8
 
+/* These are pseudo-aid codes used by the display. */
+#define TN5250_SESSION_AID_SYSREQ       -1
+#define TN5250_SESSION_AID_ATTN         -2
+
+
 #define TN5250_SESSION_CTL_IC_ULOCK     0x02
 #define TN5250_SESSION_CTL_CLR_BLINK    0x04
 #define TN5250_SESSION_CTL_SET_BLINK    0x08
@@ -70,10 +75,11 @@ extern "C" {
 
    struct _Tn5250Session {
       struct _Tn5250Display *		display;
+      
+      int (* handle_aidkey) (struct _Tn5250Session *This, int aidcode);
 
       Tn5250Stream /*@owned@*/ /*@null@*/ *stream;
       Tn5250Record /*@owned@*/ *record;
-      int pending_insert;
       int read_opcode;	/* Current read opcode. */
       int invited;
 

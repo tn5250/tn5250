@@ -32,19 +32,22 @@ struct _Tn5250Table;
 struct _Tn5250Terminal;
 struct _Tn5250DBuffer;
 struct _Tn5250Field;
+struct _Tn5250Session;
+struct _Tn5250Buffer;
 
 struct _Tn5250Display {
    struct _Tn5250Table *   format_tables;
    struct _Tn5250DBuffer * display_buffers;
    struct _Tn5250Terminal *terminal;
+   struct _Tn5250Session *session;
    int indicators;
    int indicators_dirty : 1;
+   int pending_insert : 1;
 };
 
 typedef struct _Tn5250Display Tn5250Display;
 
-extern Tn5250Display *	tn5250_display_new	      (int width,
-						       int height);
+extern Tn5250Display *	tn5250_display_new	      (struct _Tn5250Session*);
 extern void		tn5250_display_destroy	      (Tn5250Display *This);
 
 extern Tn5250DBuffer *  tn5250_display_push_dbuffer   (Tn5250Display *This);
@@ -84,7 +87,7 @@ extern void	  tn5250_display_field_adjust	      (Tn5250Display *This,
 extern void	  tn5250_display_interactive_addch    (Tn5250Display *This,
                                                        unsigned char ch);
 extern void	  tn5250_display_beep		      (Tn5250Display *This);
-extern void	  tn5250_display_q_aidcode	      (Tn5250Display *This,
+extern void	  tn5250_display_do_aidkey	      (Tn5250Display *This,
                                                        int aidcode);
 extern void	  tn5250_display_indicator_set	      (Tn5250Display *This,
 						       int inds);
@@ -93,8 +96,14 @@ extern void	  tn5250_display_indicator_clear      (Tn5250Display *This,
 extern void	  tn5250_display_clear_unit           (Tn5250Display *This);
 extern void	  tn5250_display_clear_unit_alternate (Tn5250Display *This);
 extern void	  tn5250_display_clear_format_table   (Tn5250Display *This);
+extern void	  tn5250_display_set_pending_insert   (Tn5250Display *This,
+						       int y,
+						       int x);
+extern void	  tn5250_display_make_wtd_data        (Tn5250Display *This,
+						       struct _Tn5250Buffer *b);
 
 /* Key functions */
+extern void	  tn5250_display_do_key               (Tn5250Display *This,int);
 extern void	  tn5250_display_kf_up                (Tn5250Display *This);
 extern void	  tn5250_display_kf_down	      (Tn5250Display *This);
 extern void       tn5250_display_kf_left	      (Tn5250Display *This);
@@ -107,6 +116,7 @@ extern void	  tn5250_display_kf_insert	      (Tn5250Display *This);
 extern void	  tn5250_display_kf_tab		      (Tn5250Display *This);
 extern void       tn5250_display_kf_backtab	      (Tn5250Display *This);
 extern void	  tn5250_display_kf_end		      (Tn5250Display *This);
+extern void       tn5250_display_kf_home              (Tn5250Display *This);
 extern void	  tn5250_display_kf_delete            (Tn5250Display *This);
 
 #define tn5250_display_table(This) \
@@ -137,12 +147,14 @@ extern void	  tn5250_display_kf_delete            (Tn5250Display *This);
    (tn5250_dbuffer_addch((This)->display_buffers,(ch)))
 #define tn5250_display_roll(This,top,bottom,lines) \
    (tn5250_dbuffer_roll((This)->display_buffers,(top),(bottom),(lines)))
-#define tn5250_display_goto_ic(This) \
-   (tn5250_dbuffer_goto_ic((This)->display_buffers))
 #define tn5250_display_set_ic(This,y,x) \
    (tn5250_dbuffer_set_ic((This)->display_buffers,(y),(x)))
 #define tn5250_display_set_message_line(This,y) \
    (tn5250_table_set_message_line((This)->format_tables,(y)))
+#define tn5250_display_clear_pending_insert(This) \
+   (void)((This)->pending_insert = 0)
+#define tn5250_display_pending_insert(This) \
+   ((This)->pending_insert)
 
 #ifdef __cplusplus
 }

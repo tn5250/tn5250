@@ -30,13 +30,15 @@
 #include "record.h"
 #include "stream.h"
 #include "session.h"
+#include "codes5250.h"
+#include "wtd.h"
 
 static void tn5250_display_add_dbuffer(Tn5250Display * display,
 				       Tn5250DBuffer * dbuffer);
 static void tn5250_display_add_table(Tn5250Display * This,
 				     Tn5250Table * table);
 
-Tn5250Display *tn5250_display_new(int width, int height)
+Tn5250Display *tn5250_display_new(Tn5250Session *session)
 {
    Tn5250Display *This;
 
@@ -47,8 +49,10 @@ Tn5250Display *tn5250_display_new(int width, int height)
    This->terminal = NULL;
    This->indicators = 0;
    This->indicators_dirty = 0;
+   This->pending_insert = 0;
+   This->session = session;
 
-   tn5250_display_add_dbuffer(This, tn5250_dbuffer_new(width, height));
+   tn5250_display_add_dbuffer(This, tn5250_dbuffer_new(80, 24));
    tn5250_display_add_table(This, tn5250_table_new());
    return This;
 }
@@ -224,7 +228,7 @@ void tn5250_display_update(Tn5250Display * This)
 }
 
 /*
- *    Wait for a terminal event.
+ *    Wait for a terminal event.  FIXME: Handle keystrokes while we're at it.
  */
 int tn5250_display_waitevent(Tn5250Display * This)
 {
@@ -251,6 +255,15 @@ void tn5250_display_beep(Tn5250Display * This)
    if (This->terminal == NULL)
       return;
    tn5250_terminal_beep(This->terminal);
+}
+
+/*
+ *    Set the pending insert flag and the insert cursor position.
+ */
+void tn5250_display_set_pending_insert (Tn5250Display *This, int y, int x)
+{
+   This->pending_insert = 1;
+   tn5250_dbuffer_set_ic (This->display_buffers, y, x);
 }
 
 Tn5250Field *tn5250_display_field_at(Tn5250Display *This, int y, int x)
@@ -356,7 +369,10 @@ Tn5250Field *tn5250_display_prev_field(Tn5250Display * This)
  */
 void tn5250_display_set_cursor_home(Tn5250Display * This)
 {
-   tn5250_dbuffer_goto_ic(This->display_buffers);
+   if (This->pending_insert)
+      tn5250_dbuffer_goto_ic(This->display_buffers);
+   else
+      tn5250_display_set_cursor(This, 0, 0);
 }
 
 /*
@@ -392,6 +408,22 @@ void tn5250_display_set_cursor_prev_field(Tn5250Display * This)
 {
    Tn5250Field *field = tn5250_display_prev_field(This);
    tn5250_display_set_cursor_field(This, field);
+}
+
+/*
+ *    Reconstruct WTD data as it might be sent from a host.  We use this
+ *    to save our format table and display buffer.  We assume the buffer
+ *    has been initialized, and we append to it.
+ */
+void tn5250_display_make_wtd_data (Tn5250Display *This, Tn5250Buffer *buf)
+{
+   Tn5250WTDContext *ctx;
+
+   if ((ctx = tn5250_wtd_context_new (This, buf)) == NULL)
+      return;
+
+   tn5250_wtd_context_convert (ctx);
+   tn5250_wtd_context_destroy (ctx);
 }
 
 /*
@@ -471,7 +503,7 @@ void tn5250_display_interactive_addch(Tn5250Display * This, unsigned char ch)
       else {
 	 tn5250_display_field_adjust(This, field);
 	 if (tn5250_field_is_auto_enter(field)) {
-	    tn5250_display_q_aidcode (This, TN5250_SESSION_AID_ENTER);
+	    tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ENTER);
 	    return;
 	 }
 	 tn5250_display_set_cursor_next_field(This);
@@ -560,6 +592,132 @@ void tn5250_display_field_adjust(Tn5250Display * This, Tn5250Field * field)
 }
 
 /*
+ *    Translate a keystroke and handle it.
+ */
+void tn5250_display_do_key(Tn5250Display *This, int key)
+{
+   TN5250_LOG (("@key %d\n", key));
+
+   /* FIXME: Translate from terminal key via keyboard map to 5250 key. */
+
+   if (tn5250_display_inhibited(This)) {
+      if (key != K_SYSREQ && key != K_RESET) {
+	 tn5250_display_beep (This);
+	 return;
+      }
+   }
+
+   switch (key) {
+   case K_RESET:
+      tn5250_display_uninhibit(This);
+      break;
+
+   case K_BACKSPACE:
+   case K_LEFT:
+      tn5250_display_kf_left (This);
+      break;
+
+   case K_RIGHT:
+      tn5250_display_kf_right (This);
+      break;
+
+   case K_UP:
+      tn5250_display_kf_up (This);
+      break;
+
+   case K_DOWN:
+      tn5250_display_kf_down (This);
+      break;
+
+   case K_HELP:
+      tn5250_display_do_aidkey (This, TN5250_SESSION_AID_HELP);
+      break;
+
+   case K_HOME:
+      tn5250_display_kf_home (This);
+      break;
+
+   case K_END:
+      tn5250_display_kf_end (This);
+      break;
+
+   case K_DELETE:
+      tn5250_display_kf_delete (This);
+      break;
+
+   case K_INSERT:
+      tn5250_display_kf_insert (This);
+      break;
+
+   case K_TAB:
+      tn5250_display_kf_tab (This);
+      break;
+
+   case K_BACKTAB:
+      tn5250_display_kf_backtab (This);
+      break;
+
+   case K_ENTER:
+      tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ENTER);
+      break;
+
+   case K_ROLLDN:
+      tn5250_display_do_aidkey (This, TN5250_SESSION_AID_PGUP);
+      break;
+
+   case K_ROLLUP:
+      tn5250_display_do_aidkey (This, TN5250_SESSION_AID_PGDN);
+      break;
+
+   case K_FIELDEXIT:
+      tn5250_display_kf_field_exit (This);
+      break;
+
+   case K_FIELDMINUS:
+      tn5250_display_kf_field_minus (This);
+      break;
+
+   case K_SYSREQ:
+      tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ATTN);
+      break;
+
+   case K_ATTENTION:
+      tn5250_display_do_aidkey (This, TN5250_SESSION_AID_SYSREQ);
+      break;
+
+   case K_PRINT:
+      tn5250_display_do_aidkey (This, TN5250_SESSION_AID_PRINT);
+      break;
+
+   case K_DUPLICATE:
+      tn5250_display_kf_dup(This);
+      break;
+
+   default:
+      /* Handle function/command keys. */
+      if (key >= K_F1 && key <= K_F24) {
+	 if (key <= K_F12) {
+	    TN5250_LOG (("Key = %d; K_F1 = %d; Key - K_F1 = %d\n",
+		     key, K_F1, key-K_F1));
+	    TN5250_LOG (("AID_F1 = %d; Result = %d\n",
+		     TN5250_SESSION_AID_F1, key-K_F1+TN5250_SESSION_AID_F1));
+	    tn5250_display_do_aidkey (This, key-K_F1+TN5250_SESSION_AID_F1);
+	 } else
+	    tn5250_display_do_aidkey (This, key-K_F13+TN5250_SESSION_AID_F13);
+	 break;
+      }
+
+      /* Handle data keys. */
+      if (key >= ' ' && key <= 255) {
+	 TN5250_LOG(("HandleKey: key = %c\n", key));
+	 tn5250_display_interactive_addch (This, key);
+      } else {
+	 TN5250_LOG (("HandleKey: Weird key ignored: %d\n", key));
+      }
+   }
+}
+
+/*
  *    Process a field exit function.
  */
 void tn5250_display_kf_field_exit(Tn5250Display * This)
@@ -584,7 +742,7 @@ void tn5250_display_kf_field_exit(Tn5250Display * This)
    tn5250_display_field_adjust(This, field);
 
    if (tn5250_field_is_auto_enter(field)) {
-      tn5250_display_q_aidcode (This, TN5250_SESSION_AID_ENTER);
+      tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ENTER);
       return;
    }
 
@@ -660,9 +818,14 @@ void tn5250_display_kf_field_minus(Tn5250Display * This)
 /*
  *    Handle an aid code.
  */
-void tn5250_display_q_aidcode (Tn5250Display *This, int aidcode)
+void tn5250_display_do_aidkey (Tn5250Display *This, int aidcode)
 {
-   /* FIXME: Implement - hand off to session? */
+   /* FIXME: We should check to see if this aidkey is currently enabled...
+    * or we might just want to leave that to the session to handle. */
+   /* FIXME: If this returns zero, we need to stop processing. */
+   TN5250_LOG (("tn5250_display_do_aidkey (0x%02X) called.\n", aidcode));
+
+   ( *(This->session->handle_aidkey)) (This->session, aidcode);
 }
 
 /*
@@ -703,7 +866,7 @@ void tn5250_display_kf_dup(Tn5250Display * This)
    else {
       tn5250_display_field_adjust (This, field);
       if (tn5250_field_is_auto_enter (field)) {
-	 tn5250_display_q_aidcode (This, TN5250_SESSION_AID_ENTER);
+	 tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ENTER);
 	 return;
       }
       tn5250_display_set_cursor_next_field (This);
@@ -867,6 +1030,35 @@ void tn5250_display_kf_end (Tn5250Display *This)
       tn5250_display_set_cursor (This, y, x);
    } else
       tn5250_display_inhibit(This);
+}
+
+/*
+ *    Home key function.
+ */
+void tn5250_display_kf_home (Tn5250Display *This)
+{
+   Tn5250Field *field;
+   int gx, gy;
+
+   /* FIXME: Is this how this is supposed to behave in the case of a 
+    * pending insert? */
+
+   if (This->pending_insert)
+      tn5250_display_set_cursor_home (This);
+   else {
+      field = tn5250_display_current_field (This);
+      if (field != NULL) {
+	 gy = tn5250_field_start_row(field);
+	 gx = tn5250_field_start_col(field);
+      } else
+	 gx = gy = 0;
+
+      if (gy == tn5250_display_cursor_y(This)
+	    && gx == tn5250_display_cursor_x(This))
+	 tn5250_display_do_aidkey (This, TN5250_SESSION_AID_RECORD_BS);
+      else
+	 tn5250_display_set_cursor(This, gy, gx);
+   }
 }
 
 /*
