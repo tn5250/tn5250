@@ -35,6 +35,7 @@ extern "C" {
 #define TN5250_DISPLAY_IND_INSERT	   	0x0010
 #define TN5250_DISPLAY_IND_FER			0x0020
 #define TN5250_DISPLAY_IND_MACRO		0x0040
+#define TN5250_DISPLAY_WORD_WRAP_SPACE		0xfe
 
 struct _Tn5250Terminal;
 struct _Tn5250DBuffer;

@@ -2750,7 +2750,7 @@ tn5250_display_wordwrap_delete (Tn5250Display * This)
   int buflen;
   unsigned char *text, *ptr;
   unsigned char *data;
-  unsigned char espace = tn5250_char_map_to_remote (This->map, ' ');
+  unsigned char espace = TN5250_DISPLAY_WORD_WRAP_SPACE;
 
 
   /* Use code from x5250 (with permission).  The basic idea here is to
@@ -2818,28 +2818,55 @@ tn5250_display_wordwrap (Tn5250Display * This, unsigned char *text,
   int origcursorrow = tn5250_dbuffer_cursor_y (This->display_buffers);
   int origcursorcol = tn5250_dbuffer_cursor_x (This->display_buffers);
   int i, j;
-  char c;
+  unsigned char c, c2;
   int curlinelength = 0;
   int wordlength = 0;
   char word[132 + 1] = {'\0'};
   char line[132 + 1] = {'\0'};
 
+  /* After playing a bit with a real IBM terminal I discovered that it
+   * every space as a word.  Thus everytime we encounter a space complete
+   * the current word and add it and a space to the buffer.
+   */
+
+  /* We need to be able to distinguish between spaces the user typed in
+   * and spaces we add here to pad the end of lines.  Spaces the user
+   * typed in should always remain and are treated as one word per space.
+   * Spaces we add here for padding should be adjustable.
+   *
+   * Right now the best way I can think of to do this is to use a special
+   * character for spaces we pad with.  Since TN5250_DISPLAY_WORD_WRAP_SPACE
+   * is not a valid character in EBCDIC or ASCII I'll use that here.
+   */
+
   for (i = 0; i < totallen; i++)
     {
-      c = tn5250_char_map_to_local (This->map, text[i]);
+      c = text[i];
 
-      if (c != ' ')
+      if (c != TN5250_DISPLAY_WORD_WRAP_SPACE)
 	{
-	  word[wordlength] = c;
+	  c2 = tn5250_char_map_to_local (This->map, c);
+	}
+
+      if ((c2 != ' ') && (c != TN5250_DISPLAY_WORD_WRAP_SPACE))
+	{
+	  word[wordlength] = c2;
 	  wordlength++;
 	  word[wordlength] = '\0';
-	  curlinelength ++;
+	  curlinelength++;
 	}
       else
 	{
 	  if (strlen (line) == 0)
 	    {
-	      sprintf (line, "%s", word);
+	      if (c == TN5250_DISPLAY_WORD_WRAP_SPACE)
+		{
+		  sprintf (line, "%s", word);
+		}
+	      else
+		{
+		  sprintf (line, "%s ", word);
+		}
 	    }
 	  else
 	    {
@@ -2857,20 +2884,33 @@ tn5250_display_wordwrap (Tn5250Display * This, unsigned char *text,
 		  for (; j < tn5250_field_length (field); j++)
 		    {
 		      tn5250_dbuffer_addch (This->display_buffers,
-					    tn5250_char_map_to_remote (This->map,
-								       ' '));
+					    TN5250_DISPLAY_WORD_WRAP_SPACE);
 		    }
 		  if (tn5250_field_is_wordwrap (field))
 		    {
 		      field = field->next;
 		    }
 		  memset (line, '\0', 133);
-		  sprintf (line, "%s", word);
+		  if (c == TN5250_DISPLAY_WORD_WRAP_SPACE)
+		    {
+		      sprintf (line, "%s", word);
+		    }
+		  else
+		    {
+		      sprintf (line, "%s ", word);
+		    }
 		  curlinelength = strlen (line);
 		}
-	      else if (strlen (word) > 0)
+	      else
 		{
-		  sprintf (line, "%s %s", line, word);
+		  if (c == TN5250_DISPLAY_WORD_WRAP_SPACE)
+		    {
+		      sprintf (line, "%s%s", line, word);
+		    }
+		  else
+		    {
+		      sprintf (line, "%s%s ", line, word);
+		    }
 		  curlinelength = strlen (line);
 		}
 	    }
@@ -2891,7 +2931,7 @@ tn5250_display_wordwrap (Tn5250Display * This, unsigned char *text,
   for (; j < tn5250_field_length (field); j++)
     {
       tn5250_dbuffer_addch (This->display_buffers,
-			    tn5250_char_map_to_remote (This->map, ' '));
+			    TN5250_DISPLAY_WORD_WRAP_SPACE);
     }
 
   tn5250_dbuffer_cursor_set (This->display_buffers, origcursorrow,

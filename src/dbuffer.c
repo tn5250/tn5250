@@ -811,7 +811,7 @@ tn5250_dbuffer_del_this_field_only (Tn5250DBuffer * This, int shiftcount)
       x = fwdx;
       y = fwdy;
     }
-  This->data[y * This->w + x] = 0x00;
+  This->data[y * This->w + x] = TN5250_DISPLAY_WORD_WRAP_SPACE;
 
   ASSERT_VALID (This);
   return;
