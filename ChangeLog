@@ -1,3 +1,7 @@
+2001-01-18 Scott Klement <klemscot@klements.com>
+- Fix for sign not being set when field minus / field plus pressed in an
+  auto-enter field.
+
 2000-12-22 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - Applied patch from Scott Klement for lp5250d stability.
 - Applied patch from Scott for using config-file method for lp5250d in 0.16.x.

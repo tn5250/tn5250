@@ -1029,6 +1029,45 @@ void tn5250_display_do_key(Tn5250Display *This, int key)
    }
 }
 
+/****f* lib5250/tn5250_display_field_pad_and_adjust
+ * NAME
+ *    tn5250_display_field_pad_and_adjust
+ * SYNOPSIS
+ *    tn5250_display_field_pad_and_adjust(This, field);
+ * INPUTS
+ *    Tn5250Display *      This       - 
+ *    Tn5250Display *      field      -
+ * DESCRIPTION
+ *    This nulls out the remainder of the field (after the
+ *    cursor position) except for the +/- sign, and then right
+ *    adjusts the field.  Does NOT do auto-enter, and does NOT
+ *    advance to the next field.
+ *****/
+void tn5250_display_field_pad_and_adjust(Tn5250Display * This, Tn5250Field *field)
+{
+   unsigned char *data;
+   int i, l;
+
+   /* NUL out remainder of field from cursor position.  For signed numeric
+    * fields, we do *not* want to null out the sign position - Field+ and
+    * Field- will do this for us.  We do not do this when the FER indicator
+    * is set. */
+   if ((tn5250_display_indicators (This) & TN5250_DISPLAY_IND_FER) == 0) {
+      data = tn5250_display_field_data (This, field);
+      i = tn5250_field_count_left(field, tn5250_display_cursor_y(This),
+	    tn5250_display_cursor_x(This));
+      l = tn5250_field_length(field);
+      if (tn5250_field_is_signed_num(field))
+	 l--;
+      for (; i < l; i++)
+	 data[i] = 0;
+   }
+
+   tn5250_display_field_adjust(This, field);
+
+}
+
+
 /****f* lib5250/tn5250_display_kf_field_exit
  * NAME
  *    tn5250_display_kf_field_exit
@@ -1051,22 +1090,7 @@ void tn5250_display_kf_field_exit(Tn5250Display * This)
       return;
    }
 
-   /* NUL out remainder of field from cursor position.  For signed numeric
-    * fields, we do *not* want to null out the sign position - this is what
-    * Field+ and Field- are for.  We do not do this when the FER indicator
-    * is set. */
-   if ((tn5250_display_indicators (This) & TN5250_DISPLAY_IND_FER) == 0) {
-      data = tn5250_display_field_data (This, field);
-      i = tn5250_field_count_left(field, tn5250_display_cursor_y(This),
-	    tn5250_display_cursor_x(This));
-      l = tn5250_field_length(field);
-      if (tn5250_field_is_signed_num(field))
-	 l--;
-      for (; i < l; i++)
-	 data[i] = 0;
-   }
-
-   tn5250_display_field_adjust(This, field);
+   tn5250_display_field_pad_and_adjust ( This, field );
 
    if (tn5250_field_is_auto_enter(field)) {
       tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ENTER);
@@ -1094,20 +1118,33 @@ void tn5250_display_kf_field_plus(Tn5250Display * This)
 
    TN5250_LOG (("Field+ entered.\n"));
 
-   /* NOTE: Field+ should act like field exit on a non-numeric field. */
-   tn5250_display_kf_field_exit(This);
-   
    field = tn5250_display_current_field (This);
-   if (field == NULL || 
-	 (tn5250_field_type(field) != TN5250_FIELD_SIGNED_NUM) &&
-	 (tn5250_field_type(field) != TN5250_FIELD_NUM_ONLY))
+   if (field == NULL || tn5250_field_is_bypass(field)) {
+      tn5250_display_inhibit(This);
       return;
+   }
 
-   /* We don't do anything for number only fields.  For signed numeric
-    * fields, we change the sign position to a '+'. */
-   data = tn5250_display_field_data (This, field);
-   if (tn5250_field_type(field) != TN5250_FIELD_NUM_ONLY)
-      data[tn5250_field_length (field) - 1] = 0;
+   tn5250_display_field_pad_and_adjust ( This, field );
+   
+   /* NOTE: Field+ should act like field exit on a non-numeric field. */
+   if (field != NULL && 
+	 (tn5250_field_type(field) == TN5250_FIELD_SIGNED_NUM) ||
+	 (tn5250_field_type(field) == TN5250_FIELD_NUM_ONLY)) {
+
+        /* We don't do anything for number only fields.  For signed numeric
+         * fields, we change the sign position to a '+'. */
+        data = tn5250_display_field_data (This, field);
+        if (tn5250_field_type(field) != TN5250_FIELD_NUM_ONLY)
+           data[tn5250_field_length (field) - 1] = 0;
+   }
+
+   if (tn5250_field_is_auto_enter(field)) {
+       tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ENTER);
+       return;
+   }
+
+   tn5250_display_set_cursor_next_field (This);
+
 }
 
 /****f* lib5250/tn5250_display_kf_field_minus
@@ -1129,15 +1166,15 @@ void tn5250_display_kf_field_minus(Tn5250Display * This)
    TN5250_LOG (("Field- entered.\n"));
    
    field = tn5250_display_current_field (This);
-   if (field == NULL || 
-	 (tn5250_field_type(field) != TN5250_FIELD_SIGNED_NUM) &&
+   if (field == NULL ||
+         (tn5250_field_type(field) != TN5250_FIELD_SIGNED_NUM) &&
 	 (tn5250_field_type(field) != TN5250_FIELD_NUM_ONLY)) {
       /* FIXME: Explain why to the user. */
       tn5250_display_inhibit(This);
       return;
    }
 
-   tn5250_display_kf_field_exit(This);
+   tn5250_display_field_pad_and_adjust ( This, field );
 
    /* For numeric only fields, we shift the data one character to the
     * left and insert an ebcdic '}' in the rightmost position.  For
@@ -1155,6 +1192,13 @@ void tn5250_display_kf_field_minus(Tn5250Display * This)
       }
    } else
       data[tn5250_field_length (field) - 1] = tn5250_char_map_to_remote (This->map, '-');
+
+   if (tn5250_field_is_auto_enter(field)) {
+      tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ENTER);
+      return;
+   }
+
+   tn5250_display_set_cursor_next_field (This);
 }
 
 /****f* lib5250/tn5250_display_do_aidkey
