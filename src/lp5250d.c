@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
    if (parse_options(argc, argv) < 0)
       syntax();
 
-    if (tn5250_daemon(0,0) < 0)
+    if (tn5250_daemon(0,0,0) < 0)
     {
         perror("tn5250_daemon");
         exit(2);

@@ -52,6 +52,17 @@ void tn5250_closeall(int fd)
       close(fd++);
 }
 
+void
+sig_child(int signum)
+{
+  int pid;
+  union wait status;
+
+  while( (pid = wait3(&status, WNOHANG, (struct rusage *) 0)) > 0)
+    ;
+
+}
+
 /****f* lp5250d/tn5250_daemon
  * NAME
  *    tn5250_daemon
@@ -66,7 +77,7 @@ void tn5250_closeall(int fd)
  *    case since we may already have forked. Believed to work on all 
  *    Posix systems.
  *****/
-int tn5250_daemon(int nochdir, int noclose)
+int tn5250_daemon(int nochdir, int noclose, int ignsigcld)
 {
     switch (fork())
     {
@@ -99,6 +110,11 @@ int tn5250_daemon(int nochdir, int noclose)
     }
 
     umask(0);
+
+    if(ignsigcld)
+      {
+	signal(SIGCLD,sig_child);
+      }
 
     return 0;
 }

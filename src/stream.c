@@ -154,7 +154,7 @@ Tn5250Stream *tn5250_stream_open (const char *to)
  * DESCRIPTION
  *    DOCUMENT ME!!!
  *****/
-Tn5250Stream *tn5250_stream_host (SOCKET_TYPE masterSock, long timeout)
+Tn5250Stream *tn5250_stream_host (int masterfd, long timeout)
 {
    Tn5250Stream *This = tn5250_new(Tn5250Stream, 1);
    Tn5250StreamType *iter;
@@ -167,15 +167,19 @@ Tn5250Stream *tn5250_stream_host (SOCKET_TYPE masterSock, long timeout)
       ret = tn5250_telnet_stream_init (This);
       if (ret != 0) {
          tn5250_stream_destroy (This);
+	 printf("1\n");
          return NULL;
       }
       /* Accept */
-      ret = (* (This->accept)) (This, masterSock);
+      printf("masterfd = %d\n", masterfd);
+      ret = (* (This->accept)) (This, masterfd);
       if (ret == 0)
 	 return This;
 
       tn5250_stream_destroy (This);
+      printf("2\n");
    }
+   printf("3\n");
    return NULL;
 }
 

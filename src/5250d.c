@@ -41,6 +41,7 @@ int
 make_socket (unsigned short int port)
 {
   int sock;
+  int on = 1;
   struct sockaddr_in name;
 
   /* Create the socket. */
@@ -55,6 +56,7 @@ make_socket (unsigned short int port)
   name.sin_family = AF_INET;
   name.sin_port = htons (port);
   name.sin_addr.s_addr = htonl (INADDR_ANY);
+  setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
   if (bind (sock, (struct sockaddr *) &name, sizeof (name)) < 0)
     {
       perror ("bind");
@@ -64,13 +66,37 @@ make_socket (unsigned short int port)
   return sock;
 }
 
+void
+process_client(int sockfd)
+{
+  Tn5250Stream * hoststream;
+  Tn5250Host * host;
+  int aidkey;
+
+  hoststream = tn5250_stream_host(sockfd, 1000);
+
+  if(hoststream != NULL) {
+    host = tn5250_host_new(hoststream);
+    printf("Successful connection\n");
+    aidkey = SendTestScreen(host);
+    tn5250_host_destroy(host);
+    printf("aidkey = %d\n", aidkey);
+    _exit(0);
+  } else {
+    printf("Connection failed.\n");
+    _exit(1);
+  }
+}
+
+int childpid;
 int sock;
+int sockfd;
+int snsize;
+struct sockaddr_in sn = { AF_INET };
 fd_set active_fd_set, read_fd_set;
 int i;
 struct sockaddr_in clientname;
 size_t size;
-Tn5250Stream * hoststream;
-Tn5250Host * host;
 
 #define PORT 2023
 
@@ -79,55 +105,40 @@ main(void)
 {
   printf("Starting server...\n");
 
-  /* Create the socket and set it up to accept connections. */
+  tn5250_daemon(0,0,1);
+
   sock = make_socket (PORT);
+
+  /* Create the socket and set it up to accept connections. */
   if (listen (sock, 1) < 0)
     {
       perror ("listen");
       exit (EXIT_FAILURE);
     }
-
-  /* Initialize the set of active sockets. */
-  FD_ZERO (&active_fd_set);
-  FD_SET (sock, &active_fd_set);
-
-
+  
   while(1) 
     {
-      /* Block until input arrives on one or more active sockets. */
-      read_fd_set = active_fd_set;
-      if (select (FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0)
-	{
-	  perror ("select");
-	  exit (EXIT_FAILURE);
-	}
+      snsize = sizeof(sn);
+      sockfd = accept(sock, (struct sockaddr *)&sn, &snsize);
+
+      if(sockfd < 0) {
+	perror("accept");
+	exit(1);
+      }
+
+      printf("Incoming connection...\n");
       
-      /* Service all the sockets with input pending. */
-      for (i = 0; i < FD_SETSIZE; ++i)
-	if (FD_ISSET (i, &read_fd_set))
-	  {
-	    if (i == sock)
-	      {
-		/* Connection request on original socket. */
-		
-		printf("Incoming connection...\n");
+      if( (childpid = fork()) < 0) {
+	perror("fork");
+      } else if(childpid > 0) {
+	close(sockfd);
 
-		hoststream = tn5250_stream_host(sock, 1000);
+      } else {
+	close(sock);
+	process_client(sockfd);
+      }
 
-		if(hoststream != NULL) {
-		  host = tn5250_host_new(hoststream);
-		  printf("Successful connection\n");
-		  SendTestScreen(host);
-		} else {
-		  printf("Connection failed.\n");
-		}
-
-	      }
-	    else
-	      {
-	      }
-	  }
     }
-
+  
   return(0);
 }
