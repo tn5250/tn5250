@@ -36,12 +36,6 @@
   </item>
 
   <item>
-    In Tn5250Stream object, don't move the buffer back 10 bytes. In
-    Tn5250Record, take into account the header length.  This is just the way
-    it should be done.
-  </item>
-
-  <item>
     Move SCS ``library functions'' from scs2ascii.c to scs.c, make them part
     of the library.  Include tn5250/scs.h from tn5250.h
   </item>
@@ -54,12 +48,6 @@
   <item>
     Look into how vim handles the ESC key, so that we can eliminate strangeness
     about how ESC A (for Attention) can act strange if pressed too quickly.
-  </item>
-
-  <item>
-    FER (Field Exit Required) fields aren't handled correctly at all.  If the
-    Field Exit Required bit is set, don't perform an automatic field exit
-    when the last character of data is entered.
   </item>
 
 </todo>
