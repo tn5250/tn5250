@@ -19,7 +19,7 @@
  * the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA 02111-1307 USA
  * 
- * As a special exception, the Free Software Foundation gives permission
+ * As a special exception, the copyright holder gives permission
  * for additional uses of the text contained in its release of TN5250.
  * 
  * The exception is that, if you link the TN5250 library with other files

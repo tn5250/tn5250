@@ -1,3 +1,7 @@
+2000-12-06 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Applied Cary Evans' patch updating man pages.
+- Fixed text of LGPL exception clause in src/*.[ch]
+
 2000-11-27 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - Applied Carey Evans' patch fixing configure script under ash.
 
