@@ -299,6 +299,14 @@ void tn5250_print_session_main_loop(Tn5250PrintSession * This)
 	       if (This->rec != NULL)
 	          tn5250_record_destroy(This->rec);
 	       This->rec = tn5250_stream_get_record(This->stream);
+
+               if (tn5250_record_opcode(This->rec)
+                   == TN5250_RECORD_OPCODE_CLEAR)
+               {
+                  syslog(LOG_INFO, "Clearing print buffers");
+                  continue;
+               }
+
 	       tn5250_stream_send_packet(This->stream, 0,
 		     TN5250_RECORD_FLOW_CLIENTO,
 		     TN5250_RECORD_H_NONE,
