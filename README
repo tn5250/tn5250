@@ -36,21 +36,11 @@ X Windows
 
 To use the emulator under X Windows, use the provided `xt5250' shell script,
 which sets up a standard `xterm' (it will *not* work with an `nxterm' or an 
-`rxvt' terminal).  Additionally, you should do the following for each user:
+`rxvt' terminal).
 
-  cat Xdefaults >> ~/.Xdefaults
-
-To reload your .Xdefaults if X Windows is already running, do this:
-
-  xrdb ~/.Xdefaults
-
-This tells X Windows how to map keys to an xterm named `xt5250'.
-
-There are two common problems which would cause xt5250 to flash once on the
+There is one common problem which would cause xt5250 to flash once on the
 screen then disapear.  If the termcap or terminfo entry for the `xterm-5250'
-terminal type does not exist, the `xterm' will exit immediately.  If you
-don't provide the host system name on the xt5250 command line, `tn5250' will
-exit immediately.
+terminal type does not exist, the `xterm' will exit immediately.
 
 Other Information
 =================

@@ -5,8 +5,6 @@ lib_LTLIBRARIES =	lib5250.la
 bin_PROGRAMS =		scs2ascii\
 			tn5250
 
-bin_SCRIPTS =		xt5250
-
 lib5250_la_SOURCES =	buffer.c\
 			cursesterm.c\
 			debug.c\
@@ -55,7 +53,6 @@ pkginclude_HEADERS = 	buffer.h\
 include_HEADERS =	tn5250.h
 
 EXTRA_DIST =		.lclintrc\
-			xt5250\
 			transmaps
 
 lclint:
