@@ -297,7 +297,10 @@ void tn5250_print_session_main_loop(Tn5250PrintSession * This)
  * INPUTS
  *    Tn5250PrintSession * This       - 
  * DESCRIPTION
- *    DOCUMENT ME!!!
+ *    Calls select() to wait for data to arrive on the socket fdr.
+ *    This is the socket being used by the print session to communicate
+ *    with the AS/400.  There is no timeout, so the function will wait forever
+ *    if no data arrives.
  *****/
 static int tn5250_print_session_waitevent(Tn5250PrintSession * This)
 {
