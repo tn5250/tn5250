@@ -135,7 +135,7 @@ int tn5250_table_next_field2(Tn5250Table * This, int y, int x)
 {
    int nx = x, ny = y;
    Tn5250Field *field;
-   if (tn5250_table_field_number(This, y, x) >= 0)
+   if ((This->curfield = tn5250_table_field_number(This, y, x)) >= 0)
       return tn5250_table_next_field(This);
 
    do {
@@ -185,7 +185,7 @@ int tn5250_table_prev_field2(Tn5250Table * This, int y, int x)
    int nx = x, ny = y;
    Tn5250Field *field;
 
-   if (tn5250_table_field_number(This, y, x) >= 0)
+   if ((This->curfield = tn5250_table_field_number(This, y, x)) >= 0)
       return tn5250_table_prev_field(This);
 
    do {
