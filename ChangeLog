@@ -1,4 +1,8 @@
 2001-09-28 Scott Klement <klemscot@klements.com>
+- Fixed bug in sslstream.c that would cause the emulator to segfault
+    if "This->config" was NULL.
+
+2001-09-28 Scott Klement <klemscot@klements.com>
 - Fixed bug in conf.c, where boolean keywords (+/-keyword) were
     never being prefixed, and therefore only the last one in the
     config file (for a given keyword name) was being used.
