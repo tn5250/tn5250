@@ -945,7 +945,8 @@ static int ssl_stream_get_next(Tn5250Stream *This,unsigned char *buf,int size)
 
 static int ssl_sendWill(Tn5250Stream *This, unsigned char what)
 {
-   UCHAR buff[3]={IAC,WILL, what};
+   UCHAR buff[3]={IAC,WILL};
+   buff[2] = what;
    TN5250_LOG(("SSL_Write: %x %x %x\n", buff[0], buff[1], buff[2]));
    return SSL_write(This->ssl_handle, buff, 3);
 }
@@ -1323,27 +1324,23 @@ static void ssl_stream_sb(Tn5250Stream * This, unsigned char *sb_buf, int sb_len
  *    is waiting on the socket or -2 if disconnected, or -END_OF_RECORD if a 
  *    telnet EOR escape sequence was encountered.
  *****/
-#define TN5250_RBSIZE 8192
 static int ssl_stream_get_byte(Tn5250Stream * This)
 {
    unsigned char temp;
    unsigned char verb;
-   static unsigned char rcvbuf[TN5250_RBSIZE];
-   static int rcvbufpos = 0;
-   static int rcvbuflen = -1; 
 
    do {
       if (This->state == TN5250_STREAM_STATE_NO_DATA)
 	 This->state = TN5250_STREAM_STATE_DATA;
 
-      rcvbufpos ++;
-      if (rcvbufpos >= rcvbuflen) {
-          rcvbufpos = 0;
-          rcvbuflen = ssl_stream_get_next(This, rcvbuf, TN5250_RBSIZE);
-          if (rcvbuflen<0) 
-              return rcvbuflen;
+      This->rcvbufpos ++;
+      if (This->rcvbufpos >= This->rcvbuflen) {
+          This->rcvbufpos = 0;
+          This->rcvbuflen = ssl_stream_get_next(This, This->rcvbuf, TN5250_RBSIZE);
+          if (This->rcvbuflen<0) 
+              return This->rcvbuflen;
       }
-      temp = rcvbuf[rcvbufpos];
+      temp = This->rcvbuf[This->rcvbufpos];
 
       switch (This->state) {
       case TN5250_STREAM_STATE_DATA:

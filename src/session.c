@@ -1050,6 +1050,15 @@ tn5250_session_write_to_display (Tn5250Session * This)
 				   tn5250_char_map_to_local
 				   (tn5250_display_char_map (This->display),
 				    cur_order), cur_order));
+		      if (tn5250_char_map_to_local
+			  (tn5250_display_char_map (This->display),
+			   cur_order) != '\n')
+			{
+			  TN5250_LOG (("%c",
+				       tn5250_char_map_to_local
+				       (tn5250_display_char_map
+					(This->display), cur_order)));
+			}
 		    }
 #endif
 		}
@@ -2757,8 +2766,7 @@ tn5250_session_query_reply (Tn5250Session * This)
  *    DOCUMENT ME!!!
  *****/
 static void
-tn5250_session_define_selection_field (Tn5250Session * This,
-				       int length)
+tn5250_session_define_selection_field (Tn5250Session * This, int length)
 {
   unsigned char flagbyte;
   unsigned char fieldtype;
@@ -2990,8 +2998,7 @@ tn5250_session_define_selection_field (Tn5250Session * This,
  *    DOCUMENT ME!!!
  *****/
 static void
-tn5250_session_define_selection_item (Tn5250Session * This,
-				      int length)
+tn5250_session_define_selection_item (Tn5250Session * This, int length)
 {
   unsigned char flagbyte;
   unsigned char reserved;
@@ -3168,7 +3175,8 @@ tn5250_session_define_selection_item (Tn5250Session * This,
     {
       reserved = tn5250_record_get_byte (This->record);
       TN5250_LOG (("Choice text = 0x%02X (%c)\n", reserved,
-		   tn5250_char_map_to_local (tn5250_display_char_map (This->display), reserved)));
+		   tn5250_char_map_to_local (tn5250_display_char_map
+					     (This->display), reserved)));
       length--;
     }
 
@@ -3196,7 +3204,8 @@ tn5250_session_create_window_structured_field (Tn5250Session * This,
   unsigned char depth;
   unsigned char width;
   unsigned char reserved;
-  unsigned char border_length, border_type, border_flags, border_mono;
+  int border_length;
+  unsigned char border_type, border_flags, border_mono;
   unsigned char border_color, border_upperlchar, border_topchar;
   unsigned char border_upperrchar, border_leftchar, border_rightchar;
   unsigned char border_lowerlchar, border_bottomchar, border_lowerrchar;
@@ -3241,108 +3250,108 @@ tn5250_session_create_window_structured_field (Tn5250Session * This,
       length = length - 5;
       border_length = tn5250_record_get_byte (This->record);
       TN5250_LOG (("border_length = 0x%02X (%d)\n", border_length,
-		   (int) border_length));
-      border_length = ((int) border_length) - 1;
+		   border_length));
+      border_length--;
       length--;
-      if ((int) border_length > 0)
+      if (border_length > 0)
 	{
 	  border_type = tn5250_record_get_byte (This->record);
 	  TN5250_LOG (("Border type = 0x%02X\n", border_length));
-	  ((int) border_length)--;
+	  border_length--;
 	  length--;
 	}
 
       /* Format for Border Presentation Minor Structure */
       if (border_type == 0x01)
 	{
-	  if ((int) border_length > 0)
+	  if (border_length > 0)
 	    {
 	      border_flags = tn5250_record_get_byte (This->record);
 	      if (border_flags & 0x80)
 		{
 		  TN5250_LOG (("Use border presentation characters (GUI-like NWS)\n"));
 		}
-	      ((int) border_length)--;
+	      border_length--;
 	      length--;
 	    }
-	  if ((int) border_length > 0)
+	  if (border_length > 0)
 	    {
 	      border_mono = tn5250_record_get_byte (This->record);
 	      TN5250_LOG (("Monochrome border attribute = 0x%02X\n",
 			   border_mono));
-	      ((int) border_length)--;
+	      border_length--;
 	      length--;
 	    }
-	  if ((int) border_length > 0)
+	  if (border_length > 0)
 	    {
 	      border_color = tn5250_record_get_byte (This->record);
 	      TN5250_LOG (("Color border attribute = 0x%02X\n",
 			   border_color));
-	      ((int) border_length)--;
+	      border_length--;
 	      length--;
 	    }
-	  if ((int) border_length > 0)
+	  if (border_length > 0)
 	    {
 	      border_upperlchar = tn5250_record_get_byte (This->record);
 	      TN5250_LOG (("Upper left border character = 0x%02X\n",
 			   border_upperlchar));
-	      ((int) border_length)--;
+	      border_length--;
 	      length--;
 	    }
-	  if ((int) border_length > 0)
+	  if (border_length > 0)
 	    {
 	      border_topchar = tn5250_record_get_byte (This->record);
 	      TN5250_LOG (("Top border character = 0x%02X\n",
 			   border_topchar));
-	      ((int) border_length)--;
+	      border_length--;
 	      length--;
 	    }
-	  if ((int) border_length > 0)
+	  if (border_length > 0)
 	    {
 	      border_upperrchar = tn5250_record_get_byte (This->record);
 	      TN5250_LOG (("Upper right border character = 0x%02X\n",
 			   border_upperrchar));
-	      ((int) border_length)--;
+	      border_length--;
 	      length--;
 	    }
-	  if ((int) border_length > 0)
+	  if (border_length > 0)
 	    {
 	      border_leftchar = tn5250_record_get_byte (This->record);
 	      TN5250_LOG (("Left border character = 0x%02X\n",
 			   border_leftchar));
-	      ((int) border_length)--;
+	      border_length--;
 	      length--;
 	    }
-	  if ((int) border_length > 0)
+	  if (border_length > 0)
 	    {
 	      border_rightchar = tn5250_record_get_byte (This->record);
 	      TN5250_LOG (("Right border character = 0x%02X\n",
 			   border_rightchar));
-	      ((int) border_length)--;
+	      border_length--;
 	      length--;
 	    }
-	  if ((int) border_length > 0)
+	  if (border_length > 0)
 	    {
 	      border_lowerlchar = tn5250_record_get_byte (This->record);
 	      TN5250_LOG (("Lower left border character = 0x%02X\n",
 			   border_lowerlchar));
-	      ((int) border_length)--;
+	      border_length--;
 	      length--;
 	    }
-	  if ((int) border_length > 0)
+	  if (border_length > 0)
 	    {
 	      border_bottomchar = tn5250_record_get_byte (This->record);
 	      TN5250_LOG (("Bottom border character = 0x%02X\n",
 			   border_bottomchar));
-	      ((int) border_length)--;
+	      border_length--;
 	      length--;
 	    }
-	  if ((int) border_length > 0)
+	  if (border_length > 0)
 	    {
 	      border_lowerrchar = tn5250_record_get_byte (This->record);
 	      TN5250_LOG (("Lower right border character = 0x%02X\n",
 			   border_lowerrchar));
-	      ((int) border_length)--;
+	      border_length--;
 	      length--;
 	    }
 	}
@@ -3350,34 +3359,34 @@ tn5250_session_create_window_structured_field (Tn5250Session * This,
       /* Format for Window Title/Footer Minor Structure */
       else if (border_type == 0x10)
 	{
-	  if ((int) border_length > 0)
+	  if (border_length > 0)
 	    {
 	      border_flags = tn5250_record_get_byte (This->record);
-	      ((int) border_length)--;
+	      border_length--;
 	      length--;
 	    }
-	  if ((int) border_length > 0)
+	  if (border_length > 0)
 	    {
 	      border_mono = tn5250_record_get_byte (This->record);
-	      ((int) border_length)--;
+	      border_length--;
 	      length--;
 	    }
-	  if ((int) border_length > 0)
+	  if (border_length > 0)
 	    {
 	      border_color = tn5250_record_get_byte (This->record);
-	      ((int) border_length)--;
+	      border_length--;
 	      length--;
 	    }
-	  if ((int) border_length > 0)
+	  if (border_length > 0)
 	    {
 	      reserved = tn5250_record_get_byte (This->record);
-	      ((int) border_length)--;
+	      border_length--;
 	      length--;
 	    }
-	  while ((int) border_length > 0)
+	  while (border_length > 0)
 	    {
 	      reserved = tn5250_record_get_byte (This->record);
-	      ((int) border_length)--;
+	      border_length--;
 	      length--;
 	    }
 	}

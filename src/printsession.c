@@ -20,14 +20,15 @@
  * 
  */
 
-#ifndef WIN32
-
 #include "tn5250-private.h"
 
+#ifndef WIN32
+
+
 static const struct response_code {
-   char *code;
+   const char * code;
    int retval;
-   char *text;
+   const char * text;
 } response_codes[] = {
    { "I901", 1, "Virtual device has less function than source device." },
    { "I902", 1, "Session successfully started." },

@@ -906,7 +906,7 @@ tn5250_dbuffer_msg_line (Tn5250DBuffer * This)
     {
       l = This->header_data[3] - 1;
     }
-  if (l > tn5250_dbuffer_height (This) - 1)
+  if ((l > tn5250_dbuffer_height (This) - 1) || (l < 0))
     {
       l = tn5250_dbuffer_height (This) - 1;
     }
