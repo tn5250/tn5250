@@ -28,6 +28,9 @@ void tn5250_display_kf_macro (Tn5250Display * This, int Ch);
 void tn5250_display_set_cursor_next_progression_field (Tn5250Display *
 						       This,
 						       int nextfield);
+void tn5250_display_set_cursor_prev_progression_field (Tn5250Display *
+						       This,
+						       int currentfield);
 
 
 /****f* lib5250/tn5250_display_new
@@ -666,19 +669,19 @@ tn5250_display_set_cursor_field (Tn5250Display * This, Tn5250Field * field)
  *****/
 void tn5250_display_set_cursor_next_field (Tn5250Display * This)
 {
-   Tn5250Field *currentfield = tn5250_display_current_field (This);
-   Tn5250Field *field;
+  Tn5250Field *currentfield = tn5250_display_current_field (This);
+  Tn5250Field *field;
 
-   if ((currentfield != NULL)
-       && (currentfield->nextfieldprogressionid != 0)) {
-      tn5250_display_set_cursor_next_progression_field (This,
-							currentfield->
-							nextfieldprogressionid);
-   } else {
-      field = tn5250_display_next_field (This);
-      tn5250_display_set_cursor_field (This, field);
-   }
-   return;
+  if ((currentfield != NULL)
+      && (currentfield->nextfieldprogressionid != 0)) {
+    tn5250_display_set_cursor_next_progression_field (This,
+						      currentfield->
+						      nextfieldprogressionid);
+  } else {
+    field = tn5250_display_next_field (This);
+    tn5250_display_set_cursor_field (This, field);
+  }
+  return;
 }
 
 
@@ -728,8 +731,62 @@ tn5250_display_set_cursor_next_progression_field (Tn5250Display * This,
  *****/
 void tn5250_display_set_cursor_prev_field (Tn5250Display * This)
 {
-   Tn5250Field *field = tn5250_display_prev_field (This);
-   tn5250_display_set_cursor_field (This, field);
+  Tn5250Field *currentfield = tn5250_display_current_field (This);
+  Tn5250Field *field;
+
+  if ((currentfield != NULL)
+      && (currentfield->entry_id != 0))
+    {
+      tn5250_display_set_cursor_prev_progression_field (This,
+							currentfield->
+							entry_id);
+    }
+  else
+    {
+      field = tn5250_display_prev_field (This);
+      tn5250_display_set_cursor_field (This, field);
+    }
+  return;
+}
+
+
+/****f* lib5250/tn5250_display_set_cursor_prev_progression_field
+ * NAME
+ *    tn5250_display_set_cursor_prev_progression_field
+ * SYNOPSIS
+ *    tn5250_display_set_cursor_prev_progression_field (This);
+ * INPUTS
+ *    Tn5250Display *      This       - 
+ * DESCRIPTION
+ *    Move the cursor to the previous progression field.
+ *
+ *****/
+void
+tn5250_display_set_cursor_prev_progression_field (Tn5250Display * This,
+						  int currentfield)
+{
+  Tn5250Field *field;
+
+  while ((field = tn5250_display_prev_field (This)) != NULL)
+    {
+      tn5250_display_set_cursor_field (This, field);
+
+      if (currentfield == 0)
+	{
+	  return;
+	}
+      else if (field->entry_id == currentfield)
+	{
+	  field = tn5250_display_prev_field (This);
+	  tn5250_display_set_cursor_field (This, field);
+	  break;
+	}
+      else if (field->nextfieldprogressionid == currentfield)
+	{
+	  break;
+	}
+    }
+  return;
 }
 
 
@@ -1910,23 +1967,30 @@ void tn5250_display_kf_tab (Tn5250Display * This)
  *****/
 void tn5250_display_kf_backtab (Tn5250Display * This)
 {
-   /* Backtab: Move to start of this field, or start of previous field if
-    * already there. */
-   Tn5250Field *field = tn5250_display_current_field (This);
-   if (field == NULL || tn5250_field_count_left (field,
-						 tn5250_display_cursor_y
-						 (This),
-						 tn5250_display_cursor_x
-						 (This)) == 0) {
-      field = tn5250_display_prev_field (This);
-   }
+  /* Backtab: Move to start of this field, or start of previous field if
+   * already there.
+   */
+  Tn5250Field *field = tn5250_display_current_field (This);
 
-   if (field != NULL) {
+  if (field == NULL || tn5250_field_count_left (field,
+						tn5250_display_cursor_y
+						(This),
+						tn5250_display_cursor_x
+						(This)) == 0)
+    {
+      tn5250_display_set_cursor_prev_field (This);
+      return;
+    }
+
+  if (field != NULL)
+    {
       tn5250_display_set_cursor_field (This, field);
-   } else {
+    }
+  else
+    {
       tn5250_display_set_cursor_home (This);
-   }
-   return;
+    }
+  return;
 }
 
 
