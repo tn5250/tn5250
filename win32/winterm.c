@@ -152,7 +152,8 @@ static int win32_terminal_set_config(Tn5250Terminal *This, Tn5250Config *conf);
 static int win32_terminal_waitevent(Tn5250Terminal * This);
 static int win32_terminal_getkey(Tn5250Terminal * This);
 void win32_terminal_queuekey(HWND hwnd, Tn5250Terminal *This, int key);
-void win32_terminal_clear_screenbuf(HWND hwnd,int width,int height,int delet);
+void win32_terminal_clear_screenbuf(HWND hwnd,int width,int height,
+                                    int delet, int mknew);
 void tn5250_win32_set_beep (Tn5250Terminal *This, const char *beepfile);
 void tn5250_win32_terminal_display_ruler (Tn5250Terminal *This, int f);
 static void win32_terminal_beep(Tn5250Terminal * This);
@@ -621,7 +622,7 @@ static void win32_terminal_init(Tn5250Terminal * This)
    width = (rect.right - rect.left) + 1;
    height = (rect.bottom - rect.top) + 1;
    bmphdc = CreateCompatibleDC(NULL);
-   win32_terminal_clear_screenbuf(This->data->hwndMain, width, height, 0);
+   win32_terminal_clear_screenbuf(This->data->hwndMain, width, height, 0, 1);
 
    tn5250_win32_init_fonts(This, 
              tn5250_config_get(This->data->config, "font_80"),
@@ -1134,11 +1135,8 @@ static void win32_terminal_update(Tn5250Terminal * This, Tn5250Display *display)
    /* clear the screen buffer (one big black rectangle) */
 
    GetClientRect(This->data->hwndMain, &cr);
-   oldbrush = SelectObject(bmphdc, background_brush);
-   oldpen = SelectObject(bmphdc, GetStockObject(BLACK_PEN));
-   Rectangle(bmphdc, cr.left, cr.top, cr.right, cr.bottom);
-   SelectObject(bmphdc, oldbrush);
-   SelectObject(bmphdc, oldpen);
+   win32_terminal_clear_screenbuf(This->data->hwndMain, cr.right+1,
+          cr.bottom+1, 0, 0);
 
    if (This->data->resized ||
        This->data->last_height != tn5250_display_height(display)  ||
@@ -1625,7 +1623,8 @@ void win32_terminal_queuekey(HWND hwnd, Tn5250Terminal *This, int key) {
  * DESCRIPTION
  *    Create/Resize the bitmap that we use as the screen buffer.
  *****/
-void win32_terminal_clear_screenbuf(HWND hwnd,int width,int height,int delet) {
+void win32_terminal_clear_screenbuf(HWND hwnd, int width, int height,
+                                    int delet, int mknew) {
 
    HDC hdc;
    HBRUSH oldbrush;
@@ -1634,16 +1633,20 @@ void win32_terminal_clear_screenbuf(HWND hwnd,int width,int height,int delet) {
    if (delet) 
        DeleteObject(screenbuf);
 
-   hdc = GetDC(hwnd);
-   screenbuf = CreateCompatibleBitmap(hdc, width, height);
-   ReleaseDC(hwnd, hdc);
+   if (mknew) {
+      hdc = GetDC(hwnd);
+      screenbuf = CreateCompatibleBitmap(hdc, width, height);
+      ReleaseDC(hwnd, hdc);
+   }
 
    SelectObject(bmphdc, screenbuf);
    oldbrush = SelectObject(bmphdc, background_brush);
-   oldpen = SelectObject(bmphdc, GetStockObject(BLACK_PEN));
-   Rectangle(bmphdc, 0, 0, width-1, height-1);
+   oldpen = SelectObject(bmphdc, 
+                CreatePen(PS_SOLID, 0, colorlist[A_5250_BLACK].ref));
+   Rectangle(bmphdc, 0, 0, width+3, height+3);
    SelectObject(bmphdc, oldbrush);
-   SelectObject(bmphdc, oldpen);
+   oldpen = SelectObject(bmphdc, oldpen);
+   DeleteObject(oldpen);
 
    return;
 }
@@ -1764,7 +1767,7 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
               globTerm->data->maximized = 0;
            if (h>0 && w>0) {
               int c,r;
-              win32_terminal_clear_screenbuf(hwnd, w, h, 1);
+              win32_terminal_clear_screenbuf(hwnd, w, h, 1, 1);
               if (globTerm!=NULL && globDisplay!=NULL) {
                   if (globTerm->data->resize_fonts) {
                        win32_calc_default_font_size(hwnd, 80, 24, &c, &r);

@@ -21,7 +21,7 @@
  */
 #include "tn5250-private.h"
 
-static int telnet_stream_get_next(Tn5250Stream * This);
+static int telnet_stream_get_next(Tn5250Stream * This, unsigned char *buf, int size);
 static void telnet_stream_do_verb(Tn5250Stream * This, unsigned char verb, unsigned char what);
 static int telnet_stream_host_verb(Tn5250Stream * This, unsigned char verb,
 	unsigned char what);
@@ -473,14 +473,17 @@ static void telnet_stream_destroy(Tn5250Stream *This)
  * NAME
  *    telnet_stream_get_next
  * SYNOPSIS
- *    ret = telnet_stream_get_next (This);
+ *    ret = telnet_stream_get_next (This, buf, size);
  * INPUTS
  *    Tn5250Stream *       This       - 
+ *    unsigned char *      buf        -
+ *    int                  size       -
  * DESCRIPTION
- *    Gets the next byte from the socket or returns -1 if no data is
- *    currently available on the socket or -2 if we have been disconnected.
+ *    Gets the next buffer of data from the socket.  The
+ *    return value is the length of the data received,
+ *    or -1 for no data to receive, or -2 if disconnected
  *****/
-static int telnet_stream_get_next(Tn5250Stream * This)
+static int telnet_stream_get_next(Tn5250Stream * This, unsigned char *buf, int size)
 {
    unsigned char curchar;
    int rc;
@@ -495,10 +498,10 @@ static int telnet_stream_get_next(Tn5250Stream * This)
    if (!FD_ISSET(This->sockfd, &fdr))
       return -1;		/* No data on socket. */
 
-   rc = TN_RECV(This->sockfd, (char *) &curchar, 1, 0);
+   rc = TN_RECV(This->sockfd, buf, size, 0);
    if (WAS_ERROR_RET(rc)) {
       if (LAST_ERROR != ERR_AGAIN && LAST_ERROR != ERR_INTR) {
-	 printf("Error reading from socket: %s\n", strerror(LAST_ERROR));
+	 TN5250_LOG(("Error reading from socket: %s\n", strerror(LAST_ERROR)));
 	 return -2;
       } else
 	 return -1;
@@ -508,7 +511,7 @@ static int telnet_stream_get_next(Tn5250Stream * This)
    if (rc == 0)
       return -2;
 
-   return (int) curchar;
+   return rc;
 }
 
 static int sendWill(SOCKET_TYPE sock, unsigned char what)
@@ -822,18 +825,28 @@ static void telnet_stream_sb(Tn5250Stream * This, unsigned char *sb_buf, int sb_
  *    is waiting on the socket or -2 if disconnected, or -END_OF_RECORD if a 
  *    telnet EOR escape sequence was encountered.
  *****/
+#define TN5250_RBSIZE 8192
 static int telnet_stream_get_byte(Tn5250Stream * This)
 {
    int temp;
    unsigned char verb;
+   static unsigned char rcvbuf[TN5250_RBSIZE];
+   static int rcvbufpos = 0;
+   static int rcvbuflen = -1;
+   
 
    do {
       if (This->state == TN5250_STREAM_STATE_NO_DATA)
 	 This->state = TN5250_STREAM_STATE_DATA;
 
-      temp = telnet_stream_get_next(This);
-      if (temp < 0)
-	 return temp;
+      rcvbufpos ++;
+      if (rcvbufpos >= rcvbuflen) {
+          rcvbufpos = 0;
+          rcvbuflen = telnet_stream_get_next(This, rcvbuf, TN5250_RBSIZE);
+          if (rcvbuflen<0) 
+               return rcvbuflen;
+      }
+      temp = rcvbuf[rcvbufpos];
 
       switch (This->state) {
       case TN5250_STREAM_STATE_DATA:
@@ -1089,7 +1102,8 @@ int telnet_stream_handle_receive(Tn5250Stream * This)
 
       if (c == -END_OF_RECORD && This->current_record != NULL) {
 	 /* End of current packet. */
-	 tn5250_record_dump(This->current_record);
+         if (tn5250_logfile!=NULL) 
+             tn5250_record_dump(This->current_record);
 	 This->records = tn5250_record_list_add(This->records, This->current_record);
 	 This->current_record = NULL;
 	 This->record_count++;

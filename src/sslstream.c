@@ -29,6 +29,7 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
+static int ssl_stream_get_next(Tn5250Stream *This,unsigned char *buf,int size);
 static void ssl_stream_do_verb(Tn5250Stream * This, unsigned char verb, unsigned char what);
 static int ssl_stream_host_verb(Tn5250Stream * This, unsigned char verb,
 	unsigned char what);
@@ -615,6 +616,55 @@ static void ssl_stream_destroy(Tn5250Stream *This)
    if (This->userdata!=NULL) free(This->userdata);
 }
 
+/****i* lib5250/ssl_stream_get_next
+ * NAME
+ *    ssl_stream_get_next
+ * SYNOPSIS
+ *    ssl_stream_get_next (This, buf, size);
+ * INPUTS
+ *    Tn5250Stream *       This       - 
+ *    unsigned char *      buf        -
+ *    int                  size       -
+ * DESCRIPTION
+ *    Reads data from the socket,  returns the length,
+ *    or -2 if disconnected, or -1 if out of data to read.
+ *****/
+static int ssl_stream_get_next(Tn5250Stream *This,unsigned char *buf,int size)
+{
+
+   int rc;
+   fd_set wrwait;
+
+    /*  read data.
+     *
+     *  Note: it's possible, due to the negotiations that SSL can do below
+     *  the surface, that SSL_read() will need to wait for buffer space
+     *  to write to.   If that happens, we'll use select() to wait for
+     *  space and try again.  
+     */
+    do {
+          rc = SSL_read(This->ssl_handle, buf, size);
+          if (rc < 1) {
+               errnum = SSL_get_error(This->ssl_handle, rc);
+               switch (errnum) {
+                   case SSL_ERROR_WANT_WRITE:
+                      FD_ZERO(&wrwait);
+                      FD_SET(This->sockfd, &wrwait);
+                      select(This->sockfd+1, NULL, &wrwait, NULL, NULL);
+                      break;
+                   case SSL_ERROR_WANT_READ:
+                      return -1;
+                      break;
+                   default:
+                      return -2;
+                      break;
+               }
+          }
+    } while (rc<1);
+
+    return rc;
+}
+
 static int ssl_sendWill(Tn5250Stream *This, unsigned char what)
 {
    static UCHAR buff[3]={IAC,WILL};
@@ -936,43 +986,27 @@ static void ssl_stream_sb(Tn5250Stream * This, unsigned char *sb_buf, int sb_len
  *    is waiting on the socket or -2 if disconnected, or -END_OF_RECORD if a 
  *    telnet EOR escape sequence was encountered.
  *****/
+#define TN5250_RBSIZE 8192
 static int ssl_stream_get_byte(Tn5250Stream * This)
 {
    unsigned char temp;
-   int rc;
    unsigned char verb;
-   fd_set wrwait;
+   static unsigned char rcvbuf[TN5250_RBSIZE];
+   static int rcvbufpos = 0;
+   static int rcvbuflen = -1; 
 
    do {
       if (This->state == TN5250_STREAM_STATE_NO_DATA)
 	 This->state = TN5250_STREAM_STATE_DATA;
 
-      /*  read data.
-       *
-       *  Note: it's possible, due to the negotiations that SSL can do below
-       *  the surface, that SSL_read() will need to wait for buffer space
-       *  to write to.   If that happens, we'll use select() to wait for
-       *  space and try again.  
-       */
-      do {
-          rc = SSL_read(This->ssl_handle, &temp, 1);
-          if (rc < 1) {
-               errnum = SSL_get_error(This->ssl_handle, rc);
-               switch (errnum) {
-                   case SSL_ERROR_WANT_WRITE:
-                      FD_ZERO(&wrwait);
-                      FD_SET(This->sockfd, &wrwait);
-                      select(This->sockfd+1, NULL, &wrwait, NULL, NULL);
-                      break;
-                   case SSL_ERROR_WANT_READ:
-                      return -1;
-                      break;
-                   default:
-                      return -2;
-                      break;
-               }
-          }
-      } while (rc<1);
+      rcvbufpos ++;
+      if (rcvbufpos >= rcvbuflen) {
+          rcvbufpos = 0;
+          rcvbuflen = ssl_stream_get_next(This, rcvbuf, TN5250_RBSIZE);
+          if (rcvbuflen<0) 
+              return rcvbuflen;
+      }
+      temp = rcvbuf[rcvbufpos];
 
       switch (This->state) {
       case TN5250_STREAM_STATE_DATA:
@@ -1217,7 +1251,8 @@ int ssl_stream_handle_receive(Tn5250Stream * This)
 
       if (c == -END_OF_RECORD && This->current_record != NULL) {
 	 /* End of current packet. */
-	 tn5250_record_dump(This->current_record);
+         if (tn5250_logfile!=NULL) 
+             tn5250_record_dump(This->current_record);
 	 This->records = tn5250_record_list_add(This->records, This->current_record);
 	 This->current_record = NULL;
 	 This->record_count++;
