@@ -111,6 +111,15 @@ void sendReadMDT(Tn5250Stream *This, Tn5250Buffer * buff)
 			    tn5250_buffer_data(buff));
 }
 
+void StartField(Tn5250Host *This, Tn5250Buffer * buff, unsigned char attr)
+{
+  syslog(LOG_INFO, "Sending Start Field order.");
+
+  tn5250_buffer_append_byte(buff, ORDER_3270_SF);
+  tn5250_buffer_append_byte(buff, attr);
+
+}
+
 void
 EraseWrite(Tn5250Host *This)
 {
@@ -604,8 +613,10 @@ static char ascii_banner[][560]={
    }
  This->inputInhibited = This->inSysInterrupt = FALSE;
  
+ setBufferAddr(This, 1, 1);
+ StartField(This, &This->buffer, 0);
+ appendBlock2Ebcdic(&This->buffer, "Test", 4, This->map);
  sendWrite(This);
-
  return( readMDTfields(This, 0));
  
 }

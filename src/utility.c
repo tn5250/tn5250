@@ -67,6 +67,17 @@ build_addr_list(GSList * addrlist)
   iter = addrlist;
   result = NULL;
 
+  if(iter == NULL) {
+    addr = g_new(clientaddr, 1);
+
+    rc = inet_aton("127.0.0.1", &tempaddr);
+
+    addr->address = tempaddr.s_addr;
+    addr->mask = 0xFFFFFFFF;
+
+    result = g_slist_append(result, addr);
+  }
+
   while(iter != NULL)
     {
       slash = strchr(iter->data, '/');
