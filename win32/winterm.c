@@ -96,7 +96,6 @@ static Tn5250Terminal *globTerm = NULL;
 static Tn5250Display *globDisplay = NULL;
 static HDC bmphdc;
 static HBITMAP caretbm;
-static HACCEL globAccel;
 
 static void win32_terminal_init(Tn5250Terminal * This);
 static void win32_terminal_term(Tn5250Terminal * This);
@@ -115,7 +114,7 @@ static void win32_terminal_update_indicators(Tn5250Terminal * This,
 static int win32_terminal_set_config(Tn5250Terminal *This, Tn5250Config *conf);
 static int win32_terminal_waitevent(Tn5250Terminal * This);
 static int win32_terminal_getkey(Tn5250Terminal * This);
-void win32_terminal_queuekey(Tn5250Terminal *This, int key);
+void win32_terminal_queuekey(HWND hwnd, Tn5250Terminal *This, int key);
 void win32_terminal_clear_screenbuf(HWND hwnd,int width,int height,int delet);
 void tn5250_win32_set_beep (Tn5250Terminal *This, const char *beepfile);
 void tn5250_win32_terminal_display_ruler (Tn5250Terminal *This, int f);
@@ -209,6 +208,8 @@ static keystroke_to_msg keydown2msg[] =
    { VK_SHIFT,   VK_F10,          K_F22    , 0, 0 },   
    { VK_SHIFT,   VK_F11,          K_F23    , 0, 0 },   
    { VK_SHIFT,   VK_F12,          K_F24    , 0, 0 },   
+   { VK_SHIFT,   VK_INSERT,       K_PASTE_TEXT, 0, 1 },   
+   { VK_SHIFT,   VK_DELETE,       K_COPY_TEXT, 0, 1 },   
    { 0,          VK_F1,           K_F1     , 0, 0 },   
    { 0,          VK_F2,           K_F2     , 0, 0 },   
    { 0,          VK_F3,           K_F3     , 0, 0 },   
@@ -234,7 +235,7 @@ static keystroke_to_msg keydown2msg[] =
    { 0,          VK_ADD,          K_FIELDPLUS  , 0, 0 },
    { 0,          VK_SUBTRACT,     K_FIELDMINUS , 0, 0 },
    { 0,          VK_SCROLL,       K_HELP       , 0, 0 },
-   { -1, -1 },
+   { -1, -1, -1, -1, -1 },
 };
 
 static keystroke_to_msg keyup2msg[] =
@@ -263,7 +264,7 @@ static win32_key_map win_kb[] =
 /* Win32 CharMsg       5250 key   */
    { 0x01,   K_ATTENTION },   /* CTRL-A */
    { 0x02,   K_ROLLDN },      /* CTRL-B */
-   { 0x03,   K_SYSREQ },      /* CTRL-C */
+   { 0x03,   K_COPY_TEXT },   /* CTRL-C */
    { 0x04,   K_ROLLUP },      /* CTRL-D */
    { 0x05,   K_ERASE },       /* CTRL-E */
    { 0x06,   K_ROLLUP },      /* CTRL-F */
@@ -275,6 +276,7 @@ static win32_key_map win_kb[] =
    { 0x12,   K_RESET },       /* CTRL-R */
    { 0x14,   K_TESTREQ },     /* CTRL-T */
    { 0x15,   K_ROLLDN },      /* CTRL-U */
+   { 0x16,   K_PASTE_TEXT },  /* Ctrl-V */
    { 0x18,   K_FIELDPLUS },   /* CTRL-X */
    { 0x1b,   K_ATTENTION },   /* ESCAPE */
    { -1, -1 },
@@ -413,6 +415,18 @@ static void win32_terminal_init(Tn5250Terminal * This)
                tn5250_config_get_bool(This->data->config, "unix_like_copy");
       }
 
+     /* FIXME: This opt should not exist when we have full keyboard mapping */
+      if ( tn5250_config_get_bool (This->data->config, "unix_sysreq") ) {
+           i=0;
+           while (win_kb[i].win32_key != -1) {
+               if (win_kb[i].win32_key == 0x03) {
+                   win_kb[i].tn5250_key = K_SYSREQ;
+                   break;
+               }
+               i++;
+           }
+      }
+
    }
 
    
@@ -490,8 +504,6 @@ static void win32_terminal_init(Tn5250Terminal * This)
 
    ShowWindow (This->data->hwndMain, This->data->show);
    UpdateWindow (This->data->hwndMain);
-
-   globAccel = LoadAccelerators (This->data->hInst, "tn5250-win32-menu");
 
    /* FIXME: This might be a nice place to load the keyboard map */
 
@@ -713,11 +725,11 @@ static void win32_terminal_font(Tn5250Terminal *This,
    if (This->data->hwndMain == GetFocus()) {
        hdc = GetDC(This->data->hwndMain);      
        win32_make_new_caret(This);
-       win32_move_caret(hdc, This);
-       ReleaseDC(This->data->hwndMain, hdc);
 #ifndef NOBLINK
+       win32_move_caret(hdc, This);
        ShowCaret (This->data->hwndMain);
 #endif
+       ReleaseDC(This->data->hwndMain, hdc);
    }
 }
 
@@ -1100,6 +1112,10 @@ static void win32_terminal_update_indicators(Tn5250Terminal *This, Tn5250Display
    This->data->selected = This->data->selecting = 0;
    This->data->caretok = 0;
 
+#ifdef NOBLINK
+   win32_move_caret(bmphdc, This);
+#endif
+
    InvalidateRect(This->data->hwndMain, NULL, FALSE);
    UpdateWindow(This->data->hwndMain);
 }
@@ -1137,8 +1153,7 @@ static int win32_terminal_waitevent(Tn5250Terminal * This)
 
    result = TN5250_TERMINAL_EVENT_QUIT;
    while ( GetMessage(&msg, NULL, 0, 0) ) {
-      if (!TranslateAccelerator (This->data->hwndMain, globAccel, &msg))
-           DispatchMessage(&msg);
+      DispatchMessage(&msg);
       if (msg.message == WM_TN5250_STREAM_DATA) {
          result = TN5250_TERMINAL_EVENT_DATA;
          break;
@@ -1261,18 +1276,38 @@ static int win32_terminal_getkey (Tn5250Terminal *This)
  * NAME
  *    win32_terminal_queuekey
  * SYNOPSIS
- *    key = win32_terminal_queuekey (This, key);
+ *    key = win32_terminal_queuekey (hwnd, This, key);
  * INPUTS
+ *    HWND		   hwnd	      -
  *    Tn5250Terminal *     This       - 
  *    int                  key        -
  * DESCRIPTION
  *    Add a key to the terminal's keyboard buffer
  *****/
-void win32_terminal_queuekey(Tn5250Terminal *This, int key) {
+void win32_terminal_queuekey(HWND hwnd, Tn5250Terminal *This, int key) {
 
-    if (This->data->k_buf_len<MAX_K_BUF_LEN) {
-        This->data->k_buf[This->data->k_buf_len] = key;
-        This->data->k_buf_len ++;
+    switch (key) {
+
+      case K_PASTE_TEXT:
+         win32_paste_text_selection(hwnd, This, globDisplay);
+         break;
+
+      case K_COPY_TEXT:
+         if (This->data->selected) {
+              win32_expand_text_selection(This);
+              win32_copy_text_selection(This, globDisplay);
+              globTerm->data->selected = 0;
+              InvalidateRect(hwnd, NULL, FALSE);
+              UpdateWindow(hwnd);
+         }
+         break;
+
+      default:
+         if (This->data->k_buf_len<MAX_K_BUF_LEN) {
+             This->data->k_buf[This->data->k_buf_len] = key;
+             This->data->k_buf_len ++;
+         }
+         break;
     }
 
 }
@@ -1386,17 +1421,10 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                   return 0;
                   break;
               case IDM_EDIT_COPY:
-                  if (globTerm->data->selected) {
-                       win32_expand_text_selection(globTerm);
-                       win32_copy_text_selection(globTerm, globDisplay);
-		       globTerm->data->selected = 0;
-                       InvalidateRect(hwnd, NULL, FALSE);
-                       UpdateWindow(hwnd);
-                       return 0;
-                  }
+                  win32_terminal_queuekey(hwnd, globTerm, K_COPY_TEXT);
 	          break;
               case IDM_EDIT_PASTE:
-                  win32_paste_text_selection(hwnd, globTerm, globDisplay);
+                  win32_terminal_queuekey(hwnd, globTerm, K_PASTE_TEXT);
                   break;
            }
            break;
@@ -1429,7 +1457,8 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                    (keyup2msg[x].ctx || !handledkey) &&
                    keyup2msg[x].ext == ext &&
                    (ks[keyup2msg[x].keystate]&0x80)) {
-                        win32_terminal_queuekey(globTerm,keyup2msg[x].func_key);
+                        win32_terminal_queuekey(hwnd, 
+                                               globTerm,keyup2msg[x].func_key);
                         PostMessage(hwnd, WM_TN5250_KEY_DATA, 0, 0);
                         return 0;
                }
@@ -1452,7 +1481,7 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                    (ks[keydown2msg[x].keystate]&0x80)) {
                         int repeat = LOWORD (lParam);
                         for (; repeat>0; repeat--)  {
-                             win32_terminal_queuekey(globTerm,
+                             win32_terminal_queuekey(hwnd, globTerm,
                                                      keydown2msg[x].func_key);
                         }
                         PostMessage(hwnd, WM_TN5250_KEY_DATA, 0, 0);
@@ -1485,7 +1514,7 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
            }
            handledkey = 1;
            TN5250_LOG(("WM_CHAR: handling key\n"));
-           win32_terminal_queuekey(globTerm,(int)wParam);
+           win32_terminal_queuekey(hwnd, globTerm, (int)wParam);
            break;
 
         case WM_TN5250_KEY_DATA:
@@ -1504,11 +1533,11 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
            win32_make_new_caret(globTerm);
            hdc = GetDC(hwnd);
            globTerm->data->caretok = 0;
-           win32_move_caret(hdc, globTerm);
-           ReleaseDC(hwnd, hdc);
 #ifndef NOBLINK
+           win32_move_caret(hdc, globTerm);
            ShowCaret(hwnd);
 #endif
+           ReleaseDC(hwnd, hdc);
            globTerm->data->is_focused = 1;
            return 0;
   
@@ -1525,11 +1554,6 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
            h = (rect.bottom - rect.top) + 1;
            w = (rect.right - rect.left) + 1;
            SelectObject(bmphdc, screenbuf);
-#ifdef NOBLINK
-           if (hwnd == GetFocus()) {
-               win32_move_caret(bmphdc, globTerm);
-           }
-#endif
            if (BitBlt(hdc, x, y, w, h, bmphdc, x, y, SRCCOPY)==0) {
                 TN5250_LOG(("WIN32: BitBlt failed: %d\n", GetLastError()));
                 TN5250_ASSERT(0);
@@ -2048,7 +2072,7 @@ void win32_paste_text_selection(HWND hwnd, Tn5250Terminal *term,
             switch (pNewBuf[pos]) {
                case '\r':
                  while (thisrow > 0)  {
-                    win32_terminal_queuekey(term, K_LEFT);
+                    win32_terminal_queuekey(hwnd, term, K_LEFT);
                     thisrow --;
                     if (term->data->k_buf_len == dump_count) {
                          tn5250_display_do_keys(display);
@@ -2057,12 +2081,12 @@ void win32_paste_text_selection(HWND hwnd, Tn5250Terminal *term,
                  break;
                case '\n':
                  thisrow = 0;
-                 win32_terminal_queuekey(term, K_DOWN);
+                 win32_terminal_queuekey(hwnd, term, K_DOWN);
                  tn5250_display_do_keys(display);
                  break;
                default:
                  thisrow++;
-                 win32_terminal_queuekey(term, pNewBuf[pos]);
+                 win32_terminal_queuekey(hwnd, term, pNewBuf[pos]);
                  break;
             }
             if (term->data->k_buf_len == dump_count) {

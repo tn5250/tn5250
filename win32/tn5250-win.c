@@ -21,6 +21,7 @@
  */
 
 #include "tn5250-private.h"
+#include "resource.h"
 
 Tn5250Terminal *tn5250_win32_terminal_new(HINSTANCE hInst, 
     HINSTANCE hPrev, int show);
@@ -50,10 +51,12 @@ static struct valid_term {
    { NULL, NULL }
 };
 
+
 static void clean_up_and_exit(int error);
 static void usage(void);
 void msgboxf(const char *fmt, ...);
 int parse_cmdline(char *cmdline, char **my_argv);
+BOOL CALLBACK ConnectDlgProc (HWND, UINT, WPARAM, LPARAM);
 
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE prev, LPSTR cmdline, int show)
 {
@@ -86,8 +89,6 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE prev, LPSTR cmdline, int show)
     /*
      *  Load configuration file & command-line args 
      *
-     *  FIXME: we are only handling _one_ command line arg.
-     *    we should really parse it into potentially several.
      */
 
     config = tn5250_config_new ();
@@ -106,9 +107,15 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE prev, LPSTR cmdline, int show)
          msgboxf("tn5250 %s", VERSION);
          exit (0);
     }
-/* FIXME: We probably want to prompt for the host if not supplied... */
     else if (tn5250_config_get (config, "host") == NULL) {
-          usage ();
+          if (DialogBox(hInst, MAKEINTRESOURCE(IDD_DIALOG_CONNECT), NULL,
+                    ConnectDlgProc)<1) {
+               exit(0);
+          }
+    }
+
+    if (tn5250_config_get (config, "font_80") == NULL) {
+          tn5250_config_set(config, "font_80", "Terminal");
     }
 
 #ifndef NDEBUG
@@ -326,4 +333,112 @@ int parse_cmdline(char *cmdline, char **my_argv) {
               
     return argcnt;
 #undef MAXARG
+}
+
+/* 
+ *  This is called by the Win32 DialogBox() API to help control the
+ *  "connect" dialog which appears when you do not specify a 
+ *  host name on the command line.
+ *
+ */
+	
+#define MAX_HOST_SIZE 255
+#define MAX_DEVICE_SIZE 10
+
+BOOL CALLBACK ConnectDlgProc (HWND hDlg, UINT message, WPARAM wParam, 
+                                                       LPARAM lParam) {
+
+   HWND hwndMap;
+   HWND hwndHost;
+   HWND hwndDevice;
+
+   switch (message) {
+
+      case WM_INITDIALOG:
+         CheckRadioButton (hDlg, IDC_RADIO_80, IDC_RADIO_132, IDC_RADIO_80);
+         SetDlgItemInt (hDlg, IDC_EDIT_CHARMAP, 37, FALSE);
+
+         hwndMap    = GetDlgItem (hDlg, IDC_EDIT_CHARMAP);
+         hwndHost   = GetDlgItem (hDlg, IDC_EDIT_HOST);
+         hwndDevice = GetDlgItem (hDlg, IDC_EDIT_DEVICE);
+
+         SendMessage (hwndMap,    EM_LIMITTEXT, (WPARAM)9, 0);
+         SendMessage (hwndDevice, EM_LIMITTEXT, (WPARAM)MAX_DEVICE_SIZE, 0);
+         SendMessage (hwndHost,   EM_LIMITTEXT, (WPARAM)MAX_HOST_SIZE, 0);
+
+         return TRUE;
+
+      case WM_COMMAND:
+         switch (LOWORD (wParam)) {
+           case IDOK:
+              if (SetParams(hDlg)) {
+                   EndDialog (hDlg, 1);
+              }
+              return TRUE;
+
+           case IDCANCEL:
+              EndDialog (hDlg, 0);
+              return TRUE;
+
+           case IDC_RADIO_80:
+           case IDC_RADIO_132:
+	      CheckRadioButton (hDlg, IDC_RADIO_80, IDC_RADIO_132, 
+                                LOWORD (wParam));
+              return TRUE;
+           }
+           break;
+
+   }
+
+  return FALSE;
+}
+
+
+/*
+ * This is used by the "connect to" dialog box to set the configuration
+ * options for the session.
+ *
+ */
+int SetParams(HWND hDlg) {
+
+   char host[MAX_HOST_SIZE+6];
+   char device[MAX_DEVICE_SIZE+1];
+   char termtype[18];
+   char charmap[10];
+
+   char work[MAX_HOST_SIZE+1];
+   char sslpref[5];
+   int map;
+
+   host[0] = '\0';
+   if (IsDlgButtonChecked(hDlg, IDC_CHECK_SSL)==BST_CHECKED) {
+         strcpy(host, "ssl:");
+   }
+
+   if (IsDlgButtonChecked(hDlg, IDC_CHECK_SSLVERIFY)==BST_CHECKED) {
+         tn5250_config_set(config, "ssl_verify_server", "1");
+   }
+
+   if (IsDlgButtonChecked(hDlg, IDC_CHECK_UNIXCOPY)==BST_CHECKED) {
+         tn5250_config_set(config, "unix_like_copy", "1");
+   }
+
+   strcpy(termtype, "IBM-3179-2");
+   if (IsDlgButtonChecked(hDlg, IDC_RADIO_132)==BST_CHECKED) {
+         strcpy(termtype, "IBM-3477-FC");
+   }
+   tn5250_config_set(config, "env.TERM", termtype);
+
+   GetDlgItemText(hDlg, IDC_EDIT_HOST, work, MAX_HOST_SIZE);
+   strcat(host, work);
+   tn5250_config_set(config, "host", host);
+
+   GetDlgItemText(hDlg, IDC_EDIT_DEVICE, device, MAX_DEVICE_SIZE);
+   tn5250_config_set(config, "env.DEVNAME", device);
+
+   map = GetDlgItemInt(hDlg, IDC_EDIT_CHARMAP, NULL, FALSE);
+   sprintf(charmap, "%d", map);
+   tn5250_config_set(config, "map", charmap);
+
+   return 1;
 }
