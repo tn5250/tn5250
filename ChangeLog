@@ -1,0 +1,698 @@
+1999-10-01 Jay 'Eraesrhead' Felice <jasonf@nacs.net>
+
+- Now dumping the record (so we can re-read it via a debug session) when
+  the record is received, instead of when the record is processed.  They
+  both should be in the same order, but new evidence suggests we are
+  fubaring the order in certain cases.
+- Fixed problem where most recently added record always becomes head of
+  list; therefore we are handling the records in "mostly LIFO" order instead
+  of FIFO order.  This should fix "Display Program Messages" sign-on
+  problems, and signon problems when more than one display are active.
+- Cleaned up TODO file and split it into TODO and BUGS.  Removed bugs and
+  todo items that were already handled, reformatted the documents into
+  XML so that we can make an HTML interface later (mmm... bugtracking).
+
+1999-09-28 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Corrected problems with the order of #include directives in tn5250.h,
+  other applications can now use tn5250.h :) 
+
+1999-09-19 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Applied Carey Evans' patch for (more proper?) handling of displaying
+  unprintable characters.
+- Applied Carey Evans' patch updating tn5250.1 man page.
+
+1999-09-03 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Added portsnoop utility for developers.
+- Fixed record queuing/eating problem which caused many hangs and
+  left the emulator in X SYSTEM states and caused much display
+  corruption.
+
+1999-08-30 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Re-enabled locking of keyboard when data is sent.
+- Added tn5250.h to be used by applications outside of the tn5250
+  package.
+- Package now installs the 5250 headers.
+
+1999-08-20 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- The terminal is considered `invited' after a PUT/GET opcode as well
+  as after an INVITE opcode according to RFC1205.
+- Removed duplicate handling of WTD data characters (inside a field and
+  outside a field).  This should resolve a buttload of problems, and 
+  hopefully it won't create any.
+- Removed tn5250_table_add_field2() and cleaned up SF order handling.
+- tn5250_field_set_mdt() is now a function (instead of a macro), and it
+  sets the table's master MDT flag also.
+- Implemented handling of the CC1 byte in WTD command.
+- Removed IC2 opcode (X'03') RFC1205 notes this as document errata with
+  the manual I have.
+
+1999-08-08 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Applied patch by Mike Madore fixing a case in which it would be impossible
+  to regain keyboard control since the X SYSTEM indicator is left set.
+- Applied patch by Mike Madore adding print-key handler.
+- Applied patch(es) from Ron Colcernian regarding field exit handling and
+  (possible?) SEGVs.  Moved resulting tn5250_field_shift_right_fill to field.c
+  and declaration to field.h
+- Removed Windows/Wine support and documentation - horribly out of date, will
+  not compile, and should be replaced shortly with the GTK+ port and Tor
+  Lillqvist's port of GTK+ to Windows.
+- session.c,formattable.c: When a format table is saved then restored, clear
+  the master table MDT unless some field's MDT is set.  Moved code from
+  session.c to keep the display in sync into formattable.c 
+  tn5250_table_restore().
+- Removed *all* clearing of field MDT flags, as this was very incorrect.  We
+  have not implemented any of the ways in which the host can clear the field
+  MDT flags, but this should still *work*.
+
+1999-08-03 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- session.c: Applied Field Exit patch from Mike Madore.
+- display.c: Fixed Del-key handling to clear last position
+  of field to a space.
+- terminal.h,cursesterm.c,slangterm.c,debug.c: Changed symantics
+  of tn5250_terminal_waitevent() - new kbenable flag, if not set,
+  terminal leaves keys queued for later.
+- session.c: Pass kbenable flag as false when X SYSTEM indicator
+  is on.  Note that we might get into a few problems with X SYSTEM
+  being stuck on.  Ick.
+- session.c: Stop reading keys in key handler if X SYSTEM indicator
+  is on.  Removed `send' flag, renamed `done' flag `send' for 
+  clarity's sake.
+- session.c: Applied Home patch from Mike Madore.
+- tn5250.c: Validate -y option with lookup table.
+
+1999-08-01 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Table master MDT was not being cleared after transmitting fields.
+- Read Immediate was being handled completely innacurately (it was
+  being handled _exactly_ like Read MDT Fields).
+- Read MDT Fields was not truncating trailing NULs from the field
+  as described in the 5250 Function Reference.
+- Cleaned up handling of Read Input Fields.  Also, Read Input Fields
+  was not clearing the MDT flag on the fields.
+
+1999-07-30 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- formattable.c: tn5250_table_save():  Fixed improper assigning of save
+  buffer id; the id would be random (and likely out-of-bounds) for the
+  topmost save.
+- tn5250.c: `-u' option flag being reset, so underscores wouldn't be
+  displayed.
+- formattable.c: Fixed assertion due to formattable having incorrect idea
+  of which field was the current field.
+- session.c: tn5250_session_handle_key(): Removed `int attrib'.  Value was
+  being calculated but never used.
+- session.c: Field's MDT being set at inapropriate time... We were probably
+  sending damn near all of the fields even when only the modified ones were
+  requested.
+- session.c: During WTD, if you SBA into the middle of a field and write
+  data (or attributes), it sets the MDT flag for that field.  This was causing
+  problems with sending bogus data back to the 400 during 'Read MDT Fields',
+  since EMAIL was SBA'ing to the end of the last message id field (which
+  was a bypass field), and writing attribute 0x22.  Now it doesn't set MDT
+  and I hope that doesn't break anything, although 5494 reference implies
+  that this is the way to do it.  Bug reoported by Barry L. Kline.
+
+1999-07-24 Dave McKenzie <davemck@galois.com>
+
+- Fixed tn5250_session_start_of_field to terminate after number of
+  input-field data bytes = field length.  It was incorrectly assuming that
+  input-field data would be immediately followed by a (non-displayable)
+  order byte.  Symptom: enter STRSST cmd, then options 1,4,1,3,1 -- dumps
+  core.
+- In tn5250_field_process_adjust, changed
+  for (; i++; i < This->length)
+    to:  for (; i < This->length; i++)
+  Symptom: core dump when field-exit key is pressed.
+- Fixed tn5250_record_dump to interpret bytes as EBCDIC in chars at right.
+- Fixed tn5250_session_restore_screen to update Tn5250Table.display ptr to
+  point to new Tn5250Display struct.  Also update same ptr in all fields
+  in field list.  Symptom: key any AS/400 cmd on a cmd line, press F4, F1
+  F3, F3 -- dumps core.
+- Fixed calculation of number of chars to repeat for Repeat-to-Address
+  order.  Symptom: stair-stepped screen in Display/Alter/Dump in STRSST cmd.
+- Fixed Printable function to include 0x1C and 0xFF as printable chars.
+  Symptom: a screen with 1C or FF in data dumps core.
+
+1999-07-22 Jay 'Erasehread' Felice <jasonf@nacs.net>
+
+- Deleted tn5250.h: not being used.  Added debug.h, moved some stuff from
+  utility.h to debug.h
+
+1999-07-21 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Modified Tn5250Stream structure so that it is modular in the same manner
+  as Tn5250Terminal structure (e.g., there can be stream drivers).  This
+  does two things: a) allow us to handle SNA or other protocols one day
+  and b) allow:
+- Wrote a `debug' stream driver that doesn't connect, but reads records
+  from a tracefile.
+- Wrote a `debug' terminal that shrink-wraps some other terminal that
+  reads keystrokes from a tracefile.  It should now be possible to
+  recreate a session, and therefore recreate bugs that happen on systems
+  you don't have access to, or in (some) environments that you don't have
+  access to.
+- Removed tn5250_stream_new and replaced it with tn5250_stream_open(name).
+  You can say debug:/path/to/tracefile to recreate a session or
+  telnet:host:port or tn5250:host:port or host:port (tn5250 is assumed).
+
+1999-07-20 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- codes5250.h: Added definitions for additional orders from 5494 reference -
+  although you can't use them (yet), they are good for reference purposes.
+- all files: Change calls to assert() macro to call TN5250_ASSERT() macro
+  instead.  TN5250_ASSERT logs the assert failure message to the tracefile
+  as well as printing it to standard error.
+
+1999-07-19 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- cursesterm.c,slangterm.c: Use the C setlocale()/isprint() to determine
+  whether the character is printable.
+- session.c: Fixed possible SEGV when Shift+Tab not on a field.
+- win5250.c,stream.c: Changed C++ style comments to C style comments.
+- session.c: Messed around with tn5250_session_start_of_field()'s logging so
+  that if James' "happened-one-time" problem shows up again, we can catch
+  it...
+- Updated libtool from 1.2b to 1.3.3 to solve static linking problems.
+- slangterm.c,configure.in: Check for <slang.h> and <slang/slang.h>
+  and use whichever one is present.
+
+1999-07-18 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- version.c: Now #include's config.h and uses the VERSION macro
+  defined by configure.
+- utility.c: assert() that asciimap and ebcdic map are non-null.
+
+1999-07-16 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- If the tty size is >= 132 columns and >= 27 rows and the user hasn't
+  specified which kind of IBM terminal to emulate, pick a 132 column
+  type.
+
+1999-07-12 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Big cleanup:
+- Added `lclint' target to Makefile to check sources with
+  lclint.  Added some lclint-style comments to sources
+  so lclint can check more effectively.
+- formattable.[ch]: Removed Tn5250Table::old_numfields 
+  - not used.
+- formattable.c: tn5250_table_new() wasn't initializing
+  Tn5250Table::MasterMDT.  May have been ok.
+- session.c,formattable.c,formattable.h: Removed `dsp'
+  parameter from tn5250_table_field_exit() - not used.
+- Added .lclintrc to project.  Found lots more errors :(
+  -- all small, tho.
+- session.[ch]: Removed Tn5250Session::termname - not used.
+- session.c: Removed Tn5250Session::cur_opcode - only used in 1
+  function: tn5250_session_handle_receive().
+- session.c: tn5250_session_new() is now NULL-safe.
+- Other such minor problems as reported by lclint, most
+  noteably a slew (maybe ten) unused local variables
+  removed.
+
+1999-07-02 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Big cleanup:
+- Removed u_int8/16/32, s_int8/16/32 types ... not being used.
+  u_int16 was, is now replaced with Tn5250Uint16 to keep our
+  naming conventions straight.
+- Prefixed all the functions in utility.[ch] with tn5250_
+- Removed the following functions:
+	tn5250_table_clear_screen_to_eof - not used
+	tn5250_table_clear_field_buffer_to_eof - redundant
+- About 1/2 the functions took positions in x, y order, the other
+  half in y, x order.  (Ugh... bit me a few times).  Changed all
+  functions to y, x order.  This affects the following functions:
+	tn5250_table_next_field2
+	tn5250_table_prev_field2
+	tn5250_table_field_number
+	tn5250_table_field_exit
+	tn5250_table_del_char
+	tn5250_table_ins_char
+	tn5250_table_add_char
+	tn5250_table_put_char
+	tn5250_table_process_adjust
+- Moved appropriate functions from formattable.c to field.c and
+  renamed:
+  	tn5250_table_count_eof -> tn5250_field_count_eof
+	tn5250_table_is_full -> tn5250_field_is_full
+	tn5250_table_count_left -> tn5250_field_count_left
+	tn5250_table_count_right -> tn5250_field_count_right
+	tn5250_table_get_char -> tn5250_field_get_char
+	tn5250_table_char -> tn5250_field_put_char
+	tn5250_table_set_minus_zone_screen -> tn5250_field_set_minus_zone
+	tn5250_table_process_adjust -> tn5250_field_process_adjust
+	tn5250_table_clear_field_buffer_to_eof -> tn5250_field_right_fill
+  These functions used to take a table pointer and a field number,
+  but now just take a field pointer.
+
+1999-06-07 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Fixed configure bug: `./configure: test: =: unary operator expected' again :)
+- chmod +x config.guess config.sub
+- Added support for S/Lang library, can now use S/Lang instead of
+  curses or ncurses for screen management. (Use --with-slang configure
+  option, see slangterm.h and slangterm.c)
+
+1999-05-18 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Fixed configure bug: `./configure: test: =: unary operator expected'
+- Added lots of asserts in the display code so that we can nail down
+  some strange, rarely duplicatable problems reported on occasion.
+- Fixed Shift+Tab/SEGV which could be a Shift+Tab/Cursor Pos problem
+  on some systems.
+
+1999-04-30 Michael Madore <mmadore@blarg.net>
+
+- Fixed cursesterm and xt5250 so that 132 column mode now works when the 
+  xterm doesn't start out 132X27.
+
+- Fixed permissions on files so that everything isn't execute.
+
+1999-04-29 Jason M. Felice <jasonf@nacs.net>
+
+- Added initial code to resize xterm dynamically for 132 column mode.
+
+1999-04-26 Jason M. Felice <jasonf@nacs.net>
+
+- Implemented tn5250_field_dump, replaced calls to tn5250_table_dump_field
+  with calls to tn5250_field_dump.
+- Moved some other miscellaneous functions into field.c, where they belong.
+- Changed all instances of ``STream'' to ``stream''.  I was _supposed_ to
+  do that before submitting the 0.13.0 patch.
+- Added tn5250_field_hit_test(), changed tn5250_table_field_number() to
+  cycle through the list of fields and try to find a hit, removed screen_map
+  and all references to it.
+- Fixed bug introduced during C conversion when handling K_END.
+- Ick.  Did the same thing for K_DELETE.
+- In tn5250_session_start_of_field, fixed problem that might possibly cause
+  erratic cursor placement.  (I can't say how likely).  Has to do with cursor
+  placement after drawing output-only fields.
+- That should be good riddance to the last of the code that depends on the
+  display being 80 columns wide.
+- Added checks for -lsocket and -lnsl for UnixWare as reported by Bill
+  Suetholz.
+- Added checks for <sys/filio.h> for UnixWare as reported by Bill Suetholz.
+- Added #include <stddef.h>, #include <stdlib.h> to catch UnixWare problem
+  with NULL not being defined as reported by Bill Suetholz.
+- Made functions defined in scs2ascii.c static, prefixed them with 
+  scs2ascii_ to fix -lncurses clash on UnixWare as reported by you-know-who.
+  (a.k.a. fun with sed ;)
+- Added tn5250_session_clear_unit_alternate, which sets the 'virtual' display
+  to 132x27.  You need a large enough x-term (or need to use SVGATextMode at
+  the console) to ses all of it, as it doesn't affect the tty any.
+- Moved all terminal selection logic into tn5250.c, added -y option to
+  specify the IBM terminal type.  Put in TODO that we probably want to list
+  the terminal types available in the man page, but I have _no idea_ how
+  to format documents for nroff.  It's all greek to me.
+- Modified cursesterm.c to keep track of size of last display rendered, and
+  do a clear() when the size changes, so that you don't have lines 25-27 of
+  the display hanging around when it goes back to 24x80 mode.
+- Added --with-extra-libs=xxx option to configure... this is nice for
+  linging against Electric Fence or ccmalloc to test for memory problems.
+
+1999-04-21 Richard V <ricv@denhaag.org>
+
+- Nice 5250 icon.
+
+1999-04-19 Jason M. Felice <jasonf@Baldwingroup.COM>
+
+- Fixed MW indicator typo.
+
+- Fixed uninitialized pointer which just _happened_ to work under Linux.
+  (tn5250_session_new() didn't set This->STream = NULL).  Found by Scott
+  Klement on FreeBSD.
+
+- Check to see if getopt.h is needed added to configure.in.  This should
+  solve all known compile problems on BSD.  Also reported by Scott Klement.
+  (We had an extended email exchange today where we both rambled on and
+  admitted we'd had a bit too much caffeine today ;).
+
+- INADDR_NONE is no longer checked for by configure.  It's a #define, duh,
+  so it's #ifndef INADDR_NONE'd in stream.c (I feel silly..)
+
+1999-04-12 Jason M. Felice <jasonf@Baldwingroup.COM>
+
+- Converted cursesterm.cc, displaybuf.cc, cursesterm.h, terminal.h,
+  displaybuf.h from C++ to C.
+- Changed references to ``objects'' in those files to C method from session.cc,
+  formattable.cc, others.
+- Added autoconf detections for various reported compilation problems, mostly
+  reported by Scott Klement under FreeBSD.
+- Reworked winterm.h, winterm.cc into C from C++, modified configure script to
+  detect if Wine is installed, if so, will compile ``win5250''.  Can use
+  --with-wine=<source-prefix> as an argument to configure.  See the comments
+  added to README.nt about this.
+- Converted the record.h, record.cc files from C++ to C.  Changed references
+  in session.cc, session.h (among others) to use the C method.
+- Added field.h, moved declarations having to do with fields from
+  formattable.h, made a Tn5250Field structure, which is a list node.  Replaced
+  fixed field references with new dynamically linked list structures
+  everywhere.  Maximum number of fields is now INT_MAX. (like you need _that_!)
+- Remove Packet class.  This class was used to queue packets before translating
+  them to Tn5250Record classes.  Now data is accumulated into a Tn5250Record
+  `class' instead of a Packet class, then just handed off to the PrintSession
+  or Session without all the funky computations and reallocations.  Much
+  smoother, less code.  I am slapink myself for doink this in the first
+  place.
+- While changing Buffer references in stream5250.cc, noticed an interesting
+  ``feature'' that I introduced a while ago. IAC SB ... IAC SE sequences will
+  only be processed correctly if they are processed in the same nonblocking
+  block of data.  In otherwords, if the server pauses between sending IAC SB
+  <data> and IAC SE, or the network device MTU causes a packet split in the
+  middle and the machine is fast enough -- kersplut.  The chances of this are
+  one in a million, but I'm anal.
+- buffer.cc -> buffer.c, Tn5250Buffer exists.  It's usage is weird (to avoid
+  allocating them).
+- Eliminated use of BufferPool class, removed bufferpool.c, bufferpool.h files
+  from project.  It was only used in formattable.cc to save/restore format
+  table data.  Now handled by a circularly linked list in formattable.cc.
+- While patching up to 0.12.51, removed tn5250_stream_set_terminal_type,
+  sessionname and transformmap args to tn5250_stream_connect (that'll quickly
+  get ridiculous...  I looked at that spec a while ago).  Now we have:
+	  tn5250_stream_setenv ()
+	  tn5250_stream_unsetenv ()
+	  tn5250_stream_getenv ()
+  Examples:
+  	  tn5250_stream_setenv (the_stream, "TERM", "IBM-9999-11");
+	  tn5250_stream_setenv (the_stream, "IBMTRANSFORM", "1");
+	  printf ("%s\n", tn5250_stream_getenv (the_stream, "IBMTRANSFORM"));
+	  tn5250_stream_unsetenv (the_stream, "IBMTRANSFORM");
+
+  All strings are sent in no particular order on a NEW_ENVIRON.  Yes, I know
+  'TERM' isn't one of the ones in the spec, but it's obviously the one that
+  is used in 'nix for that sort of thing, and the rfc says you should ignore
+  ones you don't understand.
+- Removed hosttransform variable.  Value wasn't getting used.
+- Did lots of hacking of the Windows version to get it to compile under Wine.
+  It does compile, without warnings, and partially runs.  You can't interact
+  with it, though, because Wine has not yet implemented WSAAsyncSelect, so
+  the program does not receive notifications when there is data received in
+  the typical Windowsish manner.  Also, DNS or hosts resolution blows up for
+  some strange reason which I have to figure out, so you have to use the
+  dotted TCP address notation.
+
+1999-04-04  Ron Colcernian <rcc@dresults.com>
+
+- tn5250 now properly handles the 0x1C character.  This is an asterisk with
+an overbar.  Apparently this is generated by pressing the DUP key.
+
+1999-04-04  Michael Madore <mmadore@blarg.net>
+
+- Added two new command line options to tn5250. -P pipes the output of a
+print session to the specified command(s).  -T causes the AS/400 to perform
+the host print transform.  The argument to this option is the name of the
+printer model to use during the translation.  For example *HP4 is for the HP
+LaserJet 4 and compatibles.  If -T is not specified, no translation is done,
+and the resulting stream will be an SCS stream.
+
+1999-04-03  Michael Madore <mmadore@blarg.net>
+
+- scs2ascii now supports more of the SNA Character Stream.  It is now
+possible to create a printer session that does not depend on the AS/400 to
+do translation.  The output can be sent to a file, or piped into a command
+like a2ps to print on a postscript printer (or any printer supported by
+Ghostscript).
+
+1999-04-01  Carey Evans  <c.evans@clear.net.nz>
+
+- session.cc: Backtab to start of field, then to previous field.
+
+1999-03-28  Carey Evans  <c.evans@clear.net.nz>
+
+- cursesterm.cc: Don't hide printable ISO-8859-1 characters.
+
+1999-03-28  Carey Evans  <c.evans@clear.net.nz>
+
+- Man page updates, including a new man page for scs2ascii.
+
+1999-03-23  Luca Paleari <lpaleari@saatimc.saati.it>
+
+- Added Italian 5250 keyboard map for linux console.
+
+1999-03-22  Michael Madore <mmadore@blarg.net>
+
+- Rudimentary printer session support.  Sends printer stream to lpr after
+  filtering through scs2ascii program.  The code currently relies on the
+  AS/400 to perform the EBCDIC to ASCII transformation.  The printer session
+  options are currently hardcoded in stream5250.cc.  In particular, it assumes
+  an HP LaserJet 4 compatible printer.
+
+1999-03-18  Michael Madore <mmadore@blarg.net>
+
+- Added check for INADDR_NONE to configure.in (For Solaris)
+
+1999-03-11  Carey Evans  <c.evans@clear.net.nz>
+
+- cursesterm.cc: Made three more fields non-display.
+
+1999-03-06 Jason M. Felice <jasonf@Baldwingroup.COM>
+
+- Improved Win32 support
+
+1999-03-01 Michael Madore <mmadore@blarg.net>
+
+- Fixed memory allocation error in AddField
+
+- Updated sample Xdefaults to handle backtab properly
+
+1999-02-28 Michael Madore <mmadore@blarg.net>
+
+- Added Attention key functionality.  
+
+- Added term->update to RestoreScreen function.  Otherwise, the screen isn't
+  redrawn after a restore operation.
+
+- Added -p option to indicate that this is a printer session.  Started
+  implementing printer session.  Doesn't do anything useful yet.
+
+- The home key should now do the right thing.
+
+1999-02-28  Carey Evans  <c.evans@clear.net.nz>
+
+- Rewrote most of the man page.  Added copyright, new options, list of 
+  character sets, description of keyboard mapping, and notes on
+  display.
+
+1999-02-28 Ron Colcernian <rcc@dri2.dresults.com>
+
+- Modified 5250.terminfo to include the kent=\EOM which is defined in the
+Xdefaults file. Also, added to cursesterm.cc the logic to detect that the user entered
+the keypad enter key and mapped it to field exit logic.
+
+1999-02-23  Carey Evans  <c.evans@clear.net.nz>
+
+- Set MDT when Field Exit is pressed.
+
+- Don't require the (unused) argument to "-u" switch.
+
+
+1999-02-19 Jason Felice <jasonf@Baldwingroup.COM>
+
+- Modifed configure.in to check for c++ bool type, and adjust if necessary.
+
+1999-02-19 Michael Madore <mmadore@blarg.net>
+
+(One or more of these fixes squashed "The operation at row/col xx,yyy
+is invalid. Press Enter" error in SDA)
+
+- Added PutChar function to formattable.  This function is just like
+  AddChar, except it doesn't set the MDT flag for the field the character is
+  being added to.  AddChar cannot be used for filling fields with initial data 
+  because it leaves the MDT bit set, which is not always correct.
+
+- Fixed off by one error in ReadMDT function.  Was sending one character too
+  many.
+
+- Sendfields function now sets the header opcode to PUT_GET instead of
+  NO_OP.
+
+- We now store embedded character attributes.  Before we were only
+  displaying them.
+
+1999-02-18 Jason Felice <jasonf@Baldwingroup.COM>
+
+- Security paranoia: If a tracefile is generated, set file mode to 0600
+  since it will contain the user's password.  Just because I'm paranoid
+  doesn't mean that they _aren't_ out to get me. ;)
+  (Hrm, maybe that last note was the codeine-based cough syrup talking)
+
+- Added -u option, which will do the following pseudo-code (in
+  CursesTerminal::update):
+
+	if the -u option was given
+		if the curses attribute has the A_UNDERLINE bit set
+			clear the A_UNDERLINE bit
+			if the character is a space
+				change it to an underscore ('_')
+			endif
+		endif
+	endif
+
+  (Since the A_VERTICAL attribute is translated before this, it works
+  on S/36 fields also.)
+  This makes it workable on a linux vga console, which doesn't seem to
+  support A_UNDERLINE (no wonder, I don't recall vga hardware supporting
+  anything like it from my DOS days).  
+
+1999-02-17  Michael Madore <mmadore@blarg.net>
+
+- <CTRL-R> and <ESC><R> are now both error reset.  The original behavior
+  (arrow and tab keys) is now removed.
+
+- New 5250.terminfo.  This one is based on the Linux console, and should
+  hopefully handle colors properly.
+
+- Updated README file.
+
+1999-02-17  Carey Evans  <c.evans@clear.net.nz>
+
+	* transmaps: Rewritten in Perl, with the following enhancements:
+	it's faster, it outputs translations for IBM's numeric code pages
+	(like IBM037, which is the standard AS/400 US English code page)
+	and it lets the argument to "-m" be the suffix of any of the
+	ebcdic* names listed, or the number of the codepage.
+
+1999-02-16 Ron Colcernian <rcc@dri2.dresults.com>
+
+- Fixes to field exit handling
+
+1999-02-16 Michael Madore <mmadore@blarg.net>
+
+- Modified Stream5250 to handle printer packets.
+ 
+- Changed WriteErrorCode to set inhibited = 1
+
+- Modified saved_bufs to hold up to 256 saved buffers
+
+1999-02-15 Michael Madore <mmadore@blarg.net>
+
+- Modified format table to dynamically allocate memory for fields.  The
+  solves the buffer overflow on the Screen Design aid.
+
+- Fixed off by one error (should be 24, not 25) in StartOfField code in
+  session.cc.  This fixes the assertion failure in screen design aid.
+
+- Brought the README file a little more up to date.
+
+1999-02-14 Michael Madore <mmadore@blarg.net>
+
+- Fixed bug in RepeatToAddress in calculation of count of characters to
+  draw.  Was shy two characters.
+
+- Moved diagnostic messages from stream5250 into tn5250.  Errors encountered 
+  during inital connection now print to the screen.
+
+1999-02-14 Jason Felice <jasonf@Baldwingroup.COM>
+
+- Fixed assertion when tab or backtab is used on a protected area of the
+  display.
+- Added code to FormatTable class to determine the next or previous field
+  if there is no current field.
+- Had problems with program blowing up, due to fact that both 0xFF and -1
+  are used in different places to signify 'no field'.  Changed all references
+  to use -1.  (including FieldNum ()).
+- Preliminary Windows support.  Added Makefile.nt, config.h.nt  (don't worry,
+  it works under Win95 -- that just seems to be convention).  If compiling
+  with CygWin32, ignore these, since ./configure will work.  I'm using Samba
+  to get to the source, using gvim (vi for Windows!), since it's the only
+  editor that won't muck with CRLF -- it uses LF or CRLF depending on what it
+  finds when it loads the file!  I tried a stint of using vi on Linux then
+  compile under Windows, and, well, Windows is apparently overzealous with
+  cacheing, and thus I'd end up compiling the wrong version of the file.
+  ("Hey, wait!  I fixed that!")
+- If WIN32 is defined, Stream5250 will use the braindead Windows socketing.
+  It may not work if you define this and use CygWin32.
+- Whenever displaying a character with the A_VERTICAL attribute,
+  CursesTerminal uses A_UNDERLINE instead.  I'd like to use the official
+  middle-dot (a period-sized dot in the middle of the cell), but that
+  wouldn't work on the majority of terminals.   Graphical versions should,
+  though.  Gee, now people can see where the fields are on a 36!
+- Modified DisplayBuffer to use "kinda the old method."  It is now a 
+  pretend array of unsigned chars instead of ints again, and attributes are
+  stored the same way as characters are.  This fixes the underline problem
+  on the initial screen.  May fix other display problems with incorrect
+  attributes as well.  Complementary modifications made to CursesTerminal.
+- Modified Session::MainLoop, Session::HandleReceive, Stream5250::getnext,
+  Stream5250::GetByte, Stream5250::HandleReceive so that we now exit
+  gracefully when the connection is dropped (either on purpose or abnormally
+  aborted).
+- Hmm, I thought my code broke color support on the signon screen this
+  whole time (half the fields are white), but it turns out that it's
+  a bug with either nxterm color support or the xterm-color terminfo
+  entry.  The color is fine when using xt5250.  That should clean up all
+  display problems that I caused (I think).
+
+1999-02-13 Carey Evens <c.evens@clear.net.nz>
+
+- Fix for Ctrl-Q core dump
+
+- Fix for double printing of command line options
+
+- Updated man page
+
+1999-02-13 Mike Madore <mmadore@blarg.net>
+
+- Fixed off by one error in attribute_map.  Could cause some display
+   display screens to crash.
+
+1999-02-08  Carey Evans  <c.evans@clear.net.nz>
+
+	* AUTHORS: New for automake support.  Used to be CREDITS.
+
+	* NEWS: New for automake support.  Used to be CHANGES.
+
+	* Makefile.am: New for automake support.
+
+	* configure.in: New for automake support.
+
+** Version 0.13 **
+   -- Command line now accepts hostnames as well as addresses.
+   -- Displays descriptive text if TCP/IP connection fails.
+   -- CTRL-C now stops the emulator cleanly.
+   -- Implemented Write Error Code command.
+   -- Added Shift Tab to move backwards through fields.
+   -- Partial overtyping of fields now preserves existing contents.
+   -- Input into multiline field now works for all cases.
+   -- Fixed buffer overrun error when sending fields after and aid
+      generating key was pressed.
+   -- Color support.
+   -- Better telnet negotiation
+   -- Fixed some refresh problems
+   -- Implements 'Read Input Fields' command.
+   -- Implements 'Clear Format Table' command.
+   -- Now handle more than two FCWs
+   -- Roll command implemented
+   -- Compiles without warnings using -Wall
+   -- Some dead code removed
+   -- Works on terminals of more than 80 characters
+   -- Variable length buffers
+   -- Code reorganization
+   -- Preliminary DEVICE name selection support
+   -- Bug fix in inhibited mode
+   -- Update current field when cursor moves
+   
+** Version 0.12 **
+
+   -- Fixed bug where IAC characters in the header were not being doubled
+   -- Properly handle Insert Cursor commands
+   -- Added message waiting indicator and supporting functions.
+   -- Start Of Header order now clears format table   
+   -- Can now save more than one screen at a time
+   -- Fixed bug where ending column of fields was being mis-calculated
+   -- When a field is full, the cursor now goes on to the next field.
+   -- Typing in non-field areas is no longer permitted.
+   -- Attention key menu now displays properly.
+
+** Version 0.11 **
+   Major Rewrite
+
+** Version 0.10 **
+   Initial release
