@@ -34,6 +34,10 @@
 #ifndef STREAM5250_H
 #define STREAM5250_H
 
+#if WIN32
+# include <winsock.h>  /* Need for SOCKET type.  GJS 3/3/2000 */
+#endif 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -59,6 +63,7 @@ struct _Tn5250Config;
  */
 struct _Tn5250Stream {
    int (* connect) (struct _Tn5250Stream *This, const char *to);
+  int (* accept) (struct _Tn5250Stream *This, SOCKET_TYPE masterSock);
    void (* disconnect) (struct _Tn5250Stream *This);
    int (* handle_receive) (struct _Tn5250Stream *This);
    void (* send_packet) (struct _Tn5250Stream *This, int length, int flowtype, unsigned char flags,
@@ -76,6 +81,7 @@ struct _Tn5250Stream {
    SOCKET_TYPE sockfd;
    int status;
    int state;
+  long msec_wait;
 
 #ifndef NDEBUG
    FILE *debugfile;
@@ -89,7 +95,7 @@ extern Tn5250Stream /*@only@*/ /*@null@*/ *tn5250_stream_open (const char *to);
 extern int tn5250_stream_config (Tn5250Stream *This, struct _Tn5250Config *config);
 extern void tn5250_stream_destroy(Tn5250Stream /*@only@*/ * This);
 extern Tn5250Record /*@only@*/ *tn5250_stream_get_record(Tn5250Stream * This);
-
+  extern Tn5250Stream *tn5250_stream_host(SOCKET_TYPE masterSock, long timeout);
 #define tn5250_stream_connect(This,to) \
    (* (This->connect)) ((This),(to))
 #define tn5250_stream_disconnect(This) \

@@ -702,12 +702,12 @@ void tn5250_display_interactive_addch(Tn5250Display * This, unsigned char ch)
 	 tn5250_display_inhibit(This);
 	 return;
       }
-      tn5250_dbuffer_ins(This->display_buffers, tn5250_char_map_to_host (This->map, ch),
+      tn5250_dbuffer_ins(This->display_buffers, tn5250_char_map_to_remote (This->map, ch),
 	    tn5250_field_count_right(field,
 	       tn5250_display_cursor_y(This),
 	       tn5250_display_cursor_x(This)));
    } else
-      tn5250_dbuffer_addch(This->display_buffers, tn5250_char_map_to_host (This->map, ch));
+      tn5250_dbuffer_addch(This->display_buffers, tn5250_char_map_to_remote (This->map, ch));
 
    tn5250_field_set_mdt(field);
 
@@ -803,10 +803,10 @@ void tn5250_display_field_adjust(Tn5250Display * This, Tn5250Field * field)
    case TN5250_FIELD_MANDATORY_FILL:
       break;
    case TN5250_FIELD_RIGHT_ZERO:
-      tn5250_display_shift_right(This, field, tn5250_char_map_to_host (This->map, '0'));
+      tn5250_display_shift_right(This, field, tn5250_char_map_to_remote (This->map, '0'));
       break;
    case TN5250_FIELD_RIGHT_BLANK:
-      tn5250_display_shift_right(This, field, tn5250_char_map_to_host (This->map, ' '));
+      tn5250_display_shift_right(This, field, tn5250_char_map_to_remote (This->map, ' '));
       break;
    }
 
@@ -1147,10 +1147,10 @@ void tn5250_display_kf_field_minus(Tn5250Display * This)
 	 int i;
 	 for (i = 0; i < tn5250_field_length(field) - 1; i++)
 	    data[i] = data[i+1];
-	 data[tn5250_field_length (field) - 1] = tn5250_char_map_to_host (This->map, '}');
+	 data[tn5250_field_length (field) - 1] = tn5250_char_map_to_remote (This->map, '}');
       }
    } else
-      data[tn5250_field_length (field) - 1] = tn5250_char_map_to_host (This->map, '-');
+      data[tn5250_field_length (field) - 1] = tn5250_char_map_to_remote (This->map, '-');
 }
 
 /****f* lib5250/tn5250_display_do_aidkey

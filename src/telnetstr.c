@@ -35,6 +35,8 @@
 
 static int telnet_stream_get_next(Tn5250Stream * This);
 static void telnet_stream_do_verb(Tn5250Stream * This, unsigned char verb, unsigned char what);
+static int telnet_stream_host_verb(SOCKET_TYPE sock, unsigned char verb,
+	unsigned char what);
 static void telnet_stream_sb_var_value(Tn5250Buffer * buf, unsigned char *var, unsigned char *value);
 static void telnet_stream_sb(Tn5250Stream * This, unsigned char *sb_buf, int sb_len);
 static void telnet_stream_escape(Tn5250Buffer * buffer);
@@ -42,6 +44,7 @@ static void telnet_stream_write(Tn5250Stream * This, unsigned char *data, int si
 static int telnet_stream_get_byte(Tn5250Stream * This);
 
 static int telnet_stream_connect(Tn5250Stream * This, const char *to);
+static int telnet_stream_accept(Tn5250Stream * This, SOCKET_TYPE masterSock);
 static void telnet_stream_destroy(Tn5250Stream *This);
 static void telnet_stream_disconnect(Tn5250Stream * This);
 static int telnet_stream_handle_receive(Tn5250Stream * This);
@@ -62,6 +65,7 @@ static void telnet_stream_send_packet(Tn5250Stream * This, int length,
 #define BINARY   2
 #define RECORD   4
 #define DONE     7
+#define HOST     8
 
 #define TRANSMIT_BINARY 0
 #define END_OF_RECORD   25
@@ -85,6 +89,197 @@ static void telnet_stream_send_packet(Tn5250Stream * This, int length,
 #define DONT 254
 #define IAC  255
 
+/* Internal Telnet option settings (bit-wise flags) */
+#define RECV_BINARY	1
+#define SEND_BINARY	2
+#define RECV_EOR	4
+#define SEND_EOR	8
+
+typedef unsigned char UCHAR;
+
+static UCHAR hostInitStr[] = {IAC,DO,NEW_ENVIRON,IAC,DO,TERMINAL_TYPE};
+static UCHAR hostDoEOR[] = {IAC,DO,END_OF_RECORD};
+static UCHAR hostDoBinary[] = {IAC,DO,TRANSMIT_BINARY};
+
+typedef struct doTable_t {
+   UCHAR	*cmd;
+   unsigned	len;
+} DOTABLE;
+
+static const DOTABLE hostDoTable[] = {
+	hostInitStr,	sizeof(hostInitStr),
+	hostDoEOR,	sizeof(hostDoEOR),
+	hostDoBinary,	sizeof(hostDoBinary),
+	NULL,		0
+};
+
+static const UCHAR SB_Str_NewEnv[]={IAC, SB, NEW_ENVIRON, SEND, USERVAR,
+	'I','B','M','R','S','E','E','D', 0,1,2,3,4,5,6,7,
+	VAR, USERVAR, IAC, SE};
+static const UCHAR SB_Str_TermType[]={IAC, SB, TERMINAL_TYPE, SEND, IAC, SE};
+
+#ifdef NDEBUG
+ #define IACVERB_LOG(tag,verb,what)
+ #define TNSB_LOG(sb_buf,sb_len)
+ #define LOGERROR(tag, ecode)
+#else
+ #define IACVERB_LOG	log_IAC_verb
+ #define TNSB_LOG	log_SB_buf
+ #define LOGERROR	logError
+
+static char *getTelOpt(what)
+{
+   char *wcp, wbuf[10];
+
+   switch (what) {
+      case TERMINAL_TYPE:
+		wcp = "<TERMTYPE>";
+		break;
+      case END_OF_RECORD:
+		wcp = "<END_OF_REC>";
+		break;
+      case TRANSMIT_BINARY:
+		wcp = "<BINARY>";
+		break;
+      case NEW_ENVIRON:
+		wcp = "<NEWENV>";
+		break;
+      case EOR:
+		wcp = "<EOR>";
+		break;
+      default:
+		sprintf(wcp=wbuf, "<%02X>", what);
+		break;
+   }
+   return wcp;
+}
+
+static void logError(char *tag, int ecode)
+{
+   FILE *errfp = tn5250_logfile ? tn5250_logfile : stderr;
+
+   fprintf(errfp,"%s: ERROR (code=%d) - %s\n", tag, ecode, strerror(ecode));
+}
+
+static void log_IAC_verb(char *tag, int verb, int what)
+{
+   char *vcp, vbuf[10];
+
+   if (!tn5250_logfile)
+      return;
+   switch (verb) {
+      case DO:	vcp = "<DO>";
+		break;
+      case DONT:
+		vcp = "<DONT>";
+		break;
+      case WILL:
+		vcp = "<WILL>";
+		break;
+      case WONT:
+		vcp = "<WONT>";
+		break;
+      default:
+		sprintf(vcp=vbuf, "<%02X>", verb);
+		break;
+   }
+   fprintf(tn5250_logfile,"%s:<IAC>%s%s\n", tag, vcp, getTelOpt(what));
+}
+
+static int dumpVarVal(UCHAR *buf, int len)
+{
+   int c, i;
+
+   for (c=buf[i=0]; i<len && c!=VAR && c!=VALUE && c!=USERVAR; c=buf[++i]) {
+      if (isprint(c))
+         putc(c, tn5250_logfile);
+      else
+         fprintf(tn5250_logfile,"<%02X>", c);
+   }
+   return i;
+}
+
+static int dumpNewEnv(unsigned char *buf, int len)
+{
+   int c, i=0, j;
+
+   while (i<len) {
+      switch (c=buf[i]) {
+         case IAC:
+		return i;
+         case VAR:
+		fputs("\n\t<VAR>",tn5250_logfile);
+		if (++i<len && buf[i]==USERVAR) {
+		   fputs("<USERVAR>",tn5250_logfile);
+		   return i+1;
+		}
+		j = dumpVarVal(buf+i, len-i);
+		i += j;
+         case USERVAR:
+		fputs("\n\t<USERVAR>",tn5250_logfile);
+		if (!memcmp("IBMRSEED", &buf[++i], 8)) {
+		   fputs("IBMRSEED",tn5250_logfile);
+		   putc('<',tn5250_logfile);
+		   for (j=0, i+=8; j<8; i++, j++) {
+		      if (j)
+		         putc(' ',tn5250_logfile);
+		      fprintf(tn5250_logfile,"%02X",buf[i]);
+		   }
+		   putc('>',tn5250_logfile);
+		} else {
+		   j = dumpVarVal(buf+i, len-i);
+		   i += j;
+		}
+		break;
+         case VALUE:
+		fputs("<VALUE>",tn5250_logfile);
+		i++;
+		j = dumpVarVal(buf+i, len-i);
+		i += j;
+		break;
+         default:
+		fputs(getTelOpt(c),tn5250_logfile);
+      } /* switch */
+   } /* while */
+   return i;
+}
+
+static void log_SB_buf(unsigned char *buf, int len)
+{
+   int c, i, type;
+
+   if (!tn5250_logfile)
+      return;
+   fprintf(tn5250_logfile,getTelOpt(type=*buf++));
+   switch (c=*buf++) {
+      case IS:
+		fputs("<IS>",tn5250_logfile);
+		break;
+      case SEND:
+		fputs("<SEND>",tn5250_logfile);
+		break;
+      default:
+		fputs(getTelOpt(c),tn5250_logfile);
+   }
+   len -= 2;
+   i = (type==NEW_ENVIRON) ? dumpNewEnv(buf,len) : 0;
+   while (i<len) {
+      switch(c=buf[i++]) {
+         case IAC:
+		fputs("<IAC>",tn5250_logfile);
+		if (i<len)
+		   fputs(getTelOpt(buf[i++]), tn5250_logfile);
+		break;
+         default:
+		if (isprint(c))
+		   putc(c, tn5250_logfile);
+		else
+		   fprintf(tn5250_logfile,"<%02X>", c);
+      }
+   }
+}
+#endif /* !NDEBUG */
+
 /****f* lib5250/tn5250_telnet_stream_init
  * NAME
  *    tn5250_telnet_stream_init
@@ -98,6 +293,7 @@ static void telnet_stream_send_packet(Tn5250Stream * This, int length,
 int tn5250_telnet_stream_init (Tn5250Stream *This)
 {
    This->connect = telnet_stream_connect;
+   This->accept = telnet_stream_accept;
    This->disconnect = telnet_stream_disconnect;
    This->handle_receive = telnet_stream_handle_receive;
    This->send_packet = telnet_stream_send_packet;
@@ -181,6 +377,55 @@ static int telnet_stream_connect(Tn5250Stream * This, const char *to)
    return 0;
 }
 
+/****i* lib5250/telnet_stream_accept
+ * NAME
+ *    telnet_stream_accept
+ * SYNOPSIS
+ *    ret = telnet_stream_accept (This, masterSock);
+ * INPUTS
+ *    Tn5250Stream *	This       - 
+ *    SOCKET		masterSock -
+ * DESCRIPTION
+ *    Accepts a connection from the client.
+ *****/
+static int telnet_stream_accept(Tn5250Stream * This, SOCKET_TYPE masterSock)
+{
+   int i, len, retCode;
+   struct sockaddr_in serv_addr;
+#ifndef WINELIB
+   u_long ioctlarg=1L;
+#endif
+
+   len = sizeof(serv_addr);
+   This->sockfd = accept(masterSock, (struct sockaddr *) &serv_addr, &len);
+   if (WAS_INVAL_SOCK(This->sockfd)) {
+      return LAST_ERROR;
+   }
+   /* Set socket to non-blocking mode. */
+#ifndef WINELIB
+   TN_IOCTL(This->sockfd, FIONBIO, &ioctlarg);
+#endif
+
+   This->state = TN5250_STREAM_STATE_DATA;
+   This->status = HOST;
+
+   /* Commence TN5250 negotiations...
+      Send DO options (New Environment, Terminal Type, etc.) */
+
+   for (i=0; hostDoTable[i].cmd; i++) {
+      retCode = send(This->sockfd, hostDoTable[i].cmd, hostDoTable[i].len, 0);
+      if (WAS_ERROR_RET(retCode))
+	 return LAST_ERROR;
+      if (!telnet_stream_handle_receive(This)) {
+         retCode = LAST_ERROR;
+         return retCode ? retCode : -1;
+      }
+   }
+
+   return 0;
+}
+
+
 /****i* lib5250/telnet_stream_disconnect
  * NAME
  *    telnet_stream_disconnect
@@ -231,8 +476,8 @@ static int telnet_stream_get_next(Tn5250Stream * This)
 
    FD_ZERO(&fdr);
    FD_SET(This->sockfd, &fdr);
-   tv.tv_sec = 0;
-   tv.tv_usec = 0;
+   tv.tv_sec = This->msec_wait/1000;
+   tv.tv_usec = (This->msec_wait%1000)*1000;
    TN_SELECT(This->sockfd + 1, &fdr, NULL, NULL, &tv);
    if (!FD_ISSET(This->sockfd, &fdr))
       return -1;		/* No data on socket. */
@@ -253,6 +498,89 @@ static int telnet_stream_get_next(Tn5250Stream * This)
    return (int) curchar;
 }
 
+static int sendWill(SOCKET_TYPE sock, unsigned char what)
+{
+   static UCHAR buff[3]={IAC,WILL};
+
+   buff[2] = what;
+   return send(sock, buff, 3, 0);
+}
+
+/****i* lib5250/telnet_stream_host_verb
+ * NAME
+ *    telnet_stream_host_verb
+ * SYNOPSIS
+ *    telnet_stream_host_verb (This, verb, what);
+ * INPUTS
+ *    SOCKET_TYPE	sock	-
+ *    unsigned char	verb	-
+ *    unsigned char	what	-
+ * DESCRIPTION
+ *    Process the telnet DO, DONT, WILL, or WONT escape sequence.
+ *****/
+static int telnet_stream_host_verb(SOCKET_TYPE sock, unsigned char verb,
+		unsigned char what)
+{
+   int len, option=0, retval=0;
+
+   IACVERB_LOG("GotVerb",verb,what);
+   switch (verb) {
+      case DO:
+	switch (what) {
+	   case END_OF_RECORD:
+		option = SEND_EOR;
+		break;
+
+	   case TRANSMIT_BINARY:
+		option = SEND_BINARY;
+		break;
+
+	   default:
+		break;
+	} /* DO: switch (what) */
+	break;
+
+      case DONT:
+      case WONT:
+	break;
+
+      case WILL:
+	switch (what) {
+	   case NEW_ENVIRON:
+		len = sizeof(SB_Str_NewEnv);
+		TN5250_LOG(("Sending SB NewEnv..\n"));
+		retval = send(sock, SB_Str_NewEnv, len, 0);
+		break;
+
+	   case TERMINAL_TYPE:
+		len = sizeof(SB_Str_TermType);
+		TN5250_LOG(("Sending SB TermType..\n"));
+		retval = send(sock, SB_Str_TermType, len, 0);
+		break;
+
+	   case END_OF_RECORD:
+		option = RECV_EOR;
+		retval = sendWill(sock, what);
+		break;
+
+	   case TRANSMIT_BINARY:
+		option = RECV_BINARY;
+		retval = sendWill(sock, what);
+		break;
+
+	   default:
+		break;
+	} /* WILL: switch (what) */
+	break;
+
+      default:
+	break;
+   } /* switch (verb) */
+
+   return(WAS_ERROR_RET(retval) ? retval : option);
+} /* telnet_stream_host_verb */
+
+
 /****i* lib5250/telnet_stream_do_verb
  * NAME
  *    telnet_stream_do_verb
@@ -270,6 +598,7 @@ static void telnet_stream_do_verb(Tn5250Stream * This, unsigned char verb, unsig
    unsigned char reply[3];
    int ret;
 
+   IACVERB_LOG("GotVerb", verb, what);
    reply[0] = IAC;
    reply[2] = what;
    switch (verb) {
@@ -317,12 +646,47 @@ static void telnet_stream_do_verb(Tn5250Stream * This, unsigned char verb, unsig
     *
     * Actually, I don't even remember what that comment means -JMF */
 
+   IACVERB_LOG("GotVerb",verb,what);
    ret = TN_SEND(This->sockfd, (char *) reply, 3, 0);
    if (WAS_ERROR_RET(ret)) {
       printf("Error writing to socket: %s\n", strerror(LAST_ERROR));
       exit(5);
    }
 }
+
+static void telnet_stream_host_sb(Tn5250Stream * This, UCHAR *sb_buf,
+		int sb_len)
+{
+   int i, sbType;
+   Tn5250Buffer tbuf;
+
+   if (sb_len <= 0)
+      return;
+
+   TN5250_LOG(("GotSB:<IAC><SB>"));
+   TNSB_LOG(sb_buf,sb_len);
+   TN5250_LOG(("<IAC><SE>\n"));
+   sbType = sb_buf[0];
+   sb_buf += 2;  /* Assume IS follows SB option type. */
+   sb_len -= 2;
+   switch (sbType) {
+      case TERMINAL_TYPE:
+		tn5250_buffer_init(&tbuf);
+		for (i=0; i<sb_len && sb_buf[i]!=IAC; i++)
+                   tn5250_buffer_append_byte(&tbuf, sb_buf[i]);
+                tn5250_buffer_append_byte(&tbuf, 0);
+		tn5250_stream_setenv(This, "TERM", (char *) tbuf.data);
+		tn5250_buffer_free(&tbuf);
+		break;
+      case NEW_ENVIRON:
+		/* TODO:
+		 * setNewEnvVars(This, sb_buf, sb_len);
+		 */
+		break;
+      default:
+		break;
+   } /* switch */
+} /* telnet_stream_host_sb */
 
 /****i* lib5250/telnet_stream_sb_var_value
  * NAME
@@ -361,6 +725,10 @@ static void telnet_stream_sb(Tn5250Stream * This, unsigned char *sb_buf, int sb_
    Tn5250Buffer out_buf;
    int ret;
 
+   TN5250_LOG(("GotSB:<IAC><SB>"));
+   TNSB_LOG(sb_buf,sb_len);
+   TN5250_LOG(("<IAC><SE>\n"));
+
    tn5250_buffer_init(&out_buf);
 
    if (sb_len <= 0)
@@ -388,6 +756,8 @@ static void telnet_stream_sb(Tn5250Stream * This, unsigned char *sb_buf, int sb_
 	 printf("Error writing to socket: %s\n", strerror(LAST_ERROR));
 	 exit(5);
       }
+      TN5250_LOG(("SentSB:<IAC><SB><TERMTYPE><IS>%s<IAC><SE>\n"));
+
       This->status = This->status | TERMINAL;
    } else if (sb_buf[0] == NEW_ENVIRON) {
       Tn5250ConfigStr *iter;
@@ -417,6 +787,9 @@ static void telnet_stream_sb(Tn5250Stream * This, unsigned char *sb_buf, int sb_
 	 printf("Error writing to socket: %s\n", strerror(LAST_ERROR));
 	 exit(5);
       }
+      TN5250_LOG(("SentSB:<IAC><SB>"));
+      TNSB_LOG(&out_buf.data[2], out_buf.len-4);
+      TN5250_LOG(("<IAC><SE>\n"));
    }
    tn5250_buffer_free(&out_buf);
 }
@@ -482,7 +855,18 @@ static int telnet_stream_get_byte(Tn5250Stream * This)
 	 break;
 
       case TN5250_STREAM_STATE_HAVE_VERB:
-	 telnet_stream_do_verb(This, verb, temp);
+
+	 if (This->status&HOST) {
+	    temp = telnet_stream_host_verb(This->sockfd, verb, (UCHAR) temp);
+	    if (WAS_ERROR_RET(temp)) {
+	       LOGERROR("send", LAST_ERROR);
+	       return -2;
+	    }
+	    /* Implement later...
+	    This->options |= temp;
+	    */
+	 } else
+	    telnet_stream_do_verb(This, verb, (UCHAR) temp);
 	 This->state = TN5250_STREAM_STATE_NO_DATA;
 	 break;
 
@@ -490,17 +874,27 @@ static int telnet_stream_get_byte(Tn5250Stream * This)
 	 if (temp == IAC)
 	    This->state = TN5250_STREAM_STATE_HAVE_SB_IAC;
 	 else
-	    tn5250_buffer_append_byte(&(This->sb_buf), temp);
+	   tn5250_buffer_append_byte(&(This->sb_buf), (UCHAR) temp);
 	 break;
 
       case TN5250_STREAM_STATE_HAVE_SB_IAC:
 	 switch (temp) {
 	 case IAC:
 	    tn5250_buffer_append_byte(&(This->sb_buf), IAC);
+	    /* Since the IAC code was escaped, shouldn't we be resetting the
+	       state as in the following statement?  Please verify and
+	       uncomment if applicable.  GJS 2/25/2000 */
+	    /* This->state = TN5250_STREAM_STATE_HAVE_SB; */
 	    break;
 
 	 case SE:
-	    telnet_stream_sb(This, tn5250_buffer_data(&(This->sb_buf)), tn5250_buffer_length(&(This->sb_buf)));
+	    if (This->status&HOST)
+	       telnet_stream_host_sb(This, tn5250_buffer_data(&This->sb_buf),
+			tn5250_buffer_length(&This->sb_buf));
+	    else
+	       telnet_stream_sb(This, tn5250_buffer_data(&(This->sb_buf)),
+			tn5250_buffer_length(&(This->sb_buf)));
+
 	    tn5250_buffer_free(&(This->sb_buf));
 	    This->state = TN5250_STREAM_STATE_NO_DATA;
 	    break;
@@ -603,12 +997,12 @@ static void telnet_stream_send_packet(Tn5250Stream * This, int length, int flowt
 
    /* Fixed length portion of header */
    tn5250_buffer_init(&out_buf);
-   tn5250_buffer_append_byte(&out_buf, length >> 8);
-   tn5250_buffer_append_byte(&out_buf, length & 0xff);
+   tn5250_buffer_append_byte(&out_buf, (UCHAR) (((short)length)>>8));
+   tn5250_buffer_append_byte(&out_buf, (UCHAR) (length & 0xff));
    tn5250_buffer_append_byte(&out_buf, 0x12);	/* Record type = General data stream (GDS) */
    tn5250_buffer_append_byte(&out_buf, 0xa0);
-   tn5250_buffer_append_byte(&out_buf, flowtype >> 8);
-   tn5250_buffer_append_byte(&out_buf, flowtype & 0xff);
+   tn5250_buffer_append_byte(&out_buf, (UCHAR)(flowtype >> 8));
+   tn5250_buffer_append_byte(&out_buf, (UCHAR) (flowtype & 0xff));
 
    /* Variable length portion of header */
    tn5250_buffer_append_byte(&out_buf, 4);
@@ -702,3 +1096,20 @@ static void telnet_stream_escape(Tn5250Buffer * in)
 }
 
 /* vi:set sts=3 sw=3: */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
