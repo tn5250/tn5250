@@ -345,10 +345,8 @@ int tn5250_field_valid_char (Tn5250Field *field, int ch)
 
    case TN5250_FIELD_NUM_ONLY:
       return (isdigit (ch) ||
-	  ch == '+' ||
 	  ch == ',' ||
 	  ch == '.' ||
-	  ch == '-' ||
 	  ch == ' ');
 
    case TN5250_FIELD_KATA_SHIFT:
@@ -363,9 +361,7 @@ int tn5250_field_valid_char (Tn5250Field *field, int ch)
       return 1;
 
    case TN5250_FIELD_SIGNED_NUM:
-      return (isdigit(ch) ||
-	  ch == '+' ||
-	  ch == '-');
+      return (isdigit(ch));
    }
    return 0;
 }

@@ -137,6 +137,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE prev, LPSTR cmdline, int show)
 /* set up display terminal */
 
     display = tn5250_display_new ();
+    display->sign_key_hack = 0;
     if (tn5250_display_config (display, config) == -1)
          clean_up_and_exit(errno);
 
