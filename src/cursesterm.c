@@ -1479,7 +1479,7 @@ void curses_terminal_print_screen(Tn5250Terminal *This, Tn5250Display *display) 
    fprintf(out, "%%%%Title: TN5250 Print Screen\n");
    fprintf(out, "%%%%BoundingBox: 0 0 %.0f %.0f\n", pgwid, pglen);
    fprintf(out, "%%%%LanguageLevel: 2\n");
-   fprintf(out, "%%%%EndCommends\n\n");
+   fprintf(out, "%%%%EndComments\n\n");
    fprintf(out, "%%%%BeginProlog\n");
    fprintf(out, "%%%%BeginResource: procset general 1.0.0\n");
    fprintf(out, "%%%%Title: (General Procedures)\n");
