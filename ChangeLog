@@ -1,3 +1,6 @@
+2000-05-22 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Not handling K_FIELDPLUS!
+
 2000-05-22 Mike Madore <mmadore@turbolinux.com>
 - Merged in more 5250 server code and started work on a 5250 server daemon.
 
