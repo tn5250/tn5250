@@ -52,6 +52,7 @@ Tn5250Display *tn5250_display_new()
    This->session = NULL;
    This->key_queue_head = This->key_queue_tail = 0;
    This->saved_msg_line = NULL;
+   This->msg_line = NULL;
    This->map = NULL;
 
    tn5250_display_add_dbuffer(This, tn5250_dbuffer_new(80, 24));
@@ -83,6 +84,8 @@ void tn5250_display_destroy(Tn5250Display * This)
       tn5250_terminal_destroy(This->terminal);
    if (This->saved_msg_line != NULL)
       g_free (This->saved_msg_line);
+   if (This->msg_line != NULL)
+      g_free (This->msg_line);
    if (This->config != NULL)
       tn5250_config_unref (This->config);
 
@@ -269,6 +272,12 @@ void tn5250_display_set_terminal(Tn5250Display * This, Tn5250Terminal * term)
  *****/
 void tn5250_display_update(Tn5250Display * This)
 {
+   if (This->msg_line != NULL) {
+      int l;
+      l = tn5250_dbuffer_msg_line (This->display_buffers);
+      memcpy (This->display_buffers->data + tn5250_display_width (This) * l,
+         This->msg_line, This->msg_len);
+   }
    if (This->terminal != NULL) {
       tn5250_terminal_update(This->terminal, This);
       if (This->indicators_dirty) {
@@ -1349,6 +1358,8 @@ void tn5250_display_indicator_clear (Tn5250Display *This, int inds)
 	    This->saved_msg_line, tn5250_display_width (This));
       g_free (This->saved_msg_line);
       This->saved_msg_line = NULL;
+      g_free (This->msg_line);
+      This->msg_line = NULL;
    }
 }
 
@@ -1375,6 +1386,10 @@ void tn5250_display_clear_unit (Tn5250Display *This)
       g_free(This->saved_msg_line);
       This->saved_msg_line = NULL;
    }
+   if (This->msg_line != NULL) {
+      g_free(This->msg_line);
+      This->msg_line = NULL;
+   }
 }
 
 /****f* lib5250/tn5250_display_clear_unit_alternate
@@ -1399,6 +1414,10 @@ void tn5250_display_clear_unit_alternate (Tn5250Display *This)
    if (This->saved_msg_line != NULL) {
       g_free(This->saved_msg_line);
       This->saved_msg_line = NULL;
+   }
+   if (This->msg_line != NULL) {
+      g_free(This->msg_line);
+      This->msg_line = NULL;
    }
 }
 
@@ -1814,6 +1833,37 @@ void tn5250_display_save_msg_line (Tn5250Display *This)
 	 tn5250_display_width (This) * l,
 	 tn5250_display_width (This));
 }
+
+
+/****f* lib5250/tn5250_display_set_msg_line
+ * NAME
+ *    tn5250_display_set_msg_line
+ * SYNOPSIS
+ *    tn5250_display_set_msg_line (This);
+ * INPUTS
+ *    Tn5250Display *      This       -
+ *    const unsigned char *msgline    -
+ *    int                  msglen     -
+ * DESCRIPTION
+ *    Set a new message line.
+ *****/
+void tn5250_display_set_msg_line (Tn5250Display *This, const unsigned char *msgline, int msglen)
+{
+   int l;
+
+   if (This->msg_line != NULL)
+      free (This->msg_line);
+   This->msg_line = (unsigned char *)g_malloc (tn5250_display_width (This));
+   memset(This->msg_line, 0x00, tn5250_display_width (This));
+
+   memcpy(This->msg_line, msgline, msglen);
+   This->msg_len = msglen;
+
+   l = tn5250_dbuffer_msg_line (This->display_buffers);
+   memcpy (This->display_buffers->data + tn5250_display_width (This) * l,
+         This->msg_line, This->msg_len);
+}
+
 
 /****f* lib5250/tn5250_display_set_char_map
  * NAME

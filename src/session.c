@@ -603,6 +603,8 @@ static void tn5250_session_write_error_code(Tn5250Session * This)
    unsigned char c;
    int end_x, end_y;
    int have_ic = 0;
+   unsigned char *tempmsg;
+   int msglen;
 
    TN5250_LOG(("WriteErrorCode: entered.\n"));
 
@@ -614,6 +616,10 @@ static void tn5250_session_write_error_code(Tn5250Session * This)
    tn5250_display_save_msg_line(This->display);
    tn5250_display_set_cursor(This->display, 
 	 tn5250_display_msg_line(This->display), 0);
+
+   tempmsg = g_malloc(tn5250_display_width(This->display));
+   msglen=0;
+
    while (1) {
       if (tn5250_record_is_chain_end(This->record))
 	 break;
@@ -633,20 +639,18 @@ static void tn5250_session_write_error_code(Tn5250Session * This)
 	 continue;
       }
 
-#ifndef NDEBUG
-      if (c > 0 && c < 0x40)
-	 TN5250_LOG(("\n"));
-#endif				/* NDEBUG */
-
       if (tn5250_char_map_printable_p(tn5250_display_char_map (This->display), c)) {
-	 tn5250_display_addch(This->display, c);
+         tempmsg[msglen] = c;
+         msglen++;
 	 continue;
       }
 
       TN5250_LOG(("Error: Unknown order -- %2.2X --\n", c));
       TN5250_ASSERT(0);
    }
-   TN5250_LOG(("\n"));
+
+   tn5250_display_set_msg_line(This->display, tempmsg, msglen);
+   g_free(tempmsg);
 
    tn5250_display_set_cursor(This->display, end_y, end_x);
 

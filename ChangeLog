@@ -1,3 +1,9 @@
+2002-10-22 Scott Klement <klemscot@klements.com>
+- Added code to tn5250_session_write_error_code() and display.c to
+   save error messages into their own buffer.  Previously, error message
+   was clobbered by any additional display formats, and user never saw
+   it. (only saw "X II")
+
 2002-09-07 Scott Klement <klemscot@klements.com>
 - Trivial fix to handling of the - (dash) key in numeric-shift fields.
 
