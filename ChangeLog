@@ -1,5 +1,10 @@
 2000-02-22 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 - Fixed `curses-compatibale' spelling error in configure script.
+- Some versions of tic have problems with aliased names already being
+  installed (e.g. if /usr/share/terminfo/x/xterm-5250 is already installed,
+  it will not be updated).
+- `make install' for Linux platform will now install terminfo entry in
+  ~/.terminfo if not run as root.
 
 2000-02-19 Mike Madore <mmadore@blarg.net>
 - Added more syslog calls in printer session code.
