@@ -1,3 +1,18 @@
+1999-11-17 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Field Exit and Field + are now seperate functions. '+' in numeric field
+  maps to Field +.  Field + changes the sign of the number like it should.
+- Re-implemented transmitting signed fields to host.
+- Re-implemented Field -.
+- Numeric Only and Signed Number field types are handled according to spec
+  now, even though the spec is really weird about how they are handled
+  (The last digit's zone is changed on Numeric Only on Field -/+, but the
+  sign position is changed from ' ' to '-' with Field -/+, and the zone
+  shift for that one takes place at transmit.)
+- Now ignore garbage keys again.  Why are we getting two decimal 410s when
+  we type the first character?  This doesn't make sense unless it's related
+  to how we detect the xterm.
+
 1999-11-16 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 
 - Fixed insert cursor handling.
