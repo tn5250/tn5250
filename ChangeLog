@@ -1,3 +1,9 @@
+2000-06-08 Mike Madore <mmadore@turbolinux.com>
+- removed source file implementing server side functionality.  This is because 
+  I am currently adding SNA support, and it's unlikely anyone will have this 
+  available at the moment.  The file will be re-release in a little while as
+  a separate package.
+	
 2000-06-07 Mike Madore <mmadore@turbolinux.com>
 - replaced all malloc/free function calls with g_malloc/g_free.
 	
