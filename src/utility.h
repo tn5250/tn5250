@@ -69,6 +69,9 @@ typedef unsigned char Tn5250Char;
  *    (and back).
  * SOURCE
  */
+
+#include <glib.h>
+
 struct _Tn5250CharMap {
    const char *name;
    const unsigned char *to_remote_map;
