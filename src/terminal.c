@@ -113,9 +113,10 @@ tn5250_terminal_destroy_window (Tn5250Terminal * This, Tn5250Display * d)
 }
 
 void
-tn5250_terminal_create_scrollbar (Tn5250Terminal * This, Tn5250Display * d)
+tn5250_terminal_create_scrollbar (Tn5250Terminal * This, Tn5250Display * d,
+				  struct _Tn5250Scrollbar *s)
 {
-  (*((This)->create_scrollbar)) ((This), (d));
+  (*((This)->create_scrollbar)) ((This), (d), (s));
 }
 
 void

@@ -3503,7 +3503,8 @@ tn5250_session_define_scrollbar (Tn5250Session * This, int length)
    */
   tn5250_dbuffer_add_scrollbar (tn5250_display_dbuffer (This->display),
 				scrollbar);
-  tn5250_terminal_create_scrollbar (This->display->terminal, This->display);
+  tn5250_terminal_create_scrollbar (This->display->terminal, This->display,
+				    scrollbar);
   return;
 }
 

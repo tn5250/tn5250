@@ -1,5 +1,8 @@
+2005-03-14 James Rich <james@eaerich.com>
+- Pass the scrollbar struct as part of the call to create the scrollbar.
+
 2005-03-06 James Rich <james@eaerich.com>
-- Removed glib dependancies
+- Removed glib dependancies.
 
 2005-02-24 James Rich <james@eaerich.com>
 - Added more descriptive comments to tn5250_session_query_reply().
