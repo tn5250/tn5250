@@ -1,7 +1,14 @@
+2003-03-17 Scott Klement <klemscot@klements.com>
+- Added glib dependency to tn5250.pc.in
+
 2003-02-11 Scott Klement <klemscot@klements.com>
 - Fixed (hopefully!) home key behavior after an IC order was received.
 - Fixed newline behavior when there's a non-bypass field in the first
     position of the new line.
+
+2003-01-20 Scott Klement <klemscot@klements.com>
+- Applied patch from Christopher R. Gabriel to install a tn5250.pc file
+   for use with pkgconfig.
 
 2002-11-26 Scott Klement <klemscot@klements.com>
 - Added a 'Select All' option to Win32 Edit menu
