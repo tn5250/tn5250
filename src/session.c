@@ -57,6 +57,7 @@ static void tn5250_session_roll(Tn5250Session * This);
 static void tn5250_session_start_of_field(Tn5250Session * This);
 static void tn5250_session_start_of_header(Tn5250Session * This);
 static void tn5250_session_set_buffer_address(Tn5250Session * This);
+static void tn5250_session_transparent_data(Tn5250Session * This);
 static void tn5250_session_move_cursor(Tn5250Session * This);
 static void tn5250_session_insert_cursor(Tn5250Session * This);
 static void tn5250_session_erase_to_address(Tn5250Session * This);
@@ -766,23 +767,8 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
 	 switch (cur_order) {
 
 	 case TD: /* Transparent Data order */
-	    {
-	       unsigned char l1, l2;
-	       unsigned td_len;
-
-	       l1 = tn5250_record_get_byte (This->record);
-	       l2 = tn5250_record_get_byte (This->record);
-	       td_len = (l1 << 8) | l2;
-	       TN5250_LOG (("TD order (length = X'%04X').\n",
-			td_len));
-
-	       while (td_len > 0) {
-		  l1 = tn5250_record_get_byte (This->record);
-		  tn5250_display_addch (This->display,l1);
-		  td_len--;
-	       }
-	    }
-	    break;
+	      tn5250_session_transparent_data(This);
+	      break;
 
 	 case MC:
 	   tn5250_session_move_cursor(This);
@@ -923,10 +909,24 @@ static void tn5250_session_clear_unit(Tn5250Session * This)
 static void tn5250_session_clear_unit_alternate(Tn5250Session * This)
 {
    unsigned char c;
+   StreamHeader header;
+   unsigned long errorcode;
+
    TN5250_LOG(("tn5250_session_clear_unit_alternate entered.\n"));
    c = tn5250_record_get_byte(This->record);
    TN5250_LOG(("tn5250_session_clear_unit_alternate, parameter is 0x%02X.\n",
 	(int) c));
+
+   if(c != 0x00 && c != 0x80)
+     {
+       errorcode = TN5250_NR_INVALID_CLEAR_UNIT_ALT;
+
+       tn5250_session_send_error(This, errorcode);
+
+       tn5250_record_skip_to_end(This->record);
+
+       return;
+     }
    tn5250_display_clear_unit_alternate(This->display);
    This->read_opcode = 0;
 }
@@ -1383,6 +1383,51 @@ static void tn5250_session_set_buffer_address(Tn5250Session * This)
 
    tn5250_display_set_cursor(This->display, Y - 1, X - 1);
    TN5250_LOG(("SetBufferAddress: row = %d; col = %d\n", Y, X));
+}
+
+static void tn5250_session_transparent_data(Tn5250Session * This)
+{
+  unsigned char l1, l2;
+  unsigned td_len;
+  int width;
+  int height;
+  int curx;
+  int cury;
+  int end;
+  int errorcode;
+
+  width = tn5250_display_width(This->display);
+  height = tn5250_display_height(This->display);
+
+  curx = tn5250_display_cursor_x(This->display);
+  cury = tn5250_display_cursor_y(This->display);
+
+  l1 = tn5250_record_get_byte (This->record);
+  l2 = tn5250_record_get_byte (This->record);
+  td_len = (l1 << 8) | l2;
+
+  end = cury * width + curx + td_len;
+
+  TN5250_LOG (("TD order (length = X'%04X').\n",
+	       td_len));
+
+  if(end > width*height)
+    {
+      errorcode = TN5250_NR_INVALID_ROW_COL_ADDR;
+      
+      tn5250_session_send_error(This, errorcode);
+
+      tn5250_record_skip_to_end(This->record);
+
+      return;
+    }
+
+  while (td_len > 0) {
+    l1 = tn5250_record_get_byte (This->record);
+    tn5250_display_addch (This->display,l1);
+    td_len--;
+  }
+
 }
 
 static void tn5250_session_move_cursor(Tn5250Session * This)
