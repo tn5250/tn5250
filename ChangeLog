@@ -1,3 +1,7 @@
+2000-05-30 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Updated man pages per Carey Evans.
+- Noticed Mike Madore doesn't know today's date. <g>
+
 2000-05-31 Mike Madore <mmadore@turbolinux.com>
 - Started adding 3270 support.  Lots of new files and some minor changes to 
   existing 5250 stuff.
