@@ -1,3 +1,8 @@
+2001-12-14 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Added Python bindings for the PrintSession and Record "classes".  Started
+  work to resolve Python reference counting issues with objects shared
+  between the library and the python interpreter.
+
 2001-11-21 Scott Klement <klemscot@klements.com>
 - We were sending invalid attributes during a save screen operation
    which sometimes caused the parsing of SF orders in the restore 
