@@ -541,7 +541,7 @@ void tn5250_display_set_cursor_home(Tn5250Display * This)
 {
   if (This->pending_insert) {
       tn5250_dbuffer_goto_ic(This->display_buffers);
-      This->pending_insert = 0;
+ /*     This->pending_insert = 0; */
   } else {
       int y = 0, x = 0;
       Tn5250Field *iter = This->display_buffers->field_list;
@@ -1870,11 +1870,14 @@ void tn5250_display_kf_fieldhome (Tn5250Display *This)
 void tn5250_display_kf_newline (Tn5250Display *This)
 {
    int y, x;
+   Tn5250Field *f;
 
    y = tn5250_display_cursor_y(This);
    tn5250_display_set_cursor (This, y, 0);
    tn5250_dbuffer_down (This->display_buffers);
-   tn5250_display_set_cursor_next_field (This);
+   f = tn5250_display_current_field(This);
+   if (f == NULL || tn5250_field_is_bypass(f))
+      tn5250_display_set_cursor_next_field (This);
 
 }
 

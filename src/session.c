@@ -850,9 +850,10 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
    is_x_system = (This->display->keystate != TN5250_KEYSTATE_UNLOCKED);
    will_be_unlocked = ((CC2 & TN5250_SESSION_CTL_UNLOCK) != 0);
    cur_opcode = tn5250_record_opcode(This->record);
-   if (end_y != 0xff && end_x != 0xff) 
+   if (end_y != 0xff && end_x != 0xff && !(CC2 & TN5250_SESSION_CTL_IC_ULOCK)) {
       tn5250_display_set_cursor(This->display, end_y, end_x);
-   else if((is_x_system && will_be_unlocked) ||
+   }
+   else if((will_be_unlocked && !(CC2 & TN5250_SESSION_CTL_IC_ULOCK)) ||
 	 cur_opcode == TN5250_RECORD_OPCODE_RESTORE_SCR) {
       tn5250_display_set_cursor_home (This->display);
    } else {
