@@ -40,6 +40,9 @@ TN5250_OBJS = tn5250-win.o tn5250-res.o winterm.o
 #
 LP5250D_OBJS = lp5250d-win.o tn5250-res.o
 
+# Objects needed to build "dftmap"
+DFTMAP_OBJS = dftmap.o tn5250-res.o
+
 #
 # The Inno Setup program is used to create a setup program
 # for binary releases.  
@@ -66,7 +69,7 @@ DLLWRAP=dllwrap
 DLLTOOL=dlltool
 
 ARCH=-mwindows
-PGMS=tn5250.exe lp5250d.exe
+PGMS=tn5250.exe lp5250d.exe dftmap.exe
 TN5250_LIBS=-L./ -l5250 $(OPENSSL_LIB) -lwsock32 -lcomdlg32 -lwinmm
 LP5250D_LIBS=$(TN5250_LIBS) -lwinspool
 INCLUDES=-I. -I$(SRCDIR) $(OPENSSL_INCLUDE)
@@ -89,6 +92,9 @@ tn5250.exe: $(TN5250_OBJS)
 
 lp5250d.exe: $(LP5250D_OBJS)
 	$(CC) $(DEFINES) -o lp5250d $(LP5250D_OBJS) $(ARCH) $(LP5250D_LIBS)
+
+dftmap.exe: $(DFTMAP_OBJS)
+	$(CC) $(DEFINES) -o dftmap $(DFTMAP_OBJS) $(ARCH)
 
 %.o: %.rc
 	$(WINDRES) -i $< -o $@ 
@@ -117,6 +123,7 @@ strip:
 do-install:
 	copy tn5250.exe "$(INSTALLDIR)"
 	copy lp5250d.exe "$(INSTALLDIR)"
+	copy dftmap.exe "$(INSTALLDIR)"
 	copy lib5250.dll "$(INSTALLDIR)"
 	copy ..\AUTHORS "$(INSTALLDIR)\AUTHORS.txt"
 	type ..\COPYING > "$(INSTALLDIR)\COPYING.txt"

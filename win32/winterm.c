@@ -118,6 +118,7 @@ static Tn5250Display *globDisplay = NULL;
 static HDC bmphdc;
 static HBITMAP caretbm;
 static HBRUSH background_brush;
+static int dont_draw_colseps = 0;
 
 static void win32_terminal_init(Tn5250Terminal * This);
 static void win32_terminal_term(Tn5250Terminal * This);
@@ -458,6 +459,9 @@ static void win32_terminal_init(Tn5250Terminal * This)
             This->data->resize_fonts = 
                tn5250_config_get_bool(This->data->config, "resize_fonts");
       }
+
+      dont_draw_colseps = 
+            tn5250_config_get_bool (This->data->config, "no_colseps");
 
      /* FIXME: This opt should not exist when we have full keyboard mapping */
       if ( tn5250_config_get_bool (This->data->config, "unix_sysreq") ) {
@@ -1245,6 +1249,11 @@ void win32_terminal_draw_text(HDC hdc, int attr, const char *text, int len, int 
     if (ExtTextOut(hdc, rect.left, rect.top, ETO_CLIPPED|ETO_OPAQUE, &rect, 
        text, len, spacing)==0) {
          msgboxf("ExtTextOut(): Error %d\n", GetLastError());
+    }
+
+    if (flags&A_VERTICAL && dont_draw_colseps) {
+          flags &= ~A_VERTICAL;
+          flags |= A_UNDERLINE;
     }
 
     /* draw underlines */
