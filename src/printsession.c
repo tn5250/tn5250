@@ -295,7 +295,6 @@ static int tn5250_print_session_waitevent(Tn5250PrintSession * This)
    int result = 0;
 
    FD_ZERO(&fdr);
-   FD_SET(0, &fdr);
    FD_SET(This->conn_fd, &fdr);
    select(This->conn_fd + 1, &fdr, NULL, NULL, NULL);
 

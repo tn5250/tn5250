@@ -1,3 +1,9 @@
+2000-02-12 Mike Madore <mmadore@blarg.net>
+- Removed file descriptor 0 from select() in
+  tn5250_print_session_wait_event.  Since this is a daemon, fd 0 is
+  non-existent.  Having it in there was causing lp5250d to consume massive
+  amounts of CPU.
+  
 2000-02-11 Mike Madore <mmadore@blarg.net>
 - First pass at creating a 5250 print daemon.  Look in lp5250d.c for
   details.
