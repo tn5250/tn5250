@@ -16,7 +16,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "config.h"
+#include "tn5250-config.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -43,6 +43,7 @@
 #include "terminal.h"
 #include "session.h"
 #include "printsession.h"
+#include "display.h"
 #if USE_CURSES
 #include "cursesterm.h"
 #endif
@@ -71,6 +72,7 @@ Tn5250PrintSession *printsess = NULL;
 Tn5250Session *sess = NULL;
 Tn5250Stream *stream = NULL;
 Tn5250Terminal *term = NULL;
+Tn5250Display *display = NULL;
 
 /* FIXME: This should be moved into session.[ch] or something. */
 static struct valid_term {
@@ -108,6 +110,8 @@ int main(int argc, char *argv[])
    if (stream == NULL)
       goto bomb_out;
 
+   display = tn5250_display_new ();
+
    if (printsession) {
       printsess = tn5250_print_session_new();
       tn5250_stream_setenv(stream, "TERM", "IBM-3812-1");
@@ -137,8 +141,10 @@ int main(int argc, char *argv[])
       }
 #endif
       tn5250_terminal_init(term);
+      tn5250_display_set_terminal(display, term);
+
       sess = tn5250_session_new();
-      tn5250_session_set_terminal(sess, term);
+      tn5250_display_set_session (display, sess);
 
       /* Set emulation type to the user-supplied terminal/emulation type,
        * if it exists; otherwise, make a guess based on the size of the

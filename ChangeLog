@@ -2,6 +2,11 @@
 
 - Attention and System Request keys now transmit appropriate requests to the
   host again.
+- Removed some files which are generated, added autogen.sh script to generate
+  those files when you check out sources from CVS repository.
+- Some funky sed-basd magic with config.h/tn5250-config.h resolves issue with
+  VERSION and PACKAGE multiply-defined in pacakages which use lib5250.
+- Removed tn5250_session_set_terminal, now use tn5250_display_set_terminal.
 
 1999-12-19 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 

@@ -47,8 +47,11 @@ struct _Tn5250Display {
 
 typedef struct _Tn5250Display Tn5250Display;
 
-extern Tn5250Display *	tn5250_display_new	      (struct _Tn5250Session*);
+extern Tn5250Display *	tn5250_display_new	      (void);
 extern void		tn5250_display_destroy	      (Tn5250Display *This);
+
+extern void		tn5250_display_set_session    (Tn5250Display *This,
+						       struct _Tn5250Session *s);
 
 extern Tn5250DBuffer *  tn5250_display_push_dbuffer   (Tn5250Display *This);
 extern Tn5250Table *	tn5250_display_push_table     (Tn5250Display *This);

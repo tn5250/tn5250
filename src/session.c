@@ -16,7 +16,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "config.h"
+#include "tn5250-config.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -78,14 +78,11 @@ Tn5250Session *tn5250_session_new()
    if (This == NULL)
       return NULL;
 
-
    This->record = tn5250_record_new();
    if (This->record == NULL) {
-      tn5250_display_destroy(This->display);
       free (This);
       return NULL;
    }
-
 
    This->stream = NULL;
    This->invited = 1;
@@ -93,8 +90,7 @@ Tn5250Session *tn5250_session_new()
    This->key_queue_head = This->key_queue_tail = 0;
 
    This->handle_aidkey = tn5250_session_handle_aidkey;
-   This->display = tn5250_display_new (This);
-
+   This->display = NULL;
    return This;
 }
 
@@ -106,15 +102,7 @@ void tn5250_session_destroy(Tn5250Session * This)
       tn5250_stream_destroy(This->stream);
    if (This->record != NULL)
       tn5250_record_destroy(This->record);
-   if (This->display != NULL)
-      tn5250_display_destroy (This->display);
-
    free (This);
-}
-
-void tn5250_session_set_terminal(Tn5250Session * This, Tn5250Terminal * newterminal)
-{
-   tn5250_display_set_terminal(This->display, newterminal);
 }
 
 void tn5250_session_set_stream(Tn5250Session * This, Tn5250Stream * newstream)

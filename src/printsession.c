@@ -1,4 +1,4 @@
-#include "config.h"
+#include "tn5250-config.h"
 #include <stdio.h>
 #include <malloc.h>
 #include "buffer.h"

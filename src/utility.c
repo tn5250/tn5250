@@ -16,7 +16,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "config.h"
+#include "tn5250-config.h"
 
 #ifdef WIN32
 #include <windows.h>
@@ -45,13 +45,15 @@ typedef struct _Tn5250TransMap Tn5250TransMap;
 
 unsigned char tn5250_ascii2ebcdic(unsigned char ascii)
 {
-   TN5250_ASSERT (asciimap != NULL);
+   if (asciimap == NULL)
+      tn5250_settransmap("en");
    return (asciimap[ascii]);
 }
 
 unsigned char tn5250_ebcdic2ascii(unsigned char ebcdic)
 {
-   TN5250_ASSERT (ebcdicmap != NULL);
+   if (ebcdicmap == NULL)
+      tn5250_settransmap ("en");
    switch (ebcdic) {
    case 0x1C:
       return '*';
