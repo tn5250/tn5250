@@ -1,4 +1,8 @@
 2002-01-18 Scott Klement <klemscot@klements.com>
+- Added Win32 support.  It's not 100% finished, but enough of it is
+   done that people can try it / report bugs / suggestions.
+
+2002-01-18 Scott Klement <klemscot@klements.com>
 - Minor changes to lib5250 code so that it will compile on MS Windows
 - Fixed problem where source would not compile with NDEBUG defined.
 - Removed the (apparently redundant) calls to terminal_update_indicators
