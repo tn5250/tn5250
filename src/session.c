@@ -1301,6 +1301,7 @@ static void tn5250_session_start_of_header(Tn5250Session * This)
    TN5250_LOG (("StartOfHeader: entered.\n"));
    
    tn5250_dbuffer_clear_table(tn5250_display_dbuffer(This->display));
+   tn5250_display_clear_pending_insert(This->display);
    tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_X_SYSTEM);
 
    n = tn5250_record_get_byte (This->record);

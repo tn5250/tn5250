@@ -153,15 +153,6 @@ static void tn5250_wtd_context_convert_nosrc (Tn5250WTDContext *This)
    tn5250_wtd_context_putc (This, 0x00); /* CC1 */
    tn5250_wtd_context_putc (This, 0x00); /* CC2 */
 
-   /* 
-    Set the insert-cursor address.  This is necessary to ensure that
-    we return to same field we were in before the save_screen.
-   */
-   
-   tn5250_wtd_context_putc (This, IC);
-   tn5250_wtd_context_putc (This, This->y);
-   tn5250_wtd_context_putc (This, This->x);
-
    /* If we have header data, start with a SOH order. */
    if (This->dst->header_length != 0) {
       int i;
@@ -171,6 +162,14 @@ static void tn5250_wtd_context_convert_nosrc (Tn5250WTDContext *This)
 	 tn5250_wtd_context_putc (This, This->dst->header_data[i]);
    }
 
+   /* 
+    Set the insert-cursor address.  This is necessary to ensure that
+    we return to same field we were in before the save_screen.
+   */
+   
+   tn5250_wtd_context_putc (This, IC);
+   tn5250_wtd_context_putc (This, This->y);
+   tn5250_wtd_context_putc (This, This->x);
 
    for (This->y = 0; This->y < tn5250_dbuffer_height(This->dst);
 	 This->y++) {
