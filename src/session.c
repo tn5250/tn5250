@@ -456,7 +456,7 @@ static void tn5250_session_send_field (Tn5250Session * This, Tn5250Buffer *buf, 
       if (tn5250_field_is_signed_num (field)) {
 	 size--;
 	 c = size > 0 ? data[size-1] : 0;
-	 if (size > 1 && data[size] == tn5250_char_map_to_host (
+	 if (size > 1 && data[size] == tn5250_char_map_to_remote (
 		 tn5250_display_char_map (This->display), '-') &&
 	       isdigit (tn5250_char_map_to_local (tn5250_display_char_map (This->display),c)))
 	    c = (0xd0 | (0x0f & c));
@@ -1513,7 +1513,7 @@ static void tn5250_session_query_reply(Tn5250Session * This)
    sprintf ((char*)temp + 30, "%04d", dev_type);
    sprintf ((char*)temp + 35, "%02d", dev_model);
    for (i = 30; i <= 36; i++)
-      temp[i] = tn5250_char_map_to_host (
+      temp[i] = tn5250_char_map_to_remote (
 	    tn5250_display_char_map (This->display), temp[i]);
 
    temp[37] = 0x02;		/* Keyboard ID:

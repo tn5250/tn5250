@@ -103,19 +103,19 @@ int tn5250_daemon(int nochdir, int noclose)
     return 0;
 }
 
-/****f* lib5250/tn5250_char_map_to_host
+/****f* lib5250/tn5250_char_map_to_remote
  * NAME
- *    tn5250_char_map_to_host
+ *    tn5250_char_map_to_remote
  * SYNOPSIS
- *    ret = tn5250_char_map_to_host (map,ascii);
+ *    ret = tn5250_char_map_to_remote (map,ascii);
  * INPUTS
  *    Tn5250Char           ascii      - The local character to translate.
  * DESCRIPTION
- *    Translate the specified character from local to host.
+ *    Translate the specified character from local to remote.
  *****/
-Tn5250Char tn5250_char_map_to_host(Tn5250CharMap *map, Tn5250Char ascii)
+Tn5250Char tn5250_char_map_to_remote(Tn5250CharMap *map, Tn5250Char ascii)
 {
-   return map->to_host_map[ascii];
+   return map->to_remote_map[ascii];
 }
 
 /****f* lib5250/tn5250_char_map_to_local
@@ -124,9 +124,9 @@ Tn5250Char tn5250_char_map_to_host(Tn5250CharMap *map, Tn5250Char ascii)
  * SYNOPSIS
  *    local = tn5250_char_map_to_local (map, ebcdic);
  * INPUTS
- *    Tn5250Char           ebcdic     - The host character to translate.
+ *    Tn5250Char           ebcdic     - The remote character to translate.
  * DESCRIPTION
- *    Translate the specified character from host character to local.
+ *    Translate the specified character from remote character to local.
  *****/
 Tn5250Char tn5250_char_map_to_local(Tn5250CharMap *map, Tn5250Char ebcdic)
 {

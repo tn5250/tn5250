@@ -56,7 +56,7 @@ typedef unsigned char Tn5250Char;
  * SYNOPSIS
  *    Tn5250CharMap *map = tn5250_char_map_new ("37");
  *    ac = tn5250_char_map_to_local(map,ec);
- *    ec = tn5250_char_map_to_host(map,ac);
+ *    ec = tn5250_char_map_to_remote(map,ac);
  *    if (tn5250_char_map_printable_p (map,ec))
  *	 ;
  *    if (tn5250_char_map_attribute_p (map,ec))
@@ -71,7 +71,7 @@ typedef unsigned char Tn5250Char;
  */
 struct _Tn5250CharMap {
    const char *name;
-   const unsigned char *to_host_map;
+   const unsigned char *to_remote_map;
    const unsigned char *to_local_map;
 };
 
@@ -86,7 +86,7 @@ void tn5250_char_map_destroy(Tn5250CharMap *This);
 void tn5250_closeall(int fd);
 int tn5250_daemon(int nochdir, int noclose);
 
-Tn5250Char tn5250_char_map_to_host(Tn5250CharMap *This, Tn5250Char ascii);
+Tn5250Char tn5250_char_map_to_remote(Tn5250CharMap *This, Tn5250Char ascii);
 Tn5250Char tn5250_char_map_to_local(Tn5250CharMap *This, Tn5250Char ebcdic);
 
 int tn5250_char_map_printable_p(Tn5250CharMap *This, Tn5250Char data);

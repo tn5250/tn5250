@@ -57,6 +57,20 @@ static Tn5250StreamType stream_types[] = {
    { NULL, NULL }
 };
 
+static void streamInit(Tn5250Stream *This, long timeout)
+{
+   This->connect = NULL;
+   This->disconnect = NULL;
+   This->handle_receive = NULL;
+   This->send_packet = NULL;
+   This->destroy = NULL;
+   This->record_count = 0;
+   This->records = This->current_record = NULL;
+   This->sockfd = (SOCKET_TYPE) - 1;
+   This->msec_wait = timeout;
+   tn5250_buffer_init(&(This->sb_buf));
+}
+
 /****f* lib5250/tn5250_stream_open
  * NAME
  *    tn5250_stream_open
@@ -88,16 +102,8 @@ Tn5250Stream *tn5250_stream_open (const char *to)
    int ret;
 
    if (This != NULL) {
-      This->connect = NULL;
-      This->disconnect = NULL;
-      This->handle_receive = NULL;
-      This->send_packet = NULL;
-      This->destroy = NULL;
-      This->record_count = 0;
-      This->records = This->current_record = NULL;
-      This->sockfd = (SOCKET_TYPE) - 1;
-      This->config = NULL;
-      tn5250_buffer_init(&(This->sb_buf));
+
+      streamInit(This, 0);
 
       /* Figure out the stream type. */
       iter = stream_types;
@@ -135,6 +141,42 @@ Tn5250Stream *tn5250_stream_open (const char *to)
    }
    return NULL;
 }
+
+/****f* lib5250/tn5250_stream_host
+ * NAME
+ *    tn5250_stream_host
+ * SYNOPSIS
+ *    ret = tn5250_stream_host (masterSock);
+ * INPUTS
+ *    SOCKET_TYPE	masterSock	-	Master socket
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
+Tn5250Stream *tn5250_stream_host (SOCKET_TYPE masterSock, long timeout)
+{
+   Tn5250Stream *This = tn5250_new(Tn5250Stream, 1);
+   Tn5250StreamType *iter;
+   const char *postfix;
+   int ret;
+
+   if (This != NULL) {
+      streamInit(This, timeout);
+      /* Assume telnet stream type. */
+      ret = tn5250_telnet_stream_init (This);
+      if (ret != 0) {
+         tn5250_stream_destroy (This);
+         return NULL;
+      }
+      /* Accept */
+      ret = (* (This->accept)) (This, masterSock);
+      if (ret == 0)
+	 return This;
+
+      tn5250_stream_destroy (This);
+   }
+   return NULL;
+}
+
 
 /****f* lib5250/tn5250_stream_config
  * NAME
