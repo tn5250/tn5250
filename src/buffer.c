@@ -64,7 +64,7 @@ void tn5250_buffer_init(Tn5250Buffer * This)
 void tn5250_buffer_free(Tn5250Buffer * This)
 {
    if (This->data != NULL)
-      free(This->data);
+      g_free(This->data);
    This->data = NULL;
    This->len = This->allocated = 0;
 }
@@ -87,10 +87,10 @@ void tn5250_buffer_append_byte(Tn5250Buffer * This, unsigned char b)
    if (This->len + 1 >= This->allocated) {
       if (This->data == NULL) {
 	 This->allocated = BUFFER_DELTA;
-	 This->data = (unsigned char *) malloc(This->allocated);
+	 This->data = (unsigned char *) g_malloc(This->allocated);
       } else {
 	 This->allocated += BUFFER_DELTA;
-	 This->data = (unsigned char *) realloc(This->data, This->allocated);
+	 This->data = (unsigned char *) g_realloc(This->data, This->allocated);
       }
    }
    TN5250_ASSERT (This->data != NULL);

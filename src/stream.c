@@ -228,7 +228,7 @@ void tn5250_stream_destroy(Tn5250Stream * This)
       tn5250_config_unref (This->config);
    tn5250_buffer_free(&(This->sb_buf));
    tn5250_record_list_destroy(This->records);
-   free(This);
+   g_free(This);
 }
 
 /****f* lib5250/tn5250_stream_get_record
@@ -281,15 +281,11 @@ void tn5250_stream_setenv(Tn5250Stream * This, const char *name, const char *val
       This->config = tn5250_config_new ();
       TN5250_ASSERT (This->config != NULL);
    }
-   name_buf = (char*)malloc (strlen (name) + 10);
-   if (name_buf == NULL) {
-      TN5250_LOG (("tn5250_stream_setenv: not enough memory.\n"));
-      return;
-   }
+   name_buf = (char*)g_malloc (strlen (name) + 10);
    strcpy (name_buf, "env.");
    strcat (name_buf, name);
    tn5250_config_set (This->config, name_buf, CONFIG_STRING, (gpointer)value);
-   free (name_buf);
+   g_free (name_buf);
 }
 
 /****f* lib5250/tn5250_stream_getenv
@@ -311,15 +307,11 @@ const char *tn5250_stream_getenv(Tn5250Stream * This, const char *name)
    if (This->config == NULL)
       return NULL;
 
-   name_buf = (char*)malloc (strlen (name) + 10);
-   if (name_buf == NULL) {
-      TN5250_LOG (("tn5250_stream_setenv: not enough memory.\n"));
-      return NULL;
-   }
+   name_buf = (char*)g_malloc (strlen (name) + 10);
    strcpy (name_buf, "env.");
    strcat (name_buf, name);
    val = tn5250_config_get (This->config, name_buf);
-   free (name_buf);
+   g_free (name_buf);
    return val;
 }
 
@@ -340,15 +332,11 @@ void tn5250_stream_unsetenv(Tn5250Stream * This, const char *name)
    if (This->config == NULL)
       return; /* Nothing to unset. */
 
-   name_buf = (char*)malloc (strlen (name) + 10);
-   if (name_buf == NULL) {
-      TN5250_LOG (("tn5250_stream_setenv: not enough memory.\n"));
-      return;
-   }
+   name_buf = (char*)g_malloc (strlen (name) + 10);
    strcpy (name_buf, "env.");
    strcat (name_buf, name);
    tn5250_config_unset (This->config, name_buf);
-   free (name_buf);
+   g_free (name_buf);
 }
 
 /* vi:set sts=3 sw=3: */

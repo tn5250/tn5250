@@ -79,7 +79,7 @@ Tn5250DBuffer *tn5250_dbuffer_new(int width, int height)
 
    This->data = tn5250_new(unsigned char, width * height);
    if (This->data == NULL) {
-      free(This);
+      g_free(This);
       return NULL;
    }
    
@@ -115,7 +115,7 @@ Tn5250DBuffer *tn5250_dbuffer_copy(Tn5250DBuffer * dsp)
    This->tcy = dsp->tcy;
    This->data = tn5250_new(unsigned char, dsp->w * dsp->h);
    if (This->data == NULL) {
-      free(This);
+      g_free(This);
       return NULL;
    }
    memcpy (This->data, dsp->data, dsp->w * dsp->h);
@@ -123,8 +123,7 @@ Tn5250DBuffer *tn5250_dbuffer_copy(Tn5250DBuffer * dsp)
    This->field_list = tn5250_field_list_copy (dsp->field_list);
    This->header_length = dsp->header_length;
    if (dsp->header_data != NULL) {
-      This->header_data = (unsigned char *)malloc (This->header_length);
-      TN5250_ASSERT (This->header_data != NULL);
+      This->header_data = (unsigned char *)g_malloc (This->header_length);
       memcpy (This->header_data, dsp->header_data, dsp->header_length);
    } else
       This->header_data = NULL;
@@ -145,11 +144,11 @@ Tn5250DBuffer *tn5250_dbuffer_copy(Tn5250DBuffer * dsp)
  *****/
 void tn5250_dbuffer_destroy(Tn5250DBuffer * This)
 {
-   free(This->data);
+   g_free(This->data);
    if (This->header_data != NULL)
-      free (This->header_data);
+      g_free (This->header_data);
    (void)tn5250_field_list_destroy(This->field_list);
-   free(This);
+   g_free(This);
 }
 
 /****f* lib5250/tn5250_dbuffer_set_header_data
@@ -167,12 +166,11 @@ void tn5250_dbuffer_destroy(Tn5250DBuffer * This)
 void tn5250_dbuffer_set_header_data(Tn5250DBuffer *This, unsigned char *data, int len)
 {
    if (This->header_data != NULL)
-      free (This->header_data);
+      g_free (This->header_data);
    This->header_length = len;
    if (data != NULL) {
       TN5250_ASSERT (len > 0);
-      This->header_data = (unsigned char *)malloc (len);
-      TN5250_ASSERT (This->header_data != NULL);
+      This->header_data = (unsigned char *)g_malloc (len);
       memcpy (This->header_data, data, len);
    }
 }
@@ -279,7 +277,7 @@ void tn5250_dbuffer_set_size(Tn5250DBuffer * This, int rows, int cols)
    This->w = cols;
    This->h = rows;
 
-   free(This->data);
+   g_free(This->data);
    This->data = tn5250_new(unsigned char, rows * cols);
    TN5250_ASSERT (This->data != NULL);
 
@@ -362,7 +360,7 @@ void tn5250_dbuffer_clear_table(Tn5250DBuffer * This)
    This->master_mdt = 0;
    This->header_length = 0;
    if (This->header_data != NULL) {
-      free (This->header_data);
+      g_free (This->header_data);
       This->header_data = NULL;
    }
 }

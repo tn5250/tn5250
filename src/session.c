@@ -86,7 +86,7 @@ Tn5250Session *tn5250_session_new()
 
    This->record = tn5250_record_new();
    if (This->record == NULL) {
-      free (This);
+      g_free (This);
       return NULL;
    }
 
@@ -120,7 +120,7 @@ void tn5250_session_destroy(Tn5250Session * This)
       tn5250_record_destroy(This->record);
    if (This->config != NULL)
       tn5250_config_unref (This->config);
-   free (This);
+   g_free (This);
 }
 
 /****f* lib5250/tn5250_session_config
@@ -1250,14 +1250,13 @@ static void tn5250_session_start_of_header(Tn5250Session * This)
    n = tn5250_record_get_byte (This->record);
    TN5250_ASSERT((n > 0 && n <= 7));
    if (n > 0) {
-      ptr = (unsigned char *)malloc (n);
-      TN5250_ASSERT (ptr != NULL);
+      ptr = (unsigned char *)g_malloc (n);
    }
    for (i = 0; i < n; i++)
       ptr[i] = tn5250_record_get_byte (This->record);
    tn5250_display_set_header_data (This->display, ptr, n);
    if (ptr != NULL)
-      free (ptr);
+      g_free (ptr);
 }
 
 /****i* lib5250/tn5250_session_set_buffer_address
@@ -1378,8 +1377,7 @@ static void tn5250_session_read_screen_immediate(Tn5250Session * This)
    buffer_size = tn5250_display_width(This->display) *
        tn5250_display_height(This->display);
 
-   buffer = (unsigned char *) malloc(buffer_size);
-   TN5250_ASSERT(buffer != NULL);
+   buffer = (unsigned char *) g_malloc(buffer_size);
 
    for (row = 0; row < tn5250_display_height(This->display); row++) {
       for (col = 0; col < tn5250_display_width(This->display); col++) {
@@ -1392,7 +1390,7 @@ static void tn5250_session_read_screen_immediate(Tn5250Session * This)
 			     TN5250_RECORD_FLOW_DISPLAY,
 	       TN5250_RECORD_H_NONE, TN5250_RECORD_OPCODE_NO_OP, buffer);
 
-   free(buffer);
+   g_free(buffer);
 }
 
 /****i* lib5250/tn5250_session_read_cmd
