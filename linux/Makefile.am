@@ -16,9 +16,19 @@ pkgdata_DATA	= uk5250.map\
 install-data-local:
 	@( good=no ; \
 	  if [ "$$(uname -s)" = "Linux" ]; then \
-	    if [ "`whoami`" = "root" ]; then \
-	      if which tic >/dev/null 2>&1 ; then \
-	        tic 5250.terminfo ; \
+            if which tic >/dev/null 2>&1 ; then \
+	      if [ "`whoami`" = "root" ]; then \
+		rm -f /usr/share/terminfo/x/xterm-5250 ; \
+		rm -f /usr/share/terminfo/5/5250 ; \
+		rm -f /usr/lib/terminfo/x/xterm-5250 ; \
+		rm -f /usr/lib/terminfo/5/5250 ; \
+		tic 5250.terminfo || exit $$? ; \
+		good=yes ; \
+	      else \
+		mkdir -p ~/.terminfo || exit $$? ; \
+		rm -f ~/.terminfo/x/xterm-5250 ; \
+		rm -f ~/.terminfo/5/5250 ; \
+		tic 5250.terminfo || exit $$? ; \
 		good=yes ; \
 	      fi ; \
 	    fi ; \

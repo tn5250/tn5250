@@ -1,12 +1,5 @@
 # 5250 terminal definition, based on linux console
-#
-# This is what the graphics characters stuff used to be, now removed because we don't use it:
-#
-#	acsc=+\020\,\021-\030.^Y0\333`\004a\261f\370g\361h\260i\316j\331k\277l\332m\300n\305o~p\304q\304r\304s_t\303u\264v\301w\302x\263y\363z\362{\343|\330}\234~\376, 
-#	rmacs=\E[10m, 
-#	smacs=\E[11m, 
-#
-5250|xterm-5250|5250 terminal, 
+5250|xterm-5250|Terminal with capabilities for tn5250, 
 	am, bce, eo, mir, msgr, xenl, xon, 
 	colors#8, it#8, pairs#64, 
 	bel=^G, blink=\E[5m, bold=\E[1m, civis=\E[?25l, 
