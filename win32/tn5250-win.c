@@ -34,9 +34,9 @@ Tn5250Config *config = NULL;
 Tn5250Macro *macro = NULL;
 
 /* FIXME: This should be moved into session.[ch] or something. */
-static struct valid_term {
-   char *name;
-   char *descr;
+static const struct valid_term {
+   const char * const name;
+   const char * const descr;
 } valid_terms[] = {
    /* DBCS Terminals not yet supported.
     * { "IBM-5555-C01", "DBCS color" },
@@ -70,7 +70,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE prev, LPSTR cmdline, int show)
 
     argc = parse_cmdline(cmdline, NULL);
     if (argc>0) {
-          argv = (char **)g_malloc(argc * sizeof(char *));
+          argv = (char **)malloc(argc * sizeof(char *));
           for (x=0; x<argc; x++) argv[x]=NULL;
           parse_cmdline(cmdline, argv);
     }
@@ -120,7 +120,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE prev, LPSTR cmdline, int show)
      
 
     if (tn5250_config_get (config, "font_80") == NULL) {
-          tn5250_config_set(config, "font_80", CONFIG_STRING, "Courier New");
+          tn5250_config_set(config, "font_80", "Courier New");
     }
 
 #ifndef NDEBUG
@@ -185,6 +185,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE prev, LPSTR cmdline, int show)
     tn5250_session_main_loop(sess);
 
     clean_up_and_exit(0);
+    return 0;
 }
 
 /** 
@@ -200,17 +201,18 @@ static void clean_up_and_exit(int error) {
            tn5250_terminal_term(term);
      if (sess != NULL)
            tn5250_session_destroy(sess);
-     if (stream != NULL)
-           tn5250_stream_destroy(stream);
+     /* The stream as already been destroyed in tn5250_session_destroy()
+      * if (stream != NULL)
+      *      tn5250_stream_destroy(stream); */
      if (config != NULL)
            tn5250_config_unref (config);
  
      if (error != 0) {
          char *error_note = "Could not start session:";
-         char *error_msg = g_malloc(strlen(error_note)+strlen(strerror(error))+3);
+         char *error_msg = malloc(strlen(error_note)+strlen(strerror(error))+3);
          sprintf(error_msg, "%s %s", error_note, strerror(error));
          MessageBox (NULL, error_msg, "tn5250", MB_OK);
-         g_free (error_msg);
+         free (error_msg);
      }
 
 #ifndef NDEBUG
@@ -279,7 +281,7 @@ int parse_cmdline(char *cmdline, char **my_argv) {
     int state = 0, pos = 0;
     
     if (my_argv!=NULL) {
-         my_argv[0] = g_malloc(MAXARG+1);
+         my_argv[0] = malloc(MAXARG+1);
          GetModuleFileName(NULL, my_argv[0], MAXARG);
     }
 
@@ -300,7 +302,7 @@ int parse_cmdline(char *cmdline, char **my_argv) {
                    if (arglen>0 && argcnt<MAXARG) {
                        if (my_argv!=NULL) {
                             my_argv[argcnt] = 
-                                   (char *)g_malloc((arglen+1) * sizeof(char));
+                                   (char *)malloc((arglen+1) * sizeof(char));
                             strcpy(my_argv[argcnt], arg);
                        }
                        argcnt++;
@@ -333,7 +335,7 @@ int parse_cmdline(char *cmdline, char **my_argv) {
     }
     if (arglen>0 && argcnt<MAXARG) {
         if (my_argv!=NULL) {
-            my_argv[argcnt] = (char *)g_malloc((arglen+1) * sizeof(char));
+            my_argv[argcnt] = (char *)malloc((arglen+1) * sizeof(char));
             strcpy(my_argv[argcnt], arg);
         }
         argcnt++;
@@ -510,29 +512,29 @@ int SetParams(HWND hDlg) {
    }
 
    if (IsDlgButtonChecked(hDlg, IDC_CHECK_SSLVERIFY)==BST_CHECKED) {
-         tn5250_config_set(config, "ssl_verify_server", CONFIG_STRING, "1");
+         tn5250_config_set(config, "ssl_verify_server", "1");
    }
 
    if (IsDlgButtonChecked(hDlg, IDC_CHECK_UNIXCOPY)==BST_CHECKED) {
-         tn5250_config_set(config, "unix_like_copy", CONFIG_STRING, "1");
+         tn5250_config_set(config, "unix_like_copy", "1");
    }
 
    strcpy(termtype, "IBM-3179-2");
    if (IsDlgButtonChecked(hDlg, IDC_RADIO_132)==BST_CHECKED) {
          strcpy(termtype, "IBM-3477-FC");
    }
-   tn5250_config_set(config, "env.TERM", CONFIG_STRING, termtype);
+   tn5250_config_set(config, "env.TERM", termtype);
 
    GetDlgItemText(hDlg, IDC_EDIT_HOST, work, MAX_HOST_SIZE);
    strcat(host, work);
-   tn5250_config_set(config, "host", CONFIG_STRING, host);
+   tn5250_config_set(config, "host", host);
 
    GetDlgItemText(hDlg, IDC_EDIT_DEVICE, device, MAX_DEVICE_SIZE+1);
-   tn5250_config_set(config, "env.DEVNAME", CONFIG_STRING, device);
+   tn5250_config_set(config, "env.DEVNAME", device);
 
    map = GetDlgItemInt(hDlg, IDC_EDIT_CHARMAP, NULL, FALSE);
    sprintf(charmap, "%d", map);
-   tn5250_config_set(config, "map", CONFIG_STRING, charmap);
+   tn5250_config_set(config, "map", charmap);
 
    return 1;
 }

@@ -199,6 +199,7 @@ struct _Tn5250TerminalPrivate {
    char *         font_132;
    int		  font_132_h;
    int		  font_132_w;
+   LOGFONT        font_in_use;
    DWORD          k_buf[MAX_K_BUF_LEN];
    int            k_buf_len;
    int            font_height;
@@ -341,7 +342,20 @@ static win32_key_map win_kb[] =
 };
 
 
-
+/****f* lib5250/tn5250_win32_terminal_new
+ * NAME
+ *    tn5250_win32_terminal_enhanced
+ * SYNOPSIS
+ *    ret = tn5250_win32_terminal_enhanced (This);
+ * INPUTS
+ *    None
+ * DESCRIPTION
+ *    Disallow support of the enhanced protocol
+ *****/
+static int tn5250_win32_terminal_enhanced(Tn5250Terminal * This)
+{
+    return 0;
+}
 
 /****f* lib5250/tn5250_win32_terminal_new
  * NAME
@@ -362,7 +376,7 @@ Tn5250Terminal *tn5250_win32_terminal_new(HINSTANCE hInst,
 
    r->data = tn5250_new(struct _Tn5250TerminalPrivate, 1);
    if (r->data == NULL) {
-      g_free(r);
+      free(r);
       return NULL;
    }
 
@@ -380,6 +394,7 @@ Tn5250Terminal *tn5250_win32_terminal_new(HINSTANCE hInst,
    r->data->font_132 = NULL;
    r->data->font_132_h = 0;
    r->data->font_132_w = 0;
+   memset(&r->data->font_in_use, 0, sizeof(r->data->font_in_use));
    r->data->display_ruler = 0;
    r->data->spacing = NULL;
    r->data->caretx = 0;
@@ -417,8 +432,11 @@ Tn5250Terminal *tn5250_win32_terminal_new(HINSTANCE hInst,
    r->getkey = win32_terminal_getkey;
    r->beep = win32_terminal_beep;
    r->config = win32_terminal_set_config;
-
-
+   r->enhanced = tn5250_win32_terminal_enhanced;
+   r->create_window = NULL;
+   r->destroy_window = NULL;
+   r->create_scrollbar = NULL;
+   r->destroy_scrollbar = NULL;
    return r;
 }
 
@@ -584,7 +602,7 @@ static void win32_terminal_init(Tn5250Terminal * This)
           len = strlen(tn5250_config_get(This->data->config,"host"));
           len += strlen(tn5250_config_get(This->data->config,"env.DEVNAME"));
           len += strlen("tn5250 - x - x");
-          title = g_malloc(len+1);
+          title = malloc(len+1);
           sprintf(title, "tn5250 - %s - %s", 
                  tn5250_config_get(This->data->config, "env.DEVNAME"),
                  tn5250_config_get(This->data->config, "host"));
@@ -592,14 +610,14 @@ static void win32_terminal_init(Tn5250Terminal * This)
       else {
           len = strlen("tn5250 - x");
           len += strlen(tn5250_config_get(This->data->config, "host"));
-          title = g_malloc(len+1);
+          title = malloc(len+1);
           sprintf(title, "tn5250 - %s", 
                  tn5250_config_get(This->data->config, "host"));
       }
    }
    else {
       len = strlen("tn5250");
-      title = g_malloc(len+1);
+      title = malloc(len+1);
       strcpy(title, "tn5250");
    }
 
@@ -631,7 +649,7 @@ static void win32_terminal_init(Tn5250Terminal * This)
 			     This->data->hInst,
 			     NULL
 			 );
-    g_free(title);
+    free(title);
 
 
    /* create a bitmap act as a screen buffer.  we will draw all of
@@ -713,7 +731,7 @@ void tn5250_win32_terminal_display_ruler (Tn5250Terminal *This, int f)
 void tn5250_win32_set_beep (Tn5250Terminal *This, const char *beepfile)
 {
       if (This->data->beepfile != NULL) 
-	  g_free(This->data->beepfile);
+	  free(This->data->beepfile);
 
       if (beepfile==NULL) 
 	  This->data->beeptype = MB_OK;
@@ -721,7 +739,7 @@ void tn5250_win32_set_beep (Tn5250Terminal *This, const char *beepfile)
 	  This->data->beeptype = 0xFFFFFFFF;
       else  {
 	  This->data->beeptype = MB_BEEPFILE;
-	  This->data->beepfile = g_malloc(strlen(beepfile)+1);
+	  This->data->beepfile = malloc(strlen(beepfile)+1);
 	  strcpy(This->data->beepfile, beepfile);
       }
 
@@ -752,7 +770,9 @@ void tn5250_win32_init_fonts (Tn5250Terminal *This,
 
    if (myfont80 != NULL) {
        size = strlen(myfont80) + 1;
-       This->data->font_80 = g_malloc(size+1);
+       if (This->data->font_80)
+           free(This->data->font_80);
+       This->data->font_80 = malloc(size+1);
        win32_parse_fontspec(myfont80, This->data->font_80, size, &w, &h);
        This->data->font_80_h = h;
        This->data->font_80_w = w;
@@ -762,30 +782,32 @@ void tn5250_win32_init_fonts (Tn5250Terminal *This,
        This->data->font_80_w = 0;
    }
 
-   if (This->data->font_80_h == 0 || This->data->font_80_w == 0) {
+   if (This->data->font_80_h == 0 && This->data->font_80_w == 0) {
        This->data->font_80_h = default_h;
        This->data->font_80_w = default_w;
    }
 
-   win32_terminal_font(This, This->data->font_80, 80, 25, w, h);
+   win32_terminal_font(This, This->data->font_80, 80, 25, This->data->font_80_w, This->data->font_80_h);
 
    if (myfont132 != NULL) {
        size = strlen(myfont132) + 1;
-       This->data->font_132 = g_malloc(size+1);
+       if (This->data->font_132)
+           free(This->data->font_132);
+       This->data->font_132 = malloc(size+1);
        win32_parse_fontspec(myfont132, This->data->font_132, size, &w, &h);
        This->data->font_132_h = h;
        This->data->font_132_w = w;
    } else {
        This->data->font_132 = NULL;
        if (This->data->font_80!=NULL) {
-           This->data->font_132 = g_malloc(strlen(This->data->font_80)+1);
+           This->data->font_132 = malloc(strlen(This->data->font_80)+1);
            strcpy(This->data->font_132, This->data->font_80);
        }
        This->data->font_132_h = This->data->font_80_h;
        This->data->font_132_w = This->data->font_80_w;
    }
 
-   if (This->data->font_132_h == 0 || This->data->font_132_w == 0) {
+   if (This->data->font_132_h == 0 && This->data->font_132_w == 0) {
        This->data->font_132_h = default_h;
        This->data->font_132_w = default_w;
    }
@@ -945,10 +967,22 @@ static void win32_terminal_font(Tn5250Terminal *This, const char *fontname,
 /* create a font using the size from our config data */
 
    hdc = GetDC(This->data->hwndMain);
-   This->data->font = CreateFont(fontheight, fontwidth, 0, 0, FW_DONTCARE, 
-        FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, 
-        CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, FIXED_PITCH|FF_DONTCARE, 
-        fontname);
+   This->data->font_in_use.lfHeight = fontheight;
+   This->data->font_in_use.lfWidth = fontwidth;
+   This->data->font_in_use.lfEscapement = 0;
+   This->data->font_in_use.lfOrientation = 0;
+   This->data->font_in_use.lfWeight = FW_DONTCARE;
+   This->data->font_in_use.lfItalic = FALSE;
+   This->data->font_in_use.lfUnderline = FALSE;
+   This->data->font_in_use.lfStrikeOut = FALSE;
+   This->data->font_in_use.lfCharSet = DEFAULT_CHARSET;
+   This->data->font_in_use.lfOutPrecision = OUT_DEFAULT_PRECIS;
+   This->data->font_in_use.lfClipPrecision = CLIP_DEFAULT_PRECIS;
+   This->data->font_in_use.lfQuality = DEFAULT_QUALITY;
+   This->data->font_in_use.lfPitchAndFamily = FIXED_PITCH|FF_DONTCARE;
+   strcpy(This->data->font_in_use.lfFaceName, fontname);
+
+   This->data->font = CreateFontIndirect(&This->data->font_in_use);
 
 /* set the new font as active and get rid of the old one */
 
@@ -962,16 +996,16 @@ static void win32_terminal_font(Tn5250Terminal *This, const char *fontname,
    This->data->font_height = tm.tmHeight + tm.tmExternalLeading;
    This->data->font_width = tm.tmAveCharWidth;
    
-   TN5250_LOG(("WIN32: Using font size:  height=%d, width=%d\n", 
-               This->data->font_height, This->data->font_width));
+   TN5250_LOG(("WIN32: Using font size:  Loaded with height=%d, width=%d, got height=%d, width=%d\n", 
+               fontheight, fontwidth, This->data->font_height, This->data->font_width));
 
 
 /* set up the font spacing array for this font */
    {
       int x;
       if (This->data->spacing != NULL)
-            g_free(This->data->spacing);
-      This->data->spacing = g_malloc((cols+1)*sizeof(int)); 
+            free(This->data->spacing);
+      This->data->spacing = malloc((cols+1)*sizeof(int)); 
       for (x=0; x<=cols; x++) 
             This->data->spacing[x] = This->data->font_width;
    }
@@ -1057,16 +1091,16 @@ static void win32_terminal_term(Tn5250Terminal /*@unused@*/ * This)
 static void win32_terminal_destroy(Tn5250Terminal * This)
 {
    if (This->data->font_80 !=NULL)
-      g_free(This->data->font_80);
+      free(This->data->font_80);
    if (This->data->font_132 !=NULL)
-      g_free(This->data->font_132);
+      free(This->data->font_132);
    if (This->data->beepfile != NULL)
-      g_free(This->data->beepfile);
+      free(This->data->beepfile);
    if (This->data->pd != NULL)
       win32_destroy_printer_info(This);
    if (This->data != NULL)
-      g_free(This->data);
-   g_free(This);
+      free(This->data);
+   free(This);
    DeleteDC(bmphdc);
 }
 
@@ -1315,11 +1349,11 @@ void win32_terminal_draw_text(HDC hdc, int attr, const char *text, int len, int 
     /* debugging: log what we're drawing */
     {
         char *dbg;
-        dbg = g_malloc(len+1);
+        dbg = malloc(len+1);
         memcpy(dbg, text, len);
         dbg[len]=0;
         TN5250_LOG(("WIN32: draw text(%d, %d) %s\n", x,y , dbg));
-        g_free(dbg);
+        free(dbg);
     }
 #endif
 
@@ -1452,7 +1486,9 @@ static void win32_terminal_update_indicators(Tn5250Terminal *This, Tn5250Display
        LineTo  (bmphdc, x, rect.bottom);
        MoveToEx(bmphdc, rect.left, y, NULL);
        LineTo  (bmphdc, rect.right, y);
+       hdc = GetDC(This->data->hwndMain);
        savepen = SelectObject(hdc, savepen);
+       ReleaseDC(This->data->hwndMain, hdc);
        DeleteObject(savepen);
    }
 
@@ -1571,13 +1607,13 @@ static int win32_get_key (Tn5250Terminal *This)
 #if 0
    {
        char *blah;
-       blah = g_malloc(This->data->k_buf_len+1);
+       blah = malloc(This->data->k_buf_len+1);
        for (j=0; j<This->data->k_buf_len; j++) 
            blah[j] = This->data->k_buf[j];
        blah[This->data->k_buf_len] = '\0';
        TN5250_LOG(("WIN32: getkey %c, %d bytes left:\n", i, This->data->k_buf_len));
        TN5250_LOG(("WIN32: buffer %s\n", blah));
-       g_free(blah);
+       free(blah);
    }
 #endif
        
@@ -1704,6 +1740,56 @@ void win32_terminal_clear_screenbuf(HWND hwnd, int width, int height,
    return;
 }
 
+/****i* lib5250/win32_terminal_choosefont
+ * DESCRIPTION
+ *    Pops a dialog box and let the user choose a new font for the current display.
+ *****/
+void win32_terminal_choosefont(HWND hwnd) {
+    CHOOSEFONT cf = { sizeof(cf) };
+    cf.hwndOwner = hwnd;
+    cf.hDC = GetDC(hwnd);
+    cf.lpLogFont = &globTerm->data->font_in_use;
+    cf.Flags = CF_INITTOLOGFONTSTRUCT|CF_FIXEDPITCHONLY|CF_FORCEFONTEXIST|CF_LIMITSIZE|CF_SCREENFONTS;
+    cf.iPointSize = globTerm->data->font_in_use.lfHeight*10;
+    cf.nSizeMin = 5;
+    cf.nSizeMax = 100;
+    if (ChooseFont(&cf))
+    {
+        char fontName[LF_FACESIZE+32];
+        /* It always returns a width of 0. How to change that? */
+        if (globTerm->data->font_in_use.lfHeight<0)
+            globTerm->data->font_in_use.lfHeight = -globTerm->data->font_in_use.lfHeight;
+
+        sprintf(fontName, "%s-%dx%d", globTerm->data->font_in_use.lfFaceName, 
+            globTerm->data->font_in_use.lfWidth, globTerm->data->font_in_use.lfHeight);
+
+        if (tn5250_display_width (globDisplay)<100) {
+            // Change the 80
+            int h = strlen(globTerm->data->font_in_use.lfFaceName) + 1;
+            if (globTerm->data->font_80)
+                free(globTerm->data->font_80);
+            globTerm->data->font_80 = malloc(h+1);
+            strcpy(globTerm->data->font_80, globTerm->data->font_in_use.lfFaceName);
+            globTerm->data->font_80_h = globTerm->data->font_in_use.lfHeight;
+            globTerm->data->font_80_w = globTerm->data->font_in_use.lfWidth;
+            win32_terminal_font(globTerm, globTerm->data->font_in_use.lfFaceName, tn5250_display_width (globDisplay), tn5250_display_height (globDisplay), globTerm->data->font_80_w, globTerm->data->font_80_h);
+            tn5250_config_set(globTerm->data->config, "font_80", fontName);
+        }
+        else {
+            // Change the 132
+            int h = strlen(globTerm->data->font_in_use.lfFaceName) + 1;
+            if (globTerm->data->font_132)
+                free(globTerm->data->font_132);
+            globTerm->data->font_132 = malloc(h+1);
+            strcpy(globTerm->data->font_132, globTerm->data->font_in_use.lfFaceName);
+            globTerm->data->font_132_h = globTerm->data->font_in_use.lfHeight;
+            globTerm->data->font_132_w = globTerm->data->font_in_use.lfWidth;
+            win32_terminal_font(globTerm, globTerm->data->font_in_use.lfFaceName, tn5250_display_width (globDisplay), tn5250_display_height (globDisplay), globTerm->data->font_132_w, globTerm->data->font_132_h);
+            tn5250_config_set(globTerm->data->config, "font_132", fontName);
+        }
+    }
+    ReleaseDC(hwnd, cf.hDC);
+}
 
 /****i* lib5250/win32_terminal_wndproc
  * NAME
@@ -1743,16 +1829,14 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
            break;
 
         case WM_COMMAND:
-	   hMenu = GetMenu(hwnd);
+           hMenu = GetMenu(hwnd);
            switch (LOWORD(wParam)) {
               case IDM_APP_EXIT:
-		  SendMessage(hwnd, WM_CLOSE, 0, 0);
-		  return 0;
-                  break;
+                  SendMessage(hwnd, WM_CLOSE, 0, 0);
+                  return 0;
               case IDM_APP_PRINT:
                   win32_print_screen(globTerm, globDisplay);
                   return 0;
-                  break;
               case IDM_APP_ABOUT:
                   msgboxf("%s version %s:\n"
                           "Copyright (C) 1997-2002 by Michael Madore,"
@@ -1805,13 +1889,12 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 #endif
                           ,PACKAGE, VERSION);
                   return 0;
-                  break;
               case IDM_EDIT_COPY:
                   win32_terminal_queuekey(hwnd, globTerm, K_COPY_TEXT);
-	          break;
+                  return 0;
               case IDM_EDIT_PASTE:
                   win32_terminal_queuekey(hwnd, globTerm, K_PASTE_TEXT);
-                  break;
+                  return 0;
               case IDM_EDIT_SELECT_ALL:
                   globTerm->data->selecting = 0;
                   globTerm->data->selstr.x = 2;
@@ -1830,8 +1913,13 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                   InvalidateRect(hwnd, NULL, FALSE);
                   UpdateWindow(hwnd);
                   return 0;
+              case IDM_VIEW_FONT:
+                  win32_terminal_choosefont(hwnd);
+                  return 0;
+              default:
+                  break;
            }
-           break;
+           return 0;
 
         case WM_SIZE:
            w = LOWORD(lParam);
@@ -1956,7 +2044,9 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
            return 0;
   
         case WM_KILLFOCUS:
+           hdc = GetDC(hwnd);
            win32_hide_caret(hdc, globTerm);
+           ReleaseDC(hwnd, hdc);
            globTerm->data->is_focused = 0;
            return 0;
 
@@ -2093,11 +2183,11 @@ void win32_make_new_caret(Tn5250Terminal *This) {
 
         bytewidth = (This->data->font_width + 15) / 16 * 2;
         size = bytewidth * This->data->font_height;
-        bits = g_malloc(size);
+        bits = malloc(size);
         memset(bits, 0x00, size);
         caretbm = CreateBitmap(This->data->font_width, 
                    This->data->font_height, 1, 1, bits);
-        g_free(bits);
+        free(bits);
         CreateCaret(This->data->hwndMain, caretbm, 
              This->data->font_height, This->data->font_width);
     }
@@ -2111,11 +2201,11 @@ void win32_make_new_caret(Tn5250Terminal *This) {
 
         bytewidth = (This->data->font_width + 15) / 16 * 2;
         size = bytewidth * This->data->font_height;
-        bits = g_malloc(size);
+        bits = malloc(size);
         memset(bits, 0x00, size);
         caretbm = CreateBitmap(This->data->font_width, 
                        This->data->font_height, 1, 1, bits);
-        g_free(bits);
+        free(bits);
         hdc = CreateCompatibleDC(NULL);
         SelectObject(hdc, caretbm);
         savepen = SelectObject(hdc, 
@@ -2417,7 +2507,7 @@ void win32_paste_text_selection(HWND hwnd, Tn5250Terminal *term,
 
         if (hBuf != NULL) {
             size = GlobalSize(hBuf);
-            pNewBuf = g_malloc(size);
+            pNewBuf = malloc(size);
             pBuf = GlobalLock(hBuf);
             strncpy(pNewBuf, pBuf, size);
             pNewBuf[size] = '\0'; /* just a precaution */
@@ -2462,7 +2552,7 @@ void win32_paste_text_selection(HWND hwnd, Tn5250Terminal *term,
                  tn5250_display_do_keys(display);
             }
         }
-        g_free(pNewBuf);
+        free(pNewBuf);
         PostMessage(hwnd, WM_TN5250_KEY_DATA, 0, 0);
     }
 
@@ -2493,7 +2583,7 @@ PRINTDLG * win32_get_printer_info(Tn5250Terminal *This) {
     if (This->data->pd != NULL) 
         return This->data->pd;
 
-    This->data->pd = (PRINTDLG *) g_malloc(sizeof(PRINTDLG));
+    This->data->pd = (PRINTDLG *) malloc(sizeof(PRINTDLG));
 
     pd = This->data->pd;  /* save a little typing */
 
@@ -2511,7 +2601,7 @@ PRINTDLG * win32_get_printer_info(Tn5250Terminal *This) {
 
     if (PrintDlg(This->data->pd) == 0) {
         TN5250_LOG (("PrintDlg() error %d\n", CommDlgExtendedError()));
-        g_free(This->data->pd);
+        free(This->data->pd);
         This->data->pd = NULL;
         return NULL;
     }
@@ -2543,10 +2633,10 @@ void win32_destroy_printer_info(Tn5250Terminal *This) {
     if (This->data->pd->hDC != NULL)
         DeleteDC(This->data->pd->hDC);
     if (This->data->pd->hDevMode != NULL)
-        g_free(This->data->pd->hDevMode);
+        free(This->data->pd->hDevMode);
     if (This->data->pd->hDevNames != NULL)
-        g_free(This->data->pd->hDevNames);
-    g_free(This->data->pd);
+        free(This->data->pd->hDevNames);
+    free(This->data->pd);
     This->data->pd = NULL;
 
     return;
@@ -2639,7 +2729,7 @@ void win32_print_screen(Tn5250Terminal *This, Tn5250Display *display) {
     while (attribute_map[i].colorindex != -1)
         i++;
     size = (i+1) * sizeof(Tn5250Win32Attribute);
-    mymap = (Tn5250Win32Attribute *) g_malloc(size);
+    mymap = (Tn5250Win32Attribute *) malloc(size);
     if ( mymap == NULL ) {
         TN5250_LOG(("mymap == NULL.  Unable to allocate memory.\n"));
     }
@@ -2654,7 +2744,7 @@ void win32_print_screen(Tn5250Terminal *This, Tn5250Display *display) {
 /* re-draw the screen into our new bitmap */
     
     win32_do_terminal_update(hdc, This, display, mymap, 3, 3);
-    g_free(mymap);
+    free(mymap);
     
 
 /* start a new printer document */

@@ -37,6 +37,10 @@ BEGIN
 		MENUITEM "&Paste",		IDM_EDIT_PASTE
 		MENUITEM "&Select All",		IDM_EDIT_SELECT_ALL
 	END
+	POPUP "&View"
+	BEGIN
+	        MENUITEM "Change &font...",             IDM_VIEW_FONT
+	END
 	POPUP "&Help"
 	BEGIN
 		MENUITEM "&About Tn5250",	IDM_APP_ABOUT
