@@ -1,6 +1,7 @@
 2005-03-31 James Rich <james@eaerich.com>
 - Add support for delete in word wrap fields.
 - Fix bug involving cursor movement at end of continuous subfields.
+- Add support for Write Data Structured Field.
 
 2005-03-29 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - Add beep_command config option.  If present, runs command instead of

@@ -79,6 +79,8 @@ tn5250_session_remove_gui_window_structured_field (Tn5250Session * This,
 static void
 tn5250_session_remove_all_gui_constructs_structured_field (Tn5250Session *
 							   This, int length);
+static void tn5250_session_write_data_structured_field (Tn5250Session *
+							This, int length);
 
 
 /****f* lib5250/tn5250_session_new
@@ -2043,7 +2045,6 @@ tn5250_session_write_display_structured_field (Tn5250Session * This)
       tn5250_session_define_selection_field (This, len);
       break;
     case UNREST_WIN_CURS_MOVE:
-    case WRITE_DATA:
     case PROGRAMMABLE_MOUSE_BUT:
     case REM_GUI_SEL_FIELD:
     case REM_GUI_SCROLL_BAR_FIELD:
@@ -2056,6 +2057,9 @@ tn5250_session_write_display_structured_field (Tn5250Session * This)
 	  len--;
 	}
       TN5250_LOG (("\n"));
+      break;
+    case WRITE_DATA:
+      tn5250_session_write_data_structured_field (This, len);
       break;
     case CREATE_WINDOW:
       tn5250_session_create_window_structured_field (This, len);
@@ -3583,4 +3587,58 @@ tn5250_session_remove_all_gui_constructs_structured_field (Tn5250Session *
   return;
 }
 
-/* vi:set sts=3 sw=3: */
+
+/****i* lib5250/tn5250_session_write_data_structured_field
+ * NAME
+ *    tn5250_session_write_data_structured_field
+ * SYNOPSIS
+ *    tn5250_session_write_data_structured_field (This, len)
+ * INPUTS
+ *    Tn5250Session *      This       -
+ *    int                  length     -
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
+static void
+tn5250_session_write_data_structured_field (Tn5250Session * This, int length)
+{
+  Tn5250Field *field = tn5250_display_current_field (This->display);
+  unsigned char *data, *ptr;
+  int datalength;
+  unsigned char flagbyte1;
+  unsigned char c;
+
+  TN5250_LOG (("Entering tn5250_session_write_data_structured_field()\n"));
+
+  flagbyte1 = tn5250_record_get_byte (This->record);
+  length--;
+
+  if (flagbyte1 & 0x80)
+    {
+      TN5250_LOG (("Write data to entry field\n"));
+    }
+
+  data = (unsigned char *) malloc (length * sizeof (unsigned char));
+  ptr = data;
+  datalength = length;
+
+  TN5250_LOG (("Data: "));
+  while (length > 0)
+    {
+      c = tn5250_record_get_byte (This->record);
+      memcpy (ptr, &c, sizeof (unsigned char));
+      ptr = ptr + sizeof (unsigned char);
+      TN5250_LOG (("%c", tn5250_char_map_to_local (This->display->map, c)));
+      length--;
+    }
+  TN5250_LOG (("\n"));
+
+  if ((flagbyte1 & 0x80) && (tn5250_field_is_wordwrap (field)))
+    {
+      tn5250_display_wordwrap (This->display, data, datalength,
+			       tn5250_field_length (field));
+    }
+
+  free (data);
+  return;
+}
