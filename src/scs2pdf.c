@@ -81,6 +81,8 @@ int pagewidth = 612, pagelength = 792;
 
 GArray *ObjectList;
 
+FILE *outfile;
+
 int
 main ()
 {
@@ -96,6 +98,20 @@ main ()
   int column;
   ObjectList = g_array_new (FALSE, FALSE, sizeof (int));
   new_line = 1;
+
+  if ((getenv ("TN5250_PDF")) != NULL)
+    {
+      outfile = fopen (getenv ("TN5250_PDF"), "w");
+      if (outfile == NULL)
+	{
+	  fprintf (stderr, "Could not open output file.\n");
+	  exit (-1);
+	}
+    }
+  else
+    {
+      outfile = stdout;
+    }
 
   filesize += pdf_header ();
 
@@ -204,7 +220,7 @@ main ()
 	      {
 		new_line = 0;
 		streamsize += pdf_process_char ('\0', 1);
-		printf ("0 -12 Td\n");
+		fprintf (outfile, "0 -12 Td\n");
 		streamsize += 9;
 		column = 0;
 	      }
@@ -401,7 +417,7 @@ scs2ascii_ahpp (int *curpos)
        * new line I'm going to leave it out. */
       /*
       bytes += pdf_process_char ('\0', 1);
-      printf ("0 -12 Td\n");
+      fprintf (outfile, "0 -12 Td\n");
       bytes += 9;
       */
 
@@ -484,7 +500,7 @@ scs2ascii_sto ()
   for (loop = 0; loop < curchar - 2; loop++)
     {
       nextchar = fgetc (stdin);
-      /*fprintf(stderr, " %x", nextchar); */
+      fprintf(stderr, " %x", nextchar);
     }
   fprintf (stderr, "\n");
 }
@@ -876,7 +892,7 @@ pdf_header ()
 {
   char *text = "%PDF-1.3\n\n";
 
-  printf ("%s", text);
+  fprintf (outfile, "%s", text);
 
   return (strlen (text));
 }
@@ -896,7 +912,7 @@ pdf_catalog (int objnum, int outlinesobject, int pageobject)
 	   "endobj\n\n",
 	   objnum, outlinesobject, pageobject);
 
-  printf ("%s", text);
+  fprintf (outfile, "%s", text);
 
   return (strlen (text));
 }
@@ -915,7 +931,7 @@ pdf_outlines (int objnum)
 	   "endobj\n\n",
 	   objnum);
 
-  printf ("%s", text);
+  fprintf (outfile, "%s", text);
 
   return (strlen (text));
 }
@@ -936,7 +952,7 @@ pdf_begin_stream (int objnum)
 	   "\t\t36 756 Td\n",
 	   objnum, objnum + 1);
 
-  printf ("%s", text);
+  fprintf (outfile, "%s", text);
 
   return (strlen (text));
 }
@@ -948,7 +964,7 @@ pdf_end_stream ()
     "endstream\n" \
     "endobj\n\n";
 
-  printf ("%s", text);
+  fprintf (outfile, "%s", text);
 
   return (strlen (text));
 }
@@ -968,7 +984,7 @@ pdf_stream_length (int objnum, int objlength)
 	   "endobj\n\n",
 	   objnum, objlength + 32);
 
-  printf ("%s", text);
+  fprintf (outfile, "%s", text);
 
   return (strlen (text));
 }
@@ -986,19 +1002,19 @@ pdf_pages (int objnum, int pagechildren, int pages)
 	   "\t\t/Type /Pages\n" \
 	   "\t\t/Kids [",
 	   objnum);
-  printf ("%s", text);
+  fprintf (outfile, "%s", text);
   bytes = strlen (text);
   sprintf (text,
 	   " %d 0 R\n",
 	   pagechildren);
-  printf ("%s", text);
+  fprintf (outfile, "%s", text);
   bytes += strlen (text);
   for (i = 1; i < pages; i++)
     {
       sprintf (text,
 	       "\t\t      %d 0 R\n",
 	       pagechildren + i);
-      printf ("%s", text);
+      fprintf (outfile, "%s", text);
       bytes += strlen (text);
     }
   sprintf (text,
@@ -1008,7 +1024,7 @@ pdf_pages (int objnum, int pagechildren, int pages)
 	   "endobj\n\n",
 	   pages);
 
-  printf ("%s", text);
+  fprintf (outfile, "%s", text);
   bytes += strlen (text);
 
   return (bytes);
@@ -1039,7 +1055,7 @@ pdf_page (int objnum, int parent, int contents, int procset, int font)
 	   "endobj\n\n",
 	   objnum, parent, pagewidth, pagelength, contents, procset, font);
 
-  printf ("%s", text);
+  fprintf (outfile, "%s", text);
 
   return (strlen (text));
 }
@@ -1055,7 +1071,7 @@ pdf_procset (int objnum)
 	   "endobj\n\n",
 	   objnum);
 
-  printf ("%s", text);
+  fprintf (outfile, "%s", text);
 
   return (strlen (text));
 }
@@ -1077,7 +1093,7 @@ pdf_font (int objnum)
 	   "endobj\n\n",
 	   objnum);
 
-  printf ("%s", text);
+  fprintf (outfile, "%s", text);
 
   return (strlen (text));
 }
@@ -1090,14 +1106,14 @@ pdf_xreftable (int objnum)
   /* This part is important to get right or the PDF cannot be read.
    * The cross reference section always begins with the keyword 'xref'
    */
-  printf ("xref\n");
+  fprintf (outfile, "xref\n");
   /* Then we follow with one or more cross reference subsections.  Since
    * this is always the first revision this cross reference will have no
    * more than one subsection.  The subsection numbering begins with 0.
    * After the subsection number we must indicate how many entries (objects)
    * are in this subsection.
    */
-  printf ("0 %d\n", objnum + 1);
+  fprintf (outfile, "0 %d\n", objnum + 1);
   /* The entries consist of a 10-digit byte offset (the number of bytes
    * from the beginning of the file to the beginning of the object to 
    * which the entry refers), followed by a space, followed by a 5-digit
@@ -1106,14 +1122,16 @@ pdf_xreftable (int objnum)
    * Object 0 is always free and always has a generation number of 65535
    * so we list that first.  We will never have more free entries.
    */
-  printf ("0000000000 65535 f \n");
+  fprintf (outfile, "0000000000 65535 f \n");
   /* The generation number will always be zeros for all in-use objects
    * since we are not updating anything.  We must have an entry for all
    * objects we created.
    */
   for (curobj = 0; curobj < objnum; curobj++)
     {
-      printf ("%010d 00000 n \n", g_array_index (ObjectList, int, curobj));
+      fprintf (outfile,
+	       "%010d 00000 n \n",
+	       g_array_index (ObjectList, int, curobj));
     }
 }
 
@@ -1133,7 +1151,7 @@ pdf_trailer (int offset, int size, int root)
 	   "%%%%EOF\n",
 	   size, root, offset);
 
-  printf ("%s", text);
+  fprintf (outfile, "%s", text);
 }
 
 int
@@ -1163,7 +1181,7 @@ pdf_process_char (char character, int flush)
 	  buf[bufloc] = character;
 	  buf[bufloc + 1] = '\0';
 	}
-      printf ("(%s) Tj\n", buf);
+      fprintf (outfile, "(%s) Tj\n", buf);
       byteswritten += strlen (buf);
       memset (buf, '\0', 249);
       bufloc = 0;

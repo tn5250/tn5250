@@ -1,3 +1,8 @@
+2002-03-09 James Rich <james@eaerich.com>
+- Changed scs2pdf.c to use environment variable TN5250_PDF to determine
+  where to write it's output.  If this environment variable is not set, 
+  scs2pdf uses stdout (default).
+	
 2002-03-09 Scott Klement <klemscot@klements.com>
 - Applied more updates to scs2pdf from James Rich.
 
