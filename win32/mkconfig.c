@@ -107,8 +107,8 @@ int create_makefile(const char *infile, const char *outfile,
                      const char *glib_lib, const char *glib_include,
                      const char *innosetupdir,
                      const char *lib5250_objs, const char *installdir,
-		     const char *package, const char *version,
-                     const char *debug, const char *cursor);
+                     const char *package, const char *version,
+                     const char *debug);
 void replacedata(const char *from, const char *to, char *line, int maxlen);
 int make_root_makefile(const char *fn);
 char *manual_redef(int redefnum, char with_openssl, char binary_release,
@@ -129,7 +129,7 @@ int main(unsigned argc, char **argv) {
    char temp[MAXBUFSIZE+1];
    char installdir[MAXBUFSIZE+1];
    char package[SMALLBUFSIZE+1], version[SMALLBUFSIZE+1];
-   char cursor[SMALLBUFSIZE+1], debug[SMALLBUFSIZE+1];
+   char debug[SMALLBUFSIZE+1];
    char with_openssl, binary_release='n';
    int ch, rc;
 
@@ -228,17 +228,16 @@ int main(unsigned argc, char **argv) {
    /* Create a makefile */
 
    debug[0] = '\0';
-   strcpy(cursor, "-DNOBLINK");
 
    if (create_makefile("Makefile.win.in", "Makefile", openssl_lib,
          openssl_include, glib_libs, glib_include, innosetupdir, lib5250_objs, 
-         installdir, package, version, debug, cursor)<0) {
+         installdir, package, version, debug)<0) {
          exit(1);
    }
 
    if (create_makefile("tn5250_innosetup.iss.in", "tn5250_innosetup.iss", 
          openssl_lib, openssl_include, glib_libs, glib_include, innosetupdir,
-         lib5250_objs, installdir, package, version, debug, cursor)<0) {
+         lib5250_objs, installdir, package, version, debug)<0) {
          exit(1);
    }
 
@@ -705,7 +704,6 @@ int create_config_h(const char *infile, const char *outfile,
  *    const char  *      package      -
  *    const char  *      version      -
  *    const char  *      debug        -
- *    const char  *      cursor       -
  * DESCRIPTION
  *    This replaces the variables in the Makefile.win.in file
  *    with values calculated in this program.  
@@ -722,8 +720,8 @@ int create_makefile(const char *infile, const char *outfile,
                      const char *glib_libs, const char *glib_include,
                      const char *innosetupdir,
                      const char *lib5250_objs, const char *installdir,
-		     const char *package, const char *version,
-                     const char *debug, const char *cursor) {
+                     const char *package, const char *version,
+                     const char *debug) {
 
      FILE *in,*out;
      char rec[MAXBUFSIZE+1];
@@ -749,7 +747,6 @@ int create_makefile(const char *infile, const char *outfile,
          replacedata("@openssl_include@", openssl_inc,     rec, MAXBUFSIZE);
          replacedata("@lib5250_objs@",    lib5250_objs,    rec, MAXBUFSIZE);
          replacedata("@debug@",           debug,           rec, MAXBUFSIZE);
-         replacedata("@cursor@",          cursor,          rec, MAXBUFSIZE);
          replacedata("@GLIB_LIBS@",	  glib_libs,       rec, MAXBUFSIZE);
          replacedata("@GLIB_INCLUDE@",	  glib_include,    rec, MAXBUFSIZE);
          replacedata("@inno_setup_dir@",  innosetupdir,    rec, MAXBUFSIZE);
@@ -764,7 +761,7 @@ int create_makefile(const char *infile, const char *outfile,
  * NAME
  *    replacedata
  * SYNOPSIS
- *    replacedata ("@cursor@", "-DLINE_CURSOR", line, sizeof(line));
+ *    replacedata ("@PACKAGE@", "tn5250", line, sizeof(line));
  * INPUTS
  *    const char  *      from         -
  *    const char  *      to           -
