@@ -146,7 +146,7 @@ distclean: clean
 	$(RM) glib_info.txt
 
 do-release:
-	type "C:\openssl-0.9.6b\LICENSE" >> "$(INSTALLDIR)\COPYING.txt"
+	type "C:\openssl-0.9.7b\LICENSE" >> "$(INSTALLDIR)\COPYING.txt"
 	copy ..\..\windocs\windocs.pdf "$(INSTALLDIR)\manual.pdf"
 	copy afterinstall.txt "$(INSTALLDIR)\AFTERINSTALL.TXT"
 	$(INNO_SETUP_DIR)\iscc tn5250_innosetup.iss
