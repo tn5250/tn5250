@@ -1,3 +1,11 @@
+2002-04-01 Scott Klement <klemscot@klements.com>
+- Made Ctrl-C/Ctrl-V be copy & paste in the Windows terminal, by default,
+  adding the +unix_sysreq option to allow Ctrl-C to work as SysReq
+- The Windows terminal now tries to use "Terminal" as it's default font.
+- If no host is given on the command line, the Windows terminal now asks
+  you where you want to connect to (somewhat similar to what xt5250 does)
+- Fixed "disappearing cursor" bug in the Windows terminal.
+
 2002-03-25 Scott Klement <klemscot@klements.com>
 - Changed the win32_terminal_waitevent func so that it's compatible
   with the debug.c code.

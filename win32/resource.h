@@ -27,3 +27,14 @@
 #define IDM_APP_ABOUT   40002
 #define IDM_EDIT_COPY   40003
 #define IDM_EDIT_PASTE  40004
+
+#define IDD_DIALOG_CONNECT              101
+#define IDC_EDIT_HOST                   1000
+#define IDC_EDIT_DEVICE                 1001
+#define IDC_CHECK_SSL                   1002
+#define IDC_CHECK_SSLVERIFY             1003
+#define IDC_CHECK_UNIXCOPY              1004
+#define IDC_EDIT_CHARMAP                1005
+#define IDC_RADIO_80                    1006
+#define IDC_RADIO_132                   1007
+#define IDC_STATIC                      -1
