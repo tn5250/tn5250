@@ -188,6 +188,27 @@ extern "C" {
 
 #define ATTR_5250_NORMAL	ATTR_5250_GREEN
 
+/*------------------------------------------------------------------------
+ * Keyboard / Error handling states                                      *
+ ------------------------------------------------------------------------*/
+#define TN5250_KEYSTATE_UNLOCKED	0
+#define TN5250_KEYSTATE_LOCKED		1
+#define TN5250_KEYSTATE_HARDWARE	2
+#define TN5250_KEYSTATE_PREHELP		3
+#define TN5250_KEYSTATE_POSTHELP	4
+
+#define TN5250_KBDSRC_NONE		0x0000   /* No Error */
+#define TN5250_KBDSRC_INVALID_CMD	0x0003   /* Bad key following CMD key */
+#define TN5250_KBDSRC_PROTECT		0x0005   /* Cursor in protected area */
+#define TN5250_KBDSRC_ALPHAONLY		0x0008   /* Field Requires Alpha */
+#define TN5250_KBDSRC_NUMONLY		0x0009   /* Field Requires Numeric */
+#define TN5250_KBDSRC_ONLY09 		0x0010   /* Only chars 0-9 allowed */
+#define TN5250_KBDSRC_SIGNPOS           0x0011   /* Sign position invalid */
+#define TN5250_KBDSRC_NOROOM            0x0012   /* No room for insert */
+#define TN5250_KBDSRC_FLDM_DISALLOWED   0x0016   /* Field- Not Allowed */
+#define TN5250_KBDSRC_FER	        0x0018   /* Field Exit Required */
+#define TN5250_KBDSRC_DUP_DISALLOWED    0x0019   /* Dup Key Not Allowed */
+
 #ifdef __cplusplus
 }
 

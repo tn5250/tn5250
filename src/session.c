@@ -403,6 +403,7 @@ static void tn5250_session_send_fields(Tn5250Session * This, int aidcode)
 
    This->read_opcode = 0; /* No longer in a read command. */
    tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_X_SYSTEM);
+   This->display->keystate = TN5250_KEYSTATE_LOCKED;
    tn5250_display_indicator_clear(This->display, TN5250_DISPLAY_IND_INSERT);
    tn5250_display_update(This->display);
 
@@ -654,6 +655,7 @@ static void tn5250_session_write_error_code(Tn5250Session * This)
 
    tn5250_display_set_cursor(This->display, end_y, end_x);
 
+   This->display->keystate = TN5250_KEYSTATE_POSTHELP;
    tn5250_display_inhibit(This->display);
 }
 
@@ -713,6 +715,7 @@ static void tn5250_session_handle_cc1 (Tn5250Session *This, unsigned char cc1)
    if (lock_kb) {
       TN5250_LOG(("tn5250_session_handle_cc1: Locking keyboard.\n"));
       tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_X_SYSTEM);
+      This->display->keystate = TN5250_KEYSTATE_LOCKED;
    }
    TN5250_ASSERT(This->display != NULL && tn5250_display_dbuffer (This->display) != NULL);
    if ((iter = tn5250_display_dbuffer(This->display)->field_list) != NULL) {
@@ -844,8 +847,7 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
     * position from a prior IC if the unit hasn't been cleared since then,
     * but is probably the first position of the first non-bypass field). */
                 
-   is_x_system = tn5250_display_indicators(This->display)
-   	         & TN5250_DISPLAY_IND_X_SYSTEM;
+   is_x_system = (This->display->keystate != TN5250_KEYSTATE_UNLOCKED);
    will_be_unlocked = ((CC2 & TN5250_SESSION_CTL_UNLOCK) != 0);
    cur_opcode = tn5250_record_opcode(This->record);
    if (end_y != 0xff && end_x != 0xff) 
@@ -890,8 +892,11 @@ static void tn5250_session_handle_cc2 (Tn5250Session *This, unsigned char CC2)
       TN5250_LOG (("TN5250_SESSION_CTL_ALARM was set.\n"));
       tn5250_display_beep (This->display);
    }
-   if ((CC2 & TN5250_SESSION_CTL_UNLOCK) != 0)
+   if ((CC2 & TN5250_SESSION_CTL_UNLOCK) != 0) {
       tn5250_display_indicator_clear(This->display, TN5250_DISPLAY_IND_X_SYSTEM);
+      if (This->display->keystate == TN5250_KEYSTATE_LOCKED) 
+           This->display->keystate = TN5250_KEYSTATE_UNLOCKED;
+   }
 
    TN5250_LOG (("Done Processing CC2.\n"));  
 }
@@ -1022,31 +1027,54 @@ static int tn5250_session_handle_aidkey (Tn5250Session *This, int key)
       break;
 
    case TN5250_SESSION_AID_SYSREQ:
-     /*      This->read_opcode = 0;*/ /* We are out of the read */
 
       header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
       header.h5250.flags    = TN5250_RECORD_H_SRQ;
       header.h5250.opcode    = TN5250_RECORD_OPCODE_NO_OP;
 
-      tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_X_SYSTEM);      tn5250_stream_send_packet(This->stream, 0, header, NULL);
+      tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_X_SYSTEM);
+      if (This->display->keystate == TN5250_KEYSTATE_UNLOCKED) 
+           This->display->keystate = TN5250_KEYSTATE_LOCKED;
+      tn5250_stream_send_packet(This->stream, 0, header, NULL);
       tn5250_display_indicator_clear(This->display, 
 				     TN5250_DISPLAY_IND_X_SYSTEM);
+      if (This->display->keystate == TN5250_KEYSTATE_LOCKED) 
+           This->display->keystate = TN5250_KEYSTATE_UNLOCKED;
       break;
 
    case TN5250_SESSION_AID_ATTN:
-     /*      This->read_opcode = 0; */ /* We are out of the read. */
-
       header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
       header.h5250.flags    = TN5250_RECORD_H_ATN;
       header.h5250.opcode   = TN5250_RECORD_OPCODE_NO_OP;
 
       tn5250_display_indicator_set(This->display, 
 				   TN5250_DISPLAY_IND_X_SYSTEM);      
+      if (This->display->keystate == TN5250_KEYSTATE_UNLOCKED)
+           This->display->keystate = TN5250_KEYSTATE_LOCKED;
       tn5250_stream_send_packet(This->stream, 0, header, NULL);
       tn5250_display_indicator_clear(This->display,
 				     TN5250_DISPLAY_IND_X_SYSTEM);
+      if (This->display->keystate == TN5250_KEYSTATE_LOCKED)
+           This->display->keystate = TN5250_KEYSTATE_UNLOCKED;
 
       break;
+
+   case TN5250_SESSION_AID_HELP:
+      if (This->display->keystate == TN5250_KEYSTATE_PREHELP) {
+          unsigned char src[2];
+          src[0] = (This->display->keySRC >> 8) & 0xff;
+          src[1] = (This->display->keySRC) & 0xff;
+          header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
+          header.h5250.flags    = TN5250_RECORD_H_HLP;
+          header.h5250.opcode   = TN5250_RECORD_OPCODE_NO_OP;
+          TN5250_LOG (("PreHelp HELP key: %02x %02x\n", src[0], src[1]));
+          tn5250_stream_send_packet(This->stream, 2, header, src);
+          This->display->keystate = TN5250_KEYSTATE_POSTHELP;
+          break;
+      }
+      /* FALLTHROUGH */
+
+
 
    default:
       /* This should exit the read and set the X SYSTEM indicator. */
@@ -1200,6 +1228,8 @@ static void tn5250_session_start_of_field(Tn5250Session * This)
          Only for input fields 
       */
       tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_X_SYSTEM);
+      if (This->display->keystate == TN5250_KEYSTATE_UNLOCKED) 
+           This->display->keystate = TN5250_KEYSTATE_LOCKED;
       
       input_field = 1;
       FFW1 = cur_char;
@@ -1340,6 +1370,8 @@ static void tn5250_session_start_of_header(Tn5250Session * This)
    tn5250_dbuffer_clear_table(tn5250_display_dbuffer(This->display));
    tn5250_display_clear_pending_insert(This->display);
    tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_X_SYSTEM);
+   if (This->display->keystate == TN5250_KEYSTATE_UNLOCKED) 
+        This->display->keystate = TN5250_KEYSTATE_LOCKED;
 
    n = tn5250_record_get_byte (This->record);
    if(n < 0 || n > 7)
@@ -1801,12 +1833,13 @@ static void tn5250_session_read_cmd (Tn5250Session * This, int readop)
 				  TN5250_DISPLAY_IND_X_SYSTEM
 				  | TN5250_DISPLAY_IND_X_CLOCK);
 
-   /* The host can send a block with a Write Error Code command then
-    * a Read command, in which case we should still be inhibited.  So
-    * we only uninhibit if we were in a read when we handled this
-    * packet.  This is a HACK. */
-   if (This->read_opcode != 0)
+   /* The read command only uninhibits the keyboard if we were in a
+      "normal locked" keystate.  (In other words, we weren't inhibited
+       by an error, but by a normal condition) */
+   if (This->display->keystate == TN5250_KEYSTATE_LOCKED) {
       tn5250_display_uninhibit(This->display);
+      This->display->keystate = TN5250_KEYSTATE_UNLOCKED;
+   }
 
    This->read_opcode = readop;
 }

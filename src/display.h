@@ -69,6 +69,8 @@ struct _Tn5250Display {
    unsigned char *saved_msg_line;
    unsigned char *msg_line;
    int msg_len;
+   int keystate;
+   int keySRC;
 
    /* Queued keystroke ring buffer. */
    int key_queue_head, key_queue_tail;

@@ -54,7 +54,9 @@ Tn5250Display *tn5250_display_new()
    This->saved_msg_line = NULL;
    This->msg_line = NULL;
    This->map = NULL;
-
+   This->keystate = TN5250_KEYSTATE_UNLOCKED;
+   This->keySRC = TN5250_KBDSRC_NONE;
+ 
    tn5250_display_add_dbuffer(This, tn5250_dbuffer_new(80, 24));
    return This;
 }
@@ -306,8 +308,7 @@ int tn5250_display_waitevent(Tn5250Display * This)
       return 0;
 
    while (1) {
-      is_x_system = (tn5250_display_indicators(This) & 
-	 TN5250_DISPLAY_IND_X_SYSTEM) != 0;
+      is_x_system = (This->keystate == TN5250_KEYSTATE_LOCKED);
 
       /* Handle keys from our key queue if we aren't X SYSTEM. */
       if (This->key_queue_head != This->key_queue_tail && !is_x_system) {
@@ -318,6 +319,12 @@ int tn5250_display_waitevent(Tn5250Display * This)
 	    This->key_queue_head = 0;
 	 handled_key = 1;
 	 continue;
+      }
+
+      /* don't make the user press HELP to see what the error is */
+      if (This->keystate == TN5250_KEYSTATE_PREHELP) {
+         tn5250_display_do_key(This, K_HELP);
+         handled_key=1;
       }
 
       if (handled_key) {
@@ -654,6 +661,8 @@ void tn5250_display_interactive_addch(Tn5250Display * This, unsigned char ch)
    int end_of_field = 0;
 
    if (field == NULL || tn5250_field_is_bypass(field)) {
+      This->keystate = TN5250_KEYSTATE_PREHELP;
+      This->keySRC =   TN5250_KBDSRC_PROTECT;
       tn5250_display_inhibit(This);
       return;
    }
@@ -676,8 +685,9 @@ void tn5250_display_interactive_addch(Tn5250Display * This, unsigned char ch)
    }
 
    /* Make sure this is a valid data character for this field type. */
-   if (!tn5250_field_valid_char(field, ch)) {
+   if (!tn5250_field_valid_char(field, ch, &(This->keySRC))) {
       TN5250_LOG (("Inhibiting: invalid character for field type.\n"));
+      This->keystate = TN5250_KEYSTATE_PREHELP;
       tn5250_display_inhibit(This);
       return;
    }
@@ -690,6 +700,8 @@ void tn5250_display_interactive_addch(Tn5250Display * This, unsigned char ch)
     * number field. */
    if (end_of_field && tn5250_field_is_signed_num(field)) {
       TN5250_LOG (("Inhibiting: last character of signed num field.\n"));
+      This->keystate = TN5250_KEYSTATE_PREHELP;
+      This->keySRC = TN5250_KBDSRC_SIGNPOS;
       tn5250_display_inhibit(This);
       return;
    }
@@ -700,6 +712,8 @@ void tn5250_display_interactive_addch(Tn5250Display * This, unsigned char ch)
       if (tn5250_field_is_signed_num(field))
 	 ofs--;
       if (data[ofs] != '\0' && tn5250_char_map_to_local (This->map, data[ofs]) != ' ') {
+         This->keystate = TN5250_KEYSTATE_PREHELP;
+         This->keySRC   = TN5250_KBDSRC_NOROOM;
 	 tn5250_display_inhibit(This);
 	 return;
       }
@@ -827,6 +841,9 @@ void tn5250_display_do_keys (Tn5250Display *This)
 {
    int cur_key;
    char Last ;
+   int dokey;
+
+   TN5250_LOG (("display_do_keys!\n"));
 
    do {
       cur_key = tn5250_macro_getkey (This,&Last) ;
@@ -841,15 +858,48 @@ void tn5250_display_do_keys (Tn5250Display *This)
 
 	 tn5250_macro_reckey (This, cur_key) ;
 
-	 if ((tn5250_display_indicators(This) & TN5250_DISPLAY_IND_X_SYSTEM) != 0) {
-	    /* We can handle system request here. */
-	    if (cur_key == K_SYSREQ || cur_key == K_RESET) {
-	       /* Flush the keyboard queue. */
-	       This->key_queue_head = This->key_queue_tail = 0;
-	       tn5250_display_do_key (This, cur_key);
-	       break;
-	    }
+         dokey = 0;
 
+         switch (This->keystate) {
+            case TN5250_KEYSTATE_UNLOCKED:
+               dokey = 1;
+               break;
+            case TN5250_KEYSTATE_HARDWARE:
+               if (cur_key == K_RESET) 
+                    TN5250_LOG (("doing key %d in hw error state.\n", cur_key));
+                   dokey = 1;
+               break;
+            case TN5250_KEYSTATE_LOCKED:
+               switch (cur_key) {
+                  case K_SYSREQ:
+                  case K_ATTENTION:
+                    TN5250_LOG (("doing key %d in locked state.\n", cur_key));
+                    dokey = 1;
+                    break;
+               }
+               break;
+            case TN5250_KEYSTATE_PREHELP:
+               switch (cur_key) {
+                  case K_RESET:
+                  case K_HELP:
+                  case K_ATTENTION:
+                    dokey = 1;
+                    TN5250_LOG (("Doing key %d in prehelp state\n", cur_key));
+                    break;
+               }
+               break;
+               break;
+            case TN5250_KEYSTATE_POSTHELP:
+               switch (cur_key) {
+                  case K_RESET:
+                  case K_ATTENTION:
+                    TN5250_LOG (("Doing key %d in posthelp state.\n", cur_key));
+                    dokey = 1;
+                    break;
+               }
+          }
+
+         if (!dokey) {
 	    if ((This->key_queue_tail + 1 == This->key_queue_head) ||
 		  (This->key_queue_head == 0 &&
 		   This->key_queue_tail == TN5250_DISPLAY_KEYQ_SIZE - 1)) {
@@ -860,8 +910,11 @@ void tn5250_display_do_keys (Tn5250Display *This)
 	    if (++ This->key_queue_tail == TN5250_DISPLAY_KEYQ_SIZE)
 	       This->key_queue_tail = 0;
 	 } else {
-	    /* We shouldn't ever be handling a key here if there are keys in the queue. */
-	    TN5250_ASSERT(This->key_queue_head == This->key_queue_tail);
+            /* if we're hitting a special keypress (such as error reset)
+               in a state where typeahead is not allowed, then clear
+               the key queue */
+            if (This->key_queue_head != This->key_queue_tail) 
+                 This->key_queue_head = This->key_queue_tail = 0;
 	    tn5250_display_do_key (This, cur_key);
 	 }
       }
@@ -890,12 +943,45 @@ void tn5250_display_do_key(Tn5250Display *This, int key)
 
    /* FIXME: Translate from terminal key via keyboard map to 5250 key. */
 
-   if (tn5250_display_inhibited(This)) {
-      if (key != K_SYSREQ && key != K_RESET) {
-	 tn5250_display_beep (This);
-	 return;
-      }
+   switch (This->keystate) {
+      case TN5250_KEYSTATE_UNLOCKED:
+         TN5250_ASSERT(!tn5250_display_inhibited(This));
+         /* normal processing can continue */
+         break;
+      case TN5250_KEYSTATE_HARDWARE:
+         if (key != K_RESET) {
+              TN5250_LOG (("Denying key %d in hw err state.\n", key));
+	      tn5250_display_beep (This);
+              return;
+         }
+         break;
+      case TN5250_KEYSTATE_LOCKED:
+         if (key != K_SYSREQ 
+               && key != K_PRINT 
+               && key != K_ATTENTION) {
+              TN5250_LOG (("Denying key %d in locked state.\n", key));
+	      tn5250_display_beep (This);
+              return;
+         }
+         break;
+      case TN5250_KEYSTATE_PREHELP:
+         if (key != K_RESET && key != K_HELP
+                            && key != K_PRINT 
+                            && key != K_ATTENTION) {
+              TN5250_LOG (("Denying key %d in prehelp state.\n", key));
+	      tn5250_display_beep (This);
+              return;
+         }
+         break;
+      case TN5250_KEYSTATE_POSTHELP:
+         if (key != K_RESET && key != K_ATTENTION) {
+              TN5250_LOG (("Denying key %d in posthelp state.\n", key));
+	      tn5250_display_beep (This);
+              return;
+         }
+         break;
    }
+
 
    /* In the case we are in the field exit required state, we inhibit on
     * everything except left arrow, backspace, field exit, field+, and
@@ -924,7 +1010,10 @@ void tn5250_display_do_key(Tn5250Display *This, int key)
 	 break;
 
       default:
+         This->keystate = TN5250_KEYSTATE_PREHELP;
+         This->keySRC   = TN5250_KBDSRC_FER;
 	 tn5250_display_inhibit (This);
+         TN5250_LOG (("Denying key %d in FER state.\n", key));
 	 return;
       }
    }
@@ -932,6 +1021,7 @@ void tn5250_display_do_key(Tn5250Display *This, int key)
    switch (key) {
    case K_RESET:
       tn5250_display_uninhibit(This);
+      This->keystate = TN5250_KEYSTATE_UNLOCKED;
       break;
 
    case K_BACKSPACE:
@@ -1011,6 +1101,8 @@ void tn5250_display_do_key(Tn5250Display *This, int key)
       break;
 
    case K_ATTENTION:
+      tn5250_display_uninhibit(This);
+      This->keystate = TN5250_KEYSTATE_UNLOCKED;
       tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ATTN);
       break;
 
@@ -1134,6 +1226,8 @@ void tn5250_display_kf_field_exit(Tn5250Display * This)
 
    field = tn5250_display_current_field(This);
    if (field == NULL || tn5250_field_is_bypass(field)) {
+      This->keystate = TN5250_KEYSTATE_PREHELP;
+      This->keySRC = TN5250_KBDSRC_PROTECT;
       tn5250_display_inhibit(This);
       return;
    }
@@ -1168,6 +1262,8 @@ void tn5250_display_kf_field_plus(Tn5250Display * This)
 
    field = tn5250_display_current_field (This);
    if (field == NULL || tn5250_field_is_bypass(field)) {
+      This->keystate = TN5250_KEYSTATE_PREHELP;
+      This->keySRC = TN5250_KBDSRC_PROTECT;
       tn5250_display_inhibit(This);
       return;
    }
@@ -1217,7 +1313,8 @@ void tn5250_display_kf_field_minus(Tn5250Display * This)
    if (field == NULL ||
          (tn5250_field_type(field) != TN5250_FIELD_SIGNED_NUM) &&
 	 (tn5250_field_type(field) != TN5250_FIELD_NUM_ONLY)) {
-      /* FIXME: Explain why to the user. */
+      This->keystate = TN5250_KEYSTATE_PREHELP;
+      This->keySRC = TN5250_KBDSRC_FLDM_DISALLOWED;
       tn5250_display_inhibit(This);
       return;
    }
@@ -1283,6 +1380,8 @@ void tn5250_display_kf_dup(Tn5250Display * This)
 
    field = tn5250_display_current_field (This);
    if (field == NULL || tn5250_field_is_bypass (field)) {
+      This->keystate = TN5250_KEYSTATE_PREHELP;
+      This->keySRC = TN5250_KBDSRC_PROTECT;
       tn5250_display_inhibit(This);
       return;
    }
@@ -1290,7 +1389,8 @@ void tn5250_display_kf_dup(Tn5250Display * This)
    tn5250_field_set_mdt(field);
 
    if (!tn5250_field_is_dup_enable(field)) {
-      /* FIXME: Explain why to the user. */
+      This->keystate = TN5250_KEYSTATE_PREHELP;
+      This->keySRC = TN5250_KBDSRC_DUP_DISALLOWED;
       tn5250_display_inhibit(This);
       return;
    }
@@ -1377,6 +1477,7 @@ void tn5250_display_clear_unit (Tn5250Display *This)
 {
    tn5250_dbuffer_set_size(This->display_buffers, 24, 80);
    tn5250_display_indicator_set(This, TN5250_DISPLAY_IND_X_SYSTEM);
+   This->keystate = TN5250_KEYSTATE_LOCKED;
    tn5250_display_indicator_clear(This,
 	 TN5250_DISPLAY_IND_INSERT | TN5250_DISPLAY_IND_INHIBIT
 	 | TN5250_DISPLAY_IND_FER);
@@ -1406,6 +1507,7 @@ void tn5250_display_clear_unit_alternate (Tn5250Display *This)
 {
    tn5250_dbuffer_set_size(This->display_buffers, 27, 132);
    tn5250_display_indicator_set(This, TN5250_DISPLAY_IND_X_SYSTEM);
+   This->keystate = TN5250_KEYSTATE_LOCKED;
    tn5250_display_indicator_clear(This,
 	 TN5250_DISPLAY_IND_INSERT | TN5250_DISPLAY_IND_INHIBIT
 	 | TN5250_DISPLAY_IND_FER);
@@ -1436,6 +1538,7 @@ void tn5250_display_clear_format_table (Tn5250Display *This)
    tn5250_dbuffer_clear_table(This->display_buffers);
    tn5250_display_set_cursor(This, 0, 0);
    tn5250_display_indicator_set(This, TN5250_DISPLAY_IND_X_SYSTEM);
+   This->keystate = TN5250_KEYSTATE_LOCKED;
    tn5250_display_indicator_clear(This, TN5250_DISPLAY_IND_INSERT);
 }
 
@@ -1455,7 +1558,8 @@ void tn5250_display_kf_backspace (Tn5250Display *This)
 {
    Tn5250Field *field = tn5250_display_current_field (This);
    if (field == NULL) {
-      /* FIXME: Inform user why. */
+      This->keystate = TN5250_KEYSTATE_PREHELP;
+      This->keySRC   = TN5250_KBDSRC_PROTECT;
       tn5250_display_inhibit (This);
       return;
    }
@@ -1631,8 +1735,11 @@ void tn5250_display_kf_end (Tn5250Display *This)
 	 x = tn5250_field_end_col (field);
       }
       tn5250_display_set_cursor (This, y, x);
-   } else
+   } else {
+      This->keystate = TN5250_KEYSTATE_PREHELP;
+      This->keySRC   = TN5250_KBDSRC_PROTECT;
       tn5250_display_inhibit(This);
+   }
 }
 
 /****f* lib5250/tn5250_display_kf_home
@@ -1682,9 +1789,11 @@ void tn5250_display_kf_home (Tn5250Display *This)
 void tn5250_display_kf_delete (Tn5250Display *This)
 {
    Tn5250Field *field = tn5250_display_current_field (This);
-   if (field == NULL || tn5250_field_is_bypass(field))
+   if (field == NULL || tn5250_field_is_bypass(field)) {
+      This->keystate = TN5250_KEYSTATE_PREHELP;
+      This->keySRC   = TN5250_KBDSRC_PROTECT;
       tn5250_display_inhibit(This);
-   else {
+   } else {
       tn5250_field_set_mdt (field);
       tn5250_dbuffer_del(This->display_buffers,
 	    tn5250_field_count_right (field,
@@ -1740,8 +1849,11 @@ void tn5250_display_kf_fieldhome (Tn5250Display *This)
       int y = tn5250_field_start_row (field);
       int x = tn5250_field_start_col (field);
       tn5250_display_set_cursor (This, y, x);
-   } else
+   } else {
+      This->keystate = TN5250_KEYSTATE_PREHELP;
+      This->keySRC   = TN5250_KBDSRC_PROTECT;
       tn5250_display_inhibit(This);
+   }
 }
 
 
