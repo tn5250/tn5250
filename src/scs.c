@@ -157,7 +157,7 @@ scs_ahpp (int *curpos)
 }
 
 void
-scs_process2b (int *pagewidth, int *pagelength)
+scs_process2b (int *pagewidth, int *pagelength, int *cpi)
 {
   unsigned char curchar;
 
@@ -171,7 +171,7 @@ scs_process2b (int *pagewidth, int *pagelength)
       }
     case 0xD2:
       {
-	scs_processd2 (pagewidth, pagelength);
+	scs_processd2 (pagewidth, pagelength, cpi);
 	break;
       }
     case 0xD3:
@@ -313,7 +313,7 @@ scs_processd103 ()
 }
 
 void
-scs_processd2 (int *pagewidth, int *pagelength)
+scs_processd2 (int *pagewidth, int *pagelength, int *cpi)
 {
   unsigned char curchar;
   unsigned char nextchar;
@@ -380,7 +380,7 @@ scs_processd2 (int *pagewidth, int *pagelength)
 	    }
 	  case 0x04:
 	    {
-	      scs_process04 (nextchar, curchar);
+	      scs_process04 (nextchar, curchar, cpi);
 	      break;
 	    }
 	  default:
@@ -587,7 +587,7 @@ scs_sls ()
 }
 
 void
-scs_process04 (unsigned char nextchar, unsigned char curchar)
+scs_process04 (unsigned char nextchar, unsigned char curchar, int *cpi)
 {
   switch (nextchar)
     {
@@ -598,7 +598,7 @@ scs_process04 (unsigned char nextchar, unsigned char curchar)
       }
     case 0x29:
       {
-	scs_scs ();
+	scs_scs (cpi);
 	break;
       }
     default:
@@ -620,7 +620,7 @@ scs_ssld ()
 }
 
 void
-scs_scs ()
+scs_scs (int *cpi)
 {
   unsigned char curchar;
 
@@ -628,7 +628,36 @@ scs_scs ()
   if (curchar == 0x00)
     {
       curchar = fgetc (stdin);
+
+      /* Here we convert characters per inch (CPI) to point size.  In the
+       * future we will probably want these to be user definable.
+       */
+      switch (curchar)
+	{
+	case 10:
+	  {
+	    *cpi = 10;
+	    break;
+	  }
+	case 12:
+	  {
+	    *cpi = 8;
+	    break;
+	  }
+	case 16:
+	  {
+	    *cpi = 6;
+	    break;
+	  }
+	default:
+	  {
+	    *cpi = 10;
+	    break;
+	  }
+	}
+#ifdef DEBUG
       fprintf (stderr, "SCS = %d", curchar);
+#endif
     }
   else
     {
