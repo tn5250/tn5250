@@ -26,23 +26,42 @@ extern "C" {
    struct _Tn5250Field;
    struct _Tn5250DBuffer;
 
-   struct _Tn5250Field {
-      struct _Tn5250Field /*@dependent@*/ /*@null@*/ *next;
-      struct _Tn5250Field /*@dependent@*/ /*@null@*/ *prev;
-      int id;
-      struct _Tn5250DBuffer /*@dependent@*/ *table;
+/****s* lib5250/Tn5250Field
+ * NAME
+ *    Tn5250Field
+ * SYNOPSIS
+ *    int w = tn5250_dbuffer_width(dbuffer);
+ *    Tn5250Field *field = tn5250_field_new(w);
+ *    field->start_row = 2;
+ *    field->start_col = 2;
+ *    field->length = 10;
+ *    field->FFW = TN5250_FIELD_NUM_ONLY | TN5250_FIELD_DUP_ENABLE;
+ *    field->FCW = 0;
+ *    tn5250_dbuffer_add_field (dbuffer, field);
+ * DESCRIPTION
+ *    The Tn5250Field object manages an input field on the display.  It
+ *    does not hold the actual data from the field; rather, that is
+ *    contained by the display buffer.
+ * SOURCE
+ */
+struct _Tn5250Field {
+   struct _Tn5250Field /*@dependent@*/ /*@null@*/ *next;
+   struct _Tn5250Field /*@dependent@*/ /*@null@*/ *prev;
+   int id;
+   struct _Tn5250DBuffer /*@dependent@*/ *table;
 
-      int w;	/* Display width, needed for some calcs */
+   int w;	/* Display width, needed for some calcs */
 
-      Tn5250Uint16 FFW;
-      Tn5250Uint16 FCW;
-      unsigned char attribute;
-      int start_row;
-      int start_col;
-      int length;
-   };
+   Tn5250Uint16 FFW;
+   Tn5250Uint16 FCW;
+   unsigned char attribute;
+   int start_row;
+   int start_col;
+   int length;
+};
 
-   typedef struct _Tn5250Field Tn5250Field;
+typedef struct _Tn5250Field Tn5250Field;
+/*******/
 
 /* Field Formats (Byte one) */
 #define TN5250_FIELD_BYPASS		0x2000
@@ -169,3 +188,5 @@ extern "C" {
 
 #endif
 #endif				/* FIELD_H */
+
+/* vi:set cindent sts=3 sw=3: */

@@ -95,26 +95,63 @@ extern "C" {
 #define K_FIELDPLUS     0520    /* curses KEY_SF */
 #define K_UNKNOW	0xffff
 
-   struct _Tn5250Display;
+struct _Tn5250Display;
 
-   struct _Tn5250Terminal {
-      SOCKET_TYPE conn_fd;
-      struct _Tn5250TerminalPrivate *data;
+/****s* lib5250/Tn5250Terminal
+ * NAME
+ *    Tn5250Terminal
+ * SYNOPSIS
+ *    Tn5250Terminal *term = get_my_terminal_object ();
+ *    int w,h,r,k,f;
+ *    tn5250_terminal_init(term);
+ *
+ *    w = tn5250_terminal_width(term);
+ *    h = tn5250_terminal_height(term);
+ *    f = tn5250_terminal_flags(term);
+ *
+ *    r = tn5250_terminal_waitevent(term);
+ *    if ((r & TN5250_TERMINAL_EVENT_KEY) != 0)
+ *	 k = tn5250_terminal_getkey(term);
+ *    if ((r & TN5250_TERMINAL_EVENT_QUIT) != 0)
+ *	 exit(0);
+ *    if ((r & TN5250_TERMINAL_EVENT_DATA) != 0)
+ *	 read_data_from_fd ();
+ *
+ *    tn5250_terminal_update(term,display);
+ *    tn5250_terminal_update_indicators(term,display);
+ *    tn5250_terminal_beep(term);
+ *
+ *    tn5250_terminal_term(term);
+ *    tn5250_terminal_destroy(term);
+ * DESCRIPTION
+ *    Manages a terminal interface, such as the Curses terminal interface,
+ *    the S/Lang terminal interface, or an X Windows based terminal.  This
+ *    is an abstract type, implementations are currently available in
+ *    cursesterm.c, slangterm.c, and one should shortly be available in
+ *    gtkterm.c.
+ * SOURCE
+ */
+struct _Tn5250Terminal {
+   SOCKET_TYPE conn_fd;
+   struct _Tn5250TerminalPrivate *data;
 
-      void (*init) (struct _Tn5250Terminal * This);
-      void (*term) (struct _Tn5250Terminal * This);
-      void (*destroy) (struct _Tn5250Terminal /*@only@*/ * This);
-      int (*width) (struct _Tn5250Terminal * This);
-      int (*height) (struct _Tn5250Terminal * This);
-      int (*flags) (struct _Tn5250Terminal * This);
-      void (*update) 			(struct _Tn5250Terminal * This,
-		                         struct _Tn5250Display *display);
-      void (*update_indicators) 	(struct _Tn5250Terminal * This,
-		                         struct _Tn5250Display *display);
-      int (*waitevent) (struct _Tn5250Terminal * This);
-      int (*getkey) (struct _Tn5250Terminal * This);
-      void (* beep) (struct _Tn5250Terminal * This);
-   };
+   void (*init) (struct _Tn5250Terminal * This);
+   void (*term) (struct _Tn5250Terminal * This);
+   void (*destroy) (struct _Tn5250Terminal /*@only@*/ * This);
+   int (*width) (struct _Tn5250Terminal * This);
+   int (*height) (struct _Tn5250Terminal * This);
+   int (*flags) (struct _Tn5250Terminal * This);
+   void (*update) 			(struct _Tn5250Terminal * This,
+				      struct _Tn5250Display *display);
+   void (*update_indicators) 	(struct _Tn5250Terminal * This,
+				      struct _Tn5250Display *display);
+   int (*waitevent) (struct _Tn5250Terminal * This);
+   int (*getkey) (struct _Tn5250Terminal * This);
+   void (* beep) (struct _Tn5250Terminal * This);
+};
+
+typedef struct _Tn5250Terminal Tn5250Terminal;
+/*******/
 
 #ifndef _TN5250_TERMINAL_PRIVATE_DEFINED
 #define _TN5250_TERMINAL_PRIVATE_DEFINED
@@ -123,7 +160,6 @@ extern "C" {
    };
 #endif
 
-   typedef struct _Tn5250Terminal Tn5250Terminal;
 
 /* Useful macros call ``methods'' on the terminal type. */
 #define tn5250_terminal_init(This) (* ((This)->init)) ((This))
@@ -145,3 +181,5 @@ extern "C" {
 
 #endif
 #endif				/* TERMINAL_H */
+
+/* vi:set cindent sts=3 sw=3: */

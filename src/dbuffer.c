@@ -15,7 +15,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
 #include "tn5250-config.h"
 #include <string.h>
 #include <stdio.h>
@@ -41,9 +40,17 @@
    }
 #endif
 
-/*
- *    Allocate a new display buffer.
- */
+/****f* lib5250/tn5250_dbuffer_new
+ * NAME
+ *    tn5250_dbuffer_new
+ * SYNOPSIS
+ *    ret = tn5250_dbuffer_new (width, height);
+ * INPUTS
+ *    int                  width      - 
+ *    int                  height     - 
+ * DESCRIPTION
+ *    Allocates a new display buffer.
+ *****/
 Tn5250DBuffer *tn5250_dbuffer_new(int width, int height)
 {
    int n;
@@ -74,10 +81,17 @@ Tn5250DBuffer *tn5250_dbuffer_new(int width, int height)
    return This;
 }
 
-/*
- *    Allocate a new display buffer and copy the contents of the old
+/****f* lib5250/tn5250_dbuffer_copy
+ * NAME
+ *    tn5250_dbuffer_copy
+ * SYNOPSIS
+ *    ret = tn5250_dbuffer_copy (dsp);
+ * INPUTS
+ *    Tn5250DBuffer *      dsp        - 
+ * DESCRIPTION
+ *    Allocates a new display buffer and copies the contents of the old
  *    one.
- */
+ *****/
 Tn5250DBuffer *tn5250_dbuffer_copy(Tn5250DBuffer * dsp)
 {
    int n;
@@ -113,9 +127,16 @@ Tn5250DBuffer *tn5250_dbuffer_copy(Tn5250DBuffer * dsp)
    return This;
 }
 
-/*
+/****f* lib5250/tn5250_dbuffer_destroy
+ * NAME
+ *    tn5250_dbuffer_destroy
+ * SYNOPSIS
+ *    tn5250_dbuffer_destroy (This);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ * DESCRIPTION
  *    Free a display buffer and destroy all sub-structures.
- */
+ *****/
 void tn5250_dbuffer_destroy(Tn5250DBuffer * This)
 {
    free(This->data);
@@ -125,9 +146,18 @@ void tn5250_dbuffer_destroy(Tn5250DBuffer * This)
    free(This);
 }
 
-/*
+/****f* lib5250/tn5250_dbuffer_set_header_data
+ * NAME
+ *    tn5250_dbuffer_set_header_data
+ * SYNOPSIS
+ *    tn5250_dbuffer_set_header_data (This, data, len);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ *    unsigned char *      data       - 
+ *    int                  len        - 
+ * DESCRIPTION
  *    Set the format table header data.
- */
+ *****/
 void tn5250_dbuffer_set_header_data(Tn5250DBuffer *This, unsigned char *data, int len)
 {
    if (This->header_data != NULL)
@@ -141,10 +171,18 @@ void tn5250_dbuffer_set_header_data(Tn5250DBuffer *This, unsigned char *data, in
    }
 }
 
-/*
+/****f* lib5250/tn5250_dbuffer_send_data_for_aid_key
+ * NAME
+ *    tn5250_dbuffer_send_data_for_aid_key
+ * SYNOPSIS
+ *    ret = tn5250_dbuffer_send_data_for_aid_key (This, k);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ *    int                  k          - 
+ * DESCRIPTION
  *    Determine, according to the format table header, if we should send
  *    data for this aid key.
- */
+ *****/
 int tn5250_dbuffer_send_data_for_aid_key(Tn5250DBuffer *This, int k)
 {
    int byte, bit, result;
@@ -199,9 +237,37 @@ send_data_done:
    return result;
 }
 
-/*
+/****f* lib5250/tn5250_dbuffer_field_data
+ * NAME
+ *    tn5250_dbuffer_field_data
+ * SYNOPSIS
+ *    ret = tn5250_dbuffer_field_data (This, field);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ *    Tn5250Field *        field      - 
+ * DESCRIPTION
+ *    Return a pointer into the display buffer data where the specified
+ *    field begins.
+ *****/
+unsigned char *tn5250_dbuffer_field_data(Tn5250DBuffer *This, Tn5250Field *field)
+{
+   return &This->data[
+      field->start_row * This->w + field->start_col
+      ];
+}
+
+/****f* lib5250/tn5250_dbuffer_set_size
+ * NAME
+ *    tn5250_dbuffer_set_size
+ * SYNOPSIS
+ *    tn5250_dbuffer_set_size (This, rows, cols);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ *    int                  rows       - 
+ *    int                  cols       - 
+ * DESCRIPTION
  *    Resize the display (say, to 132 columns ;)
- */
+ *****/
 void tn5250_dbuffer_set_size(Tn5250DBuffer * This, int rows, int cols)
 {
    This->w = cols;
@@ -214,6 +280,18 @@ void tn5250_dbuffer_set_size(Tn5250DBuffer * This, int rows, int cols)
    tn5250_dbuffer_clear(This);
 }
 
+/****f* lib5250/tn5250_dbuffer_cursor_set
+ * NAME
+ *    tn5250_dbuffer_cursor_set
+ * SYNOPSIS
+ *    tn5250_dbuffer_cursor_set (This, y, x);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ *    int                  y          - 
+ *    int                  x          - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 void tn5250_dbuffer_cursor_set(Tn5250DBuffer * This, int y, int x)
 {
    This->cy = y;
@@ -222,6 +300,16 @@ void tn5250_dbuffer_cursor_set(Tn5250DBuffer * This, int y, int x)
    ASSERT_VALID(This);
 }
 
+/****f* lib5250/tn5250_dbuffer_clear
+ * NAME
+ *    tn5250_dbuffer_clear
+ * SYNOPSIS
+ *    tn5250_dbuffer_clear (This);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 void tn5250_dbuffer_clear(Tn5250DBuffer * This)
 {
    int r, c;
@@ -230,6 +318,17 @@ void tn5250_dbuffer_clear(Tn5250DBuffer * This)
    tn5250_dbuffer_clear_table (This);
 }
 
+/****f* lib5250/tn5250_dbuffer_add_field
+ * NAME
+ *    tn5250_dbuffer_add_field
+ * SYNOPSIS
+ *    tn5250_dbuffer_add_field (This, field);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ *    Tn5250Field *        field      - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 void tn5250_dbuffer_add_field(Tn5250DBuffer *This, Tn5250Field *field)
 {
    field->id = This->field_count++;
@@ -237,6 +336,16 @@ void tn5250_dbuffer_add_field(Tn5250DBuffer *This, Tn5250Field *field)
    This->field_list = tn5250_field_list_add(This->field_list, field);
 }
 
+/****f* lib5250/tn5250_dbuffer_clear_table
+ * NAME
+ *    tn5250_dbuffer_clear_table
+ * SYNOPSIS
+ *    tn5250_dbuffer_clear_table (This);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 void tn5250_dbuffer_clear_table(Tn5250DBuffer * This)
 {
    TN5250_LOG(("tn5250_dbuffer_clear_table() entered.\n"));
@@ -250,6 +359,18 @@ void tn5250_dbuffer_clear_table(Tn5250DBuffer * This)
    }
 }
 
+/****f* lib5250/tn5250_dbuffer_field_yx
+ * NAME
+ *    tn5250_dbuffer_field_yx
+ * SYNOPSIS
+ *    ret = tn5250_dbuffer_field_yx (This, y, x);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ *    int                  y          - 
+ *    int                  x          - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 Tn5250Field *tn5250_dbuffer_field_yx (Tn5250DBuffer *This, int y, int x)
 {
    Tn5250Field *iter;
@@ -263,6 +384,17 @@ Tn5250Field *tn5250_dbuffer_field_yx (Tn5250DBuffer *This, int y, int x)
    return NULL; 
 }
 
+/****f* lib5250/tn5250_dbuffer_right
+ * NAME
+ *    tn5250_dbuffer_right
+ * SYNOPSIS
+ *    tn5250_dbuffer_right (This, n);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ *    int                  n          - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 void tn5250_dbuffer_right(Tn5250DBuffer * This, int n)
 {
    This->cx += n;
@@ -273,6 +405,16 @@ void tn5250_dbuffer_right(Tn5250DBuffer * This, int n)
    ASSERT_VALID(This);
 }
 
+/****f* lib5250/tn5250_dbuffer_left
+ * NAME
+ *    tn5250_dbuffer_left
+ * SYNOPSIS
+ *    tn5250_dbuffer_left (This);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 void tn5250_dbuffer_left(Tn5250DBuffer * This)
 {
    This->cx--;
@@ -287,6 +429,16 @@ void tn5250_dbuffer_left(Tn5250DBuffer * This)
    ASSERT_VALID(This);
 }
 
+/****f* lib5250/tn5250_dbuffer_up
+ * NAME
+ *    tn5250_dbuffer_up
+ * SYNOPSIS
+ *    tn5250_dbuffer_up (This);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 void tn5250_dbuffer_up(Tn5250DBuffer * This)
 {
    if (--This->cy == -1)
@@ -295,6 +447,16 @@ void tn5250_dbuffer_up(Tn5250DBuffer * This)
    ASSERT_VALID(This);
 }
 
+/****f* lib5250/tn5250_dbuffer_down
+ * NAME
+ *    tn5250_dbuffer_down
+ * SYNOPSIS
+ *    tn5250_dbuffer_down (This);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 void tn5250_dbuffer_down(Tn5250DBuffer * This)
 {
    if (++This->cy == This->h)
@@ -303,6 +465,16 @@ void tn5250_dbuffer_down(Tn5250DBuffer * This)
    ASSERT_VALID(This);
 }
 
+/****f* lib5250/tn5250_dbuffer_goto_ic
+ * NAME
+ *    tn5250_dbuffer_goto_ic
+ * SYNOPSIS
+ *    tn5250_dbuffer_goto_ic (This);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 void tn5250_dbuffer_goto_ic(Tn5250DBuffer * This)
 {
    ASSERT_VALID(This);
@@ -313,6 +485,17 @@ void tn5250_dbuffer_goto_ic(Tn5250DBuffer * This)
    ASSERT_VALID(This);
 }
 
+/****f* lib5250/tn5250_dbuffer_addch
+ * NAME
+ *    tn5250_dbuffer_addch
+ * SYNOPSIS
+ *    tn5250_dbuffer_addch (This, c);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ *    unsigned char        c          - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 void tn5250_dbuffer_addch(Tn5250DBuffer * This, unsigned char c)
 {
    ASSERT_VALID(This);
@@ -323,6 +506,17 @@ void tn5250_dbuffer_addch(Tn5250DBuffer * This, unsigned char c)
    ASSERT_VALID(This);
 }
 
+/****f* lib5250/tn5250_dbuffer_del
+ * NAME
+ *    tn5250_dbuffer_del
+ * SYNOPSIS
+ *    tn5250_dbuffer_del (This, shiftcount);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ *    int                  shiftcount - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 void tn5250_dbuffer_del(Tn5250DBuffer * This, int shiftcount)
 {
    int x = This->cx, y = This->cy, fwdx, fwdy, i;
@@ -343,6 +537,18 @@ void tn5250_dbuffer_del(Tn5250DBuffer * This, int shiftcount)
    ASSERT_VALID(This);
 }
 
+/****f* lib5250/tn5250_dbuffer_ins
+ * NAME
+ *    tn5250_dbuffer_ins
+ * SYNOPSIS
+ *    tn5250_dbuffer_ins (This, c, shiftcount);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ *    unsigned char        c          - 
+ *    int                  shiftcount - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 void tn5250_dbuffer_ins(Tn5250DBuffer * This, unsigned char c, int shiftcount)
 {
    int x = This->cx, y = This->cy, i;
@@ -362,6 +568,18 @@ void tn5250_dbuffer_ins(Tn5250DBuffer * This, unsigned char c, int shiftcount)
    ASSERT_VALID(This);
 }
 
+/****f* lib5250/tn5250_dbuffer_set_ic
+ * NAME
+ *    tn5250_dbuffer_set_ic
+ * SYNOPSIS
+ *    tn5250_dbuffer_set_ic (This, y, x);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ *    int                  y          - 
+ *    int                  x          - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 void tn5250_dbuffer_set_ic(Tn5250DBuffer * This, int y, int x)
 {
    This->tcx = x;
@@ -370,6 +588,19 @@ void tn5250_dbuffer_set_ic(Tn5250DBuffer * This, int y, int x)
    ASSERT_VALID(This);
 }
 
+/****f* lib5250/tn5250_dbuffer_roll
+ * NAME
+ *    tn5250_dbuffer_roll
+ * SYNOPSIS
+ *    tn5250_dbuffer_roll (This, top, bot, lines);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ *    int                  top        - 
+ *    int                  bot        - 
+ *    int                  lines      - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 void tn5250_dbuffer_roll(Tn5250DBuffer * This, int top, int bot, int lines)
 {
    int n, c;
@@ -402,6 +633,18 @@ void tn5250_dbuffer_roll(Tn5250DBuffer * This, int top, int bot, int lines)
    ASSERT_VALID(This);
 }
 
+/****f* lib5250/tn5250_dbuffer_char_at
+ * NAME
+ *    tn5250_dbuffer_char_at
+ * SYNOPSIS
+ *    ret = tn5250_dbuffer_char_at (This, y, x);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ *    int                  y          - 
+ *    int                  x          - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 unsigned char tn5250_dbuffer_char_at(Tn5250DBuffer * This, int y, int x)
 {
    ASSERT_VALID(This);
@@ -412,4 +655,25 @@ unsigned char tn5250_dbuffer_char_at(Tn5250DBuffer * This, int y, int x)
    return This->data[y * This->w + x];
 }
 
-/* vi:set cindent sts=3 sw=3: */
+/****f* lib5250/tn5250_dbuffer_msg_line
+ * NAME
+ *    tn5250_dbuffer_msg_line
+ * SYNOPSIS
+ *    ret = tn5250_dbuffer_msg_line (This);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ * DESCRIPTION
+ *    Determine which line we should use as the operator error line.
+ *****/
+int tn5250_dbuffer_msg_line (Tn5250DBuffer *This)
+{
+   int l;
+   l = 1000;
+   if (This->header_data && (This->header_length >= 4))
+      l = This->header_data[3] - 1;
+   if (l > tn5250_dbuffer_height(This) - 1)
+      l = tn5250_dbuffer_height(This) - 1;
+   return l;
+}
+
+

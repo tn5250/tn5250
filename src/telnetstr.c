@@ -15,7 +15,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
 #include "tn5250-config.h"
 #ifdef WIN32
 #define USE_WINDOWS
@@ -156,6 +155,16 @@ static void telnet_stream_send_packet(Tn5250Stream * This, int length,
 #define DONT 254
 #define IAC  255
 
+/****f* lib5250/tn5250_telnet_stream_init
+ * NAME
+ *    tn5250_telnet_stream_init
+ * SYNOPSIS
+ *    ret = tn5250_telnet_stream_init (This);
+ * INPUTS
+ *    Tn5250Stream *       This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 int tn5250_telnet_stream_init (Tn5250Stream *This)
 {
    This->connect = telnet_stream_connect;
@@ -166,10 +175,18 @@ int tn5250_telnet_stream_init (Tn5250Stream *This)
    return 0; /* Ok */
 }
 
-/*
+/****i* lib5250/telnet_stream_connect
+ * NAME
+ *    telnet_stream_connect
+ * SYNOPSIS
+ *    ret = telnet_stream_connect (This, to);
+ * INPUTS
+ *    Tn5250Stream *       This       - 
+ *    const char *         to         - 
+ * DESCRIPTION
  *    Connects to server.  The `to' parameter is in the form
  *    host[:port].
- */
+ *****/
 static int telnet_stream_connect(Tn5250Stream * This, const char *to)
 {
    struct sockaddr_in serv_addr;
@@ -234,23 +251,47 @@ static int telnet_stream_connect(Tn5250Stream * This, const char *to)
    return 0;
 }
 
-/*
+/****i* lib5250/telnet_stream_disconnect
+ * NAME
+ *    telnet_stream_disconnect
+ * SYNOPSIS
+ *    telnet_stream_disconnect (This);
+ * INPUTS
+ *    Tn5250Stream *       This       - 
+ * DESCRIPTION
  *    Disconnect from the remote host.
- */
+ *****/
 static void telnet_stream_disconnect(Tn5250Stream * This)
 {
    CLOSESOCKET(This->sockfd);
 }
 
+/****i* lib5250/telnet_stream_destroy
+ * NAME
+ *    telnet_stream_destroy
+ * SYNOPSIS
+ *    telnet_stream_destroy (This);
+ * INPUTS
+ *    Tn5250Stream *       This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static void telnet_stream_destroy(Tn5250Stream *This)
 {
    /* noop */
 }
 
-/*
+/****i* lib5250/telnet_stream_get_next
+ * NAME
+ *    telnet_stream_get_next
+ * SYNOPSIS
+ *    ret = telnet_stream_get_next (This);
+ * INPUTS
+ *    Tn5250Stream *       This       - 
+ * DESCRIPTION
  *    Gets the next byte from the socket or returns -1 if no data is
- *      currently available on the socket or -2 if we have been disconnected.
- */
+ *    currently available on the socket or -2 if we have been disconnected.
+ *****/
 static int telnet_stream_get_next(Tn5250Stream * This)
 {
    unsigned char curchar;
@@ -282,9 +323,18 @@ static int telnet_stream_get_next(Tn5250Stream * This)
    return (int) curchar;
 }
 
-/*
+/****i* lib5250/telnet_stream_do_verb
+ * NAME
+ *    telnet_stream_do_verb
+ * SYNOPSIS
+ *    telnet_stream_do_verb (This, verb, what);
+ * INPUTS
+ *    Tn5250Stream *       This       - 
+ *    unsigned char        verb       - 
+ *    unsigned char        what       - 
+ * DESCRIPTION
  *    Process the telnet DO, DONT, WILL, or WONT escape sequence.
- */
+ *****/
 static void telnet_stream_do_verb(Tn5250Stream * This, unsigned char verb, unsigned char what)
 {
    unsigned char reply[3];
@@ -344,9 +394,18 @@ static void telnet_stream_do_verb(Tn5250Stream * This, unsigned char verb, unsig
    }
 }
 
-/*
+/****i* lib5250/telnet_stream_sb_var_value
+ * NAME
+ *    telnet_stream_sb_var_value
+ * SYNOPSIS
+ *    telnet_stream_sb_var_value (buf, var, value);
+ * INPUTS
+ *    Tn5250Buffer *       buf        - 
+ *    unsigned char *      var        - 
+ *    unsigned char *      value      - 
+ * DESCRIPTION
  *    Utility function for constructing replies to NEW_ENVIRON requests.
- */
+ *****/
 static void telnet_stream_sb_var_value(Tn5250Buffer * buf, unsigned char *var, unsigned char *value)
 {
    tn5250_buffer_append_byte(buf, VAR);
@@ -355,9 +414,18 @@ static void telnet_stream_sb_var_value(Tn5250Buffer * buf, unsigned char *var, u
    tn5250_buffer_append_data(buf, value, strlen((char *) value));
 }
 
-/*
+/****i* lib5250/telnet_stream_sb
+ * NAME
+ *    telnet_stream_sb
+ * SYNOPSIS
+ *    telnet_stream_sb (This, sb_buf, sb_len);
+ * INPUTS
+ *    Tn5250Stream *       This       - 
+ *    unsigned char *      sb_buf     - 
+ *    int                  sb_len     - 
+ * DESCRIPTION
  *    Handle telnet SB escapes, which are the option-specific negotiations.
- */
+ *****/
 static void telnet_stream_sb(Tn5250Stream * This, unsigned char *sb_buf, int sb_len)
 {
    Tn5250Buffer out_buf;
@@ -418,11 +486,18 @@ static void telnet_stream_sb(Tn5250Stream * This, unsigned char *sb_buf, int sb_
    tn5250_buffer_free(&out_buf);
 }
 
-/*
+/****i* lib5250/telnet_stream_get_byte
+ * NAME
+ *    telnet_stream_get_byte
+ * SYNOPSIS
+ *    ret = telnet_stream_get_byte (This);
+ * INPUTS
+ *    Tn5250Stream *       This       - 
+ * DESCRIPTION
  *    Returns the next byte from the 5250 data stream, or return -1 if no data
- *      is waiting on the socket or -2 if disconnected, or -END_OF_RECORD if a 
- *      telnet EOR escape sequence was encountered.
- */
+ *    is waiting on the socket or -2 if disconnected, or -END_OF_RECORD if a 
+ *    telnet EOR escape sequence was encountered.
+ *****/
 static int telnet_stream_get_byte(Tn5250Stream * This)
 {
    int temp;
@@ -511,10 +586,19 @@ static int telnet_stream_get_byte(Tn5250Stream * This)
    return (int) temp;
 }
 
-/*
+/****i* lib5250/telnet_stream_write
+ * NAME
+ *    telnet_stream_write
+ * SYNOPSIS
+ *    telnet_stream_write (This, data, size);
+ * INPUTS
+ *    Tn5250Stream *       This       - 
+ *    unsigned char *      data       - 
+ *    int                  size       - 
+ * DESCRIPTION
  *    Writes size bytes of data (pointed to by *data) to the 5250 data stream.
- *      This is also a temporary method to aid in the conversion process.  
- */
+ *    This is also a temporary method to aid in the conversion process.  
+ *****/
 static void telnet_stream_write(Tn5250Stream * This, unsigned char *data, int size)
 {
    int r;
@@ -561,8 +645,7 @@ static void telnet_stream_write(Tn5250Stream * This, unsigned char *data, int si
 /*
  *    Send a packet, prepending a header and escaping any naturally
  *      occuring IAC characters.
- */
-static void telnet_stream_send_packet(Tn5250Stream * This, int length, int flowtype, unsigned char flags,
+ */static void telnet_stream_send_packet(Tn5250Stream * This, int length, int flowtype, unsigned char flags,
 			       unsigned char opcode, unsigned char *data)
 {
    Tn5250Buffer out_buf;
@@ -607,10 +690,17 @@ static void telnet_stream_send_packet(Tn5250Stream * This, int length, int flowt
    tn5250_buffer_free(&out_buf);
 }
 
-/*
+/****f* lib5250/telnet_stream_handle_receive
+ * NAME
+ *    telnet_stream_handle_receive
+ * SYNOPSIS
+ *    ret = telnet_stream_handle_receive (This);
+ * INPUTS
+ *    Tn5250Stream *       This       - 
+ * DESCRIPTION
  *    Read as much data as possible in a non-blocking fasion, form it
- *      into Tn5250Record structures and queue them for retrieval.
- */
+ *    into Tn5250Record structures and queue them for retrieval.
+ *****/
 int telnet_stream_handle_receive(Tn5250Stream * This)
 {
    int c;
@@ -636,9 +726,16 @@ int telnet_stream_handle_receive(Tn5250Stream * This)
    return (c != -2);
 }
 
-/*
+/****i* lib5250/telnet_stream_escape
+ * NAME
+ *    telnet_stream_escape
+ * SYNOPSIS
+ *    telnet_stream_escape (in);
+ * INPUTS
+ *    Tn5250Buffer *       in         - 
+ * DESCRIPTION
  *    Escape IACs in data before sending it to the host.
- */
+ *****/
 static void telnet_stream_escape(Tn5250Buffer * in)
 {
    Tn5250Buffer out;
@@ -656,4 +753,3 @@ static void telnet_stream_escape(Tn5250Buffer * in)
    memcpy(in, &out, sizeof(Tn5250Buffer));
 }
 
-/* vi:set cindent sts=3 sw=3: */

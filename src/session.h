@@ -69,37 +69,48 @@ extern "C" {
 
 #define TN5250_SESSION_KB_SIZE	        100
 
-#define TN5250_SESSION_KEY_QUEUE_SIZE   100
-
    struct _Tn5250Display;
 
-   struct _Tn5250Session {
-      struct _Tn5250Display *		display;
-      
-      int (* handle_aidkey) (struct _Tn5250Session *This, int aidcode);
+/****s* lib5250/Tn5250Session
+ * NAME
+ *    Tn5250Session
+ * SYNOPSIS
+ *    Tn5250Session *sess = tn5250_session_new ();
+ *    tn5250_session_set_stream(sess, stream);
+ *    tn5250_display_set_session(display,sess);
+ *    tn5250_session_main_loop(sess);
+ *    tn5250_session_destroy(sess);
+ * DESCRIPTION
+ *    Manages the communications session with the host and parses 5250-
+ *    protocol communications records into display manipulation commands.
+ * SOURCE
+ */
+struct _Tn5250Session {
+   struct _Tn5250Display *		display;
+   
+   int (* handle_aidkey) (struct _Tn5250Session *This, int aidcode);
 
-      Tn5250Stream /*@owned@*/ /*@null@*/ *stream;
-      Tn5250Record /*@owned@*/ *record;
-      int read_opcode;	/* Current read opcode. */
-      int invited;
+   Tn5250Stream /*@owned@*/ /*@null@*/ *stream;
+   Tn5250Record /*@owned@*/ *record;
+   int read_opcode;	/* Current read opcode. */
+   int invited;
+};
 
-      /* Queued keystroke ring buffer. */
-      int key_queue_head, key_queue_tail;
-      int key_queue[TN5250_SESSION_KEY_QUEUE_SIZE];
-   };
+typedef struct _Tn5250Session Tn5250Session;
+/******/
 
-   typedef struct _Tn5250Session Tn5250Session;
+extern Tn5250Session /*@only@*/ *tn5250_session_new(void);
+extern void tn5250_session_destroy(Tn5250Session /*@only@*/ * This);
 
-   extern Tn5250Session /*@only@*/ *tn5250_session_new(void);
-   extern void tn5250_session_destroy(Tn5250Session /*@only@*/ * This);
-
-   extern void tn5250_session_set_stream(Tn5250Session * This, Tn5250Stream /*@only@*/ * newstream);
+extern void tn5250_session_set_stream(Tn5250Session * This, Tn5250Stream /*@only@*/ * newstream);
 #define tn5250_session_stream(This) ((This)->stream)
 
-   extern void tn5250_session_main_loop(Tn5250Session * This);
+extern void tn5250_session_main_loop(Tn5250Session * This);
 
 #ifdef __cplusplus
 }
 
 #endif
 #endif				/* SESSION_H */
+
+/* vi:set cindent sts=3 sw=3: */

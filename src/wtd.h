@@ -24,9 +24,23 @@ extern "C" {
 
 struct _Tn5250Buffer;
 struct _Tn5250DBuffer;
-struct _Tn5250Table;
 
-/*
+/****s* lib5250/Tn5250WTDContext
+ * NAME
+ *    Tn5250WTDContext
+ *
+ * SYNOPSIS
+ *    Tn5250Buffer buf;
+ *    Tn5250WTDContext *ctx;
+ *
+ *    tn5250_buffer_init(&buf);
+ *    ctx = tn5250_wtd_context_new (&buf, NULL, dst_dbuffer);
+ *    tn5250_wtd_context_convert (ctx);
+ *    tn5250_wtd_context_destroy (ctx);
+ *
+ *    tn5250_buffer_log(&buf);
+ *
+ * DESCRIPTION
  *    The WTD context object is used to calculate (and optimize) commands and
  *    WTD-type orders to transition from the source display buffer and format
  *    table to the destination display buffer and format table.
@@ -35,7 +49,10 @@ struct _Tn5250Table;
  *    we only accept NULL for the source display buffer and format table and
  *    create a full set of commands and orders which we send back to the host
  *    (and the host sends back to us) for the save/restore screen
- *    functionality.
+ *    functionality.  Differential Write to Display orders and data should
+ *    be implemented when the 5250 server is born.
+ *
+ * SOURCE
  */
 struct _Tn5250WTDContext {
    struct _Tn5250Buffer *	 buffer;
@@ -58,6 +75,7 @@ struct _Tn5250WTDContext {
 };
 
 typedef struct _Tn5250WTDContext Tn5250WTDContext;
+/*******/
 
 extern Tn5250WTDContext * tn5250_wtd_context_new    (struct _Tn5250Buffer *buf,
 						     struct _Tn5250DBuffer *sd,

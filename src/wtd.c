@@ -15,7 +15,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
 #include "tn5250-config.h"
 #include <string.h>
 #include <stdio.h>
@@ -32,6 +31,9 @@
 #include "codes5250.h"
 #include "wtd.h"
 
+/* TODO:
+ * - We need to generate TD (Transparent Data) orders if needed.
+ */
 static void tn5250_wtd_context_putc (Tn5250WTDContext *This, unsigned char c);
 static void tn5250_wtd_context_ra_putc (Tn5250WTDContext *This, unsigned char c);
 static void tn5250_wtd_context_ra_flush (Tn5250WTDContext *This);
@@ -39,9 +41,18 @@ static void tn5250_wtd_context_write_field (Tn5250WTDContext *This, Tn5250Field 
 static void tn5250_wtd_context_convert_nosrc (Tn5250WTDContext *This);
 static Tn5250Field *tn5250_wtd_context_peek_field (Tn5250WTDContext *This);
 
-/*
+/****f* lib5250/tn5250_wtd_context_new
+ * NAME
+ *    tn5250_wtd_context_new
+ * SYNOPSIS
+ *    ret = tn5250_wtd_context_new (buffer, sd, dd);
+ * INPUTS
+ *    Tn5250Buffer *       buffer     - 
+ *    Tn5250DBuffer *      sd         - 
+ *    Tn5250DBuffer *      dd         - 
+ * DESCRIPTION
  *    Create a new instance of our WTD context object and initialize it.
- */
+ *****/
 Tn5250WTDContext *tn5250_wtd_context_new (Tn5250Buffer *buffer, Tn5250DBuffer *sd, Tn5250DBuffer *dd)
 {
    Tn5250WTDContext *This;
@@ -62,18 +73,32 @@ Tn5250WTDContext *tn5250_wtd_context_new (Tn5250Buffer *buffer, Tn5250DBuffer *s
    return This;
 }
 
-/*
+/****f* lib5250/tn5250_wtd_context_destroy
+ * NAME
+ *    tn5250_wtd_context_destroy
+ * SYNOPSIS
+ *    tn5250_wtd_context_destroy (This);
+ * INPUTS
+ *    Tn5250WTDContext *   This       - 
+ * DESCRIPTION
  *    Destroy a WTD context object.
- */
+ *****/
 void tn5250_wtd_context_destroy (Tn5250WTDContext *This)
 {
    TN5250_ASSERT (This != NULL);
    free (This);
 }
 
-/*
+/****f* lib5250/tn5250_wtd_context_convert
+ * NAME
+ *    tn5250_wtd_context_convert
+ * SYNOPSIS
+ *    tn5250_wtd_context_convert (This);
+ * INPUTS
+ *    Tn5250WTDContext *   This       - 
+ * DESCRIPTION
  *    Convert the display info to WTD data.
- */
+ *****/
 void tn5250_wtd_context_convert (Tn5250WTDContext *This)
 {
    /* The differential conversion is not yet implemented, and probably
@@ -83,10 +108,17 @@ void tn5250_wtd_context_convert (Tn5250WTDContext *This)
    tn5250_wtd_context_convert_nosrc (This);
 }
 
-/*
+/****i* lib5250/tn5250_wtd_context_convert_nosrc
+ * NAME
+ *    tn5250_wtd_context_convert_nosrc
+ * SYNOPSIS
+ *    tn5250_wtd_context_convert_nosrc (This);
+ * INPUTS
+ *    Tn5250WTDContext *   This       - 
+ * DESCRIPTION
  *    This is our routine which is used when we don't know the prior state
  *    of the format table or display buffer.
- */
+ *****/
 static void tn5250_wtd_context_convert_nosrc (Tn5250WTDContext *This)
 {
    unsigned char c;
@@ -144,10 +176,17 @@ static void tn5250_wtd_context_convert_nosrc (Tn5250WTDContext *This)
 #endif
 }
 
-/*
+/****i* lib5250/tn5250_wtd_context_peek_field
+ * NAME
+ *    tn5250_wtd_context_peek_field
+ * SYNOPSIS
+ *    ret = tn5250_wtd_context_peek_field (This);
+ * INPUTS
+ *    Tn5250WTDContext *   This       - 
+ * DESCRIPTION
  *    Return a pointer to the field that _starts_ at the next position on the
  *    display, or NULL if no field starts there.
- */
+ *****/
 static Tn5250Field *tn5250_wtd_context_peek_field (Tn5250WTDContext *This)
 {
    int nx = This->x, ny = This->y;
@@ -169,16 +208,35 @@ static Tn5250Field *tn5250_wtd_context_peek_field (Tn5250WTDContext *This)
    return field;
 }
 
-/*
+/****i* lib5250/tn5250_wtd_context_putc
+ * NAME
+ *    tn5250_wtd_context_putc
+ * SYNOPSIS
+ *    tn5250_wtd_context_putc (This, c);
+ * INPUTS
+ *    Tn5250WTDContext *   This       - 
+ *    unsigned char        c          - 
+ * DESCRIPTION
  *    Put a character (which may be an attribute or a parameter for an order)
  *    directly into the buffer.  Flush the RA buffer if necessary.
- */
+ *****/
 static void tn5250_wtd_context_putc (Tn5250WTDContext *This, unsigned char c)
 {
    tn5250_wtd_context_ra_flush (This);
    tn5250_buffer_append_byte (This->buffer, c);
 }
 
+/****i* lib5250/tn5250_wtd_context_ra_putc
+ * NAME
+ *    tn5250_wtd_context_ra_putc
+ * SYNOPSIS
+ *    tn5250_wtd_context_ra_putc (This, c);
+ * INPUTS
+ *    Tn5250WTDContext *   This       - 
+ *    unsigned char        c          - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static void tn5250_wtd_context_ra_putc (Tn5250WTDContext *This, unsigned char c)
 {
    if (This->ra_char != c)
@@ -187,6 +245,16 @@ static void tn5250_wtd_context_ra_putc (Tn5250WTDContext *This, unsigned char c)
    This->ra_count++;
 }
 
+/****i* lib5250/tn5250_wtd_context_ra_flush
+ * NAME
+ *    tn5250_wtd_context_ra_flush
+ * SYNOPSIS
+ *    tn5250_wtd_context_ra_flush (This);
+ * INPUTS
+ *    Tn5250WTDContext *   This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static void tn5250_wtd_context_ra_flush (Tn5250WTDContext *This)
 {
    if (This->ra_count == 0)
@@ -227,9 +295,18 @@ static void tn5250_wtd_context_ra_flush (Tn5250WTDContext *This)
    This->ra_count = 0;
 }
 
-/*
+/****i* lib5250/tn5250_wtd_context_write_field
+ * NAME
+ *    tn5250_wtd_context_write_field
+ * SYNOPSIS
+ *    tn5250_wtd_context_write_field (This, field, attr);
+ * INPUTS
+ *    Tn5250WTDContext *   This       - 
+ *    Tn5250Field *        field      - 
+ *    unsigned char        attr       - 
+ * DESCRIPTION
  *    Write the SF order and the field's information.
- */
+ *****/
 static void tn5250_wtd_context_write_field (Tn5250WTDContext *This, Tn5250Field *field, unsigned char attr)
 {
    TN5250_LOG (("Writing SF order in stream data.\n"));
@@ -257,4 +334,3 @@ static void tn5250_wtd_context_write_field (Tn5250WTDContext *This, Tn5250Field 
    tn5250_wtd_context_putc (This, (unsigned char)(field->length & 0x00ff));
 }
 
-/* vi:set cindent sts=3 sw=3: */

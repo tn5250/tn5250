@@ -15,7 +15,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
 #include "tn5250-config.h"
 
 #include <stdio.h>
@@ -27,6 +26,16 @@
 #include "buffer.h"
 #include "record.h"
 
+/****f* lib5250/tn5250_record_new
+ * NAME
+ *    tn5250_record_new
+ * SYNOPSIS
+ *    ret = tn5250_record_new ();
+ * INPUTS
+ *    None
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 Tn5250Record *tn5250_record_new()
 {
    Tn5250Record *This = tn5250_new(Tn5250Record, 1);
@@ -41,6 +50,16 @@ Tn5250Record *tn5250_record_new()
    return This;
 }
 
+/****f* lib5250/tn5250_record_destroy
+ * NAME
+ *    tn5250_record_destroy
+ * SYNOPSIS
+ *    tn5250_record_destroy (This);
+ * INPUTS
+ *    Tn5250Record *       This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 void tn5250_record_destroy(Tn5250Record * This)
 {
    if (This != NULL) {
@@ -49,6 +68,16 @@ void tn5250_record_destroy(Tn5250Record * This)
    }
 }
 
+/****f* lib5250/tn5250_record_get_byte
+ * NAME
+ *    tn5250_record_get_byte
+ * SYNOPSIS
+ *    ret = tn5250_record_get_byte (This);
+ * INPUTS
+ *    Tn5250Record *       This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 unsigned char tn5250_record_get_byte(Tn5250Record * This)
 {
    This->cur_pos++;
@@ -56,6 +85,16 @@ unsigned char tn5250_record_get_byte(Tn5250Record * This)
    return (tn5250_buffer_data (&(This->data)))[This->cur_pos - 1];
 }
 
+/****f* lib5250/tn5250_record_unget_byte
+ * NAME
+ *    tn5250_record_unget_byte
+ * SYNOPSIS
+ *    tn5250_record_unget_byte (This);
+ * INPUTS
+ *    Tn5250Record *       This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 void tn5250_record_unget_byte(Tn5250Record * This)
 {
    TN5250_LOG(("Record::UnGetByte: entered.\n"));
@@ -63,20 +102,48 @@ void tn5250_record_unget_byte(Tn5250Record * This)
    This->cur_pos--;
 }
 
+/****f* lib5250/tn5250_record_is_chain_end
+ * NAME
+ *    tn5250_record_is_chain_end
+ * SYNOPSIS
+ *    ret = tn5250_record_is_chain_end (This);
+ * INPUTS
+ *    Tn5250Record *       This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 int tn5250_record_is_chain_end(Tn5250Record * This)
 {
    return tn5250_record_length(This) == This->cur_pos;
 }
 
+/****f* lib5250/tn5250_record_dump
+ * NAME
+ *    tn5250_record_dump
+ * SYNOPSIS
+ *    tn5250_record_dump (This);
+ * INPUTS
+ *    Tn5250Record *       This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 void tn5250_record_dump(Tn5250Record * This)
 {
    tn5250_buffer_log (&(This->data),"@record");
    TN5250_LOG (("@eor\n"));
 }
 
-/*
+/****f* lib5250/tn5250_record_list_add
+ * NAME
+ *    tn5250_record_list_add
+ * SYNOPSIS
+ *    ret = tn5250_record_list_add (list, record);
+ * INPUTS
+ *    Tn5250Record *       list       - 
+ *    Tn5250Record *       record     - 
+ * DESCRIPTION
  *    Add a record to the end of a list of records.
- */
+ *****/
 Tn5250Record *tn5250_record_list_add(Tn5250Record * list, Tn5250Record * record)
 {
    if (list == NULL) {
@@ -90,9 +157,17 @@ Tn5250Record *tn5250_record_list_add(Tn5250Record * list, Tn5250Record * record)
    return list;
 }
 
-/*
+/****f* lib5250/tn5250_record_list_remove
+ * NAME
+ *    tn5250_record_list_remove
+ * SYNOPSIS
+ *    ret = tn5250_record_list_remove (list, record);
+ * INPUTS
+ *    Tn5250Record *       list       - 
+ *    Tn5250Record *       record     - 
+ * DESCRIPTION
  *    Remove a record from a list of records.
- */
+ *****/
 Tn5250Record *tn5250_record_list_remove(Tn5250Record * list, Tn5250Record * record)
 {
    if (list == NULL)
@@ -111,9 +186,16 @@ Tn5250Record *tn5250_record_list_remove(Tn5250Record * list, Tn5250Record * reco
    return list;
 }
 
-/*
+/****f* lib5250/tn5250_record_list_destroy
+ * NAME
+ *    tn5250_record_list_destroy
+ * SYNOPSIS
+ *    ret = tn5250_record_list_destroy (list);
+ * INPUTS
+ *    Tn5250Record *       list       - 
+ * DESCRIPTION
  *    Destroy all records in a record list and return NULL.
- */
+ *****/
 Tn5250Record *tn5250_record_list_destroy(Tn5250Record * list)
 {
    Tn5250Record *iter, *next;
@@ -128,4 +210,3 @@ Tn5250Record *tn5250_record_list_destroy(Tn5250Record * list)
    return NULL;
 }
 
-/* vi:set sts=3 sw=3: */

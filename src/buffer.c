@@ -26,12 +26,32 @@
 
 #define BUFFER_DELTA 128
 
+/****f* lib5250/tn5250_buffer_init
+ * NAME
+ *    tn5250_buffer_init
+ * SYNOPSIS
+ *    tn5250_buffer_init (&buf);
+ * INPUTS
+ *    Tn5250Buffer *	buf	  - Pointer to a Tn5250Buffer object.
+ * DESCRIPTION
+ *    Zeros internal members.
+ *****/
 void tn5250_buffer_init(Tn5250Buffer * This)
 {
    This->len = This->allocated = 0;
    This->data = NULL;
 }
 
+/****f* lib5250/tn5250_buffer_free
+ * NAME
+ *    tn5250_buffer_free
+ * SYNOPSIS
+ *    tn5250_buffer_free (&buf);
+ * INPUTS
+ *    Tn5250Buffer *	buf	 - Pointer to a buffer object.
+ * DESCRIPTION
+ *    Frees variable-length data and zeros internal members.
+ *****/
 void tn5250_buffer_free(Tn5250Buffer * This)
 {
    if (This->data != NULL)
@@ -40,6 +60,19 @@ void tn5250_buffer_free(Tn5250Buffer * This)
    This->len = This->allocated = 0;
 }
 
+/****f* lib5250/tn5250_buffer_append_byte
+ * NAME
+ *    tn5250_buffer_append_byte
+ * SYNOPSIS
+ *    tn5250_buffer_append_byte (&buf, byte);
+ * INPUTS
+ *    Tn5250Buffer *	buf	 - Pointer to a buffer object.
+ *    unsigned char byte	 - The byte to append.
+ * DESCRIPTION
+ *    Appends a single byte to the end of the variable-length data
+ *    and reallocates the buffer if necessary to accomodate the new
+ *    byte.
+ *****/
 void tn5250_buffer_append_byte(Tn5250Buffer * This, unsigned char b)
 {
    if (This->len + 1 >= This->allocated) {
@@ -55,12 +88,39 @@ void tn5250_buffer_append_byte(Tn5250Buffer * This, unsigned char b)
    This->data[This->len++] = b;
 }
 
+/****f* lib5250/tn5250_buffer_append_data
+ * NAME
+ *    tn5250_buffer_append_data
+ * SYNOPSIS
+ *    tn5250_buffer_append_data (&buf, data, len);
+ * INPUTS
+ *    Tn5250Buffer *	buf	    - Pointer to a buffer object.
+ *    unsigned char *	data	    - Data to append.
+ *    int		len	    - Length of data to append.
+ * DESCRIPTION
+ *    Appends a variable number of bytes to the end of the variable-length
+ *    data and reallocates the buffer if necessary to accomodate the new
+ *    data.
+ *****/
 void tn5250_buffer_append_data(Tn5250Buffer * This, unsigned char *data, int len)
 {
    while (len--)
       tn5250_buffer_append_byte(This, *data++);
 }
 
+/****f* lib5250/tn5250_buffer_log
+ * NAME
+ *    tn5250_buffer_log
+ * SYNOPSIS
+ *    tn5250_buffer_log (&buf,"> ");
+ * INPUTS
+ *    Tn5250Buffer *	buf	    - Pointer to a buffer object.
+ *    const char *	prefix	    - Character string to prefix dump lines
+ *                                    with in log.
+ * DESCRIPTION
+ *    Dumps the contents of the buffer to the 5250 logfile, if one is
+ *    currently open.
+ *****/
 void tn5250_buffer_log(Tn5250Buffer * This, const char *prefix)
 {
    int pos;

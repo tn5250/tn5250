@@ -15,7 +15,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
 #include "tn5250-config.h"
 
 #include <stddef.h>
@@ -28,6 +27,16 @@
 #include "dbuffer.h"
 #include "field.h"
 
+/****f* lib5250/tn5250_field_new
+ * NAME
+ *    tn5250_field_new
+ * SYNOPSIS
+ *    ret = tn5250_field_new (w);
+ * INPUTS
+ *    int                  w          - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 Tn5250Field *tn5250_field_new(int w)
 {
    Tn5250Field *This = tn5250_new(Tn5250Field, 1);
@@ -39,6 +48,16 @@ Tn5250Field *tn5250_field_new(int w)
    return This;
 }
 
+/****f* lib5250/tn5250_field_copy
+ * NAME
+ *    tn5250_field_copy
+ * SYNOPSIS
+ *    ret = tn5250_field_copy (This);
+ * INPUTS
+ *    Tn5250Field *        This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 Tn5250Field *tn5250_field_copy(Tn5250Field * This)
 {
    Tn5250Field *fld = tn5250_new(Tn5250Field, 1);
@@ -50,12 +69,31 @@ Tn5250Field *tn5250_field_copy(Tn5250Field * This)
    return fld;
 }
 
+/****f* lib5250/tn5250_field_destroy
+ * NAME
+ *    tn5250_field_destroy
+ * SYNOPSIS
+ *    tn5250_field_destroy (This);
+ * INPUTS
+ *    Tn5250Field *        This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 void tn5250_field_destroy(Tn5250Field * This)
 {
    free(This);
 }
 
-#ifndef NDEBUG
+/****f* lib5250/tn5250_field_dump
+ * NAME
+ *    tn5250_field_dump
+ * SYNOPSIS
+ *    tn5250_field_dump (This);
+ * INPUTS
+ *    Tn5250Field *        This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 void tn5250_field_dump(Tn5250Field * This)
 {
    int curchar;
@@ -81,56 +119,98 @@ void tn5250_field_dump(Tn5250Field * This)
    
    TN5250_LOG(("\n"));
 }
-#endif
 
-/*
+/****f* lib5250/tn5250_field_hit_test
+ * NAME
+ *    tn5250_field_hit_test
+ * SYNOPSIS
+ *    ret = tn5250_field_hit_test (This, y, x);
+ * INPUTS
+ *    Tn5250Field *        This       - 
+ *    int                  y          - 
+ *    int                  x          - 
+ * DESCRIPTION
  *    Determine if the screen position at row ``y'', column ``x'' is contained
  *    within this field.  (A hit-test, in other words.)
- */
+ *****/
 int tn5250_field_hit_test(Tn5250Field * This, int y, int x)
 {
    int pos = (y * This->w) + x;
-
    return (pos >= tn5250_field_start_pos(This)
 	   && pos <= tn5250_field_end_pos(This));
 }
 
-/*
+/****f* lib5250/tn5250_field_start_pos
+ * NAME
+ *    tn5250_field_start_pos
+ * SYNOPSIS
+ *    ret = tn5250_field_start_pos (This);
+ * INPUTS
+ *    Tn5250Field *        This       - 
+ * DESCRIPTION
  *    Figure out the starting address of this field.
- */
+ *****/
 int tn5250_field_start_pos(Tn5250Field * This)
 {
    return This->start_row * This->w +
        This->start_col;
 }
 
-/*
+/****f* lib5250/tn5250_field_end_pos
+ * NAME
+ *    tn5250_field_end_pos
+ * SYNOPSIS
+ *    ret = tn5250_field_end_pos (This);
+ * INPUTS
+ *    Tn5250Field *        This       - 
+ * DESCRIPTION
  *    Figure out the ending address of this field.
- */
+ *****/
 int tn5250_field_end_pos(Tn5250Field * This)
 {
    return tn5250_field_start_pos(This) + tn5250_field_length(This) - 1;
 }
 
-/*
+/****f* lib5250/tn5250_field_end_row
+ * NAME
+ *    tn5250_field_end_row
+ * SYNOPSIS
+ *    ret = tn5250_field_end_row (This);
+ * INPUTS
+ *    Tn5250Field *        This       - 
+ * DESCRIPTION
  *    Figure out the ending row of this field.
- */
+ *****/
 int tn5250_field_end_row(Tn5250Field * This)
 {
    return tn5250_field_end_pos(This) / This->w;
 }
 
-/*
+/****f* lib5250/tn5250_field_end_col
+ * NAME
+ *    tn5250_field_end_col
+ * SYNOPSIS
+ *    ret = tn5250_field_end_col (This);
+ * INPUTS
+ *    Tn5250Field *        This       - 
+ * DESCRIPTION
  *    Figure out the ending column of this field.
- */
+ *****/
 int tn5250_field_end_col(Tn5250Field * This)
 {
    return tn5250_field_end_pos(This) % This->w;
 }
 
-/*
+/****f* lib5250/tn5250_field_description
+ * NAME
+ *    tn5250_field_description
+ * SYNOPSIS
+ *    ret = tn5250_field_description (This);
+ * INPUTS
+ *    Tn5250Field *        This       - 
+ * DESCRIPTION
  *    Get a description of this field.
- */
+ *****/
 const char *tn5250_field_description(Tn5250Field * This)
 {
    switch (This->FFW & TN5250_FIELD_FIELD_MASK) {
@@ -157,9 +237,16 @@ const char *tn5250_field_description(Tn5250Field * This)
    }
 }
 
-/*
+/****f* lib5250/tn5250_field_adjust_description
+ * NAME
+ *    tn5250_field_adjust_description
+ * SYNOPSIS
+ *    ret = tn5250_field_adjust_description (This);
+ * INPUTS
+ *    Tn5250Field *        This       - 
+ * DESCRIPTION
  *    Get a description of the mandatory fill mode for this field.
- */
+ *****/
 const char *tn5250_field_adjust_description (Tn5250Field * This)
 {
    switch (This->FFW & TN5250_FIELD_MAND_FILL_MASK) {
@@ -184,11 +271,20 @@ const char *tn5250_field_adjust_description (Tn5250Field * This)
    }
 }
 
-/*
+/****f* lib5250/tn5250_field_count_left
+ * NAME
+ *    tn5250_field_count_left
+ * SYNOPSIS
+ *    ret = tn5250_field_count_left (This, y, x);
+ * INPUTS
+ *    Tn5250Field *        This       - 
+ *    int                  y          - 
+ *    int                  x          - 
+ * DESCRIPTION
  *    Return the number of characters in the this field which
  *    are to the left of the specified cursor position.  Used
  *    as an index to insert data when the user types.
- */
+ *****/
 int tn5250_field_count_left(Tn5250Field *This, int y, int x)
 {
    int pos;
@@ -203,20 +299,37 @@ int tn5250_field_count_left(Tn5250Field *This, int y, int x)
    return pos;
 }
 
-/*
+/****f* lib5250/tn5250_field_count_right
+ * NAME
+ *    tn5250_field_count_right
+ * SYNOPSIS
+ *    ret = tn5250_field_count_right (This, y, x);
+ * INPUTS
+ *    Tn5250Field *        This       - 
+ *    int                  y          - 
+ *    int                  x          - 
+ * DESCRIPTION
  *    This returns the number of characters in the specified field
  *    which are to the right of the specified cursor position.
- */
+ *****/
 int tn5250_field_count_right (Tn5250Field *This, int y, int x)
 {
    TN5250_ASSERT(tn5250_field_hit_test(This, y, x));
    return tn5250_field_end_pos (This) - (y * This->w + x);
 }
 
-/*
+/****f* lib5250/tn5250_field_valid_char
+ * NAME
+ *    tn5250_field_valid_char
+ * SYNOPSIS
+ *    ret = tn5250_field_valid_char (field, ch);
+ * INPUTS
+ *    Tn5250Field *        field      - 
+ *    int                  ch         - 
+ * DESCRIPTION
  *    Determine if the supplied character is a valid data character
  *    for this field.
- */
+ *****/
 int tn5250_field_valid_char (Tn5250Field *field, int ch)
 {
    TN5250_LOG(("HandleKey: fieldtype = %d; char = '%c'.\n",
@@ -262,9 +375,16 @@ int tn5250_field_valid_char (Tn5250Field *field, int ch)
    return 0;
 }
 
-/*
+/****f* lib5250/tn5250_field_set_mdt
+ * NAME
+ *    tn5250_field_set_mdt
+ * SYNOPSIS
+ *    tn5250_field_set_mdt (This);
+ * INPUTS
+ *    Tn5250Field *        This       - 
+ * DESCRIPTION
  *    Set the MDT flag for this field and for the table which owns it.
- */
+ *****/
 void tn5250_field_set_mdt (Tn5250Field *This)
 {
    TN5250_ASSERT(This->table != NULL);
@@ -273,9 +393,16 @@ void tn5250_field_set_mdt (Tn5250Field *This)
    tn5250_dbuffer_set_mdt(This->table);
 }
 
-/*
+/****f* lib5250/tn5250_field_list_destroy
+ * NAME
+ *    tn5250_field_list_destroy
+ * SYNOPSIS
+ *    ret = tn5250_field_list_destroy (list);
+ * INPUTS
+ *    Tn5250Field *        list       - 
+ * DESCRIPTION
  *    Destroy all fields in a field list.
- */
+ *****/
 Tn5250Field *tn5250_field_list_destroy(Tn5250Field * list)
 {
    Tn5250Field *iter, *next;
@@ -291,9 +418,17 @@ Tn5250Field *tn5250_field_list_destroy(Tn5250Field * list)
    return NULL;
 }
 
-/*
+/****f* lib5250/tn5250_field_list_add
+ * NAME
+ *    tn5250_field_list_add
+ * SYNOPSIS
+ *    ret = tn5250_field_list_add (list, node);
+ * INPUTS
+ *    Tn5250Field *        list       - 
+ *    Tn5250Field *        node       - 
+ * DESCRIPTION
  *    Add a field to the end of a list of fields.
- */
+ *****/
 Tn5250Field *tn5250_field_list_add(Tn5250Field * list, Tn5250Field * node)
 {
    node->prev = node->next = NULL;
@@ -309,9 +444,17 @@ Tn5250Field *tn5250_field_list_add(Tn5250Field * list, Tn5250Field * node)
    return list;
 }
 
-/*
+/****f* lib5250/tn5250_field_list_remove
+ * NAME
+ *    tn5250_field_list_remove
+ * SYNOPSIS
+ *    ret = tn5250_field_list_remove (list, node);
+ * INPUTS
+ *    Tn5250Field *        list       - 
+ *    Tn5250Field *        node       - 
+ * DESCRIPTION
  *    Remove a field from a list of fields.
- */
+ *****/
 Tn5250Field *tn5250_field_list_remove(Tn5250Field * list, Tn5250Field * node)
 {
    if (list == NULL)
@@ -329,9 +472,17 @@ Tn5250Field *tn5250_field_list_remove(Tn5250Field * list, Tn5250Field * node)
    return list;
 }
 
-/*
+/****f* lib5250/tn5250_field_list_find_by_id
+ * NAME
+ *    tn5250_field_list_find_by_id
+ * SYNOPSIS
+ *    ret = tn5250_field_list_find_by_id (list, id);
+ * INPUTS
+ *    Tn5250Field *        list       - 
+ *    int                  id         - 
+ * DESCRIPTION
  *    Find a field by its numeric id.
- */
+ *****/
 Tn5250Field *tn5250_field_list_find_by_id(Tn5250Field * list, int id)
 {
    Tn5250Field *iter;
@@ -346,9 +497,16 @@ Tn5250Field *tn5250_field_list_find_by_id(Tn5250Field * list, int id)
    return NULL;
 }
 
-/*
+/****f* lib5250/tn5250_field_list_copy
+ * NAME
+ *    tn5250_field_list_copy
+ * SYNOPSIS
+ *    ret = tn5250_field_list_copy (This);
+ * INPUTS
+ *    Tn5250Field *        This       - 
+ * DESCRIPTION
  *    Copy all fields in a list to another list.
- */
+ *****/
 Tn5250Field *tn5250_field_list_copy(Tn5250Field * This)
 {
    Tn5250Field *new_list = NULL, *iter, *new_field;
@@ -363,4 +521,3 @@ Tn5250Field *tn5250_field_list_copy(Tn5250Field * This)
    return new_list;
 }
 
-/* vi:set cindent sts=3 sw=3: */

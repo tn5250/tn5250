@@ -22,19 +22,32 @@
 extern "C" {
 #endif
 
+#define TN5250_DISPLAY_KEYQ_SIZE		50
+
 #define TN5250_DISPLAY_IND_INHIBIT	   	0x0001
 #define TN5250_DISPLAY_IND_MESSAGE_WAITING	0x0002
 #define TN5250_DISPLAY_IND_X_SYSTEM	   	0x0004
 #define TN5250_DISPLAY_IND_X_CLOCK	   	0x0008
 #define TN5250_DISPLAY_IND_INSERT	   	0x0010
 
-struct _Tn5250Table;
 struct _Tn5250Terminal;
 struct _Tn5250DBuffer;
 struct _Tn5250Field;
 struct _Tn5250Session;
 struct _Tn5250Buffer;
 
+/****s* lib5250/Tn5250Display
+ * NAME
+ *    Tn5250Display
+ * SYNOPSIS
+ *    Tn5250Display *dsp = tn5250_display_new ();
+ *    tn5250_display_destroy (dsp);
+ * DESCRIPTION
+ *    Tn5250Display manages the display buffers and the terminal object.
+ *    Internally, keeps track of indicators, saved message line.  This
+ *    object hands off aid keys to the Tn5250Session object.
+ * SOURCE
+ */
 struct _Tn5250Display {
    struct _Tn5250DBuffer * display_buffers;
    struct _Tn5250Terminal *terminal;
@@ -42,9 +55,16 @@ struct _Tn5250Display {
    int indicators;
    int indicators_dirty : 1;
    int pending_insert : 1;
+
+   unsigned char *saved_msg_line;
+
+   /* Queued keystroke ring buffer. */
+   int key_queue_head, key_queue_tail;
+   int key_queue[TN5250_DISPLAY_KEYQ_SIZE];
 };
 
 typedef struct _Tn5250Display Tn5250Display;
+/*******/
 
 extern Tn5250Display *	tn5250_display_new	      (void);
 extern void		tn5250_display_destroy	      (Tn5250Display *This);
@@ -76,8 +96,6 @@ extern void	  tn5250_display_set_cursor_home      (Tn5250Display *This);
 extern void	  tn5250_display_set_cursor_next_field(Tn5250Display *This);
 extern void       tn5250_display_set_curosr_prev_field(Tn5250Display *This);
 
-extern unsigned char * tn5250_display_field_data      (Tn5250Display *This,
-						       Tn5250Field *field);
 extern void	  tn5250_display_shift_right	      (Tn5250Display *This,
 						       Tn5250Field *field,
 						       unsigned char fill);
@@ -101,8 +119,10 @@ extern void	  tn5250_display_set_pending_insert   (Tn5250Display *This,
 extern void	  tn5250_display_make_wtd_data        (Tn5250Display *This,
 						       struct _Tn5250Buffer *b,
 						       struct _Tn5250DBuffer *);
+extern void	  tn5250_display_save_msg_line	      (Tn5250Display *This);
 
 /* Key functions */
+extern void	  tn5250_display_do_keys	      (Tn5250Display *This);
 extern void	  tn5250_display_do_key               (Tn5250Display *This,int);
 extern void	  tn5250_display_kf_up                (Tn5250Display *This);
 extern void	  tn5250_display_kf_down	      (Tn5250Display *This);
@@ -153,6 +173,10 @@ extern void	  tn5250_display_kf_delete            (Tn5250Display *This);
    (void)((This)->pending_insert = 0)
 #define tn5250_display_pending_insert(This) \
    ((This)->pending_insert)
+#define tn5250_display_field_data(This,field) \
+   (tn5250_dbuffer_field_data((This)->display_buffers,(field)))
+#define tn5250_display_msg_line(This) \
+   (tn5250_dbuffer_msg_line((This)->display_buffers))
 
 #ifdef __cplusplus
 }

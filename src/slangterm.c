@@ -15,7 +15,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
 #include "tn5250-config.h"
 
 #if USE_SLANG
@@ -117,9 +116,16 @@ struct _Tn5250TerminalPrivate {
    int attrs;
 };
 
-/*
+/****f* lib5250/tn5250_slang_terminal_new
+ * NAME
+ *    tn5250_slang_terminal_new
+ * SYNOPSIS
+ *    ret = tn5250_slang_terminal_new ();
+ * INPUTS
+ *    None
+ * DESCRIPTION
  *    Create a new curses terminal object.
- */
+ *****/
 Tn5250Terminal *tn5250_slang_terminal_new()
 {
    Tn5250Terminal *r = tn5250_new(Tn5250Terminal, 1);
@@ -152,6 +158,16 @@ Tn5250Terminal *tn5250_slang_terminal_new()
    return r;
 }
 
+/****i* lib5250/slang_terminal_init
+ * NAME
+ *    slang_terminal_init
+ * SYNOPSIS
+ *    slang_terminal_init (This);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static void slang_terminal_init(Tn5250Terminal * This)
 {
    SLtt_get_terminfo ();
@@ -183,12 +199,32 @@ static void slang_terminal_init(Tn5250Terminal * This)
    This->data->quit_flag = 0;
 }
 
+/****i* lib5250/slang_terminal_term
+ * NAME
+ *    slang_terminal_term
+ * SYNOPSIS
+ *    slang_terminal_term (This);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static void slang_terminal_term(Tn5250Terminal * This)
 {
    SLsmg_reset_smg ();
    SLang_reset_tty ();
 }
 
+/****i* lib5250/slang_terminal_destroy
+ * NAME
+ *    slang_terminal_destroy
+ * SYNOPSIS
+ *    slang_terminal_destroy (This);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static void slang_terminal_destroy(Tn5250Terminal * This)
 {
    if (This->data != NULL)
@@ -196,18 +232,48 @@ static void slang_terminal_destroy(Tn5250Terminal * This)
    free(This);
 }
 
+/****i* lib5250/slang_terminal_width
+ * NAME
+ *    slang_terminal_width
+ * SYNOPSIS
+ *    ret = slang_terminal_width (This);
+ * INPUTS
+ *    Tn5250Terminal  *    This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static int slang_terminal_width(Tn5250Terminal /*@unused@*/ * This)
 {
    SLtt_get_screen_size();
    return SLtt_Screen_Cols;
 }
 
+/****i* lib5250/slang_terminal_height
+ * NAME
+ *    slang_terminal_height
+ * SYNOPSIS
+ *    ret = slang_terminal_height (This);
+ * INPUTS
+ *    Tn5250Terminal  *    This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static int slang_terminal_height(Tn5250Terminal /*@unused@*/ * This)
 {
    SLtt_get_screen_size();
    return SLtt_Screen_Rows;
 }
 
+/****i* lib5250/slang_terminal_flags
+ * NAME
+ *    slang_terminal_flags
+ * SYNOPSIS
+ *    ret = slang_terminal_flags (This);
+ * INPUTS
+ *    Tn5250Terminal  *    This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static int slang_terminal_flags(Tn5250Terminal /*@unused@*/ * This)
 {
    int f = 0;
@@ -216,6 +282,17 @@ static int slang_terminal_flags(Tn5250Terminal /*@unused@*/ * This)
    return f;
 }
 
+/****i* lib5250/slang_terminal_update
+ * NAME
+ *    slang_terminal_update
+ * SYNOPSIS
+ *    slang_terminal_update (This, display);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ *    Tn5250Display *      display    - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static void slang_terminal_update(Tn5250Terminal * This, Tn5250Display * display)
 {
    int my, mx;
@@ -281,6 +358,17 @@ static void slang_terminal_update(Tn5250Terminal * This, Tn5250Display * display
    SLsmg_refresh();
 }
 
+/****i* lib5250/slang_terminal_update_indicators
+ * NAME
+ *    slang_terminal_update_indicators
+ * SYNOPSIS
+ *    slang_terminal_update_indicators (This, display);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ *    Tn5250Display *      display    - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static void slang_terminal_update_indicators(Tn5250Terminal * This, Tn5250Display * display)
 {
    int inds = tn5250_display_indicators(display);
@@ -308,6 +396,16 @@ static void slang_terminal_update_indicators(Tn5250Terminal * This, Tn5250Displa
    SLsmg_refresh();
 }
 
+/****i* lib5250/slang_terminal_waitevent
+ * NAME
+ *    slang_terminal_waitevent
+ * SYNOPSIS
+ *    ret = slang_terminal_waitevent (This);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static int slang_terminal_waitevent(Tn5250Terminal * This)
 {
    fd_set fdr;
@@ -338,6 +436,16 @@ static int slang_terminal_waitevent(Tn5250Terminal * This)
    return result;
 }
 
+/****i* lib5250/slang_terminal_getkey
+ * NAME
+ *    slang_terminal_getkey
+ * SYNOPSIS
+ *    ret = slang_terminal_getkey (This);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static int slang_terminal_getkey(Tn5250Terminal * This)
 {
    unsigned int key;
@@ -493,17 +601,34 @@ static int slang_terminal_getkey(Tn5250Terminal * This)
    }
 }
 
+/****i* lib5250/slang_terminal_beep
+ * NAME
+ *    slang_terminal_beep
+ * SYNOPSIS
+ *    slang_terminal_beep (This);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static void slang_terminal_beep (Tn5250Terminal * This)
 {
    SLtt_beep ();
 }
 
-/*
+/****i* lib5250/slang_terminal_get_esc_key
+ * NAME
+ *    slang_terminal_get_esc_key
+ * SYNOPSIS
+ *    ret = slang_terminal_get_esc_key (This, is_esc);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ *    int                  is_esc     - 
+ * DESCRIPTION
  *    If a vt100 escape key sequence was introduced (using either
- *      <Esc> or <Ctrl+g>), handle the next key in the sequence.
- */
-static int slang_terminal_get_esc_key(Tn5250Terminal * This,
-				       int is_esc)
+ *    <Esc> or <Ctrl+g>), handle the next key in the sequence.
+ *****/
+static int slang_terminal_get_esc_key(Tn5250Terminal * This, int is_esc)
 {
    int y, x, key, display_key;
    fd_set fdr;
@@ -675,6 +800,17 @@ static int slang_terminal_get_esc_key(Tn5250Terminal * This,
    return key;
 }
 
+/****i* lib5250/slang_terminal_set_attrs
+ * NAME
+ *    slang_terminal_set_attrs
+ * SYNOPSIS
+ *    slang_terminal_set_attrs (This, attrs);
+ * INPUTS
+ *    Tn5250Terminal *     This       - 
+ *    int                  attrs      - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static void slang_terminal_set_attrs (Tn5250Terminal * This, int attrs)
 {
    if (attrs == This->data->attrs)

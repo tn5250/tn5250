@@ -10,6 +10,16 @@
 
 static int tn5250_print_session_waitevent(Tn5250PrintSession * This);
 
+/****f* lib5250/tn5250_print_session_new
+ * NAME
+ *    tn5250_print_session_new
+ * SYNOPSIS
+ *    ret = tn5250_print_session_new ();
+ * INPUTS
+ *    None
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 Tn5250PrintSession *tn5250_print_session_new()
 {
    Tn5250PrintSession *This;
@@ -31,6 +41,16 @@ Tn5250PrintSession *tn5250_print_session_new()
    return This;
 }
 
+/****f* lib5250/tn5250_print_session_destroy
+ * NAME
+ *    tn5250_print_session_destroy
+ * SYNOPSIS
+ *    tn5250_print_session_destroy (This);
+ * INPUTS
+ *    Tn5250PrintSession * This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 void tn5250_print_session_destroy(Tn5250PrintSession * This)
 {
    if (This->stream != NULL)
@@ -42,21 +62,52 @@ void tn5250_print_session_destroy(Tn5250PrintSession * This)
    free (This);
 }
 
+/****f* lib5250/tn5250_print_session_set_fd
+ * NAME
+ *    tn5250_print_session_set_fd
+ * SYNOPSIS
+ *    tn5250_print_session_set_fd (This, fd);
+ * INPUTS
+ *    Tn5250PrintSession * This       - 
+ *    SOCKET_TYPE          fd         - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 void tn5250_print_session_set_fd(Tn5250PrintSession * This, SOCKET_TYPE fd)
 {
    This->conn_fd = fd;
 }
 
-void tn5250_print_session_set_stream(Tn5250PrintSession * This,
-				     Tn5250Stream * newstream)
+/****f* lib5250/tn5250_print_session_set_stream
+ * NAME
+ *    tn5250_print_session_set_stream
+ * SYNOPSIS
+ *    tn5250_print_session_set_stream (This, newstream);
+ * INPUTS
+ *    Tn5250PrintSession * This       - 
+ *    Tn5250Stream *       newstream  - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
+void tn5250_print_session_set_stream(Tn5250PrintSession * This, Tn5250Stream * newstream)
 {
    if (This->stream != NULL)
       tn5250_stream_destroy (This->stream);
    This->stream = newstream;
 }
 
-void tn5250_print_session_set_output_command(Tn5250PrintSession * This,
-					     const char *output_cmd)
+/****f* lib5250/tn5250_print_session_set_output_command
+ * NAME
+ *    tn5250_print_session_set_output_command
+ * SYNOPSIS
+ *    tn5250_print_session_set_output_command (This, output_cmd);
+ * INPUTS
+ *    Tn5250PrintSession * This       - 
+ *    const char *         output_cmd - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
+void tn5250_print_session_set_output_command(Tn5250PrintSession * This, const char *output_cmd)
 {
    if (This->output_cmd != NULL)
       free(This->output_cmd);
@@ -65,13 +116,33 @@ void tn5250_print_session_set_output_command(Tn5250PrintSession * This,
 	   strcpy(This->output_cmd, output_cmd);
 }
 
-void tn5250_print_session_get_response_code(Tn5250PrintSession * This,
-					    char *code)
+/****f* lib5250/tn5250_print_session_get_response_code
+ * NAME
+ *    tn5250_print_session_get_response_code
+ * SYNOPSIS
+ *    tn5250_print_session_get_response_code (This, code);
+ * INPUTS
+ *    Tn5250PrintSession * This       - 
+ *    char *               code       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
+void tn5250_print_session_get_response_code(Tn5250PrintSession * This, char *code)
 {
    memcpy (code, tn5250_record_data(This->rec) + 5, 4);
    code[4] = '\0';
 }
 
+/****f* lib5250/tn5250_print_session_main_loop
+ * NAME
+ *    tn5250_print_session_main_loop
+ * SYNOPSIS
+ *    tn5250_print_session_main_loop (This);
+ * INPUTS
+ *    Tn5250PrintSession * This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 void tn5250_print_session_main_loop(Tn5250PrintSession * This)
 {
    int pcount;
@@ -135,6 +206,16 @@ void tn5250_print_session_main_loop(Tn5250PrintSession * This)
 
 }
 
+/****i* lib5250/tn5250_print_session_waitevent
+ * NAME
+ *    tn5250_print_session_waitevent
+ * SYNOPSIS
+ *    ret = tn5250_print_session_waitevent (This);
+ * INPUTS
+ *    Tn5250PrintSession * This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
 static int tn5250_print_session_waitevent(Tn5250PrintSession * This)
 {
    fd_set fdr;
