@@ -40,6 +40,8 @@ extern "C" {
 
 /* Misc */
 #define ESC 0x4
+#define SOHLEN   7
+#define ERR_ROW 25
 
 /* Commands */
 #define CMD_WRITE_TO_DISPLAY			0x11
