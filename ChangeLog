@@ -1,3 +1,7 @@
+2005-03-29 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Add beep_command config option.  If present, runs command instead of
+  executing a terminal beep.
+
 2005-03-27 James Rich <james@eaerich.com>
 - Add support for insert in continuous fields.
 - Add support for delete in continuous fields.

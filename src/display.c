@@ -420,9 +420,27 @@ int tn5250_display_getkey (Tn5250Display * This)
  *****/
 void tn5250_display_beep (Tn5250Display * This)
 {
-   if (This->terminal == NULL) {
+   const char *cmd; 
+   int ec;
+
+   if ((cmd = tn5250_config_get (This->config, "beep_command")) != NULL)
+     {
+       ec = system(cmd); 
+       if (ec == -1)
+         {
+           TN5250_LOG (("system() for beep command failed: %s\n",
+                        strerror (errno)));
+         }
+       else if (ec != 0)
+         {
+           TN5250_LOG (("beep command exited with errno %d\n", ec));
+         }
+       return;
+     }
+
+   if (This->terminal == NULL)
       return;
-   }
+
    tn5250_terminal_beep (This->terminal);
    return;
 }
