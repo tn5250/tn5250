@@ -766,22 +766,42 @@ tn5250_display_set_cursor_prev_progression_field (Tn5250Display * This,
 						  int currentfield)
 {
   Tn5250Field *field;
+  Tn5250Field *origfield;
+  int orig_id;
+  int differentfieldfound;
+
+  if (currentfield == 0)
+    {
+      return;
+    }
+
+  origfield = tn5250_display_current_field (This);
+  orig_id = origfield->id;
+  differentfieldfound = 0;
 
   while ((field = tn5250_display_prev_field (This)) != NULL)
     {
       tn5250_display_set_cursor_field (This, field);
 
-      if (currentfield == 0)
+      if (field->entry_id == currentfield)
 	{
-	  return;
+	  if (field->id == orig_id)
+	    {
+	      field = tn5250_display_prev_field (This);
+	      tn5250_display_set_cursor_field (This, field);
+	      break;
+	    }
+	  if (!differentfieldfound)
+	    {
+	      break;
+	    }
 	}
-      else if (field->entry_id == currentfield)
+      else
 	{
-	  field = tn5250_display_prev_field (This);
-	  tn5250_display_set_cursor_field (This, field);
-	  break;
+	  differentfieldfound = 1;
 	}
-      else if (field->nextfieldprogressionid == currentfield)
+
+      if (field->nextfieldprogressionid == currentfield)
 	{
 	  break;
 	}
