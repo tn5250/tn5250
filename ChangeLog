@@ -1,3 +1,14 @@
+1999-10-04 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- tn5250_session_handle_cc1 was counting bits from the wrong end of the byte.
+  Or rather the *right* end, damn IBM.  Anyway, this fixes Carey Evan's REXX/
+  nslookup program not clearing the input line.
+- Repeat To Address order now also copies the data to the format table if we
+  write over a field.
+- In tn5250_table_add_char(), removed extra function call to get field ptr.
+- Removed tn5250_table_put_char() function, did _exactly_ the same thing as 
+  tn5250_table_add_char().  Nobody calling it, anyway ;)
+
 1999-10-01 Jay 'Eraesrhead' Felice <jasonf@nacs.net>
 
 - Now dumping the record (so we can re-read it via a debug session) when
