@@ -1,3 +1,8 @@
+2002-05-28 Scott Klement <klemscot@klements.com>
+- Added ssl_method config option so you can specify an ssl method
+  of ssl2, ssl3 or auto.  (Problems connecting were reported in
+  some circumstances if ssl3 is not specified)
+
 2002-05-13 Scott Klement <klemscot@klements.com>
 - Applied patch from Steve Fox to create a spec file that can be
   used to generate RPMs

@@ -304,6 +304,8 @@ static void ssl_log_SB_buf(unsigned char *buf, int len)
 int tn5250_ssl_stream_init (Tn5250Stream *This)
 {
    int len;
+   char methstr[5];
+   static SSL_METHOD *meth=NULL;
 
    TN5250_LOG(("tn5250_ssl_stream_init() entered.\n"));
 
@@ -312,9 +314,28 @@ int tn5250_ssl_stream_init (Tn5250Stream *This)
    SSL_load_error_strings();
    SSL_library_init();
 
+/*  which SSL method do we use? */
+
+   strcpy(methstr,"auto");
+   if (This->config!=NULL && tn5250_config_get (This->config, "ssl_method")) {
+        strncpy(methstr, tn5250_config_get (This->config, "ssl_method"), 4);
+        methstr[4] = '\0';
+   }
+
+   if (!strcmp(methstr, "ssl2")) {
+        meth = SSLv2_client_method();         
+        TN5250_LOG(("SSL Method = SSLv2_client_method()\n"));
+   } else if (!strcmp(methstr, "ssl3")) {
+        meth = SSLv3_client_method();         
+        TN5250_LOG(("SSL Method = SSLv3_client_method()\n"));
+   } else {
+        meth = SSLv23_client_method();         
+        TN5250_LOG(("SSL Method = SSLv23_client_method()\n"));
+   }
+
 /*  create a new SSL context */
 
-   This->ssl_context = SSL_CTX_new(SSLv23_client_method());
+   This->ssl_context = SSL_CTX_new(meth);
    if (This->ssl_context==NULL) {
         DUMP_ERR_STACK ();
         return -1;
