@@ -359,7 +359,16 @@ static void tn5250_wtd_context_write_field (Tn5250WTDContext *This, Tn5250Field 
 
    /* Put the screen attribute. */
    /* FIXME: Re-enable assert: TN5250_ASSERT (tn5250_attribute (attr)); */
-   tn5250_wtd_context_putc (This, attr);
+   /* XXX: For some reason, the attribute in the display buffer doesn't
+        pass the following test.  This is a problem because we rely on
+        that attribute set-up when parsing the screen during a restore.
+        So, for now, work around that problem by sending the attribute
+        from the field buffer.  */
+   if ((attr&0xe0)!=0x20)
+      tn5250_wtd_context_putc(This, tn5250_field_attribute(field));
+   else
+      tn5250_wtd_context_putc (This, attr);
+
 
    /* Put the field length. */
    tn5250_wtd_context_putc (This, (unsigned char)(field->length >> 8));

@@ -1,4 +1,10 @@
 2001-11-21 Scott Klement <klemscot@klements.com>
+- We were sending invalid attributes during a save screen operation
+   which sometimes caused the parsing of SF orders in the restore
+   screen to fail.  I added code to make sure the attribute is valid,
+   and if not, to use the attr from the field buffer.
+
+2001-11-21 Scott Klement <klemscot@klements.com>
 - Added fix to screen size changing under curses.  Sometimes, it
     would refresh the screen before curses had resized its buffers.
 
