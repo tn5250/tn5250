@@ -22,9 +22,12 @@
 
 #include "tn5250-private.h"
 
-static void tn5250_display_add_dbuffer(Tn5250Display * display,
-				       Tn5250DBuffer * dbuffer);
-void tn5250_display_kf_macro (Tn5250Display *This, int Ch);
+static void tn5250_display_add_dbuffer (Tn5250Display * display,
+					Tn5250DBuffer * dbuffer);
+void tn5250_display_kf_macro (Tn5250Display * This, int Ch);
+void tn5250_display_set_cursor_next_progression_field (Tn5250Display *
+						       This,
+						       int nextfield);
 
 
 /****f* lib5250/tn5250_display_new
@@ -37,14 +40,15 @@ void tn5250_display_kf_macro (Tn5250Display *This, int Ch);
  * DESCRIPTION
  *    DOCUMENT ME!!!
  *****/
-Tn5250Display *tn5250_display_new()
+Tn5250Display *tn5250_display_new ()
 {
    Tn5250Display *This;
 
-   if ((This = tn5250_new(Tn5250Display, 1)) == NULL)
+   if ((This = tn5250_new (Tn5250Display, 1)) == NULL) {
       return NULL;
+   }
    This->display_buffers = NULL;
-   This->macro = NULL ;
+   This->macro = NULL;
    This->terminal = NULL;
    This->config = NULL;
    This->indicators = 0;
@@ -58,10 +62,11 @@ Tn5250Display *tn5250_display_new()
    This->map = NULL;
    This->keystate = TN5250_KEYSTATE_UNLOCKED;
    This->keySRC = TN5250_KBDSRC_NONE;
- 
-   tn5250_display_add_dbuffer(This, tn5250_dbuffer_new(80, 24));
+
+   tn5250_display_add_dbuffer (This, tn5250_dbuffer_new (80, 24));
    return This;
 }
+
 
 /****f* lib5250/tn5250_display_destroy
  * NAME
@@ -73,28 +78,34 @@ Tn5250Display *tn5250_display_new()
  * DESCRIPTION
  *    DOCUMENT ME!!!
  *****/
-void tn5250_display_destroy(Tn5250Display * This)
+void tn5250_display_destroy (Tn5250Display * This)
 {
    Tn5250DBuffer *diter, *dnext;
 
    if ((diter = This->display_buffers) != NULL) {
       do {
 	 dnext = diter->next;
-	 tn5250_dbuffer_destroy(diter);
+	 tn5250_dbuffer_destroy (diter);
 	 diter = dnext;
-      } while (diter != This->display_buffers);
+      }
+      while (diter != This->display_buffers);
    }
-   if (This->terminal != NULL)
-      tn5250_terminal_destroy(This->terminal);
-   if (This->saved_msg_line != NULL)
+   if (This->terminal != NULL) {
+      tn5250_terminal_destroy (This->terminal);
+   }
+   if (This->saved_msg_line != NULL) {
       g_free (This->saved_msg_line);
-   if (This->msg_line != NULL)
+   }
+   if (This->msg_line != NULL) {
       g_free (This->msg_line);
-   if (This->config != NULL)
+   }
+   if (This->config != NULL) {
       tn5250_config_unref (This->config);
-
-   g_free(This);
+   }
+   g_free (This);
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_config
  * NAME
@@ -107,41 +118,47 @@ void tn5250_display_destroy(Tn5250Display * This)
  * DESCRIPTION
  *    Applies configuration to the display.
  *****/
-int tn5250_display_config(Tn5250Display *This, Tn5250Config *config)
+int tn5250_display_config (Tn5250Display * This, Tn5250Config * config)
 {
    const char *v;
    const char *termtype;
 
    tn5250_config_ref (config);
-   if (This->config != NULL)
+   if (This->config != NULL) {
       tn5250_config_unref (This->config);
+   }
    This->config = config;
 
    /* check if the +/- sign keyboard hack should be enabled */
-   if(tn5250_config_get(config, "sign_key_hack")) 
-      This->sign_key_hack = tn5250_config_get_bool(config, "sign_key_hack");
+   if (tn5250_config_get (config, "sign_key_hack")) {
+      This->sign_key_hack =
+	  tn5250_config_get_bool (config, "sign_key_hack");
+   }
 
    /* Set a terminal type if necessary */
-   termtype = tn5250_config_get(config, "env.TERM");
+   termtype = tn5250_config_get (config, "env.TERM");
 
-   if(termtype == NULL) {
-       tn5250_config_set(config, "env.TERM", CONFIG_STRING, "IBM-3179-2");
+   if (termtype == NULL) {
+      tn5250_config_set (config, "env.TERM", CONFIG_STRING, "IBM-3179-2");
    }
 
    /* Set the new character map. */
-   if (This->map != NULL)
+   if (This->map != NULL) {
       tn5250_char_map_destroy (This->map);
+   }
    if ((v = tn5250_config_get (config, "map")) == NULL) {
-     tn5250_config_set(config, "map", CONFIG_STRING, "37");
-     v = tn5250_config_get(config, "map");
+      tn5250_config_set (config, "map", CONFIG_STRING, "37");
+      v = tn5250_config_get (config, "map");
    }
 
    This->map = tn5250_char_map_new (v);
-   if (This->map == NULL)
-      return -1; /* FIXME: An error message would be nice. */
+   if (This->map == NULL) {
+      return -1;		/* FIXME: An error message would be nice. */
+   }
 
    return 0;
 }
+
 
 /****f* lib5250/tn5250_display_set_session
  * NAME
@@ -154,12 +171,16 @@ int tn5250_display_config(Tn5250Display *This, Tn5250Config *config)
  * DESCRIPTION
  *    DOCUMENT ME!!!
  *****/
-void tn5250_display_set_session(Tn5250Display *This, struct _Tn5250Session *s)
+void
+tn5250_display_set_session (Tn5250Display * This, struct _Tn5250Session *s)
 {
    This->session = s;
-   if (This->session != NULL)
+   if (This->session != NULL) {
       This->session->display = This;
+   }
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_push_dbuffer
  * NAME
@@ -172,14 +193,15 @@ void tn5250_display_set_session(Tn5250Display *This, struct _Tn5250Session *s)
  *    Create a new display buffer and assign the old one an id so we can
  *    later restore it.  Return the id which must be > 0.
  *****/
-Tn5250DBuffer *tn5250_display_push_dbuffer(Tn5250Display * This)
+Tn5250DBuffer *tn5250_display_push_dbuffer (Tn5250Display * This)
 {
    Tn5250DBuffer *dbuf;
 
-   dbuf = tn5250_dbuffer_copy(This->display_buffers);
-   tn5250_display_add_dbuffer(This, dbuf);
-   return dbuf;	/* Pointer is used as unique identifier in data stream. */
+   dbuf = tn5250_dbuffer_copy (This->display_buffers);
+   tn5250_display_add_dbuffer (This, dbuf);
+   return dbuf;			/* Pointer is used as unique identifier in data stream. */
 }
+
 
 /****f* lib5250/tn5250_display_restore_dbuffer
  * NAME
@@ -192,7 +214,8 @@ Tn5250DBuffer *tn5250_display_push_dbuffer(Tn5250Display * This)
  * DESCRIPTION
  *    Delete the current dbuffer and replace it with the one with id `id'.
  *****/
-void tn5250_display_restore_dbuffer(Tn5250Display * This, Tn5250DBuffer * id)
+void
+tn5250_display_restore_dbuffer (Tn5250Display * This, Tn5250DBuffer * id)
 {
    Tn5250DBuffer *iter;
 
@@ -200,21 +223,27 @@ void tn5250_display_restore_dbuffer(Tn5250Display * This, Tn5250DBuffer * id)
     * that it isn't the one which is currently active. */
    if ((iter = This->display_buffers) != NULL) {
       do {
-	 if (iter == id && iter != This->display_buffers)
+	 if (iter == id && iter != This->display_buffers) {
 	    break;
+	 }
 	 iter = iter->next;
-      } while (iter != This->display_buffers);
+      }
+      while (iter != This->display_buffers);
 
-      if (iter != id || iter == This->display_buffers)
+      if (iter != id || iter == This->display_buffers) {
 	 return;
-   } else
+      }
+   } else {
       return;
+   }
 
    This->display_buffers->prev->next = This->display_buffers->next;
    This->display_buffers->next->prev = This->display_buffers->prev;
-   tn5250_dbuffer_destroy(This->display_buffers);
+   tn5250_dbuffer_destroy (This->display_buffers);
    This->display_buffers = iter;
+   return;
 }
+
 
 /****i* lib5250/tn5250_display_add_dbuffer
  * NAME
@@ -228,9 +257,10 @@ void tn5250_display_restore_dbuffer(Tn5250Display * This, Tn5250DBuffer * id)
  *    Add a display buffer into this display's circularly linked list of
  *    display buffers.
  *****/
-static void tn5250_display_add_dbuffer(Tn5250Display * This, Tn5250DBuffer * dbuffer)
+static void
+tn5250_display_add_dbuffer (Tn5250Display * This, Tn5250DBuffer * dbuffer)
 {
-   TN5250_ASSERT(dbuffer != NULL);
+   TN5250_ASSERT (dbuffer != NULL);
 
    if (This->display_buffers == NULL) {
       This->display_buffers = dbuffer;
@@ -241,7 +271,9 @@ static void tn5250_display_add_dbuffer(Tn5250Display * This, Tn5250DBuffer * dbu
       dbuffer->next->prev = dbuffer;
       dbuffer->prev->next = dbuffer;
    }
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_set_terminal
  * NAME
@@ -254,15 +286,19 @@ static void tn5250_display_add_dbuffer(Tn5250Display * This, Tn5250DBuffer * dbu
  * DESCRIPTION
  *    Set the terminal associated with this display.
  *****/
-void tn5250_display_set_terminal(Tn5250Display * This, Tn5250Terminal * term)
+void
+tn5250_display_set_terminal (Tn5250Display * This, Tn5250Terminal * term)
 {
-   if (This->terminal != NULL)
-      tn5250_terminal_destroy(This->terminal);
+   if (This->terminal != NULL) {
+      tn5250_terminal_destroy (This->terminal);
+   }
    This->terminal = term;
    This->indicators_dirty = 1;
-   tn5250_terminal_update(This->terminal, This);
-   tn5250_terminal_update_indicators(This->terminal, This);
+   tn5250_terminal_update (This->terminal, This);
+   tn5250_terminal_update_indicators (This->terminal, This);
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_update
  * NAME
@@ -274,22 +310,25 @@ void tn5250_display_set_terminal(Tn5250Display * This, Tn5250Terminal * term)
  * DESCRIPTION
  *    Update the terminal's representation of the display.
  *****/
-void tn5250_display_update(Tn5250Display * This)
+void tn5250_display_update (Tn5250Display * This)
 {
    if (This->msg_line != NULL) {
       int l;
       l = tn5250_dbuffer_msg_line (This->display_buffers);
-      memcpy (This->display_buffers->data + tn5250_display_width (This) * l,
-         This->msg_line, This->msg_len);
+      memcpy (This->display_buffers->data +
+	      tn5250_display_width (This) * l, This->msg_line,
+	      This->msg_len);
    }
    if (This->terminal != NULL) {
-      tn5250_terminal_update(This->terminal, This);
+      tn5250_terminal_update (This->terminal, This);
       if (This->indicators_dirty) {
-	 tn5250_terminal_update_indicators(This->terminal, This);
+	 tn5250_terminal_update_indicators (This->terminal, This);
 	 This->indicators_dirty = 0;
       }
    }
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_waitevent
  * NAME
@@ -302,12 +341,13 @@ void tn5250_display_update(Tn5250Display * This)
  *    Wait for a terminal event.  Handle keystrokes while we're at it
  *    and don't return those to the session (what would it do with them?)
  *****/
-int tn5250_display_waitevent(Tn5250Display * This)
+int tn5250_display_waitevent (Tn5250Display * This)
 {
    int is_x_system, r, handled_key = 0;
 
-   if (This->terminal == NULL)
+   if (This->terminal == NULL) {
       return 0;
+   }
 
    while (1) {
       is_x_system = (This->keystate == TN5250_KEYSTATE_LOCKED);
@@ -315,32 +355,36 @@ int tn5250_display_waitevent(Tn5250Display * This)
       /* Handle keys from our key queue if we aren't X SYSTEM. */
       if (This->key_queue_head != This->key_queue_tail && !is_x_system) {
 	 TN5250_LOG (("Handling buffered key.\n"));
-	 tn5250_display_do_key(This,
-	       This->key_queue[This->key_queue_head]);
-	 if (++ This->key_queue_head == TN5250_DISPLAY_KEYQ_SIZE)
+	 tn5250_display_do_key (This,
+				This->key_queue[This->key_queue_head]);
+	 if (++This->key_queue_head == TN5250_DISPLAY_KEYQ_SIZE) {
 	    This->key_queue_head = 0;
+	 }
 	 handled_key = 1;
 	 continue;
       }
 
       /* don't make the user press HELP to see what the error is */
       if (This->keystate == TN5250_KEYSTATE_PREHELP) {
-         tn5250_display_do_key(This, K_HELP);
-         handled_key=1;
+	 tn5250_display_do_key (This, K_HELP);
+	 handled_key = 1;
       }
 
       if (handled_key) {
-	 tn5250_display_update(This);
+	 tn5250_display_update (This);
 	 handled_key = 0;
       }
-      r = tn5250_terminal_waitevent(This->terminal);
-      if ((r & TN5250_TERMINAL_EVENT_KEY) != 0)
+      r = tn5250_terminal_waitevent (This->terminal);
+      if ((r & TN5250_TERMINAL_EVENT_KEY) != 0) {
 	 tn5250_display_do_keys (This);
+      }
 
-      if ((r & ~TN5250_TERMINAL_EVENT_KEY) != 0)
+      if ((r & ~TN5250_TERMINAL_EVENT_KEY) != 0) {
 	 return r;
+      }
    }
 }
+
 
 /****f* lib5250/tn5250_display_getkey
  * NAME
@@ -352,12 +396,14 @@ int tn5250_display_waitevent(Tn5250Display * This)
  * DESCRIPTION
  *    Get the next keystroke in the keyboard buffer.
  *****/
-int tn5250_display_getkey(Tn5250Display * This)
+int tn5250_display_getkey (Tn5250Display * This)
 {
-   if (This->terminal == NULL)
+   if (This->terminal == NULL) {
       return -1;
-   return tn5250_terminal_getkey(This->terminal);
+   }
+   return tn5250_terminal_getkey (This->terminal);
 }
+
 
 /****f* lib5250/tn5250_display_beep
  * NAME
@@ -369,12 +415,15 @@ int tn5250_display_getkey(Tn5250Display * This)
  * DESCRIPTION
  *    The required beep function.
  *****/
-void tn5250_display_beep(Tn5250Display * This)
+void tn5250_display_beep (Tn5250Display * This)
 {
-   if (This->terminal == NULL)
+   if (This->terminal == NULL) {
       return;
-   tn5250_terminal_beep(This->terminal);
+   }
+   tn5250_terminal_beep (This->terminal);
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_set_pending_insert
  * NAME
@@ -388,11 +437,13 @@ void tn5250_display_beep(Tn5250Display * This)
  * DESCRIPTION
  *    Set the pending insert flag and the insert cursor position.
  *****/
-void tn5250_display_set_pending_insert (Tn5250Display *This, int y, int x)
+void tn5250_display_set_pending_insert (Tn5250Display * This, int y, int x)
 {
    This->pending_insert = 1;
    tn5250_dbuffer_set_ic (This->display_buffers, y, x);
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_field_at
  * NAME
@@ -406,10 +457,11 @@ void tn5250_display_set_pending_insert (Tn5250Display *This, int y, int x)
  * DESCRIPTION
  *    DOCUMENT ME!!!
  *****/
-Tn5250Field *tn5250_display_field_at(Tn5250Display *This, int y, int x)
+Tn5250Field *tn5250_display_field_at (Tn5250Display * This, int y, int x)
 {
-   return tn5250_dbuffer_field_yx(This->display_buffers, y, x);
+   return tn5250_dbuffer_field_yx (This->display_buffers, y, x);
 }
+
 
 /****f* lib5250/tn5250_display_current_field
  * NAME
@@ -422,12 +474,13 @@ Tn5250Field *tn5250_display_field_at(Tn5250Display *This, int y, int x)
  *    Find the field currently under the cursor.  The answer might be NULL
  *    if there is no field under the cursor.
  *****/
-Tn5250Field *tn5250_display_current_field(Tn5250Display * This)
+Tn5250Field *tn5250_display_current_field (Tn5250Display * This)
 {
-   return tn5250_display_field_at(This,
-				tn5250_display_cursor_y(This),
-				tn5250_display_cursor_x(This));
+   return tn5250_display_field_at (This,
+				   tn5250_display_cursor_y (This),
+				   tn5250_display_cursor_x (This));
 }
+
 
 /****f* lib5250/tn5250_display_next_field
  * NAME
@@ -440,7 +493,7 @@ Tn5250Field *tn5250_display_current_field(Tn5250Display * This)
  *    Return a pointer to the next field after the current one which is not
  *    a bypass field.
  *****/
-Tn5250Field *tn5250_display_next_field(Tn5250Display * This)
+Tn5250Field *tn5250_display_next_field (Tn5250Display * This)
 {
    Tn5250Field *iter = NULL, *next;
    int y, x;
@@ -453,29 +506,34 @@ Tn5250Field *tn5250_display_next_field(Tn5250Display * This)
       /* Find the first field on the display after the cursor, wrapping if we
        * hit the bottom of the display. */
       while (iter == NULL) {
-	 if ((iter = tn5250_display_field_at(This, y, x)) == NULL) {
-	    if (++x == tn5250_dbuffer_width(This->display_buffers)) {
+	 if ((iter = tn5250_display_field_at (This, y, x)) == NULL) {
+	    if (++x == tn5250_dbuffer_width (This->display_buffers)) {
 	       x = 0;
-	       if (++y == tn5250_dbuffer_height(This->display_buffers))
+	       if (++y == tn5250_dbuffer_height (This->display_buffers)) {
 		  y = 0;
+	       }
 	    }
 	    if (y == tn5250_display_cursor_y (This) &&
-		x == tn5250_display_cursor_x (This))
+		x == tn5250_display_cursor_x (This)) {
 	       return NULL;	/* No fields on display */
+	    }
 	 }
       }
-   } else
+   } else {
       iter = iter->next;
+   }
 
    next = iter;
-   while (tn5250_field_is_bypass(next)) {
+   while (tn5250_field_is_bypass (next)) {
       next = next->next;	/* Hehe */
-      if (next == iter && tn5250_field_is_bypass(next))
+      if (next == iter && tn5250_field_is_bypass (next)) {
 	 return NULL;		/* No non-bypass fields. */
+      }
    }
 
    return next;
 }
+
 
 /****f* lib5250/tn5250_display_prev_field
  * NAME
@@ -488,42 +546,47 @@ Tn5250Field *tn5250_display_next_field(Tn5250Display * This)
  *    Return a pointer to the first preceding field which is not a bypass
  *    field.
  *****/
-Tn5250Field *tn5250_display_prev_field(Tn5250Display * This)
+Tn5250Field *tn5250_display_prev_field (Tn5250Display * This)
 {
    Tn5250Field *iter = NULL, *prev;
    int y, x;
 
-   y = tn5250_display_cursor_y(This);
-   x = tn5250_display_cursor_x(This);
+   y = tn5250_display_cursor_y (This);
+   x = tn5250_display_cursor_x (This);
 
-   iter = tn5250_display_field_at(This, y, x);
+   iter = tn5250_display_field_at (This, y, x);
    if (iter == NULL) {
       /* Find the first field on the display after the cursor, wrapping if we
        * hit the bottom of the display. */
       while (iter == NULL) {
-	 if ((iter = tn5250_display_field_at(This, y, x)) == NULL) {
+	 if ((iter = tn5250_display_field_at (This, y, x)) == NULL) {
 	    if (x-- == 0) {
-	       x = tn5250_dbuffer_width(This->display_buffers) - 1;
-	       if (y-- == 0)
-		  y = tn5250_dbuffer_height(This->display_buffers) - 1;
+	       x = tn5250_dbuffer_width (This->display_buffers) - 1;
+	       if (y-- == 0) {
+		  y = tn5250_dbuffer_height (This->display_buffers) - 1;
+	       }
 	    }
-	    if (y == tn5250_display_cursor_y(This) &&
-		x == tn5250_display_cursor_x(This))
+	    if (y == tn5250_display_cursor_y (This) &&
+		x == tn5250_display_cursor_x (This)) {
 	       return NULL;	/* No fields on display */
+	    }
 	 }
       }
-   } else
+   } else {
       iter = iter->prev;
+   }
 
    prev = iter;
-   while (tn5250_field_is_bypass(prev)) {
+   while (tn5250_field_is_bypass (prev)) {
       prev = prev->prev;	/* Hehe */
-      if (prev == iter && tn5250_field_is_bypass(prev))
+      if (prev == iter && tn5250_field_is_bypass (prev)) {
 	 return NULL;		/* No non-bypass fields. */
+      }
    }
 
    return prev;
 }
+
 
 /****f* lib5250/tn5250_display_set_cursor_home
  * NAME
@@ -539,27 +602,30 @@ Tn5250Field *tn5250_display_prev_field(Tn5250Display * This)
  *       2) the first position of the first non-bypass field, if we have on.
  *       3) 0,0
  *****/
-void tn5250_display_set_cursor_home(Tn5250Display * This)
+void tn5250_display_set_cursor_home (Tn5250Display * This)
 {
-  if (This->pending_insert) {
-      tn5250_dbuffer_goto_ic(This->display_buffers);
- /*     This->pending_insert = 0; */
-  } else {
+   if (This->pending_insert) {
+      tn5250_dbuffer_goto_ic (This->display_buffers);
+      /*     This->pending_insert = 0; */
+   } else {
       int y = 0, x = 0;
       Tn5250Field *iter = This->display_buffers->field_list;
       if (iter != NULL) {
 	 do {
-	    if (!tn5250_field_is_bypass(iter)) {
+	    if (!tn5250_field_is_bypass (iter)) {
 	       y = tn5250_field_start_row (iter);
 	       x = tn5250_field_start_col (iter);
 	       break;
 	    }
 	    iter = iter->next;
-	 } while (iter != This->display_buffers->field_list);
+	 }
+	 while (iter != This->display_buffers->field_list);
       }
-      tn5250_display_set_cursor(This, y, x);
+      tn5250_display_set_cursor (This, y, x);
    }
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_set_cursor_field
  * NAME
@@ -573,16 +639,19 @@ void tn5250_display_set_cursor_home(Tn5250Display * This)
  *    Set the cursor position on the current display buffer to the home
  *    position of the specified field.
  *****/
-void tn5250_display_set_cursor_field(Tn5250Display * This, Tn5250Field * field)
+void
+tn5250_display_set_cursor_field (Tn5250Display * This, Tn5250Field * field)
 {
    if (field == NULL) {
-      tn5250_display_set_cursor_home(This);
+      tn5250_display_set_cursor_home (This);
       return;
    }
-   tn5250_dbuffer_cursor_set(This->display_buffers,
-			     tn5250_field_start_row(field),
-			     tn5250_field_start_col(field));
+   tn5250_dbuffer_cursor_set (This->display_buffers,
+			      tn5250_field_start_row (field),
+			      tn5250_field_start_col (field));
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_set_cursor_next_field
  * NAME
@@ -595,11 +664,56 @@ void tn5250_display_set_cursor_field(Tn5250Display * This, Tn5250Field * field)
  *    Move the cursor to the next non-bypass field.  This will move the
  *    cursor to the home position if there are no non-bypass fields.
  *****/
-void tn5250_display_set_cursor_next_field(Tn5250Display * This)
+void tn5250_display_set_cursor_next_field (Tn5250Display * This)
 {
-   Tn5250Field *field = tn5250_display_next_field(This);
-   tn5250_display_set_cursor_field(This, field);
+   Tn5250Field *currentfield = tn5250_display_current_field (This);
+   Tn5250Field *field;
+
+   if ((currentfield != NULL)
+       && (currentfield->nextfieldprogressionid != 0)) {
+      tn5250_display_set_cursor_next_progression_field (This,
+							currentfield->
+							nextfieldprogressionid);
+   } else {
+      field = tn5250_display_next_field (This);
+      tn5250_display_set_cursor_field (This, field);
+   }
+   return;
 }
+
+
+/****f* lib5250/tn5250_display_set_cursor_next_progression_field
+ * NAME
+ *    tn5250_display_set_cursor_next_progression_field
+ * SYNOPSIS
+ *    tn5250_display_set_cursor_next_progression_field (This);
+ * INPUTS
+ *    Tn5250Display *      This       - 
+ * DESCRIPTION
+ *    Move the cursor to the next specified field.  This will move the
+ *    cursor to the next non-bypass field if no field is specified.
+ *****/
+void
+tn5250_display_set_cursor_next_progression_field (Tn5250Display * This,
+						  int nextfield)
+{
+   Tn5250Field *field;
+
+   if (nextfield == 0) {
+      tn5250_display_set_cursor_next_field (This);
+      return;
+   }
+
+   while ((field = tn5250_display_next_field (This)) != NULL) {
+      tn5250_display_set_cursor_field (This, field);
+
+      if (field->entry_id == nextfield) {
+	 break;
+      }
+   }
+   return;
+}
+
 
 /****f* lib5250/tn5250_display_set_cursor_prev_field
  * NAME
@@ -612,37 +726,42 @@ void tn5250_display_set_cursor_next_field(Tn5250Display * This)
  *    Move the cursor to the previous non-bypass field.  This will move the
  *    cursor to the home position if there are no non-bypass fields.
  *****/
-void tn5250_display_set_cursor_prev_field(Tn5250Display * This)
+void tn5250_display_set_cursor_prev_field (Tn5250Display * This)
 {
-   Tn5250Field *field = tn5250_display_prev_field(This);
-   tn5250_display_set_cursor_field(This, field);
+   Tn5250Field *field = tn5250_display_prev_field (This);
+   tn5250_display_set_cursor_field (This, field);
 }
+
 
 /*
  *    Reconstruct WTD data as it might be sent from a host.  We use this
  *    to save our format table and display buffer.  We assume the buffer
  *    has been initialized, and we append to it.
  */
-void tn5250_display_make_wtd_data (Tn5250Display *This, Tn5250Buffer *buf,
-      Tn5250DBuffer *src_dbuffer)
+void
+tn5250_display_make_wtd_data (Tn5250Display * This, Tn5250Buffer * buf,
+			      Tn5250DBuffer * src_dbuffer)
 {
    Tn5250WTDContext *ctx;
 
    if ((ctx = tn5250_wtd_context_new (buf, src_dbuffer,
-	       This->display_buffers)) == NULL)
+				      This->display_buffers)) == NULL) {
       return;
+   }
 
    /* 
       These coordinates will be used in an IC order when the screen is 
       restored
-   */
-   tn5250_wtd_context_set_ic(ctx, 
-   	                     tn5250_display_cursor_y(This)+1,
-   	                     tn5250_display_cursor_x(This)+1);
-   	
+    */
+   tn5250_wtd_context_set_ic (ctx,
+			      tn5250_display_cursor_y (This) + 1,
+			      tn5250_display_cursor_x (This) + 1);
+
    tn5250_wtd_context_convert (ctx);
    tn5250_wtd_context_destroy (ctx);
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_interactive_addch
  * NAME
@@ -657,95 +776,117 @@ void tn5250_display_make_wtd_data (Tn5250Display *This, Tn5250Buffer *buf,
  *    is meant to be called by the keyboard handler when the user is
  *    entering data.
  *****/
-void tn5250_display_interactive_addch(Tn5250Display * This, unsigned char ch)
+void
+tn5250_display_interactive_addch (Tn5250Display * This, unsigned char ch)
 {
-   Tn5250Field *field = tn5250_display_current_field(This);
+   Tn5250Field *field = tn5250_display_current_field (This);
    int end_of_field = 0;
+   int nextfieldprogressionid = 0;
 
-   if (field == NULL || tn5250_field_is_bypass(field)) {
+   if (field == NULL || tn5250_field_is_bypass (field)) {
       This->keystate = TN5250_KEYSTATE_PREHELP;
-      This->keySRC =   TN5250_KBDSRC_PROTECT;
-      tn5250_display_inhibit(This);
+      This->keySRC = TN5250_KBDSRC_PROTECT;
+      tn5250_display_inhibit (This);
       return;
    }
    /* Upcase the character if this is a monocase field. */
-   if (tn5250_field_is_monocase(field) && isalpha(ch))
-      ch = toupper(ch);
+   if (tn5250_field_is_monocase (field) && isalpha (ch)) {
+      ch = toupper (ch);
+   }
 
    /* '+' and '-' keys activate field exit/field minus for numeric fields. */
-   if (This->sign_key_hack &&
-      (tn5250_field_is_num_only(field) || tn5250_field_is_signed_num(field))) {
+   if (This->sign_key_hack && (tn5250_field_is_num_only (field)
+			       || tn5250_field_is_signed_num (field))) {
       switch (ch) {
       case '+':
-	 tn5250_display_kf_field_plus(This);
+	 tn5250_display_kf_field_plus (This);
 	 return;
 
       case '-':
-	 tn5250_display_kf_field_minus(This);
+	 tn5250_display_kf_field_minus (This);
 	 return;
       }
    }
 
    /* Make sure this is a valid data character for this field type. */
-   if (!tn5250_field_valid_char(field, ch, &(This->keySRC))) {
+   if (!tn5250_field_valid_char (field, ch, &(This->keySRC))) {
       TN5250_LOG (("Inhibiting: invalid character for field type.\n"));
       This->keystate = TN5250_KEYSTATE_PREHELP;
-      tn5250_display_inhibit(This);
+      tn5250_display_inhibit (This);
       return;
    }
    /* Are we at the last character of the field? */
-   if (tn5250_display_cursor_y(This) == tn5250_field_end_row(field) &&
-       tn5250_display_cursor_x(This) == tn5250_field_end_col(field))
+   if (tn5250_display_cursor_y (This) == tn5250_field_end_row (field) &&
+       tn5250_display_cursor_x (This) == tn5250_field_end_col (field)) {
       end_of_field = 1;
+
+      if (field->nextfieldprogressionid != 0) {
+	 nextfieldprogressionid = field->nextfieldprogressionid;
+      }
+   }
 
    /* Don't allow the user to enter data in the sign portion of a signed
     * number field. */
-   if (end_of_field && tn5250_field_is_signed_num(field)) {
+   if (end_of_field && tn5250_field_is_signed_num (field)) {
       TN5250_LOG (("Inhibiting: last character of signed num field.\n"));
       This->keystate = TN5250_KEYSTATE_PREHELP;
       This->keySRC = TN5250_KBDSRC_SIGNPOS;
-      tn5250_display_inhibit(This);
+      tn5250_display_inhibit (This);
       return;
    }
    /* Add or insert the character (depending on whether insert mode is on). */
-   if ((tn5250_display_indicators(This) & TN5250_DISPLAY_IND_INSERT) != 0) {
-      int ofs = tn5250_field_length(field) - 1;
+   if ((tn5250_display_indicators (This) & TN5250_DISPLAY_IND_INSERT) != 0) {
+      int ofs = tn5250_field_length (field) - 1;
       unsigned char *data = tn5250_display_field_data (This, field);
-      if (tn5250_field_is_signed_num(field))
+      if (tn5250_field_is_signed_num (field)) {
 	 ofs--;
-      if (data[ofs] != '\0' && tn5250_char_map_to_local (This->map, data[ofs]) != ' ') {
-         This->keystate = TN5250_KEYSTATE_PREHELP;
-         This->keySRC   = TN5250_KBDSRC_NOROOM;
-	 tn5250_display_inhibit(This);
+      }
+      if (data[ofs] != '\0'
+	  && tn5250_char_map_to_local (This->map, data[ofs]) != ' ') {
+	 This->keystate = TN5250_KEYSTATE_PREHELP;
+	 This->keySRC = TN5250_KBDSRC_NOROOM;
+	 tn5250_display_inhibit (This);
 	 return;
       }
-      tn5250_dbuffer_ins(This->display_buffers, tn5250_char_map_to_remote (This->map, ch),
-	    tn5250_field_count_right(field,
-	       tn5250_display_cursor_y(This),
-	       tn5250_display_cursor_x(This)));
-   } else
-      tn5250_dbuffer_addch(This->display_buffers, tn5250_char_map_to_remote (This->map, ch));
+      tn5250_dbuffer_ins (This->display_buffers,
+			  tn5250_char_map_to_remote (This->map, ch),
+			  tn5250_field_count_right (field,
+						    tn5250_display_cursor_y
+						    (This),
+						    tn5250_display_cursor_x
+						    (This)));
+   } else {
+      tn5250_dbuffer_addch (This->display_buffers,
+			    tn5250_char_map_to_remote (This->map, ch));
+   }
 
-   tn5250_field_set_mdt(field);
+   tn5250_field_set_mdt (field);
 
    /* If at the end of the field and not a fer field, advance to the
     * next field. */
    if (end_of_field) {
-      if (tn5250_field_is_fer(field)) {
+      if (tn5250_field_is_fer (field)) {
 	 tn5250_display_indicator_set (This, TN5250_DISPLAY_IND_FER);
 	 tn5250_display_set_cursor (This,
-				   tn5250_field_end_row(field),
-				   tn5250_field_end_col(field));
+				    tn5250_field_end_row (field),
+				    tn5250_field_end_col (field));
       } else {
-	 tn5250_display_field_adjust(This, field);
-	 if (tn5250_field_is_auto_enter(field)) {
+	 tn5250_display_field_adjust (This, field);
+	 if (tn5250_field_is_auto_enter (field)) {
 	    tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ENTER);
 	    return;
 	 }
-	 tn5250_display_set_cursor_next_field(This);
+	 if (nextfieldprogressionid != 0) {
+	    tn5250_display_set_cursor_next_progression_field (This,
+							      nextfieldprogressionid);
+	 } else {
+	    tn5250_display_set_cursor_next_field (This);
+	 }
       }
    }
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_shift_right
  * NAME
@@ -760,36 +901,44 @@ void tn5250_display_interactive_addch(Tn5250Display * This, unsigned char ch)
  *    Move all the data characters in the field to the right-hand side of
  *    the field and left-fill the field with `fill' characters.
  *****/
-void tn5250_display_shift_right(Tn5250Display * This, Tn5250Field * field, unsigned char fill)
+void
+tn5250_display_shift_right (Tn5250Display * This, Tn5250Field * field,
+			    unsigned char fill)
 {
    int n, end;
    unsigned char *ptr;
 
-   ptr = tn5250_display_field_data(This, field);
-   end = tn5250_field_length(field) - 1;
+   ptr = tn5250_display_field_data (This, field);
+   end = tn5250_field_length (field) - 1;
 
-   tn5250_field_set_mdt(field);
+   tn5250_field_set_mdt (field);
 
    /* Don't adjust the sign position of signed num type fields. */
-   if (tn5250_field_is_signed_num(field))
+   if (tn5250_field_is_signed_num (field)) {
       end--;
+   }
 
    /* Left fill the field until the first non-null or non-blank character. */
-   for (n = 0; n <= end && (ptr[n] == 0 || ptr[n] == 0x40); n++)
+   for (n = 0; n <= end && (ptr[n] == 0 || ptr[n] == 0x40); n++) {
       ptr[n] = fill;
+   }
 
    /* If the field is entirely blank and we don't do this, we spin forever. */
-   if (n > end)
+   if (n > end) {
       return;
+   }
 
    /* Shift the contents of the field right one place and put the fill char in
     * position 0 until the data is right-justified in the field. */
    while (ptr[end] == 0 || ptr[end] == 0x40) {
-      for (n = end; n > 0; n--)
+      for (n = end; n > 0; n--) {
 	 ptr[n] = ptr[n - 1];
+      }
       ptr[0] = fill;
    }
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_field_adjust
  * NAME
@@ -803,30 +952,38 @@ void tn5250_display_shift_right(Tn5250Display * This, Tn5250Field * field, unsig
  *    Adjust the field data as required by the Field Format Word.  This is
  *    called from tn5250_display_kf_field_exit.
  *****/
-void tn5250_display_field_adjust(Tn5250Display * This, Tn5250Field * field)
+void
+tn5250_display_field_adjust (Tn5250Display * This, Tn5250Field * field)
 {
    int mand_fill_type;
 
    /* Because of special processing during transmit and other weirdness,
     * we need to shift signed number fields right regardless. */
-   mand_fill_type = tn5250_field_mand_fill_type(field);
-   if (tn5250_field_type(field) == TN5250_FIELD_SIGNED_NUM) 
+   mand_fill_type = tn5250_field_mand_fill_type (field);
+   if (tn5250_field_type (field) == TN5250_FIELD_SIGNED_NUM) {
       mand_fill_type = TN5250_FIELD_RIGHT_BLANK;
+   }
 
    switch (mand_fill_type) {
    case TN5250_FIELD_NO_ADJUST:
    case TN5250_FIELD_MANDATORY_FILL:
       break;
    case TN5250_FIELD_RIGHT_ZERO:
-      tn5250_display_shift_right(This, field, tn5250_char_map_to_remote (This->map, '0'));
+      tn5250_display_shift_right (This, field,
+				  tn5250_char_map_to_remote (This->map,
+							     '0'));
       break;
    case TN5250_FIELD_RIGHT_BLANK:
-      tn5250_display_shift_right(This, field, tn5250_char_map_to_remote (This->map, ' '));
+      tn5250_display_shift_right (This, field,
+				  tn5250_char_map_to_remote (This->map,
+							     ' '));
       break;
    }
 
-   tn5250_field_set_mdt(field);
+   tn5250_field_set_mdt (field);
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_do_keys
  * NAME
@@ -839,90 +996,95 @@ void tn5250_display_field_adjust(Tn5250Display * This, Tn5250Field * field)
  *    Handle keys from the terminal until we run out or are in the X SYSTEM
  *    state.
  *****/
-void tn5250_display_do_keys (Tn5250Display *This)
+void tn5250_display_do_keys (Tn5250Display * This)
 {
    int cur_key;
-   char Last ;
+   char Last;
    int dokey;
 
    TN5250_LOG (("display_do_keys!\n"));
 
    do {
-      cur_key = tn5250_macro_getkey (This,&Last) ;
-      
-      if (Last)
-	 tn5250_display_indicator_clear(This, TN5250_DISPLAY_IND_MACRO);
+      cur_key = tn5250_macro_getkey (This, &Last);
 
-      if (cur_key == 0)
-         cur_key = tn5250_display_getkey (This);
+      if (Last) {
+	 tn5250_display_indicator_clear (This, TN5250_DISPLAY_IND_MACRO);
+      }
+
+      if (cur_key == 0) {
+	 cur_key = tn5250_display_getkey (This);
+      }
 
       if (cur_key != -1) {
+	 tn5250_macro_reckey (This, cur_key);
+	 dokey = 0;
 
-	 tn5250_macro_reckey (This, cur_key) ;
+	 switch (This->keystate) {
+	 case TN5250_KEYSTATE_UNLOCKED:
+	    dokey = 1;
+	    break;
+	 case TN5250_KEYSTATE_HARDWARE:
+	    if (cur_key == K_RESET) {
+	       TN5250_LOG (("doing key %d in hw error state.\n", cur_key));
+	    }
+	    dokey = 1;
+	    break;
+	 case TN5250_KEYSTATE_LOCKED:
+	    switch (cur_key) {
+	    case K_SYSREQ:
+	    case K_ATTENTION:
+	       TN5250_LOG (("doing key %d in locked state.\n", cur_key));
+	       dokey = 1;
+	       break;
+	    }
+	    break;
+	 case TN5250_KEYSTATE_PREHELP:
+	    switch (cur_key) {
+	    case K_RESET:
+	    case K_HELP:
+	    case K_ATTENTION:
+	       dokey = 1;
+	       TN5250_LOG (("Doing key %d in prehelp state\n", cur_key));
+	       break;
+	    }
+	    break;
+	    break;
+	 case TN5250_KEYSTATE_POSTHELP:
+	    switch (cur_key) {
+	    case K_RESET:
+	    case K_ATTENTION:
+	       TN5250_LOG (("Doing key %d in posthelp state.\n", cur_key));
+	       dokey = 1;
+	       break;
+	    }
+	 }
 
-         dokey = 0;
-
-         switch (This->keystate) {
-            case TN5250_KEYSTATE_UNLOCKED:
-               dokey = 1;
-               break;
-            case TN5250_KEYSTATE_HARDWARE:
-               if (cur_key == K_RESET) 
-                    TN5250_LOG (("doing key %d in hw error state.\n", cur_key));
-                   dokey = 1;
-               break;
-            case TN5250_KEYSTATE_LOCKED:
-               switch (cur_key) {
-                  case K_SYSREQ:
-                  case K_ATTENTION:
-                    TN5250_LOG (("doing key %d in locked state.\n", cur_key));
-                    dokey = 1;
-                    break;
-               }
-               break;
-            case TN5250_KEYSTATE_PREHELP:
-               switch (cur_key) {
-                  case K_RESET:
-                  case K_HELP:
-                  case K_ATTENTION:
-                    dokey = 1;
-                    TN5250_LOG (("Doing key %d in prehelp state\n", cur_key));
-                    break;
-               }
-               break;
-               break;
-            case TN5250_KEYSTATE_POSTHELP:
-               switch (cur_key) {
-                  case K_RESET:
-                  case K_ATTENTION:
-                    TN5250_LOG (("Doing key %d in posthelp state.\n", cur_key));
-                    dokey = 1;
-                    break;
-               }
-          }
-
-         if (!dokey) {
+	 if (!dokey) {
 	    if ((This->key_queue_tail + 1 == This->key_queue_head) ||
-		  (This->key_queue_head == 0 &&
-		   This->key_queue_tail == TN5250_DISPLAY_KEYQ_SIZE - 1)) {
+		(This->key_queue_head == 0 &&
+		 This->key_queue_tail == TN5250_DISPLAY_KEYQ_SIZE - 1)) {
 	       TN5250_LOG (("Beep: Key queue full.\n"));
 	       tn5250_display_beep (This);
 	    }
 	    This->key_queue[This->key_queue_tail] = cur_key;
-	    if (++ This->key_queue_tail == TN5250_DISPLAY_KEYQ_SIZE)
+	    if (++This->key_queue_tail == TN5250_DISPLAY_KEYQ_SIZE) {
 	       This->key_queue_tail = 0;
+	    }
 	 } else {
-            /* if we're hitting a special keypress (such as error reset)
-               in a state where typeahead is not allowed, then clear
-               the key queue */
-            if (This->key_queue_head != This->key_queue_tail) 
-                 This->key_queue_head = This->key_queue_tail = 0;
+	    /* if we're hitting a special keypress (such as error reset)
+	       in a state where typeahead is not allowed, then clear
+	       the key queue */
+	    if (This->key_queue_head != This->key_queue_tail) {
+	       This->key_queue_head = This->key_queue_tail = 0;
+	    }
 	    tn5250_display_do_key (This, cur_key);
 	 }
       }
-   } while (cur_key != -1);
+   }
+   while (cur_key != -1);
 
-   tn5250_display_update(This);
+   tn5250_display_update (This);
+   return;
 }
 
 
@@ -937,7 +1099,7 @@ void tn5250_display_do_keys (Tn5250Display *This)
  * DESCRIPTION
  *    Translate a keystroke and handle it.
  *****/
-void tn5250_display_do_key(Tn5250Display *This, int key)
+void tn5250_display_do_key (Tn5250Display * This, int key)
 {
    int pre_FER_clear = 0;
 
@@ -946,42 +1108,39 @@ void tn5250_display_do_key(Tn5250Display *This, int key)
    /* FIXME: Translate from terminal key via keyboard map to 5250 key. */
 
    switch (This->keystate) {
-      case TN5250_KEYSTATE_UNLOCKED:
-         TN5250_ASSERT(!tn5250_display_inhibited(This));
-         /* normal processing can continue */
-         break;
-      case TN5250_KEYSTATE_HARDWARE:
-         if (key != K_RESET) {
-              TN5250_LOG (("Denying key %d in hw err state.\n", key));
-	      tn5250_display_beep (This);
-              return;
-         }
-         break;
-      case TN5250_KEYSTATE_LOCKED:
-         if (key != K_SYSREQ 
-               && key != K_PRINT 
-               && key != K_ATTENTION) {
-              TN5250_LOG (("Denying key %d in locked state.\n", key));
-	      tn5250_display_beep (This);
-              return;
-         }
-         break;
-      case TN5250_KEYSTATE_PREHELP:
-         if (key != K_RESET && key != K_HELP
-                            && key != K_PRINT 
-                            && key != K_ATTENTION) {
-              TN5250_LOG (("Denying key %d in prehelp state.\n", key));
-	      tn5250_display_beep (This);
-              return;
-         }
-         break;
-      case TN5250_KEYSTATE_POSTHELP:
-         if (key != K_RESET && key != K_ATTENTION) {
-              TN5250_LOG (("Denying key %d in posthelp state.\n", key));
-	      tn5250_display_beep (This);
-              return;
-         }
-         break;
+   case TN5250_KEYSTATE_UNLOCKED:
+      TN5250_ASSERT (!tn5250_display_inhibited (This));
+      /* normal processing can continue */
+      break;
+   case TN5250_KEYSTATE_HARDWARE:
+      if (key != K_RESET) {
+	 TN5250_LOG (("Denying key %d in hw err state.\n", key));
+	 tn5250_display_beep (This);
+	 return;
+      }
+      break;
+   case TN5250_KEYSTATE_LOCKED:
+      if (key != K_SYSREQ && key != K_PRINT && key != K_ATTENTION) {
+	 TN5250_LOG (("Denying key %d in locked state.\n", key));
+	 tn5250_display_beep (This);
+	 return;
+      }
+      break;
+   case TN5250_KEYSTATE_PREHELP:
+      if (key != K_RESET && key != K_HELP
+	  && key != K_PRINT && key != K_ATTENTION) {
+	 TN5250_LOG (("Denying key %d in prehelp state.\n", key));
+	 tn5250_display_beep (This);
+	 return;
+      }
+      break;
+   case TN5250_KEYSTATE_POSTHELP:
+      if (key != K_RESET && key != K_ATTENTION) {
+	 TN5250_LOG (("Denying key %d in posthelp state.\n", key));
+	 tn5250_display_beep (This);
+	 return;
+      }
+      break;
    }
 
 
@@ -1012,17 +1171,17 @@ void tn5250_display_do_key(Tn5250Display *This, int key)
 	 break;
 
       default:
-         This->keystate = TN5250_KEYSTATE_PREHELP;
-         This->keySRC   = TN5250_KBDSRC_FER;
+	 This->keystate = TN5250_KEYSTATE_PREHELP;
+	 This->keySRC = TN5250_KBDSRC_FER;
 	 tn5250_display_inhibit (This);
-         TN5250_LOG (("Denying key %d in FER state.\n", key));
+	 TN5250_LOG (("Denying key %d in FER state.\n", key));
 	 return;
       }
    }
 
    switch (key) {
    case K_RESET:
-      tn5250_display_uninhibit(This);
+      tn5250_display_uninhibit (This);
       This->keystate = TN5250_KEYSTATE_UNLOCKED;
       break;
 
@@ -1107,7 +1266,7 @@ void tn5250_display_do_key(Tn5250Display *This, int key)
       break;
 
    case K_ATTENTION:
-      tn5250_display_uninhibit(This);
+      tn5250_display_uninhibit (This);
       This->keystate = TN5250_KEYSTATE_UNLOCKED;
       tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ATTN);
       break;
@@ -1117,71 +1276,78 @@ void tn5250_display_do_key(Tn5250Display *This, int key)
       break;
 
    case K_DUPLICATE:
-      tn5250_display_kf_dup(This);
+      tn5250_display_kf_dup (This);
       break;
 
    case K_NEXTWORD:
-      tn5250_display_kf_nextword(This);
+      tn5250_display_kf_nextword (This);
       break;
 
    case K_PREVWORD:
-      tn5250_display_kf_prevword(This);
+      tn5250_display_kf_prevword (This);
       break;
 
    case K_NEXTFLD:
-      tn5250_display_kf_nextfld(This);
+      tn5250_display_kf_nextfld (This);
       break;
 
    case K_PREVFLD:
-      tn5250_display_kf_prevfld(This);
+      tn5250_display_kf_prevfld (This);
       break;
 
    case K_FIELDHOME:
-      tn5250_display_kf_fieldhome(This);
+      tn5250_display_kf_fieldhome (This);
       break;
 
    case K_NEWLINE:
-      tn5250_display_kf_newline(This);
+      tn5250_display_kf_newline (This);
       break;
 
    case K_MEMO:
-      tn5250_display_kf_macro(This,K_MEMO);
+      tn5250_display_kf_macro (This, K_MEMO);
       break;
 
    case K_EXEC:
-      tn5250_display_kf_macro(This,K_EXEC);
+      tn5250_display_kf_macro (This, K_EXEC);
       break;
 
    default:
       /* Handle function/command keys. */
       if (key >= K_F1 && key <= K_F24) {
 	 if ((!tn5250_macro_recfunct (This, key)) &&
-	    (!tn5250_macro_execfunct (This, key)))
-	 {
+	     (!tn5250_macro_execfunct (This, key))) {
 	    if (key <= K_F12) {
 	       TN5250_LOG (("Key = %d; K_F1 = %d; Key - K_F1 = %d\n",
-		     key, K_F1, key-K_F1));
+			    key, K_F1, key - K_F1));
 	       TN5250_LOG (("AID_F1 = %d; Result = %d\n",
-		     TN5250_SESSION_AID_F1, key-K_F1+TN5250_SESSION_AID_F1));
-	       tn5250_display_do_aidkey (This, key-K_F1+TN5250_SESSION_AID_F1);
-	    } else
-	       tn5250_display_do_aidkey(This, key-K_F13+TN5250_SESSION_AID_F13);
+			    TN5250_SESSION_AID_F1,
+			    key - K_F1 + TN5250_SESSION_AID_F1));
+	       tn5250_display_do_aidkey (This,
+					 key - K_F1 +
+					 TN5250_SESSION_AID_F1);
+	    } else {
+	       tn5250_display_do_aidkey (This,
+					 key - K_F13 +
+					 TN5250_SESSION_AID_F13);
+	    }
 	 }
 	 break;
       }
 
       /* Handle data keys. */
       if (key >= ' ' && key <= 255) {
-	 TN5250_LOG(("HandleKey: key = %c\n", key));
+	 TN5250_LOG (("HandleKey: key = %c\n", key));
 	 tn5250_display_interactive_addch (This, key);
       } else {
 	 TN5250_LOG (("HandleKey: Weird key ignored: %d\n", key));
       }
    }
    if (pre_FER_clear) {
-  tn5250_display_indicator_clear (This, TN5250_DISPLAY_IND_FER);
+      tn5250_display_indicator_clear (This, TN5250_DISPLAY_IND_FER);
    }
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_field_pad_and_adjust
  * NAME
@@ -1197,28 +1363,32 @@ void tn5250_display_do_key(Tn5250Display *This, int key)
  *    adjusts the field.  Does NOT do auto-enter, and does NOT
  *    advance to the next field.
  *****/
-void tn5250_display_field_pad_and_adjust(Tn5250Display * This, Tn5250Field *field)
+void
+tn5250_display_field_pad_and_adjust (Tn5250Display * This,
+				     Tn5250Field * field)
 {
    unsigned char *data;
    int i, l;
 
-   /* NUL out remainder of field from cursor position.  For signed numeric
+   /* NULL out remainder of field from cursor position.  For signed numeric
     * fields, we do *not* want to null out the sign position - Field+ and
     * Field- will do this for us.  We do not do this when the FER indicator
     * is set. */
    if ((tn5250_display_indicators (This) & TN5250_DISPLAY_IND_FER) == 0) {
       data = tn5250_display_field_data (This, field);
-      i = tn5250_field_count_left(field, tn5250_display_cursor_y(This),
-	    tn5250_display_cursor_x(This));
-      l = tn5250_field_length(field);
-      if (tn5250_field_is_signed_num(field))
+      i = tn5250_field_count_left (field, tn5250_display_cursor_y (This),
+				   tn5250_display_cursor_x (This));
+      l = tn5250_field_length (field);
+      if (tn5250_field_is_signed_num (field)) {
 	 l--;
-      for (; i < l; i++)
+      }
+      for (; i < l; i++) {
 	 data[i] = 0;
+      }
    }
 
-   tn5250_display_field_adjust(This, field);
-
+   tn5250_display_field_adjust (This, field);
+   return;
 }
 
 
@@ -1232,29 +1402,29 @@ void tn5250_display_field_pad_and_adjust(Tn5250Display * This, Tn5250Field *fiel
  * DESCRIPTION
  *    Process a field exit function.
  *****/
-void tn5250_display_kf_field_exit(Tn5250Display * This)
+void tn5250_display_kf_field_exit (Tn5250Display * This)
 {
    Tn5250Field *field;
-   unsigned char *data;
-   int i, l;
 
-   field = tn5250_display_current_field(This);
-   if (field == NULL || tn5250_field_is_bypass(field)) {
+   field = tn5250_display_current_field (This);
+   if (field == NULL || tn5250_field_is_bypass (field)) {
       This->keystate = TN5250_KEYSTATE_PREHELP;
       This->keySRC = TN5250_KBDSRC_PROTECT;
-      tn5250_display_inhibit(This);
+      tn5250_display_inhibit (This);
       return;
    }
 
-   tn5250_display_field_pad_and_adjust ( This, field );
+   tn5250_display_field_pad_and_adjust (This, field);
 
-   if (tn5250_field_is_auto_enter(field)) {
+   if (tn5250_field_is_auto_enter (field)) {
       tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ENTER);
       return;
    }
 
    tn5250_display_set_cursor_next_field (This);
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_kf_field_plus
  * NAME
@@ -1266,44 +1436,45 @@ void tn5250_display_kf_field_exit(Tn5250Display * This)
  * DESCRIPTION
  *    Process a field plus function.
  *****/
-void tn5250_display_kf_field_plus(Tn5250Display * This)
+void tn5250_display_kf_field_plus (Tn5250Display * This)
 {
    Tn5250Field *field;
    unsigned char *data;
-   unsigned char c;
 
    TN5250_LOG (("Field+ entered.\n"));
 
    field = tn5250_display_current_field (This);
-   if (field == NULL || tn5250_field_is_bypass(field)) {
+   if (field == NULL || tn5250_field_is_bypass (field)) {
       This->keystate = TN5250_KEYSTATE_PREHELP;
       This->keySRC = TN5250_KBDSRC_PROTECT;
-      tn5250_display_inhibit(This);
+      tn5250_display_inhibit (This);
       return;
    }
 
-   tn5250_display_field_pad_and_adjust ( This, field );
-   
-   /* NOTE: Field+ should act like field exit on a non-numeric field. */
-   if (field != NULL && 
-	 (tn5250_field_type(field) == TN5250_FIELD_SIGNED_NUM) ||
-	 (tn5250_field_type(field) == TN5250_FIELD_NUM_ONLY)) {
+   tn5250_display_field_pad_and_adjust (This, field);
 
-        /* We don't do anything for number only fields.  For signed numeric
-         * fields, we change the sign position to a '+'. */
-        data = tn5250_display_field_data (This, field);
-        if (tn5250_field_type(field) != TN5250_FIELD_NUM_ONLY)
-           data[tn5250_field_length (field) - 1] = 0;
+   /* NOTE: Field+ should act like field exit on a non-numeric field. */
+   if ((field != NULL) &&
+       ((tn5250_field_type (field) == TN5250_FIELD_SIGNED_NUM) ||
+	(tn5250_field_type (field) == TN5250_FIELD_NUM_ONLY))) {
+
+      /* We don't do anything for number only fields.  For signed numeric
+       * fields, we change the sign position to a '+'. */
+      data = tn5250_display_field_data (This, field);
+      if (tn5250_field_type (field) != TN5250_FIELD_NUM_ONLY) {
+	 data[tn5250_field_length (field) - 1] = 0;
+      }
    }
 
-   if (tn5250_field_is_auto_enter(field)) {
-       tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ENTER);
-       return;
+   if (tn5250_field_is_auto_enter (field)) {
+      tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ENTER);
+      return;
    }
 
    tn5250_display_set_cursor_next_field (This);
-
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_kf_field_minus
  * NAME
@@ -1315,44 +1486,47 @@ void tn5250_display_kf_field_plus(Tn5250Display * This)
  * DESCRIPTION
  *    Process a field minus function.
  *****/
-void tn5250_display_kf_field_minus(Tn5250Display * This)
+void tn5250_display_kf_field_minus (Tn5250Display * This)
 {
    Tn5250Field *field;
    unsigned char *data;
-   unsigned char c;
 
    TN5250_LOG (("Field- entered.\n"));
-   
+
    field = tn5250_display_current_field (This);
-   if (field == NULL ||
-         (tn5250_field_type(field) != TN5250_FIELD_SIGNED_NUM) &&
-	 (tn5250_field_type(field) != TN5250_FIELD_NUM_ONLY)) {
+   if ((field == NULL) ||
+       ((tn5250_field_type (field) != TN5250_FIELD_SIGNED_NUM) &&
+	(tn5250_field_type (field) != TN5250_FIELD_NUM_ONLY))) {
       This->keystate = TN5250_KEYSTATE_PREHELP;
       This->keySRC = TN5250_KBDSRC_FLDM_DISALLOWED;
-      tn5250_display_inhibit(This);
+      tn5250_display_inhibit (This);
       return;
    }
 
-   tn5250_display_field_pad_and_adjust ( This, field );
+   tn5250_display_field_pad_and_adjust (This, field);
 
    /* For numeric only fields, we shift the data one character to the
     * left and change the zone to negative.  i.e. 0xf0 becomes 0xd0,
     * 0xf1 becomes 0xd1, etc.  in the rightmost position.  For
     * signed numeric fields, we change the sign position to a '-'. */
    data = tn5250_display_field_data (This, field);
-   if (tn5250_field_type(field) == TN5250_FIELD_NUM_ONLY) {
-         int i = tn5250_field_length (field) - 1;
-         data[i] = (data[i]&0x0F) | 0xd0;
-   } else
-      data[tn5250_field_length (field) - 1] = tn5250_char_map_to_remote (This->map, '-');
+   if (tn5250_field_type (field) == TN5250_FIELD_NUM_ONLY) {
+      int i = tn5250_field_length (field) - 1;
+      data[i] = (data[i] & 0x0F) | 0xd0;
+   } else {
+      data[tn5250_field_length (field) - 1] =
+	  tn5250_char_map_to_remote (This->map, '-');
+   }
 
-   if (tn5250_field_is_auto_enter(field)) {
+   if (tn5250_field_is_auto_enter (field)) {
       tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ENTER);
       return;
    }
 
    tn5250_display_set_cursor_next_field (This);
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_do_aidkey
  * NAME
@@ -1365,16 +1539,18 @@ void tn5250_display_kf_field_minus(Tn5250Display * This)
  * DESCRIPTION
  *    Handle an aid code.
  *****/
-void tn5250_display_do_aidkey (Tn5250Display *This, int aidcode)
+void tn5250_display_do_aidkey (Tn5250Display * This, int aidcode)
 {
    TN5250_LOG (("tn5250_display_do_aidkey (0x%02X) called.\n", aidcode));
 
    /* Aidcodes less than zero are pseudo-aid-codes (see session.h) */
    if (This->session->read_opcode || aidcode < 0) {
       /* FIXME: If this returns zero, we need to stop processing. */
-      ( *(This->session->handle_aidkey)) (This->session, aidcode);
+      (*(This->session->handle_aidkey)) (This->session, aidcode);
    }
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_kf_dup
  * NAME
@@ -1386,9 +1562,9 @@ void tn5250_display_do_aidkey (Tn5250Display *This, int aidcode)
  * DESCRIPTION
  *    Process a DUP key function.
  *****/
-void tn5250_display_kf_dup(Tn5250Display * This)
+void tn5250_display_kf_dup (Tn5250Display * This)
 {
-   int y, x, i;
+   int i;
    Tn5250Field *field;
    unsigned char *data;
 
@@ -1396,30 +1572,31 @@ void tn5250_display_kf_dup(Tn5250Display * This)
    if (field == NULL || tn5250_field_is_bypass (field)) {
       This->keystate = TN5250_KEYSTATE_PREHELP;
       This->keySRC = TN5250_KBDSRC_PROTECT;
-      tn5250_display_inhibit(This);
+      tn5250_display_inhibit (This);
       return;
    }
 
-   tn5250_field_set_mdt(field);
+   tn5250_field_set_mdt (field);
 
-   if (!tn5250_field_is_dup_enable(field)) {
+   if (!tn5250_field_is_dup_enable (field)) {
       This->keystate = TN5250_KEYSTATE_PREHELP;
       This->keySRC = TN5250_KBDSRC_DUP_DISALLOWED;
-      tn5250_display_inhibit(This);
+      tn5250_display_inhibit (This);
       return;
    }
 
-   i = tn5250_field_count_left(field, tn5250_display_cursor_y(This),
-	 tn5250_display_cursor_x(This));
+   i = tn5250_field_count_left (field, tn5250_display_cursor_y (This),
+				tn5250_display_cursor_x (This));
    data = tn5250_display_field_data (This, field);
-   for (; i < tn5250_field_length(field); i++)
+   for (; i < tn5250_field_length (field); i++) {
       data[i] = 0x1c;
+   }
 
    if (tn5250_field_is_fer (field)) {
       tn5250_display_indicator_set (This, TN5250_DISPLAY_IND_FER);
       tn5250_dbuffer_cursor_set (This->display_buffers,
-	    tn5250_field_end_row (field),
-	    tn5250_field_end_col (field));
+				 tn5250_field_end_row (field),
+				 tn5250_field_end_col (field));
    } else {
       tn5250_display_field_adjust (This, field);
       if (tn5250_field_is_auto_enter (field)) {
@@ -1428,7 +1605,9 @@ void tn5250_display_kf_dup(Tn5250Display * This)
       }
       tn5250_display_set_cursor_next_field (This);
    }
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_indicator_set
  * NAME
@@ -1442,11 +1621,13 @@ void tn5250_display_kf_dup(Tn5250Display * This)
  *    Set the specified indicators and set a flag noting that the indicators
  *    must be refreshed.
  *****/
-void tn5250_display_indicator_set (Tn5250Display *This, int inds)
+void tn5250_display_indicator_set (Tn5250Display * This, int inds)
 {
    This->indicators |= inds;
    This->indicators_dirty = 1;
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_indicator_clear
  * NAME
@@ -1460,22 +1641,26 @@ void tn5250_display_indicator_set (Tn5250Display *This, int inds)
  *    Clear the specified indicators and set a flag noting that the indicators
  *    must be refreshed.
  *****/
-void tn5250_display_indicator_clear (Tn5250Display *This, int inds)
+void tn5250_display_indicator_clear (Tn5250Display * This, int inds)
 {
    This->indicators &= ~inds;
    This->indicators_dirty = 1;
 
    /* Restore the message line if we are clearing the X II indicator */
-   if ((inds & TN5250_DISPLAY_IND_INHIBIT) != 0 && This->saved_msg_line != NULL) {
+   if ((inds & TN5250_DISPLAY_IND_INHIBIT) != 0
+       && This->saved_msg_line != NULL) {
       int l = tn5250_dbuffer_msg_line (This->display_buffers);
-      memcpy (This->display_buffers->data + l * tn5250_display_width (This),
-	    This->saved_msg_line, tn5250_display_width (This));
+      memcpy (This->display_buffers->data +
+	      l * tn5250_display_width (This), This->saved_msg_line,
+	      tn5250_display_width (This));
       g_free (This->saved_msg_line);
       This->saved_msg_line = NULL;
       g_free (This->msg_line);
       This->msg_line = NULL;
    }
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_clear_unit
  * NAME
@@ -1487,25 +1672,28 @@ void tn5250_display_indicator_clear (Tn5250Display *This, int inds)
  * DESCRIPTION
  *    Clear the display and set the display size to 24x80.
  *****/
-void tn5250_display_clear_unit (Tn5250Display *This)
+void tn5250_display_clear_unit (Tn5250Display * This)
 {
-   tn5250_dbuffer_set_size(This->display_buffers, 24, 80);
-   tn5250_display_indicator_set(This, TN5250_DISPLAY_IND_X_SYSTEM);
+   tn5250_dbuffer_set_size (This->display_buffers, 24, 80);
+   tn5250_display_indicator_set (This, TN5250_DISPLAY_IND_X_SYSTEM);
    This->keystate = TN5250_KEYSTATE_LOCKED;
-   tn5250_display_indicator_clear(This,
-	 TN5250_DISPLAY_IND_INSERT | TN5250_DISPLAY_IND_INHIBIT
-	 | TN5250_DISPLAY_IND_FER);
+   tn5250_display_indicator_clear (This,
+				   TN5250_DISPLAY_IND_INSERT |
+				   TN5250_DISPLAY_IND_INHIBIT |
+				   TN5250_DISPLAY_IND_FER);
    This->pending_insert = 0;
-   tn5250_dbuffer_set_ic(This->display_buffers, 0, 0);
+   tn5250_dbuffer_set_ic (This->display_buffers, 0, 0);
    if (This->saved_msg_line != NULL) {
-      g_free(This->saved_msg_line);
+      g_free (This->saved_msg_line);
       This->saved_msg_line = NULL;
    }
    if (This->msg_line != NULL) {
-      g_free(This->msg_line);
+      g_free (This->msg_line);
       This->msg_line = NULL;
    }
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_clear_unit_alternate
  * NAME
@@ -1517,25 +1705,28 @@ void tn5250_display_clear_unit (Tn5250Display *This)
  * DESCRIPTION
  *    Clear the display and set the display size to 27x132.
  *****/
-void tn5250_display_clear_unit_alternate (Tn5250Display *This)
+void tn5250_display_clear_unit_alternate (Tn5250Display * This)
 {
-   tn5250_dbuffer_set_size(This->display_buffers, 27, 132);
-   tn5250_display_indicator_set(This, TN5250_DISPLAY_IND_X_SYSTEM);
+   tn5250_dbuffer_set_size (This->display_buffers, 27, 132);
+   tn5250_display_indicator_set (This, TN5250_DISPLAY_IND_X_SYSTEM);
    This->keystate = TN5250_KEYSTATE_LOCKED;
-   tn5250_display_indicator_clear(This,
-	 TN5250_DISPLAY_IND_INSERT | TN5250_DISPLAY_IND_INHIBIT
-	 | TN5250_DISPLAY_IND_FER);
+   tn5250_display_indicator_clear (This,
+				   TN5250_DISPLAY_IND_INSERT |
+				   TN5250_DISPLAY_IND_INHIBIT |
+				   TN5250_DISPLAY_IND_FER);
    This->pending_insert = 0;
-   tn5250_dbuffer_set_ic(This->display_buffers, 0, 0);
+   tn5250_dbuffer_set_ic (This->display_buffers, 0, 0);
    if (This->saved_msg_line != NULL) {
-      g_free(This->saved_msg_line);
+      g_free (This->saved_msg_line);
       This->saved_msg_line = NULL;
    }
    if (This->msg_line != NULL) {
-      g_free(This->msg_line);
+      g_free (This->msg_line);
       This->msg_line = NULL;
    }
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_clear_format_table
  * NAME
@@ -1547,14 +1738,16 @@ void tn5250_display_clear_unit_alternate (Tn5250Display *This)
  * DESCRIPTION
  *    Clear the format table.
  *****/
-void tn5250_display_clear_format_table (Tn5250Display *This)
+void tn5250_display_clear_format_table (Tn5250Display * This)
 {
-   tn5250_dbuffer_clear_table(This->display_buffers);
-   tn5250_display_set_cursor(This, 0, 0);
-   tn5250_display_indicator_set(This, TN5250_DISPLAY_IND_X_SYSTEM);
+   tn5250_dbuffer_clear_table (This->display_buffers);
+   tn5250_display_set_cursor (This, 0, 0);
+   tn5250_display_indicator_set (This, TN5250_DISPLAY_IND_X_SYSTEM);
    This->keystate = TN5250_KEYSTATE_LOCKED;
-   tn5250_display_indicator_clear(This, TN5250_DISPLAY_IND_INSERT);
+   tn5250_display_indicator_clear (This, TN5250_DISPLAY_IND_INSERT);
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_kf_backspace
  * NAME
@@ -1568,12 +1761,12 @@ void tn5250_display_clear_format_table (Tn5250Display *This)
  *    field, in which case we move to the last position of the previous
  *    field. (Or inhibit if we aren't on a field).
  *****/
-void tn5250_display_kf_backspace (Tn5250Display *This)
+void tn5250_display_kf_backspace (Tn5250Display * This)
 {
    Tn5250Field *field = tn5250_display_current_field (This);
    if (field == NULL) {
       This->keystate = TN5250_KEYSTATE_PREHELP;
-      This->keySRC   = TN5250_KBDSRC_PROTECT;
+      This->keySRC = TN5250_KBDSRC_PROTECT;
       tn5250_display_inhibit (This);
       return;
    }
@@ -1581,19 +1774,23 @@ void tn5250_display_kf_backspace (Tn5250Display *This)
    /* If in first position of field, set cursor position to last position
     * of previous field. */
    if (tn5250_display_cursor_x (This) == tn5250_field_start_col (field) &&
-	 tn5250_display_cursor_y (This) == tn5250_field_start_row (field)) {
+       tn5250_display_cursor_y (This) == tn5250_field_start_row (field)) {
       field = tn5250_display_prev_field (This);
-      if (field == NULL)
-	 return; /* Should never happen */
+      if (field == NULL) {
+	 return;		/* Should never happen */
+      }
       tn5250_display_set_cursor_field (This, field);
-      if (tn5250_field_length (field) - 1 > 0)
+      if (tn5250_field_length (field) - 1 > 0) {
 	 tn5250_dbuffer_right (This->display_buffers,
-	       tn5250_field_length (field) - 1);
+			       tn5250_field_length (field) - 1);
+      }
       return;
    }
 
    tn5250_dbuffer_left (This->display_buffers);
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_kf_left
  * NAME
@@ -1605,10 +1802,12 @@ void tn5250_display_kf_backspace (Tn5250Display *This)
  * DESCRIPTION
  *    Move the cursor left.
  *****/
-void tn5250_display_kf_left (Tn5250Display *This)
+void tn5250_display_kf_left (Tn5250Display * This)
 {
    tn5250_dbuffer_left (This->display_buffers);
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_kf_right
  * NAME
@@ -1620,10 +1819,12 @@ void tn5250_display_kf_left (Tn5250Display *This)
  * DESCRIPTION
  *    Move the cursor right.
  *****/
-void tn5250_display_kf_right (Tn5250Display *This)
+void tn5250_display_kf_right (Tn5250Display * This)
 {
    tn5250_dbuffer_right (This->display_buffers, 1);
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_kf_up
  * NAME
@@ -1635,10 +1836,12 @@ void tn5250_display_kf_right (Tn5250Display *This)
  * DESCRIPTION
  *    Move the cursor up.
  *****/
-void tn5250_display_kf_up (Tn5250Display *This)
+void tn5250_display_kf_up (Tn5250Display * This)
 {
    tn5250_dbuffer_up (This->display_buffers);
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_kf_down
  * NAME
@@ -1650,10 +1853,12 @@ void tn5250_display_kf_up (Tn5250Display *This)
  * DESCRIPTION
  *    Move the cursor down.
  *****/
-void tn5250_display_kf_down (Tn5250Display *This)
+void tn5250_display_kf_down (Tn5250Display * This)
 {
    tn5250_dbuffer_down (This->display_buffers);
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_kf_insert
  * NAME
@@ -1665,13 +1870,16 @@ void tn5250_display_kf_down (Tn5250Display *This)
  * DESCRIPTION
  *    Toggle the insert indicator.
  *****/
-void tn5250_display_kf_insert (Tn5250Display *This)
+void tn5250_display_kf_insert (Tn5250Display * This)
 {
-   if ((tn5250_display_indicators(This) & TN5250_DISPLAY_IND_INSERT) != 0)
-      tn5250_display_indicator_clear(This, TN5250_DISPLAY_IND_INSERT);
-   else
-      tn5250_display_indicator_set(This, TN5250_DISPLAY_IND_INSERT);
+   if ((tn5250_display_indicators (This) & TN5250_DISPLAY_IND_INSERT) != 0) {
+      tn5250_display_indicator_clear (This, TN5250_DISPLAY_IND_INSERT);
+   } else {
+      tn5250_display_indicator_set (This, TN5250_DISPLAY_IND_INSERT);
+   }
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_kf_tab
  * NAME
@@ -1683,10 +1891,12 @@ void tn5250_display_kf_insert (Tn5250Display *This)
  * DESCRIPTION
  *    Tab function.
  *****/
-void tn5250_display_kf_tab (Tn5250Display *This)
+void tn5250_display_kf_tab (Tn5250Display * This)
 {
    tn5250_display_set_cursor_next_field (This);
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_kf_backtab
  * NAME
@@ -1698,21 +1908,27 @@ void tn5250_display_kf_tab (Tn5250Display *This)
  * DESCRIPTION
  *    Backwards tab function.
  *****/
-void tn5250_display_kf_backtab (Tn5250Display *This)
+void tn5250_display_kf_backtab (Tn5250Display * This)
 {
    /* Backtab: Move to start of this field, or start of previous field if
     * already there. */
    Tn5250Field *field = tn5250_display_current_field (This);
-   if (field == NULL || tn5250_field_count_left(field,
-	    tn5250_display_cursor_y(This),
-	    tn5250_display_cursor_x(This)) == 0)
+   if (field == NULL || tn5250_field_count_left (field,
+						 tn5250_display_cursor_y
+						 (This),
+						 tn5250_display_cursor_x
+						 (This)) == 0) {
       field = tn5250_display_prev_field (This);
+   }
 
-   if (field != NULL)
+   if (field != NULL) {
       tn5250_display_set_cursor_field (This, field);
-   else
+   } else {
       tn5250_display_set_cursor_home (This);
+   }
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_kf_end
  * NAME
@@ -1724,23 +1940,25 @@ void tn5250_display_kf_backtab (Tn5250Display *This)
  * DESCRIPTION
  *    End key function.
  *****/
-void tn5250_display_kf_end (Tn5250Display *This)
+void tn5250_display_kf_end (Tn5250Display * This)
 {
-   Tn5250Field *field = tn5250_display_current_field(This);
-   if (field != NULL && !tn5250_field_is_bypass(field)) {
+   Tn5250Field *field = tn5250_display_current_field (This);
+   if (field != NULL && !tn5250_field_is_bypass (field)) {
       unsigned char *data = tn5250_display_field_data (This, field);
       int i = tn5250_field_length (field) - 1;
       int y = tn5250_field_start_row (field);
       int x = tn5250_field_start_col (field);
 
       if (data[i] == '\0') {
-	 while (i > 0 && data[i] == '\0')
+	 while (i > 0 && data[i] == '\0') {
 	    i--;
+	 }
 	 while (i >= 0) {
-	    if (++x == tn5250_display_width(This)) {
+	    if (++x == tn5250_display_width (This)) {
 	       x = 0;
-	       if (++y == tn5250_display_height(This))
+	       if (++y == tn5250_display_height (This)) {
 		  y = 0;
+	       }
 	    }
 	    i--;
 	 }
@@ -1751,10 +1969,12 @@ void tn5250_display_kf_end (Tn5250Display *This)
       tn5250_display_set_cursor (This, y, x);
    } else {
       This->keystate = TN5250_KEYSTATE_PREHELP;
-      This->keySRC   = TN5250_KBDSRC_PROTECT;
-      tn5250_display_inhibit(This);
+      This->keySRC = TN5250_KBDSRC_PROTECT;
+      tn5250_display_inhibit (This);
    }
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_kf_home
  * NAME
@@ -1766,7 +1986,7 @@ void tn5250_display_kf_end (Tn5250Display *This)
  * DESCRIPTION
  *    Home key function.
  *****/
-void tn5250_display_kf_home (Tn5250Display *This)
+void tn5250_display_kf_home (Tn5250Display * This)
 {
    Tn5250Field *field;
    int gx, gy;
@@ -1777,18 +1997,22 @@ void tn5250_display_kf_home (Tn5250Display *This)
    } else {
       field = tn5250_dbuffer_first_non_bypass (This->display_buffers);
       if (field != NULL) {
-	 gy = tn5250_field_start_row(field);
-	 gx = tn5250_field_start_col(field);
-      } else
+	 gy = tn5250_field_start_row (field);
+	 gx = tn5250_field_start_col (field);
+      } else {
 	 gx = gy = 0;
+      }
    }
 
-   if (gy == tn5250_display_cursor_y(This)
-	 && gx == tn5250_display_cursor_x(This))
+   if (gy == tn5250_display_cursor_y (This)
+       && gx == tn5250_display_cursor_x (This)) {
       tn5250_display_do_aidkey (This, TN5250_SESSION_AID_RECORD_BS);
-   else
-      tn5250_display_set_cursor(This, gy, gx);
+   } else {
+      tn5250_display_set_cursor (This, gy, gx);
+   }
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_kf_delete
  * NAME
@@ -1800,21 +2024,25 @@ void tn5250_display_kf_home (Tn5250Display *This)
  * DESCRIPTION
  *    Delete key function.
  *****/
-void tn5250_display_kf_delete (Tn5250Display *This)
+void tn5250_display_kf_delete (Tn5250Display * This)
 {
    Tn5250Field *field = tn5250_display_current_field (This);
-   if (field == NULL || tn5250_field_is_bypass(field)) {
+   if (field == NULL || tn5250_field_is_bypass (field)) {
       This->keystate = TN5250_KEYSTATE_PREHELP;
-      This->keySRC   = TN5250_KBDSRC_PROTECT;
-      tn5250_display_inhibit(This);
+      This->keySRC = TN5250_KBDSRC_PROTECT;
+      tn5250_display_inhibit (This);
    } else {
       tn5250_field_set_mdt (field);
-      tn5250_dbuffer_del(This->display_buffers,
-	    tn5250_field_count_right (field,
-	       tn5250_display_cursor_y (This),
-	       tn5250_display_cursor_x (This)));
+      tn5250_dbuffer_del (This->display_buffers,
+			  tn5250_field_count_right (field,
+						    tn5250_display_cursor_y
+						    (This),
+						    tn5250_display_cursor_x
+						    (This)));
    }
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_kf_prevword
  * NAME
@@ -1826,10 +2054,12 @@ void tn5250_display_kf_delete (Tn5250Display *This)
  * DESCRIPTION
  *    Move cursor to the last non-blank character.
  *****/
-void tn5250_display_kf_prevword (Tn5250Display *This)
+void tn5250_display_kf_prevword (Tn5250Display * This)
 {
-      tn5250_dbuffer_prevword(This->display_buffers);
+   tn5250_dbuffer_prevword (This->display_buffers);
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_kf_nextword
  * NAME
@@ -1841,10 +2071,12 @@ void tn5250_display_kf_prevword (Tn5250Display *This)
  * DESCRIPTION
  *    Move cursor to the next non-blank character.
  *****/
-void tn5250_display_kf_nextword (Tn5250Display *This)
+void tn5250_display_kf_nextword (Tn5250Display * This)
 {
-      tn5250_dbuffer_nextword(This->display_buffers);
+   tn5250_dbuffer_nextword (This->display_buffers);
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_kf_prevfld
  * NAME
@@ -1859,56 +2091,59 @@ void tn5250_display_kf_nextword (Tn5250Display *This)
  *    and add the additional functionality of stopping at a (possibly blank)
  *    input-capable field as well.
  *****/
-void tn5250_display_kf_prevfld (Tn5250Display *This)
+void tn5250_display_kf_prevfld (Tn5250Display * This)
 {
-   int foundblank=0;
-   int state=0;
+   int state = 0;
    int maxiter;
    Tn5250Field *field;
 
    TN5250_LOG (("dbuffer_prevfld: entered.\n"));
 
    maxiter = (This->display_buffers->w * This->display_buffers->h);
-   TN5250_ASSERT(maxiter>0);
+   TN5250_ASSERT (maxiter > 0);
 
    while (--maxiter) {
-        tn5250_dbuffer_left(This->display_buffers);
+      tn5250_dbuffer_left (This->display_buffers);
 
-        /* If at the start of a field, exit */
-        field = tn5250_display_current_field(This);
-        if ((field != NULL) &&
-             (tn5250_field_start_row(field) == This->display_buffers->cy) &&
-             (tn5250_field_start_col(field) == This->display_buffers->cx))
-        {
-           break;
-        }
+      /* If at the start of a field, exit */
+      field = tn5250_display_current_field (This);
+      if ((field != NULL) &&
+	  (tn5250_field_start_row (field) == This->display_buffers->cy) &&
+	  (tn5250_field_start_col (field) == This->display_buffers->cx)) {
+	 break;
+      }
 
-        switch (state) {
-           case 0:
-              if (This->display_buffers->data[
-                    This->display_buffers->cy *
-                    This->display_buffers->w +
-                    This->display_buffers->cx] <= 0x40) state++;
-              break;
-           case 1:
-              if (This->display_buffers->data[
-                    This->display_buffers->cy *
-                    This->display_buffers->w +
-                    This->display_buffers->cx] > 0x40) state++;
-              break;
-           case 2:
-              if (This->display_buffers->data[
-                    This->display_buffers->cy *
-                    This->display_buffers->w +
-                    This->display_buffers->cx] <= 0x40) {
-                  tn5250_dbuffer_right(This->display_buffers, 1);
-                  return;
-              }
-              break;
-        }
+      switch (state) {
+      case 0:
+	 if (This->display_buffers->data[This->display_buffers->cy *
+					 This->display_buffers->w +
+					 This->display_buffers->cx] <=
+	     0x40) {
+	    state++;
+	 }
+	 break;
+      case 1:
+	 if (This->display_buffers->data[This->display_buffers->cy *
+					 This->display_buffers->w +
+					 This->display_buffers->cx] > 0x40)
+	 {
+	    state++;
+	 }
+	 break;
+      case 2:
+	 if (This->display_buffers->data[This->display_buffers->cy *
+					 This->display_buffers->w +
+					 This->display_buffers->cx] <=
+	     0x40) {
+	    tn5250_dbuffer_right (This->display_buffers, 1);
+	    return;
+	 }
+	 break;
+      }
    }
-
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_kf_nextfld
  * NAME
@@ -1923,44 +2158,44 @@ void tn5250_display_kf_prevfld (Tn5250Display *This)
  *    and add the additional functionality of stopping at a (possibly blank)
  *    input-capable field as well.
  *****/
-void tn5250_display_kf_nextfld (Tn5250Display *This)
+void tn5250_display_kf_nextfld (Tn5250Display * This)
 {
-   int foundblank=0;
+   int foundblank = 0;
    int maxiter;
    Tn5250Field *field;
-   int gx, gy;
 
    TN5250_LOG (("dbuffer_nextfld: entered.\n"));
 
    maxiter = (This->display_buffers->w * This->display_buffers->h);
-   TN5250_ASSERT(maxiter>0);
+   TN5250_ASSERT (maxiter > 0);
 
    while (--maxiter) {
-      tn5250_dbuffer_right(This->display_buffers, 1);
-      if (This->display_buffers->data[
-            This->display_buffers->cy *
-            This->display_buffers->w +
-            This->display_buffers->cx] <= 0x40) foundblank++;
+      tn5250_dbuffer_right (This->display_buffers, 1);
+      if (This->display_buffers->data[This->display_buffers->cy *
+				      This->display_buffers->w +
+				      This->display_buffers->cx] <= 0x40) {
+	 foundblank++;
+      }
 
       /* If found a blank previously and a non-blank now, exit */
-      if ((foundblank) && (This->display_buffers->data[
-                             This->display_buffers->cy *
-                             This->display_buffers->w +
-                             This->display_buffers->cx] > 0x40)) {
-           break;
+      if ((foundblank)
+	  && (This->display_buffers->
+	      data[This->display_buffers->cy * This->display_buffers->w +
+		   This->display_buffers->cx] > 0x40)) {
+	 break;
       }
 
       /* If at the start of a field, exit */
-      field = tn5250_display_current_field(This);
+      field = tn5250_display_current_field (This);
       if ((field != NULL) &&
-           (tn5250_field_start_row(field) == This->display_buffers->cy) &&
-           (tn5250_field_start_col(field) == This->display_buffers->cx))
-      {
-         break;
+	  (tn5250_field_start_row (field) == This->display_buffers->cy) &&
+	  (tn5250_field_start_col (field) == This->display_buffers->cx)) {
+	 break;
       }
    }
-
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_kf_fieldhome
  * NAME
@@ -1972,18 +2207,19 @@ void tn5250_display_kf_nextfld (Tn5250Display *This)
  * DESCRIPTION
  *    Move cursor to the next non-blank character.
  *****/
-void tn5250_display_kf_fieldhome (Tn5250Display *This)
+void tn5250_display_kf_fieldhome (Tn5250Display * This)
 {
-   Tn5250Field *field = tn5250_display_current_field(This);
-   if (field != NULL && !tn5250_field_is_bypass(field)) {
+   Tn5250Field *field = tn5250_display_current_field (This);
+   if (field != NULL && !tn5250_field_is_bypass (field)) {
       int y = tn5250_field_start_row (field);
       int x = tn5250_field_start_col (field);
       tn5250_display_set_cursor (This, y, x);
    } else {
       This->keystate = TN5250_KEYSTATE_PREHELP;
-      This->keySRC   = TN5250_KBDSRC_PROTECT;
-      tn5250_display_inhibit(This);
+      This->keySRC = TN5250_KBDSRC_PROTECT;
+      tn5250_display_inhibit (This);
    }
+   return;
 }
 
 
@@ -1997,19 +2233,21 @@ void tn5250_display_kf_fieldhome (Tn5250Display *This)
  * DESCRIPTION
  *    Move cursor to the first field on the next line.
  *****/
-void tn5250_display_kf_newline (Tn5250Display *This)
+void tn5250_display_kf_newline (Tn5250Display * This)
 {
-   int y, x;
+   int y;
    Tn5250Field *f;
 
-   y = tn5250_display_cursor_y(This);
+   y = tn5250_display_cursor_y (This);
    tn5250_display_set_cursor (This, y, 0);
    tn5250_dbuffer_down (This->display_buffers);
-   f = tn5250_display_current_field(This);
-   if (f == NULL || tn5250_field_is_bypass(f))
+   f = tn5250_display_current_field (This);
+   if (f == NULL || tn5250_field_is_bypass (f)) {
       tn5250_display_set_cursor_next_field (This);
-
+   }
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_kf_macro
  * NAME
@@ -2022,38 +2260,34 @@ void tn5250_display_kf_newline (Tn5250Display *This)
  * DESCRIPTION
  *    Toggle the memo/exec indicator.
  *****/
-void tn5250_display_kf_macro (Tn5250Display *This, int Ch)
+void tn5250_display_kf_macro (Tn5250Display * This, int Ch)
 {
    TN5250_LOG (("K_MEMO/EXEC\n"));
 
-   if ((Ch == K_MEMO) && (!tn5250_macro_estate(This)))
-   {
-      if (!tn5250_macro_rstate (This))
-      {
-	 if (tn5250_macro_startdef (This))
-	    tn5250_display_indicator_set(This, TN5250_DISPLAY_IND_MACRO);
-      }
-      else
-      {
-	 tn5250_macro_enddef (This) ;
-	 tn5250_display_indicator_clear(This, TN5250_DISPLAY_IND_MACRO);
+   if ((Ch == K_MEMO) && (!tn5250_macro_estate (This))) {
+      if (!tn5250_macro_rstate (This)) {
+	 if (tn5250_macro_startdef (This)) {
+	    tn5250_display_indicator_set (This, TN5250_DISPLAY_IND_MACRO);
+	 }
+      } else {
+	 tn5250_macro_enddef (This);
+	 tn5250_display_indicator_clear (This, TN5250_DISPLAY_IND_MACRO);
       }
    }
 
-   if ((Ch == K_EXEC) && (!tn5250_macro_rstate(This)))
-   {
-      if (!tn5250_macro_estate (This))
-      {
-	 if (tn5250_macro_startexec (This))
-	    tn5250_display_indicator_set(This, TN5250_DISPLAY_IND_MACRO);
-      }
-      else
-      {
-	 tn5250_macro_endexec (This) ;
-	 tn5250_display_indicator_clear(This, TN5250_DISPLAY_IND_MACRO);
+   if ((Ch == K_EXEC) && (!tn5250_macro_rstate (This))) {
+      if (!tn5250_macro_estate (This)) {
+	 if (tn5250_macro_startexec (This)) {
+	    tn5250_display_indicator_set (This, TN5250_DISPLAY_IND_MACRO);
+	 }
+      } else {
+	 tn5250_macro_endexec (This);
+	 tn5250_display_indicator_clear (This, TN5250_DISPLAY_IND_MACRO);
       }
    }
+   return;
 }
+
 
 /****f* lib5250/tn5250_display_save_msg_line
  * NAME
@@ -2065,18 +2299,20 @@ void tn5250_display_kf_macro (Tn5250Display *This, int Ch)
  * DESCRIPTION
  *    Save the current message line.
  *****/
-void tn5250_display_save_msg_line (Tn5250Display *This)
+void tn5250_display_save_msg_line (Tn5250Display * This)
 {
-   int i, l;
+   int l;
 
-   if (This->saved_msg_line != NULL)
+   if (This->saved_msg_line != NULL) {
       g_free (This->saved_msg_line);
-   This->saved_msg_line = (unsigned char *)g_malloc (tn5250_display_width (This));
+   }
+   This->saved_msg_line =
+       (unsigned char *) g_malloc (tn5250_display_width (This));
 
    l = tn5250_dbuffer_msg_line (This->display_buffers);
    memcpy (This->saved_msg_line, This->display_buffers->data +
-	 tn5250_display_width (This) * l,
-	 tn5250_display_width (This));
+	   tn5250_display_width (This) * l, tn5250_display_width (This));
+   return;
 }
 
 
@@ -2092,21 +2328,26 @@ void tn5250_display_save_msg_line (Tn5250Display *This)
  * DESCRIPTION
  *    Set a new message line.
  *****/
-void tn5250_display_set_msg_line (Tn5250Display *This, const unsigned char *msgline, int msglen)
+void
+tn5250_display_set_msg_line (Tn5250Display * This,
+			     const unsigned char *msgline, int msglen)
 {
    int l;
 
-   if (This->msg_line != NULL)
+   if (This->msg_line != NULL) {
       free (This->msg_line);
-   This->msg_line = (unsigned char *)g_malloc (tn5250_display_width (This));
-   memset(This->msg_line, 0x00, tn5250_display_width (This));
+   }
+   This->msg_line =
+       (unsigned char *) g_malloc (tn5250_display_width (This));
+   memset (This->msg_line, 0x00, tn5250_display_width (This));
 
-   memcpy(This->msg_line, msgline, msglen);
+   memcpy (This->msg_line, msgline, msglen);
    This->msg_len = msglen;
 
    l = tn5250_dbuffer_msg_line (This->display_buffers);
    memcpy (This->display_buffers->data + tn5250_display_width (This) * l,
-         This->msg_line, This->msg_len);
+	   This->msg_line, This->msg_len);
+   return;
 }
 
 
@@ -2121,13 +2362,15 @@ void tn5250_display_set_msg_line (Tn5250Display *This, const unsigned char *msgl
  * DESCRIPTION
  *    Save the current message line.
  *****/
-void tn5250_display_set_char_map (Tn5250Display *This, const char *name)
+void tn5250_display_set_char_map (Tn5250Display * This, const char *name)
 {
    Tn5250CharMap *map = tn5250_char_map_new (name);
    TN5250_ASSERT (map != NULL);
-   if (This->map != NULL)
+   if (This->map != NULL) {
       tn5250_char_map_destroy (This->map);
+   }
    This->map = map;
+   return;
 }
 
 /* vi:set sts=3 sw=3: */

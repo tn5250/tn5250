@@ -23,7 +23,8 @@
 #define TERMINAL_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /* Flags */
@@ -96,19 +97,20 @@ extern "C" {
 #define K_ATTENTION	0511	/* curses KEY_IL (as good as any) */
 #define K_DUPLICATE	0524	/* curses KEY_STAB (set tab - good as any) */
 #define K_FIELDMINUS	0526	/* curses KEY_CATAB (clear all tabs - g.a.a.) */
-#define K_FIELDPLUS     0520    /* curses KEY_SF */
-#define K_PREVWORD	0611    /* curses KEY_SLEFT (as good as any) */
-#define K_NEXTWORD	0622    /* curses KEY_SRIGHT (as good as any) */
-#define K_PREVFLD	0xfffb  /* no similar curses key */
-#define K_NEXTFLD	0xfffc  /* no similar curses key */
+#define K_FIELDPLUS     0520	/* curses KEY_SF */
+#define K_PREVWORD	0611	/* curses KEY_SLEFT (as good as any) */
+#define K_NEXTWORD	0622	/* curses KEY_SRIGHT (as good as any) */
+#define K_PREVFLD	0xfffb	/* no similar curses key */
+#define K_NEXTFLD	0xfffc	/* no similar curses key */
 #define K_FIELDHOME	0607	/* curses KEY_SHOME (as good as any) */
-#define K_EXEC		0507    /* macro execution */
-#define K_MEMO		0510    /* macro record */
-#define K_COPY_TEXT     0xfffd  /* no similar curses key */
-#define K_PASTE_TEXT    0xfffe  /* no similar curses key */
+#define K_EXEC		0507	/* macro execution */
+#define K_MEMO		0510	/* macro record */
+#define K_COPY_TEXT     0xfffd	/* no similar curses key */
+#define K_PASTE_TEXT    0xfffe	/* no similar curses key */
 #define K_UNKNOW	0xffff
 
-struct _Tn5250Display;
+
+  struct _Tn5250Display;
 
 /****s* lib5250/Tn5250Terminal
  * NAME
@@ -144,51 +146,74 @@ struct _Tn5250Display;
  *    gtkterm.c.
  * SOURCE
  */
-struct _Tn5250Terminal {
-   SOCKET_TYPE conn_fd;
-   struct _Tn5250TerminalPrivate *data;
+  struct _Tn5250Terminal
+  {
+    SOCKET_TYPE conn_fd;
+    struct _Tn5250TerminalPrivate *data;
 
-   void (*init) (struct _Tn5250Terminal * This);
-   void (*term) (struct _Tn5250Terminal * This);
-   void (*destroy) (struct _Tn5250Terminal /*@only@*/ * This);
-   int (*width) (struct _Tn5250Terminal * This);
-   int (*height) (struct _Tn5250Terminal * This);
-   int (*flags) (struct _Tn5250Terminal * This);
-   void (*update) 			(struct _Tn5250Terminal * This,
-				      struct _Tn5250Display *display);
-   void (*update_indicators) 	(struct _Tn5250Terminal * This,
-				      struct _Tn5250Display *display);
-   int (*waitevent) (struct _Tn5250Terminal * This);
-   int (*getkey) (struct _Tn5250Terminal * This);
-   void (* beep) (struct _Tn5250Terminal * This);
-   int (*config) (struct _Tn5250Terminal * This,
-	          struct _Tn5250Config *config);
-};
+    void (*init) (struct _Tn5250Terminal * This);
+    void (*term) (struct _Tn5250Terminal * This);
+    void (*destroy) (struct _Tn5250Terminal /*@only@ */  * This);
+    int (*width) (struct _Tn5250Terminal * This);
+    int (*height) (struct _Tn5250Terminal * This);
+    int (*flags) (struct _Tn5250Terminal * This);
+    void (*update) (struct _Tn5250Terminal * This,
+		    struct _Tn5250Display * display);
+    void (*update_indicators) (struct _Tn5250Terminal * This,
+			       struct _Tn5250Display * display);
+    int (*waitevent) (struct _Tn5250Terminal * This);
+    int (*getkey) (struct _Tn5250Terminal * This);
+    void (*beep) (struct _Tn5250Terminal * This);
+    int (*config) (struct _Tn5250Terminal * This,
+		   struct _Tn5250Config * config);
+    void (*create_window) (struct _Tn5250Terminal * This,
+			   struct _Tn5250Display * display,
+			   struct _Tn5250Window * window);
+    void (*destroy_window) (struct _Tn5250Terminal * This,
+			    struct _Tn5250Display * display);
+    void (*create_scrollbar) (struct _Tn5250Terminal * This,
+			      struct _Tn5250Display * display);
+    void (*destroy_scrollbar) (struct _Tn5250Terminal * This,
+			       struct _Tn5250Display * display);
+  };
 
-typedef struct _Tn5250Terminal Tn5250Terminal;
+  typedef struct _Tn5250Terminal Tn5250Terminal;
 /*******/
 
 #ifndef _TN5250_TERMINAL_PRIVATE_DEFINED
 #define _TN5250_TERMINAL_PRIVATE_DEFINED
-   struct _Tn5250TerminalPrivate {
-      long dummy;
-   };
+  struct _Tn5250TerminalPrivate
+  {
+    long dummy;
+  };
 #endif
 
 /* Useful macros call ``methods'' on the terminal type. */
 /* For SWIG, we need actual functions - blah. */
-extern void tn5250_terminal_init (Tn5250Terminal *This);
-extern void tn5250_terminal_term (Tn5250Terminal *This);
-extern void tn5250_terminal_destroy (Tn5250Terminal *This);
-extern int tn5250_terminal_width (Tn5250Terminal *This);
-extern int tn5250_terminal_height (Tn5250Terminal *This);
-extern int tn5250_terminal_flags (Tn5250Terminal *This);
-extern void tn5250_terminal_update (Tn5250Terminal *This, struct _Tn5250Display *d);
-extern void tn5250_terminal_update_indicators (Tn5250Terminal *This, struct _Tn5250Display *d);
-extern int tn5250_terminal_waitevent (Tn5250Terminal *This);
-extern int tn5250_terminal_getkey (Tn5250Terminal *This);
-extern void tn5250_terminal_beep (Tn5250Terminal *This);
-extern int tn5250_terminal_config (Tn5250Terminal *This, struct _Tn5250Config *cfg);
+  extern void tn5250_terminal_init (Tn5250Terminal * This);
+  extern void tn5250_terminal_term (Tn5250Terminal * This);
+  extern void tn5250_terminal_destroy (Tn5250Terminal * This);
+  extern int tn5250_terminal_width (Tn5250Terminal * This);
+  extern int tn5250_terminal_height (Tn5250Terminal * This);
+  extern int tn5250_terminal_flags (Tn5250Terminal * This);
+  extern void tn5250_terminal_update (Tn5250Terminal * This,
+				      struct _Tn5250Display *d);
+  extern void tn5250_terminal_update_indicators (Tn5250Terminal * This,
+						 struct _Tn5250Display *d);
+  extern int tn5250_terminal_waitevent (Tn5250Terminal * This);
+  extern int tn5250_terminal_getkey (Tn5250Terminal * This);
+  extern void tn5250_terminal_beep (Tn5250Terminal * This);
+  extern int tn5250_terminal_config (Tn5250Terminal * This,
+				     struct _Tn5250Config *cfg);
+  extern void tn5250_terminal_create_window (Tn5250Terminal * This,
+					     struct _Tn5250Display *d,
+					     struct _Tn5250Window * w);
+  extern void tn5250_terminal_destroy_window (Tn5250Terminal * This,
+					      struct _Tn5250Display *d);
+  extern void tn5250_terminal_create_scrollbar (Tn5250Terminal * This,
+						struct _Tn5250Display *d);
+  extern void tn5250_terminal_destroy_scrollbar (Tn5250Terminal * This,
+						 struct _Tn5250Display *d);
 
 #ifdef __cplusplus
 }
