@@ -97,10 +97,7 @@ typedef struct _Key Key;
 #define MAX_K_BUF_LEN 20
 
 struct _Tn5250TerminalPrivate {
-   int		  quit_flag;
-   int		  underscores;
    int		  last_width, last_height;
-   int		  is_xterm;
 #ifdef USE_OWN_KEY_PARSING
    unsigned char  k_buf[MAX_K_BUF_LEN];
    int		  k_buf_len;
@@ -108,6 +105,9 @@ struct _Tn5250TerminalPrivate {
    Key *	  k_map;
    int		  k_map_len;
 #endif
+   int		  quit_flag : 1;
+   int		  underscores : 1;
+   int		  is_xterm : 1;
 };
 
 #ifdef USE_OWN_KEY_PARSING
@@ -328,6 +328,10 @@ static void curses_terminal_init(Tn5250Terminal * This)
       init_pair(COLOR_YELLOW, COLOR_YELLOW, COLOR_BLACK);
    }
    This->data->quit_flag = 0;
+
+   /* Determine if the terminal supports underlining. */
+   if (tgetstr ("us", NULL) == NULL)
+      This->data->underscores = 1;
 
 #ifdef USE_OWN_KEY_PARSING
    /* Allocate and populate an array of escape code => key code 
@@ -923,25 +927,6 @@ static int curses_terminal_get_esc_key(Tn5250Terminal * This, int is_esc)
    return key;
 }
 #endif
-
-/****f* lib5250/tn5250_curses_terminal_use_underscores
- * NAME
- *    tn5250_curses_terminal_use_underscores
- * SYNOPSIS
- *    ret = tn5250_curses_terminal_use_underscores (This, v);
- * INPUTS
- *    Tn5250Terminal *     This       - 
- *    int                  v          - 
- * DESCRIPTION
- *    Called by tn5250.c to determine whether we should use underscores or
- *    the terminal's underline attribute.
- *****/
-int tn5250_curses_terminal_use_underscores(Tn5250Terminal * This, int v)
-{
-   int oldval = This->data->underscores;
-   This->data->underscores = v;
-   return oldval;
-}
 
 #ifdef USE_OWN_KEY_PARSING
 static int curses_get_key (Tn5250Terminal *This, int rmflag)
