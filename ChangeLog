@@ -1,3 +1,9 @@
+2000-04-12 Mike Madore <mmadore@turbolinux.com>
+- Added cast to return value of tgetstr to get rid of compiler warning.
+- Moved aid pending logic into display from session.
+- Moved check for locked keyboard until after any possible start of field 
+  orders.  This fixes the cursor positioning bug when going into STRSST, DFU, 
+  etc.	
 2000-04-11 Mike Madore <mmadore@turbolinux.com>
 - Changed the save screen code to include an IC order.  This ensures that we
   end up in the correct field when the screen is restored.  This fixes the bug
