@@ -81,6 +81,7 @@ static int curses_terminal_waitevent(Tn5250Terminal * This) /*@modifies This@*/;
 static int curses_terminal_getkey(Tn5250Terminal * This) /*@modifies This@*/;
 static int curses_terminal_get_esc_key(Tn5250Terminal * This, int is_esc) /*@modifies This@*/;
 static void curses_terminal_beep(Tn5250Terminal * This);
+static int curses_terminal_enhanced (Tn5250Terminal * This);
 static int curses_terminal_is_ruler(Tn5250Terminal *This, Tn5250Display *display, int x, int y);
 int curses_rgb_to_color(int r, int g, int b, int *rclr, int *rbold);
 int curses_terminal_config(Tn5250Terminal *This, Tn5250Config *config);
@@ -297,6 +298,7 @@ Tn5250Terminal *tn5250_curses_terminal_new()
    r->waitevent = curses_terminal_waitevent;
    r->getkey = curses_terminal_getkey;
    r->beep = curses_terminal_beep;
+   r->enhanced = curses_terminal_enhanced;
    r->config = curses_terminal_config;
    return r;
 }
@@ -961,6 +963,23 @@ static void curses_terminal_beep (Tn5250Terminal *This)
    TN5250_LOG (("CURSES: beep\n"));
    beep ();
    refresh ();
+}
+
+
+/***** lib5250/curses_terminal_enhanced
+ * NAME
+ *    curses_terminal_enhanced
+ * SYNOPSIS
+ *    ret = curses_terminal_enhanced (This);
+ * INPUTS
+ *    Tn5250Terminal  *    This       - 
+ * DESCRIPTION
+ *    Return 1 if we support the enhanced 5250 protocol, 0 otherwise.
+ *****/
+static int
+curses_terminal_enhanced (Tn5250Terminal * This)
+{
+  return (0);
 }
 
 #ifndef USE_OWN_KEY_PARSING

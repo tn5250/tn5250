@@ -88,6 +88,7 @@ static void slang_terminal_update_indicators(Tn5250Terminal * This,
 static int slang_terminal_waitevent(Tn5250Terminal * This);
 static int slang_terminal_getkey(Tn5250Terminal * This);
 static void slang_terminal_beep(Tn5250Terminal * This);
+static int slang_terminal_enhanced (Tn5250Terminal * This);
 static int slang_terminal_get_esc_key(Tn5250Terminal * This, int is_esc);
 static void slang_terminal_set_attrs (Tn5250Terminal * This, int attrs);
 
@@ -136,6 +137,7 @@ Tn5250Terminal *tn5250_slang_terminal_new()
    r->waitevent = slang_terminal_waitevent;
    r->getkey = slang_terminal_getkey;
    r->beep = slang_terminal_beep;
+   r->flags = slang_terminal_enhanced;
    return r;
 }
 
@@ -607,6 +609,24 @@ static void slang_terminal_beep (Tn5250Terminal * This)
 {
    SLtt_beep ();
 }
+
+
+/***** lib5250/slang_terminal_enhanced
+ * NAME
+ *    slang_terminal_enhanced
+ * SYNOPSIS
+ *    ret = slang_terminal_enhanced (This);
+ * INPUTS
+ *    Tn5250Terminal  *    This       - 
+ * DESCRIPTION
+ *    Return 1 if we support the enhanced 5250 protocol, 0 otherwise.
+ *****/
+static int
+slang_terminal_enhanced (Tn5250Terminal * This)
+{
+  return (0);
+}
+
 
 /****i* lib5250/slang_terminal_get_esc_key
  * NAME

@@ -2551,7 +2551,15 @@ tn5250_session_query_reply (Tn5250Session * This)
    *         additional capabilities.
    */
 
-  enhanced = tn5250_config_get_bool (This->config, "enhanced");
+  if (tn5250_terminal_enhanced (This->display->terminal))
+    {
+      enhanced = tn5250_config_get_bool (This->config, "enhanced");
+    }
+  else
+    {
+      enhanced = 0;
+    }
+
   if (enhanced)
     {
       TN5250_LOG (("turning on enhanced 5250 features\n"));
