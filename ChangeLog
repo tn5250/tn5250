@@ -1,3 +1,6 @@
+2000-12-06 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Fixed text of LGPL exception clause in src/*.[ch]
+
 2000-11-10 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - Apply Scott's patch for fixing behavior of `Delete' key.
 
