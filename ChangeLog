@@ -1,3 +1,6 @@
+2001-07-30 Carey Evans  <carey@paradise.net.nz>
+- Updated FieldExit and FieldPlus keys in man page.
+
 2001-07-16 Scott Klement <klemscot@klements.com>
 - Added support for a simple "ruler" (like the "rule lines" in CAE/400)
    to try it, add '+ruler' to your tn5250rc.
