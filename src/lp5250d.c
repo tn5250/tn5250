@@ -22,8 +22,26 @@
 
 #include "tn5250-private.h"
 
+/* If getopt.h exists then getopt_long() probably does as well.  If
+ * getopt.h doesn't exist (like on Solaris) then we probably need to use
+ * plain old getopt().
+ */
+#ifdef HAVE_GETOPT_H
+#define _GNU_SOURCE
+#include <getopt.h>
+#endif
+
 static void syntax(void);
-static int parse_options(int argc, char *argv[]);
+
+/* This just checks what arguments (options) were passed to lp5250d on the
+ * command line.
+ */
+int check_options (Tn5250Config * tn5250config, int argc, char **argv,
+		   char **user);
+
+/* This sets the current UID to the uid of the user passed.
+ */
+int change_user (char * user);
 
 extern char *version_string;
 
@@ -33,12 +51,30 @@ Tn5250Config *config = NULL;
 
 int main(int argc, char *argv[])
 {
+  char *user = NULL;
 
    config = tn5250_config_new ();
    if (tn5250_config_load_default (config) == -1) {
         tn5250_config_unref(config);
         exit (1);  
    }
+
+  if (check_options (config, argc, argv, &user) != 0)
+    {
+      tn5250_config_unref (config);
+      exit (1);
+    }
+
+  /* Change the UID if required before parsing the options */
+  if (user != NULL)
+    {
+      if (change_user (user) != 0)
+	{
+	  tn5250_config_unref (config);
+	  exit (1);
+	}
+    }
+
    if (tn5250_config_parse_argv (config, argc, argv) == -1) {
        tn5250_config_unref(config);
        syntax();  
@@ -127,7 +163,97 @@ static void syntax()
 	  "\tenv.DEVNAME=NAME           specify session name\n"
 	  "\tenv.IBMMFRTYPMDL=NAME      specify host print transform name\n"
 	  "\toutputcommand=CMD          specify the print output command\n"
-	  "\t+/-version                 display version\n");
+	  "\t-u,--user=NAME             display user to run as\n"
+	  "\t-v,--version               display version\n"
+	  "\t-H,--help                  display this help\n");
 
    exit (255);
+}
+
+
+/* This checks the options lp5250d was passed.
+ */
+int
+check_options (Tn5250Config * tn5250config, int argc, char **argv, char **user)
+{
+#ifdef HAVE_GETOPT_H
+  struct option options[4];
+#endif
+  int i;
+  extern char *optarg;
+
+#ifdef HAVE_GETOPT_H
+  options[0].name = "user";
+  options[0].has_arg = required_argument;
+  options[0].flag = NULL;
+  options[0].val = 'u';
+  options[1].name = "version";
+  options[1].has_arg = no_argument;
+  options[1].flag = NULL;
+  options[1].val = 'v';
+  options[2].name = "help";
+  options[2].has_arg = no_argument;
+  options[2].flag = NULL;
+  options[2].val = 'H';
+  options[3].name = 0;
+  options[3].has_arg = 0;
+  options[3].flag = 0;
+  options[3].val = 0;
+#endif
+
+#ifdef HAVE_GETOPT_H
+  while ((i =
+	  getopt_long (argc, argv, "u:vH", options, NULL)) != -1)
+#else
+  while ((i = getopt (argc, argv, "u:vH")) != -1)
+#endif
+    {
+      switch (i)
+	{
+	case '?':
+	  syntax ();
+	  return -1;
+	case 'u':
+	  *user = optarg;
+	  break;
+	case 'H':
+	  syntax ();
+	  return -1;
+	case 'v':
+	  printf ("lp5250d version:  %s\n", VERSION);
+	  return -1;
+	default:
+	  syntax ();
+	  return -1;
+	}
+    }
+  return 0;
+}
+
+
+/* Set the UID to run lp5250d as.
+ */
+int
+change_user (char * user)
+{
+  struct passwd *pwent;
+
+  errno = 0;
+  pwent = getpwnam (user);
+
+  if (pwent == NULL)
+    {
+      printf ("Unable to set UID to user %s\n", user);
+      perror ("getpwnam()");
+      return (-1);
+    }
+
+  if (setuid (pwent->pw_uid) != 0)
+    {
+      printf ("Unable to set UID to user %s\n", user);
+      perror ("setuid()");
+      return (-1);
+    }
+  printf ("Now running as UID %d\n", getuid ());
+  return (0);
 }
