@@ -1,3 +1,7 @@
+2001-09-03 Scott Klement <klemscot@klements.com>
+- Added "next word" and "prev word" key handling
+- Mapped Shift-Left and Shift-Right to these new keys in XTerm
+
 2001-08-30 Carey Evans  <carey@paradise.net.nz>
 - Add new scs2ps.1 man page, and add +ruler option to tn5250.1 man page.
 

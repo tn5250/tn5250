@@ -1009,6 +1009,14 @@ void tn5250_display_do_key(Tn5250Display *This, int key)
       tn5250_display_kf_dup(This);
       break;
 
+   case K_NEXTWORD:
+      tn5250_display_kf_nextword(This);
+      break;
+
+   case K_PREVWORD:
+      tn5250_display_kf_prevword(This);
+      break;
+
    default:
       /* Handle function/command keys. */
       if (key >= K_F1 && key <= K_F24) {
@@ -1645,6 +1653,36 @@ void tn5250_display_kf_delete (Tn5250Display *This)
 	       tn5250_display_cursor_y (This),
 	       tn5250_display_cursor_x (This)));
    }
+}
+
+/****f* lib5250/tn5250_display_kf_prevword
+ * NAME
+ *    tn5250_display_kf_prevword
+ * SYNOPSIS
+ *    tn5250_display_kf_prevword (This);
+ * INPUTS
+ *    Tn5250Display *      This       - 
+ * DESCRIPTION
+ *    Move cursor to the last non-blank character.
+ *****/
+void tn5250_display_kf_prevword (Tn5250Display *This)
+{
+      tn5250_dbuffer_prevword(This->display_buffers);
+}
+
+/****f* lib5250/tn5250_display_kf_nextword
+ * NAME
+ *    tn5250_display_kf_nextword
+ * SYNOPSIS
+ *    tn5250_display_kf_nextword (This);
+ * INPUTS
+ *    Tn5250Display *      This       - 
+ * DESCRIPTION
+ *    Move cursor to the next non-blank character.
+ *****/
+void tn5250_display_kf_nextword (Tn5250Display *This)
+{
+      tn5250_dbuffer_nextword(This->display_buffers);
 }
 
 /****f* lib5250/tn5250_display_save_msg_line

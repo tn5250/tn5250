@@ -708,4 +708,67 @@ int tn5250_dbuffer_msg_line (Tn5250DBuffer *This)
    return l;
 }
 
+/****f* lib5250/tn5250_dbuffer_prevword
+ * NAME
+ *    tn5250_dbuffer_prevword
+ * SYNOPSIS
+ *    tn5250_dbuffer_prevword (This);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
+void tn5250_dbuffer_prevword(Tn5250DBuffer * This)
+{
+   int newx;
+   int pos;
+   int foundblank=0;
+
+   TN5250_LOG (("dbuffer_prevword: entered.\n"));
+
+   newx = -1;
+   for (pos=This->cx; pos>=0; pos--) {
+        if (This->data[This->cy * This->w + pos] <= 0x40) foundblank++;
+        if ((foundblank) && (This->data[This->cy * This->w + pos] > 0x40)) {
+           newx = pos;
+           break;
+        }
+   }
+  
+   if (newx != -1) This->cx = newx;
+
+   ASSERT_VALID(This);
+}
+
+/****f* lib5250/tn5250_dbuffer_nextword
+ * NAME
+ *    tn5250_dbuffer_nextword
+ * SYNOPSIS
+ *    tn5250_dbuffer_nextword (This);
+ * INPUTS
+ *    Tn5250DBuffer *      This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
+void tn5250_dbuffer_nextword(Tn5250DBuffer * This)
+{
+   int newx;
+   int pos;
+   int foundblank=0;
+
+   TN5250_LOG (("dbuffer_nextword: entered.\n"));
+
+   newx = -1;
+   for (pos=This->cx; pos<This->w; pos++) {
+        if (This->data[This->cy * This->w + pos] <= 0x40) foundblank++;
+        if ((foundblank) && (This->data[This->cy * This->w + pos] > 0x40)) {
+           newx = pos;
+           break;
+        }
+   }
+  
+   if (newx != -1) This->cx = newx;
+
+   ASSERT_VALID(This);
+}
 
