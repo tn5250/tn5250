@@ -530,3 +530,39 @@ int tn5250_parse_color(Tn5250Config *config, const char *colorname,
 }
 #endif				/* NDEBUG */
 
+
+/****f* lib5250/tn5250_setenv
+ * NAME
+ *    tn5250_setenv
+ * SYNOPSIS
+ *    tn5250_setenv ("TN5250_CCSID", "37", 1);
+ * INPUTS
+ *    const char   *       name       -
+ *    const char   *       value      - 
+ *    int                  overwrite  - 
+ * DESCRIPTION
+ *    This works just like setenv(3), but setenv(3) doesn't
+ *    exist on all systems. 
+ *****/
+int tn5250_setenv(const char *name, const char *value, int overwrite) {
+
+     char *strval;
+     int ret;
+
+     if (!overwrite) 
+         if (getenv(name)!=NULL) return 0;
+
+     strval = malloc(strlen(name)+strlen(value)+2);
+     TN5250_ASSERT(strval!=NULL);
+
+     strcpy(strval, name);
+     strcat(strval, "=");
+     strcat(strval, value);
+
+     ret = putenv(strval);
+
+     /* free(strval)   on some systems, it continues to use our memory,
+                       so we should not free it...                    */
+
+     return ret;
+}
