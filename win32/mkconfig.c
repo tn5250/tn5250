@@ -489,7 +489,7 @@ void get_path(const char *prompt, const char *file, char *path, int maxlen) {
            fgets(path, maxlen, stdin);
            strtrim(path);
 
-           f = g_malloc(strlen(path)+strlen(file)+1);
+           f = malloc(strlen(path)+strlen(file)+1);
 
            strcpy(f, path);
            strcat(f, file);
@@ -501,7 +501,7 @@ void get_path(const char *prompt, const char *file, char *path, int maxlen) {
                found = 1;
            }
 
-           g_free(f);
+           free(f);
 
    } while (!found);
 
@@ -755,27 +755,27 @@ void replacedata(const char *from, const char *to, char *line, int maxlen) {
 
      if ((p=strstr(line, from))!=NULL) {
           if (p<=line) {
-             before=g_malloc(1);
+             before=malloc(1);
              *before = '\0';
           } else {
              len = p - line;
-             before = g_malloc(len+1);
+             before = malloc(len+1);
              memcpy(before, line, len);
              before[len] = '\0';
           }
           p += strlen(from);
           if (strlen(p)<1) {
-             after = g_malloc(1);
+             after = malloc(1);
              *after = '\0';
           } else {
              len = strlen(p);
-             after = g_malloc(len+1);
+             after = malloc(len+1);
              memcpy(after, p, len);
              after[len] = '\0';
           }
            _snprintf(line, maxlen-1, "%s%s%s", before, to, after);
-          g_free(before);
-          g_free(after);
+          free(before);
+          free(after);
      }
 
 }
@@ -886,7 +886,7 @@ int get_glib_info(const char *args, char *value, int maxlen) {
      int rc;
      FILE *f;
 
-     cmd = g_malloc(strlen(args) + strlen(pkgconf) + strlen(workfile) + 6);
+     cmd = malloc(strlen(args) + strlen(pkgconf) + strlen(workfile) + 6);
      if (cmd == NULL) {
            fprintf(stderr, "mkconfig: get_glib_info: Out of memory!\n");
            return -1;
@@ -897,10 +897,10 @@ int get_glib_info(const char *args, char *value, int maxlen) {
          fprintf(stderr, "mkconfig: get_glib_info: error running pkg-config.\n"
                          "          Maybe glib isn't installed? or isn't in "
                          "your path?\n");
-        g_free(cmd);
+        free(cmd);
         return -1;
      }
-     g_free(cmd);
+     free(cmd);
 
      if (stat(workfile, &st) < 0) {
          fprintf(stderr, "mkconfig: get_glib_info: stat: %s\n", 
