@@ -72,4 +72,7 @@ lclint:
 	  echo "`grep -c :.*:.*: lclint.err` errors." ; \
 	  exit $$retval )
 
+config.h: tn5250-config.h
+	cat tn5250-config.h |sed -e 's/VERSION/TN5250_LIB_VERSION/g' -e '/PACKAGE/d' >config.h
+
 .PHONY: lclint

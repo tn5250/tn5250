@@ -58,5 +58,9 @@
     they aren't applicable for a particular screen).
   </item>
 
+  <item>
+    Object-orientize translation map handling.
+  </item>
+
 </todo>
 <!-- vi:set sts=2 sw=2 autoindent: -->

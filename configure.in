@@ -3,7 +3,7 @@ AC_INIT(src/tn5250.c)
 
 dnl ** Automake Intialization
 AM_INIT_AUTOMAKE(tn5250, 0.15.4)
-AM_CONFIG_HEADER(src/config.h)
+AM_CONFIG_HEADER(src/tn5250-config.h)
 
 dnl ** Checks for programs.
 AC_PROG_CC

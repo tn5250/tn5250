@@ -4,7 +4,7 @@
 	Run us from inetd.
 */
 
-#include "config.h"
+#include "tn5250-config.h"
 
 #include <stdio.h>
 #include <sys/types.h>

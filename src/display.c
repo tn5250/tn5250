@@ -16,7 +16,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "config.h"
+#include "tn5250-config.h"
 #include <string.h>
 #include <stdio.h>
 #include <malloc.h>
@@ -38,7 +38,7 @@ static void tn5250_display_add_dbuffer(Tn5250Display * display,
 static void tn5250_display_add_table(Tn5250Display * This,
 				     Tn5250Table * table);
 
-Tn5250Display *tn5250_display_new(Tn5250Session *session)
+Tn5250Display *tn5250_display_new()
 {
    Tn5250Display *This;
 
@@ -50,7 +50,7 @@ Tn5250Display *tn5250_display_new(Tn5250Session *session)
    This->indicators = 0;
    This->indicators_dirty = 0;
    This->pending_insert = 0;
-   This->session = session;
+   This->session = NULL;
 
    tn5250_display_add_dbuffer(This, tn5250_dbuffer_new(80, 24));
    tn5250_display_add_table(This, tn5250_table_new());
@@ -80,6 +80,13 @@ void tn5250_display_destroy(Tn5250Display * This)
       tn5250_terminal_destroy(This->terminal);
 
    free(This);
+}
+
+void tn5250_display_set_session(Tn5250Display *This, struct _Tn5250Session *s)
+{
+   This->session = s;
+   if (This->session != NULL)
+      This->session->display = This;
 }
 
 /*
