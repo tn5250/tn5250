@@ -22,6 +22,11 @@
 #include "tn5250-private.h"
 #include "transmaps.h"
 
+static char mapfix[256];
+static char mapfix2[256];
+static char mapfix3[256];
+static char mapfix4[256];
+
 #ifndef WIN32
 
 /****f* lp5250d/tn5250_closeall
@@ -218,6 +223,62 @@ Tn5250CharMap *tn5250_char_map_new (const char *map)
 {
    Tn5250CharMap *t;
 
+/* XXX: HACK: These characters were reported wrong in transmaps.h.
+        Since that's a generated file, I'm overriding them here -SCK */
+
+   TN5250_LOG(("tn5250_char_map_new: map = \"%s\"\n", map));
+
+   if (!strcmp(map, "870") || !strcmp(map, "win870")) {
+
+      TN5250_LOG(("tn5250_char_map_new: Installing 870 workaround\n"));
+
+      memcpy(mapfix, windows_1250_to_ibm870, sizeof(mapfix));
+      memcpy(mapfix2, ibm870_to_windows_1250, sizeof(mapfix2));
+      memcpy(mapfix3, iso_8859_2_to_ibm870, sizeof(mapfix3));
+      memcpy(mapfix4, ibm870_to_iso_8859_2, sizeof(mapfix4));
+
+      mapfix[142] = 184;
+      mapfix[143] = 185;
+      mapfix[158] = 182;
+      mapfix[159] = 183;
+      mapfix[163] = 186;
+      mapfix[202] = 114;
+      mapfix[234] = 82;
+
+      mapfix2[82] = 234;
+      mapfix2[114] = 202;
+      mapfix2[182] = 158;
+      mapfix2[183] = 159;
+      mapfix2[184] = 142;
+      mapfix2[185] = 143;
+      mapfix2[186] = 163;
+
+      mapfix3[163] = 186;
+      mapfix3[172] = 185;
+      mapfix3[188] = 183;
+      mapfix3[202] = 114;
+      mapfix3[234] = 82;
+
+      mapfix4[82] = 234;
+      mapfix4[114] = 202;
+      mapfix4[183] = 188;
+      mapfix4[185] = 172;
+      mapfix4[186] = 163;
+
+      for (t = tn5250_transmaps;  t->name; t++) {
+          if (!strcmp(t->name, "win870")) {
+               t->to_remote_map = (const char *)mapfix;
+               t->to_local_map = (const char *)mapfix2;
+               TN5250_LOG(("Workaround installed for map \"win870\"\n"));
+          }
+          else if (!strcmp(t->name, "870")) {
+               t->to_remote_map = (const char *)mapfix3;
+               t->to_local_map = (const char *)mapfix4;
+               TN5250_LOG(("Workaround installed for map \"870\"\n"));
+          }
+      }
+   }
+   
    /* Under Windows, we'll try the "winXXX" maps first, then fall back 
       to the standard (unix) versions */
 #ifdef WIN32

@@ -12,12 +12,6 @@ INSTALLDIR=@installdir@
 #                 the developers.  This option may improve performance.
 DEBUG=@debug@
 
-#  Cursor (i.e. Caret) types:
-#    -DLINE_CURSOR = underline-style cursor
-#    -DNOBLINK     = non-blinking block cursor
-# if neither of these is defined, the default windows cursor is used
-CURSOR=@cursor@
-
 #  
 #  OPENSSL_LIB=flags, etc needed to link to openssl libraries
 #  OPENSSL_INCLUDE=directories needed to include for openssl headers
@@ -73,7 +67,7 @@ PGMS=tn5250.exe lp5250d.exe dftmap.exe
 TN5250_LIBS=-L./ -l5250 $(OPENSSL_LIB) -lwsock32 -lcomdlg32 -lwinmm
 LP5250D_LIBS=$(TN5250_LIBS) -lwinspool
 INCLUDES=-I. -I$(SRCDIR) $(OPENSSL_INCLUDE)
-DEFINES=$(CURSOR) $(DEBUG)
+DEFINES=$(DEBUG)
 DLL_NAME = lib5250.dll
 DLL_EXP_DEF = lib5250.def
 DLL_EXP_LIB = lib5250.a

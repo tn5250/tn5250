@@ -29,6 +29,14 @@
 #define WM_TN5250_KEY_DATA (WM_USER+2001)
 #define MB_BEEPFILE (MB_OK+2000)
 
+#define CARETSTYLE_BLINK 0
+#define CARETSTYLE_LINE 1
+#define CARETSTYLE_NOBLINK 2
+
+#define COLSEPSTYLE_NONE 0
+#define COLSEPSTYLE_FULL 1
+#define COLSEPSTYLE_DOTS 2
+
 /* Mapping of 5250 colors to windows colors */
 struct _win32_color_map {
    char *name;
@@ -46,6 +54,7 @@ static win32_color_map colorlist[] =
   { "pink",      RGB(255, 0,   255) },
   { "blue",      RGB(0,   255, 255) },
   { "black",     RGB(0,   0,   0  ) },
+  { "ruler_color", RGB(192, 0, 0 )  },
   { NULL, -1 }
 };
 
@@ -57,6 +66,7 @@ static win32_color_map colorlist[] =
 #define A_5250_PINK     5
 #define A_5250_BLUE     6
 #define A_5250_BLACK    7
+#define A_5250_RULER_COLOR    8
 
 
 #define A_UNDERLINE  0x01
@@ -118,7 +128,7 @@ static Tn5250Display *globDisplay = NULL;
 static HDC bmphdc;
 static HBITMAP caretbm;
 static HBRUSH background_brush;
-static int dont_draw_colseps = 0;
+static int colsep_style = COLSEPSTYLE_FULL;
 
 static void win32_terminal_init(Tn5250Terminal * This);
 static void win32_terminal_term(Tn5250Terminal * This);
@@ -194,6 +204,7 @@ struct _Tn5250TerminalPrivate {
    int  *         spacing;       
    Tn5250Config * config;
    BYTE           copymode;
+   BYTE		  caret_style;
    int            resized : 1;
    int		  quit_flag : 1;
    int            display_ruler : 1;
@@ -205,6 +216,7 @@ struct _Tn5250TerminalPrivate {
    int		  unix_like_copy: 1;
    int            resize_fonts: 1;
 };
+
 
 
 /* 
@@ -373,6 +385,7 @@ Tn5250Terminal *tn5250_win32_terminal_new(HINSTANCE hInst,
    r->data->dont_auto_size = 0;
    r->data->unix_like_copy = 0;
    r->data->resize_fonts = 0;
+   r->data->caret_style = CARETSTYLE_NOBLINK;
 
    r->conn_fd = -1;
    r->init = win32_terminal_init;
@@ -415,6 +428,7 @@ static void win32_terminal_init(Tn5250Terminal * This)
    char *title;
    int r, g, b;
    LOGBRUSH lb;
+   const char *cs;
 
    WNDCLASSEX wndclass;
 
@@ -460,8 +474,28 @@ static void win32_terminal_init(Tn5250Terminal * This)
                tn5250_config_get_bool(This->data->config, "resize_fonts");
       }
 
-      dont_draw_colseps = 
-            tn5250_config_get_bool (This->data->config, "no_colseps");
+      if ( (cs=tn5250_config_get (This->data->config, "colsep_style"))) {
+            if (!strcmp(cs, "full")) {
+                  colsep_style = COLSEPSTYLE_FULL;
+            } else if (!strcmp(cs, "dots")) {
+                  colsep_style = COLSEPSTYLE_DOTS;
+            } else if (!strcmp(cs, "none")) {
+                  colsep_style = COLSEPSTYLE_NONE;
+            }
+      }
+
+      if (tn5250_config_get_bool(This->data->config, "no_colseps")) {
+            colsep_style = COLSEPSTYLE_NONE;
+      }
+
+      if ( (cs=tn5250_config_get (This->data->config, "caret_style"))) {
+            if (!strcmp(cs, "line")) {
+                  This->data->caret_style = CARETSTYLE_LINE;
+            } 
+            else if (!strcmp(cs, "blink")) {
+                  This->data->caret_style = CARETSTYLE_BLINK;
+            } 
+      }
 
      /* FIXME: This opt should not exist when we have full keyboard mapping */
       if ( tn5250_config_get_bool (This->data->config, "unix_sysreq") ) {
@@ -969,10 +1003,10 @@ static void win32_terminal_font(Tn5250Terminal *This, const char *fontname,
    if (This->data->hwndMain == GetFocus()) {
        hdc = GetDC(This->data->hwndMain);      
        win32_make_new_caret(This);
-#ifndef NOBLINK
-       win32_move_caret(hdc, This);
-       ShowCaret (This->data->hwndMain);
-#endif
+       if (This->data->caret_style != CARETSTYLE_NOBLINK) {
+            win32_move_caret(hdc, This);
+            ShowCaret (This->data->hwndMain);
+       }
        ReleaseDC(This->data->hwndMain, hdc);
    }
 }
@@ -1251,7 +1285,7 @@ void win32_terminal_draw_text(HDC hdc, int attr, const char *text, int len, int 
          msgboxf("ExtTextOut(): Error %d\n", GetLastError());
     }
 
-    if (flags&A_VERTICAL && dont_draw_colseps) {
+    if (flags&A_VERTICAL && colsep_style==COLSEPSTYLE_NONE) {
           flags &= ~A_VERTICAL;
           flags |= A_UNDERLINE;
     }
@@ -1270,7 +1304,7 @@ void win32_terminal_draw_text(HDC hdc, int attr, const char *text, int len, int 
        savepen = SelectObject(hdc, savepen);
        DeleteObject(savepen);
     }
-    if (flags&A_VERTICAL) { 
+    if (flags&A_VERTICAL && colsep_style==COLSEPSTYLE_FULL) { 
        HPEN savepen;
        if (flags&A_REVERSE) 
            savepen = SelectObject(hdc, CreatePen(PS_SOLID, 0, 
@@ -1283,6 +1317,23 @@ void win32_terminal_draw_text(HDC hdc, int attr, const char *text, int len, int 
            LineTo  (hdc, x, rect.bottom);
        }
        MoveToEx(hdc, rect.right, rect.top, NULL);
+       LineTo  (hdc, rect.right, rect.bottom);
+       savepen = SelectObject(hdc, savepen);
+       DeleteObject(savepen);
+    }
+    if (flags&A_VERTICAL && colsep_style==COLSEPSTYLE_DOTS) { 
+       HPEN savepen;
+       if (flags&A_REVERSE) 
+           savepen = SelectObject(hdc, CreatePen(PS_SOLID, 0, 
+                                               colorlist[A_5250_BLACK].ref));
+       else
+           savepen = SelectObject(hdc, CreatePen(PS_SOLID, 0, 
+                                               attribute_map[attr-0x20].fg));
+       for (x=rect.left; x<=rect.right; x+=spacing[0]) {
+           MoveToEx(hdc, x, rect.bottom-2, NULL);
+           LineTo  (hdc, x, rect.bottom);
+       }
+       MoveToEx(hdc, rect.right, rect.bottom-2, NULL);
        LineTo  (hdc, rect.right, rect.bottom);
        savepen = SelectObject(hdc, savepen);
        DeleteObject(savepen);
@@ -1344,10 +1395,14 @@ static void win32_terminal_update_indicators(Tn5250Terminal *This, Tn5250Display
        RECT rect;
        int x, y;
        int savemixmode;
-       x = This->data->caretx + This->data->font_width / 2;
-       y = This->data->carety + This->data->font_height / 2;
+//       x = This->data->caretx + This->data->font_width / 2;
+       x = This->data->caretx;
+//       y = This->data->carety + This->data->font_height / 2;
+       y = This->data->carety + This->data->font_height;
        GetClientRect(This->data->hwndMain, &rect);
-       savepen = SelectObject(bmphdc, GetStockObject(WHITE_PEN));
+       savepen = SelectObject(bmphdc, 
+                   CreatePen(PS_SOLID, 0, colorlist[A_5250_RULER_COLOR].ref));
+//       savepen = SelectObject(bmphdc, GetStockObject(WHITE_PEN));
        MoveToEx(bmphdc, x, rect.top, NULL);
        LineTo  (bmphdc, x, rect.bottom);
        MoveToEx(bmphdc, rect.left, y, NULL);
@@ -1358,9 +1413,8 @@ static void win32_terminal_update_indicators(Tn5250Terminal *This, Tn5250Display
    This->data->selected = This->data->selecting = 0;
    This->data->caretok = 0;
 
-#ifdef NOBLINK
-   win32_move_caret(bmphdc, This);
-#endif
+   if (This->data->caret_style == CARETSTYLE_NOBLINK) 
+       win32_move_caret(bmphdc, This);
 
    InvalidateRect(This->data->hwndMain, NULL, FALSE);
    UpdateWindow(This->data->hwndMain);
@@ -1814,10 +1868,10 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
            win32_make_new_caret(globTerm);
            hdc = GetDC(hwnd);
            globTerm->data->caretok = 0;
-#ifndef NOBLINK
-           win32_move_caret(hdc, globTerm);
-           ShowCaret(hwnd);
-#endif
+           if (globTerm->data->caret_style != CARETSTYLE_NOBLINK) {
+                win32_move_caret(hdc, globTerm);
+                ShowCaret(hwnd);
+           }
            ReleaseDC(hwnd, hdc);
            globTerm->data->is_focused = 1;
            return 0;
@@ -1839,11 +1893,10 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 TN5250_LOG(("WIN32: BitBlt failed: %d\n", GetLastError()));
                 TN5250_ASSERT(0);
            }
-#ifndef NOBLINK
-           if (hwnd == GetFocus()) {
-               win32_move_caret(hdc, globTerm);
+           if (globTerm->data->caret_style != CARETSTYLE_NOBLINK) {
+               if (hwnd == GetFocus()) 
+                   win32_move_caret(hdc, globTerm);
            }
-#endif
            if (globTerm->data->selected) {
                 SetROP2(hdc, R2_NOT);
                 if (globTerm->data->selecting)
@@ -1951,60 +2004,57 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
  *    we lose focus.  This is where it gets created.
  *****/
 void win32_make_new_caret(Tn5250Terminal *This) {
-#ifdef NOBLINK
+    if (This->data->caret_style == CARETSTYLE_NOBLINK) {
     /* We make the Windows Caret invisible, so we can maintain control
        of the caret without the user seeing it blink */
-    {
-    unsigned char *bits;
-    int size, bytewidth;
-    HPEN savepen;
-    HDC hdc;
+        unsigned char *bits;
+        int size, bytewidth;
+        HPEN savepen;
+        HDC hdc;
 
-    bytewidth = (This->data->font_width + 15) / 16 * 2;
-    size = bytewidth * This->data->font_height;
-    bits = malloc(size);
-    memset(bits, 0x00, size);
-    caretbm = CreateBitmap(This->data->font_width, 
+        bytewidth = (This->data->font_width + 15) / 16 * 2;
+        size = bytewidth * This->data->font_height;
+        bits = malloc(size);
+        memset(bits, 0x00, size);
+        caretbm = CreateBitmap(This->data->font_width, 
                    This->data->font_height, 1, 1, bits);
-    free(bits);
-    CreateCaret(This->data->hwndMain, caretbm, 
-         This->data->font_height, This->data->font_width);
+        free(bits);
+        CreateCaret(This->data->hwndMain, caretbm, 
+             This->data->font_height, This->data->font_width);
     }
-#endif
-#ifdef LINE_CURSOR
     /* Here we create a small bitmap to use as the caret
        we simply draw a line at the bottom of the bitmap */
-    {
-    unsigned char *bits;
-    int size, bytewidth;
-    HPEN savepen;
-    HDC hdc;
+    if (This->data->caret_style == CARETSTYLE_LINE ) {
+        unsigned char *bits;
+        int size, bytewidth;
+        HPEN savepen;
+        HDC hdc;
 
-    bytewidth = (This->data->font_width + 15) / 16 * 2;
-    size = bytewidth * This->data->font_height;
-    bits = malloc(size);
-    memset(bits, 0x00, size);
-    caretbm = CreateBitmap(This->data->font_width, 
-                   This->data->font_height, 1, 1, bits);
-    free(bits);
-    hdc = CreateCompatibleDC(NULL);
-    SelectObject(hdc, caretbm);
-    savepen = SelectObject(hdc, 
-               CreatePen(PS_SOLID, 0, RGB(255,255,255)));
-    MoveToEx(hdc, 0, This->data->font_height-2, NULL);
-    LineTo(hdc, This->data->font_width, This->data->font_height-2);
-    savepen = SelectObject(hdc, savepen);
-    DeleteObject(savepen);
-    DeleteDC(hdc);
-    CreateCaret(This->data->hwndMain, caretbm, 
-         This->data->font_height, This->data->font_width);
+        bytewidth = (This->data->font_width + 15) / 16 * 2;
+        size = bytewidth * This->data->font_height;
+        bits = malloc(size);
+        memset(bits, 0x00, size);
+        caretbm = CreateBitmap(This->data->font_width, 
+                       This->data->font_height, 1, 1, bits);
+        free(bits);
+        hdc = CreateCompatibleDC(NULL);
+        SelectObject(hdc, caretbm);
+        savepen = SelectObject(hdc, 
+                   CreatePen(PS_SOLID, 0, RGB(255,255,255)));
+        MoveToEx(hdc, 0, This->data->font_height-2, NULL);
+        LineTo(hdc, This->data->font_width, This->data->font_height-2);
+        savepen = SelectObject(hdc, savepen);
+        DeleteObject(savepen);
+        DeleteDC(hdc);
+        CreateCaret(This->data->hwndMain, caretbm, 
+             This->data->font_height, This->data->font_width);
     }
-#else
+    else {
     /* for the standard "blinking block", we just use the windows default
        shape for the caret */
-    CreateCaret(This->data->hwndMain, NULL, This->data->font_width,
-         This->data->font_height);
-#endif
+        CreateCaret(This->data->hwndMain, NULL, This->data->font_width,
+             This->data->font_height);
+    }
 }
 
 /****i* lib5250/win32_move_caret
@@ -2025,9 +2075,9 @@ void win32_move_caret(HDC hdc, Tn5250Terminal *This) {
 
     SetCaretPos(This->data->caretx, This->data->carety);
 
-#ifdef NOBLINK
     /* Since the Windows caret is invisible, make our own box now */
-    if (! This->data->caretok) 
+    if ( (This->data->caret_style == CARETSTYLE_NOBLINK)  &&
+         (! This->data->caretok) )
     {
        HPEN savepen;
        HBRUSH savebrush;
@@ -2043,7 +2093,7 @@ void win32_move_caret(HDC hdc, Tn5250Terminal *This) {
        SelectObject(hdc, savebrush);
        This->data->caretok = 1;
     }
-#endif
+
     return;
 }
 
@@ -2063,46 +2113,6 @@ void win32_hide_caret(HDC hdc, Tn5250Terminal *This) {
     HideCaret (This->data->hwndMain);
     DestroyCaret ();
     
-#ifdef NOBLINK
-    {
-       HPEN savepen;
-       HBRUSH savebrush;
-       int savemode;
-
-     /* save the drawing parms */
-
-       savepen = SelectObject(hdc, GetStockObject(WHITE_PEN));
-       savebrush = SelectObject(hdc, GetStockObject(WHITE_BRUSH));
-       savemode = SetROP2(hdc, R2_NOT);
-
-     /* if cursor is currently there, undraw it. */
-
-       if (This->data->caretok) {
-          Rectangle(hdc, This->data->caretx, This->data->carety,
-                      (This->data->caretx + This->data->font_width),
-                      (This->data->carety + This->data->font_height));
-       }
-
-      
-     /* draw a hollow box around the cursor position */
-
-       SelectObject(hdc, GetStockObject(WHITE_PEN));
-       SelectObject(hdc, GetStockObject(NULL_BRUSH));
-       SetROP2(hdc, R2_COPYPEN);
-       Rectangle(hdc, This->data->caretx, This->data->carety,
-                      (This->data->caretx + This->data->font_width),
-                      (This->data->carety + This->data->font_height));
-
-    /* restore the drawing parms */
-
-       SetROP2(hdc, savemode);
-       SelectObject(hdc, savepen);
-       SelectObject(hdc, savebrush);
-       This->data->caretok = 1;
-       InvalidateRect(This->data->hwndMain, NULL, FALSE);
-    }
-#endif
-
     return;
 }
 
