@@ -106,6 +106,7 @@ static void curses_terminal_update_indicators(Tn5250Terminal * This,
 static int curses_terminal_waitevent(Tn5250Terminal * This) /*@modifies This@*/;
 static int curses_terminal_getkey(Tn5250Terminal * This) /*@modifies This@*/;
 static int curses_terminal_get_esc_key(Tn5250Terminal * This, int is_esc) /*@modifies This@*/;
+static void curses_terminal_beep(Tn5250Terminal * This);
 
 struct _Tn5250TerminalPrivate {
    int quit_flag;
@@ -146,6 +147,7 @@ Tn5250Terminal *tn5250_curses_terminal_new()
    r->update_indicators = curses_terminal_update_indicators;
    r->waitevent = curses_terminal_waitevent;
    r->getkey = curses_terminal_getkey;
+   r->beep = curses_terminal_beep;
 
    return r;
 }
@@ -436,6 +438,11 @@ static int curses_terminal_getkey(Tn5250Terminal * This)
 	 return key;
       }
    }
+}
+
+static void curses_terminal_beep (Tn5250Terminal *This)
+{
+   beep ();
 }
 
 /*

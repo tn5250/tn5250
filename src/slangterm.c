@@ -105,6 +105,7 @@ static void slang_terminal_update_indicators(Tn5250Terminal * This,
 					      Tn5250DBuffer * dsp);
 static int slang_terminal_waitevent(Tn5250Terminal * This);
 static int slang_terminal_getkey(Tn5250Terminal * This);
+static void slang_terminal_beep(Tn5250Terminal * This);
 static int slang_terminal_get_esc_key(Tn5250Terminal * This, int is_esc);
 static void slang_terminal_set_attrs (Tn5250Terminal * This, int attrs);
 
@@ -485,6 +486,11 @@ static int slang_terminal_getkey(Tn5250Terminal * This)
 	 return key;
       }
    }
+}
+
+static void slang_terminal_beep (Tn5250Terminal * This)
+{
+   SLtt_beep ();
 }
 
 /*
