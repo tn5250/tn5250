@@ -31,6 +31,7 @@
  * If you write modifications of your own for TN5250, it is your choice
  * whether to permit this exception to apply to your modifications.
  * If you do not wish that, delete this exception notice. */
+#ifndef WIN32
 
 #include "tn5250-private.h"
 
@@ -358,4 +359,5 @@ static int tn5250_print_session_waitevent(Tn5250PrintSession * This)
    return result;
 }
 
+#endif /* ifndef WIN32 */
 /* vi:set sts=3 sw=3: */
