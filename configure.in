@@ -188,6 +188,7 @@ if test -z $sslincludedir; then
 else
      AC_MSG_RESULT([$sslincludedir])
 fi
+AC_SUBST(sslincludedir)
 
 dnl **
 dnl ** Check for OpenSSL libraries.
@@ -262,6 +263,7 @@ if test -n "$sslincludedir"; then
 ],[SSL_CTX *ssl_context=NULL;],[needkrb5=yes])
        fi
    fi
+   AC_SUBST(krb5includedir)
    AC_MSG_RESULT([$needkrb5])
 fi
 
