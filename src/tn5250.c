@@ -63,6 +63,9 @@ int printsession = 0;
 char *transformname = NULL;
 char *outputcommand = NULL;
 char *termtype = NULL;
+#ifndef NDEBUG
+int debugpause = 1;
+#endif
 
 Tn5250PrintSession *printsess = NULL;
 Tn5250Session *sess = NULL;
@@ -130,6 +133,7 @@ int main(int argc, char *argv[])
 	    goto bomb_out;
 	 }
 	 term = dbgterm;
+	 tn5250_debug_terminal_set_pause (term, debugpause);
       }
 #endif
       tn5250_terminal_init(term);
@@ -202,7 +206,7 @@ bomb_out:
 static int parse_options(int argc, char *argv[])
 {
    int arg;
-   while ((arg = getopt(argc, argv, "m:s:t:T:P:uVpy:")) != EOF) {
+   while ((arg = getopt(argc, argv, "m:s:t:T:P:uVpwy:")) != EOF) {
       switch (arg) {
       case 'm':
 	 transmapname = optarg;
@@ -266,6 +270,12 @@ static int parse_options(int argc, char *argv[])
 	 printsession = 1;
 	 break;
 
+#ifndef NDEBUG
+      case 'w':
+	 debugpause = 0;
+	 break;
+#endif
+
       case 'y':
 	 {
 	    struct valid_term *p = valid_terms;
@@ -305,6 +315,9 @@ static void syntax()
 	  "\t-u          use underscores instead of underline attribute\n"
 #endif
 	  "\t-V          display version\n"
+#ifndef NDEBUG
+	  "\t-w          don't wait for input when debugging\n"
+#endif
 	  "\t-y type     specify IBM terminal type to emulate.\n");
 
    p = valid_terms;

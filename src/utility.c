@@ -96,17 +96,21 @@ void tn5250_settransmap(char *map)
 
 int tn5250_printable(unsigned char data)
 {
-   int printable;
+   switch (data) {
+   case 0x00:
+   case 0x0d: /* ? - appears in data submitted by Sean Porterfield */
+   case 0x0a: /* ? - ditto */
+   case 0x16: /* ? - ditto */
+   case 0x1c: /* DUP */
+   case 0x1e: /* Field Mark (?) */
+      return 1;
 
-   if (data == 0x00)
-      printable = 1;
-   else if ((data >= 0x1C) && (data <= 0xFF))
-      printable = 1;
-   else
-      printable = 0;
-
-   return (printable);
-
+   case 0x0e: /* Ideographic Shift-In. */
+   case 0x0f: /* Ideographic Shift-Out. */
+      TN5250_ASSERT(0); /* FIXME: Not implemented. */
+      break;
+   }
+   return (data >= 0x1C) && (data <= 0xFF);
 }
 
 int tn5250_attribute(unsigned char data)

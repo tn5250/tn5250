@@ -1,3 +1,10 @@
+1999-12-04 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- 0x0D is treated as a printable data character, since the AS/400 seems to
+  send it as one.  Of course, we don't know what it should look like :(
+- Ditto for 0x16, 0x0a.
+- Add -w flag for automated testing from a tracefile.
+
 1999-11-28 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 
 - Fixed certain key handlers not setting a field's modified flag (Delete key

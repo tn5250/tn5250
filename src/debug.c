@@ -43,6 +43,7 @@ struct _Tn5250TerminalPrivate {
    Tn5250Stream *dbgstream;
    Tn5250Terminal *slaveterm;
    int keyq;
+   int pauseflag;
 };
 
 typedef struct _Tn5250TerminalPrivate Tn5250TerminalPrivate;
@@ -103,8 +104,14 @@ Tn5250Terminal *tn5250_debug_terminal_new (Tn5250Terminal *slave, Tn5250Stream *
       This->data->dbgstream = dbgstream;
       This->data->slaveterm = slave;
       This->data->keyq = -1;
+      This->data->pauseflag = 1;
    }
    return This;
+}
+
+void tn5250_debug_terminal_set_pause (Tn5250Terminal *This, int f)
+{
+   This->data->pauseflag = f;
 }
 
 static int debug_stream_connect(Tn5250Stream * This, const char *to)
@@ -236,7 +243,8 @@ static int debug_terminal_waitevent(Tn5250Terminal *This)
 	 /* It's useful to force a core dump sometimes... */
 	 abort ();
       } else if (!memcmp (buf, "@key ", 5)) {
-	 (* (This->data->slaveterm->waitevent)) (This->data->slaveterm);
+	 if (This->data->pauseflag)
+	    (* (This->data->slaveterm->waitevent)) (This->data->slaveterm);
 	 This->data->keyq = atoi (buf + 5);
 	 return TN5250_TERMINAL_EVENT_KEY;
       }
