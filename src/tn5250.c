@@ -166,14 +166,14 @@ int main(int argc, char *argv[])
    }
 
    tn5250_stream_setenv(stream, "DEVNAME", sessionname);
-   tn5250_stream_setenv(stream, "IBMFONT", "12");
-   if (transformname != NULL) {
-      tn5250_stream_setenv(stream, "IBMTRANSFORM", "1");
-      tn5250_stream_setenv(stream, "IBMMFRTYPMDL", transformname);
-   } else
-      tn5250_stream_setenv(stream, "IBMTRANSFORM", "0");
 
    if (printsession) {
+      tn5250_stream_setenv(stream, "IBMFONT", "12");
+      if (transformname != NULL) {
+         tn5250_stream_setenv(stream, "IBMTRANSFORM", "1");
+         tn5250_stream_setenv(stream, "IBMMFRTYPMDL", transformname);
+      } else
+         tn5250_stream_setenv(stream, "IBMTRANSFORM", "0");
       tn5250_print_session_set_fd(printsess, tn5250_stream_socket_handle(stream));
       tn5250_print_session_set_stream(printsess, stream);
       if (mapname == NULL)
