@@ -823,6 +823,9 @@ void tn5250_display_do_key(Tn5250Display *This, int key)
       case K_FIELDEXIT:
       case K_FIELDMINUS:
       case K_FIELDPLUS:
+      case K_TAB:
+      case K_BACKTAB:
+      case K_RESET:
 	 tn5250_display_indicator_clear (This, TN5250_DISPLAY_IND_FER);
 	 break;
 
