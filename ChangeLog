@@ -1,3 +1,8 @@
+2001-06-02  Carey Evans  <carey@paradise.net.nz>
+- Add variant of LaMont Jones' patch from Debian bug #97380, removing
+  preprocessor conditionals from within printf() for usage message, to
+  work with gcc 3.0.
+
 2001-05-29 Scott Klement <klemscot@klements.com>
 - Fixed bug where SYSCONFDIR wasn't being run through 'eval' in 
    configure script.
