@@ -40,7 +40,6 @@ extern "C" {
  *    field->start_col = 2;
  *    field->length = 10;
  *    field->FFW = TN5250_FIELD_NUM_ONLY | TN5250_FIELD_DUP_ENABLE;
- *    field->FCW = 0;
  *    tn5250_dbuffer_add_field (dbuffer, field);
  * DESCRIPTION
  *    The Tn5250Field object manages an input field on the display.  It
@@ -52,12 +51,41 @@ struct _Tn5250Field {
    struct _Tn5250Field /*@dependent@*/ /*@null@*/ *next;
    struct _Tn5250Field /*@dependent@*/ /*@null@*/ *prev;
    int id;
+   int entry_id;
+   int resequence;
+   short magstripe;
+   short lightpen;
+   short magandlight;
+   short lightandattn;
+   short ideographiconly;
+   short ideographicdatatype;
+   short ideographiceither;
+   short ideographicopen;
+   int transparency;
+   short forwardedge;
+   short continuous;
+   short continued_first;
+   short continued_middle;
+   short continued_last;
+   short wordwrap;
+   int nextfieldprogressionid;
+   unsigned char highlightentryattr;
+   unsigned char pointeraid;
+   short selfcheckmod11;
+   short selfcheckmod10;
    struct _Tn5250DBuffer /*@dependent@*/ *table;
 
    int w;	/* Display width, needed for some calcs */
 
    Tn5250Uint16 FFW;
-   Tn5250Uint16 FCW;
+
+  /* The problem with this single FCW is that there can be multiple FCWs
+   * per field, so just one doesn't cut it.  We could make a linked list
+   * of FCWs defined for each field, but that may be overkill.  For now,
+   * keep this one and add a flag above for each capability we support.
+   *
+   * Tn5250Uint16 FCW;
+   */
    unsigned char attribute;
    int start_row;
    int start_col;
@@ -164,6 +192,24 @@ typedef struct _Tn5250Field Tn5250Field;
 	(tn5250_field_type (This) == TN5250_FIELD_MAG_READER)
 #define tn5250_field_is_signed_num(This) \
 	(tn5250_field_type (This) == TN5250_FIELD_SIGNED_NUM)
+
+
+#define TN5250_FIELD_CONTROL_HILIGHTED_ENTRY    0x8900
+#define TN5250_FIELD_CONTROL_CONTINUED          0x8600
+
+#define tn5250_field_control(This) \
+        ((This)->FCW)
+#define tn5250_field_is_higlighted_entry(This) \
+        ( (tn5250_field_control (This) & 0xFF00) == TN5250_FIELD_CONTROL_HILIGHTED_ENTRY)
+#define tn5250_field_is_continued(This) \
+        ((This)->continuous)
+#define tn5250_field_is_continued_first(This) \
+        ((This)->continued_first)
+#define tn5250_field_is_continued_middle(This) \
+        ((This)->continued_middle)
+#define tn5250_field_is_continued_last(This) \
+        ((This)->continued_last)
+
 
 #define tn5250_field_attribute(This) \
 	((This)->attribute)
