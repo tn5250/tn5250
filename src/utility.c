@@ -365,10 +365,12 @@ void tn5250_char_map_destroy (Tn5250CharMap *map)
 int tn5250_char_map_printable_p(Tn5250CharMap *map, Tn5250Char data)
 {
    switch (data) {
-   case 0x0e: /* Ideographic Shift-In. */
-   case 0x0f: /* Ideographic Shift-Out. */
+     /* 
+	Ideographic Shift-In and Shift-Out. 
+   case 0x0e: 
+   case 0x0f: 
+     */
      /* These should cause an RX1251 on the AS/400 */
-   case 0x04:
    case 0x10:
    case 0x12:
    case 0x15:
