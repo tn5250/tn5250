@@ -1,3 +1,10 @@
+1999-10-13 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Reset key is now handled like System Request key -- that is, it will still
+  be processed when the keyboard is locked (per William Suetholz).
+- Allow System Request to be processed if display is inhibited
+- Removed a bug where the Reset key might throw away the next key pressed.
+
 1999-10-12 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 
 - Various adaptations of configure.in and #ifdefs per Scott Klement.  Should
