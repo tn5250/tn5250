@@ -30,10 +30,33 @@
  * 
  * If you write modifications of your own for TN5250, it is your choice
  * whether to permit this exception to apply to your modifications.
- * If you do not wish that, delete this exception notice. */
+ * If you do not wish that, delete this exception notice.  */
 
 #include <windows.h>
 #include "resource.h"
 
 IDI_TN5250_ICON ICON "tn5250.ico"
 
+tn5250-win32-menu MENU DISCARDABLE
+BEGIN
+	POPUP "&File"
+	BEGIN
+		MENUITEM "E&xit\tCtrl-Q",	IDM_APP_EXIT
+	END
+	POPUP "&Edit"
+	BEGIN
+		MENUITEM "&Copy\tShift-Delete",	IDM_EDIT_COPY
+		MENUITEM "&Paste\tShift-Insert",IDM_EDIT_PASTE
+	END
+	POPUP "&Help"
+	BEGIN
+		MENUITEM "&About Tn5250",	IDM_APP_ABOUT
+	END
+END
+
+tn5250-win32-menu ACCELERATORS DISCARDABLE
+BEGIN
+	VK_INSERT,	IDM_EDIT_COPY,	VIRTKEY, CONTROL, NOINVERT
+	VK_INSERT,	IDM_EDIT_PASTE,	VIRTKEY, SHIFT, NOINVERT
+	VK_DELETE,	IDM_EDIT_COPY,	VIRTKEY, SHIFT, NOINVERT
+END
