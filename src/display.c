@@ -23,7 +23,6 @@
 #include "utility.h"
 #include "dbuffer.h"
 #include "field.h"
-#include "formattable.h"
 #include "display.h"
 #include "terminal.h"
 #include "buffer.h"
@@ -35,8 +34,6 @@
 
 static void tn5250_display_add_dbuffer(Tn5250Display * display,
 				       Tn5250DBuffer * dbuffer);
-static void tn5250_display_add_table(Tn5250Display * This,
-				     Tn5250Table * table);
 
 Tn5250Display *tn5250_display_new()
 {
@@ -45,7 +42,6 @@ Tn5250Display *tn5250_display_new()
    if ((This = tn5250_new(Tn5250Display, 1)) == NULL)
       return NULL;
    This->display_buffers = NULL;
-   This->format_tables = NULL;
    This->terminal = NULL;
    This->indicators = 0;
    This->indicators_dirty = 0;
@@ -53,14 +49,12 @@ Tn5250Display *tn5250_display_new()
    This->session = NULL;
 
    tn5250_display_add_dbuffer(This, tn5250_dbuffer_new(80, 24));
-   tn5250_display_add_table(This, tn5250_table_new());
    return This;
 }
 
 void tn5250_display_destroy(Tn5250Display * This)
 {
    Tn5250DBuffer *diter, *dnext;
-   Tn5250Table *titer, *tnext;
 
    if ((diter = This->display_buffers) != NULL) {
       do {
@@ -68,13 +62,6 @@ void tn5250_display_destroy(Tn5250Display * This)
 	 tn5250_dbuffer_destroy(diter);
 	 diter = dnext;
       } while (diter != This->display_buffers);
-   }
-   if ((titer = This->format_tables) != NULL) {
-      do {
-	 tnext = titer->next;
-	 tn5250_table_destroy(titer);
-	 titer = tnext;
-      } while (titer != This->format_tables);
    }
    if (This->terminal != NULL)
       tn5250_terminal_destroy(This->terminal);
@@ -100,19 +87,6 @@ Tn5250DBuffer *tn5250_display_push_dbuffer(Tn5250Display * This)
    dbuf = tn5250_dbuffer_copy(This->display_buffers);
    tn5250_display_add_dbuffer(This, dbuf);
    return dbuf;	/* Pointer is used as unique identifier in data stream. */
-}
-
-/*
- *    Create a new format table and assign the old one an id so we can
- *    later restore it.  Return the id which must be > 0.
- */
-Tn5250Table *tn5250_display_push_table(Tn5250Display * This)
-{
-   Tn5250Table *table;
-
-   table = tn5250_table_copy(This->format_tables);
-   tn5250_display_add_table(This, table);
-   return table; /* Pointer is used as unique identifier in data stream. */
 }
 
 /*
@@ -143,33 +117,6 @@ void tn5250_display_restore_dbuffer(Tn5250Display * This, Tn5250DBuffer * id)
 }
 
 /*
- *    Delete the current table and replace it with the one with id `id'.
- */
-void tn5250_display_restore_table(Tn5250Display * This, Tn5250Table * id)
-{
-   Tn5250Table *iter;
-
-   /* Sanity check to make sure that the format table is for real and
-    * that it isn't the one which is currently active. */
-   if ((iter = This->format_tables) != NULL) {
-      do {
-	 if (iter == id && iter != This->format_tables)
-	    break;
-	 iter = iter->next;
-      } while (iter != This->format_tables);
-
-      if (iter != id || iter == This->format_tables)
-	 return;
-   } else
-      return;
-
-   This->format_tables->prev->next = This->format_tables->next;
-   This->format_tables->next->prev = This->format_tables->prev;
-   tn5250_table_destroy(This->format_tables);
-   This->format_tables = iter;
-}
-
-/*
  *    Add a display buffer into this display's circularly linked list of
  *    display buffers.
  */
@@ -185,25 +132,6 @@ static void tn5250_display_add_dbuffer(Tn5250Display * This, Tn5250DBuffer * dbu
       dbuffer->prev = This->display_buffers->prev;
       dbuffer->next->prev = dbuffer;
       dbuffer->prev->next = dbuffer;
-   }
-}
-
-/*
- *    Add a format table into this display's circularly linked list of
- *    format tables.
- */
-static void tn5250_display_add_table(Tn5250Display * This, Tn5250Table * table)
-{
-   TN5250_ASSERT(table != NULL);
-
-   if (This->format_tables == NULL) {
-      This->format_tables = table;
-      table->next = table->prev = table;
-   } else {
-      table->next = This->format_tables;
-      table->prev = This->format_tables->prev;
-      table->next->prev = table;
-      table->prev->next = table;
    }
 }
 
@@ -275,7 +203,7 @@ void tn5250_display_set_pending_insert (Tn5250Display *This, int y, int x)
 
 Tn5250Field *tn5250_display_field_at(Tn5250Display *This, int y, int x)
 {
-   return tn5250_table_field_yx(This->format_tables, y, x);
+   return tn5250_dbuffer_field_yx(This->display_buffers, y, x);
 }
 
 /*
@@ -423,12 +351,12 @@ void tn5250_display_set_cursor_prev_field(Tn5250Display * This)
  *    has been initialized, and we append to it.
  */
 void tn5250_display_make_wtd_data (Tn5250Display *This, Tn5250Buffer *buf,
-      Tn5250DBuffer *src_dbuffer, Tn5250Table *src_table)
+      Tn5250DBuffer *src_dbuffer)
 {
    Tn5250WTDContext *ctx;
 
-   if ((ctx = tn5250_wtd_context_new (buf, src_dbuffer, src_table, 
-	       This->display_buffers, This->format_tables)) == NULL)
+   if ((ctx = tn5250_wtd_context_new (buf, src_dbuffer,
+	       This->display_buffers)) == NULL)
       return;
 
    tn5250_wtd_context_convert (ctx);
@@ -779,15 +707,10 @@ void tn5250_display_kf_field_plus(Tn5250Display * This)
 
    tn5250_display_kf_field_exit(This);
 
-   /* For numeric only fields, we change the zone of the last digit if
-    * field plus is pressed.  For signed numeric fields, we change the
-    * sign position to a '+'. */
+   /* We don't do anything for number only fields.  For signed numeric
+    * fields, we change the sign position to a '+'. */
    data = tn5250_display_field_data (This, field);
-   if (tn5250_field_type(field) == TN5250_FIELD_NUM_ONLY) {
-      c = data[tn5250_field_length (field) - 1];
-      if (isdigit (tn5250_ebcdic2ascii (c)))
-	 data[tn5250_field_length (field) - 1] = (c & 0x0f) | 0xf0;
-   } else
+   if (tn5250_field_type(field) != TN5250_FIELD_NUM_ONLY)
       data[tn5250_field_length (field) - 1] = 0;
 }
 
@@ -812,14 +735,20 @@ void tn5250_display_kf_field_minus(Tn5250Display * This)
 
    tn5250_display_kf_field_exit(This);
 
-   /* For numeric only fields, we change the zone of the last digit if
-    * field minus is pressed.  For signed numeric fields, we change the
-    * sign position to a '-'. */
+   /* For numeric only fields, we shift the data one character to the
+    * left and insert an ebcdic '}' in the rightmost position.  For
+    * signed numeric fields, we change the sign position to a '-'. */
    data = tn5250_display_field_data (This, field);
    if (tn5250_field_type(field) == TN5250_FIELD_NUM_ONLY) {
-      c = data[tn5250_field_length (field) - 1];
-      if (isdigit (tn5250_ebcdic2ascii (c)))
-	 data[tn5250_field_length (field) - 1] = (c & 0x0f) | 0xd0;
+      if (data[0] != 0x00 && data[0] != 0x40) {
+	 /* FIXME: Explain why to the user. */
+	 tn5250_display_inhibit(This);
+      } else {
+	 int i;
+	 for (i = 0; i < tn5250_field_length(field) - 1; i++)
+	    data[i] = data[i+1];
+	 data[tn5250_field_length (field) - 1] = tn5250_ascii2ebcdic('}');
+      }
    } else
       data[tn5250_field_length (field) - 1] = tn5250_ascii2ebcdic('-');
 }
@@ -829,11 +758,9 @@ void tn5250_display_kf_field_minus(Tn5250Display * This)
  */
 void tn5250_display_do_aidkey (Tn5250Display *This, int aidcode)
 {
-   /* FIXME: We should check to see if this aidkey is currently enabled...
-    * or we might just want to leave that to the session to handle. */
-   /* FIXME: If this returns zero, we need to stop processing. */
    TN5250_LOG (("tn5250_display_do_aidkey (0x%02X) called.\n", aidcode));
 
+   /* FIXME: If this returns zero, we need to stop processing. */
    ( *(This->session->handle_aidkey)) (This->session, aidcode);
 }
 
@@ -906,7 +833,6 @@ void tn5250_display_indicator_clear (Tn5250Display *This, int inds)
  */
 void tn5250_display_clear_unit (Tn5250Display *This)
 {
-   tn5250_table_clear(This->format_tables);
    tn5250_dbuffer_set_size(This->display_buffers, 24, 80);
    tn5250_display_indicator_set(This, TN5250_DISPLAY_IND_X_SYSTEM);
    tn5250_display_indicator_clear(This,
@@ -919,7 +845,6 @@ void tn5250_display_clear_unit (Tn5250Display *This)
  */
 void tn5250_display_clear_unit_alternate (Tn5250Display *This)
 {
-   tn5250_table_clear(This->format_tables);
    tn5250_dbuffer_set_size(This->display_buffers, 27, 132);
    tn5250_display_indicator_set(This, TN5250_DISPLAY_IND_X_SYSTEM);
    tn5250_display_indicator_clear(This,
@@ -932,7 +857,7 @@ void tn5250_display_clear_unit_alternate (Tn5250Display *This)
  */
 void tn5250_display_clear_format_table (Tn5250Display *This)
 {
-   tn5250_table_clear(This->format_tables);
+   tn5250_dbuffer_clear_table(This->display_buffers);
    tn5250_display_set_cursor(This, 0, 0);
    tn5250_display_indicator_set(This, TN5250_DISPLAY_IND_X_SYSTEM);
    tn5250_display_indicator_clear(This, TN5250_DISPLAY_IND_INSERT);
@@ -994,8 +919,8 @@ void tn5250_display_kf_tab (Tn5250Display *This)
  */
 void tn5250_display_kf_backtab (Tn5250Display *This)
 {
-   /* Backtab: Move to start of this field, or start of 
-    * previous field if already there. */
+   /* Backtab: Move to start of this field, or start of previous field if
+    * already there. */
    Tn5250Field *field = tn5250_display_current_field (This);
    if (field == NULL || tn5250_field_count_left(field,
 	    tn5250_display_cursor_y(This),

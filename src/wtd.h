@@ -1,5 +1,5 @@
 /* tn5250 -- an implentation of the 5250 telnet protocol.
- * Copyright (C) 1997 Michael Madore
+ * Copyright (C) 1999 Jason M. Felice
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,11 +40,8 @@ struct _Tn5250Table;
 struct _Tn5250WTDContext {
    struct _Tn5250Buffer *	 buffer;
 
-   struct _Tn5250DBuffer *	 src_dbuffer;
-   struct _Tn5250Table *	 src_table;
-
-   struct _Tn5250DBuffer *	 dst_dbuffer;
-   struct _Tn5250Table *	 dst_table;
+   struct _Tn5250DBuffer *	 src;
+   struct _Tn5250DBuffer *	 dst;
 
    /* Our current position within the display. */
    int				 y, x;
@@ -64,9 +61,7 @@ typedef struct _Tn5250WTDContext Tn5250WTDContext;
 
 extern Tn5250WTDContext * tn5250_wtd_context_new    (struct _Tn5250Buffer *buf,
 						     struct _Tn5250DBuffer *sd,
-						     struct _Tn5250Table *st,
-						     struct _Tn5250DBuffer *dd,
-						     struct _Tn5250Table *dt);
+						     struct _Tn5250DBuffer *dd);
 extern void		  tn5250_wtd_context_destroy(Tn5250WTDContext *This);
 extern void		  tn5250_wtd_context_convert(Tn5250WTDContext *This);
 

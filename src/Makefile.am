@@ -5,8 +5,6 @@ lib_LTLIBRARIES =	lib5250.la
 bin_PROGRAMS =		scs2ascii\
 			tn5250
 
-noinst_PROGRAMS = 	portsnoop
-
 bin_SCRIPTS =		xt5250
 
 lib5250_la_SOURCES =	buffer.c\
@@ -15,7 +13,6 @@ lib5250_la_SOURCES =	buffer.c\
 			dbuffer.c\
 			display.c\
 			field.c\
-			formattable.c\
 			printsession.c\
 			record.c\
 			session.c\
@@ -44,7 +41,6 @@ pkginclude_HEADERS = 	buffer.h\
 			dbuffer.h\
 			display.h\
 			field.h\
-			formattable.h\
 			printsession.h\
 			record.h\
 			scs.h\
@@ -57,9 +53,6 @@ pkginclude_HEADERS = 	buffer.h\
 			wtd.h
 
 include_HEADERS =	tn5250.h
-
-portsnoop_SOURCES =	portsnoop.c\
-			utility.c
 
 EXTRA_DIST =		.lclintrc\
 			xt5250\

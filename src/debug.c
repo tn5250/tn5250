@@ -29,13 +29,12 @@
 #include <malloc.h>
 
 #include "utility.h"
-#include "record.h"
 #include "buffer.h"
+#include "record.h"
 #include "stream.h"
 #include "dbuffer.h"
 #include "terminal.h"
 #include "field.h"
-#include "formattable.h"
 #include "display.h"
 #include "debug.h"
 

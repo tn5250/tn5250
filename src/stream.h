@@ -40,8 +40,6 @@ extern "C" {
 
       SOCKET_TYPE sockfd;
       int status;
-      char /*@null@*/ *termtype;
-      char /*@null@*/ *devicename;
       int state;
 
 #ifndef NDEBUG
@@ -62,7 +60,6 @@ extern "C" {
    extern Tn5250Stream /*@only@*/ /*@null@*/ *tn5250_stream_open (const char *to);
    extern void tn5250_stream_destroy(Tn5250Stream /*@only@*/ * This);
    extern Tn5250Record /*@only@*/ *tn5250_stream_get_record(Tn5250Stream * This);
-   extern void tn5250_stream_print_complete(Tn5250Stream * This);
    extern void tn5250_stream_query_reply(Tn5250Stream * This);
 
 #define tn5250_stream_connect(This,to) \

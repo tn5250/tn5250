@@ -28,7 +28,6 @@
 #include "record.h"
 #include "stream.h"
 #include "field.h"
-#include "formattable.h"
 #include "terminal.h"
 #include "session.h"
 #include "codes5250.h"
@@ -269,16 +268,16 @@ static void tn5250_session_send_fields(Tn5250Session * This, int aidcode)
    int temp;
    Tn5250Buffer field_buf;
    Tn5250Field *field;
-   Tn5250Table *table;
+   Tn5250DBuffer *dbuffer;
    int X, Y, size;
 
    X = tn5250_display_cursor_x(This->display);
    Y = tn5250_display_cursor_y(This->display);
 
-   table = tn5250_display_table (This->display);
-
+   dbuffer = tn5250_display_dbuffer (This->display);
+   TN5250_ASSERT (dbuffer != NULL);
    TN5250_LOG(("SendFields: Number of fields: %d\n",
-	    tn5250_table_field_count(table)));
+	    tn5250_dbuffer_field_count(dbuffer)));
 
    tn5250_buffer_init(&field_buf);
    tn5250_buffer_append_byte(&field_buf, Y + 1);
@@ -293,38 +292,41 @@ static void tn5250_session_send_fields(Tn5250Session * This, int aidcode)
    switch (This->read_opcode) {
    case CMD_READ_INPUT_FIELDS:
       TN5250_ASSERT(aidcode != 0);
-      if (tn5250_table_mdt(table)) {
-	 field = table->field_list;
+      if (tn5250_dbuffer_mdt(dbuffer) 
+	    && tn5250_dbuffer_send_data_for_aid_key(dbuffer,aidcode)) {
+	 field = dbuffer->field_list;
 	 if (field != NULL) {
 	    do {
 	       tn5250_session_send_field (This, &field_buf, field);
 	       field = field->next;
-	    } while (field != table->field_list);
+	    } while (field != dbuffer->field_list);
 	 }
       }
       break;
 
    case CMD_READ_IMMEDIATE:
-      if (tn5250_table_mdt(table)) {
-	 field = table->field_list;
+      if (tn5250_dbuffer_mdt(dbuffer)) {
+	 field = dbuffer->field_list;
 	 if (field != NULL) {
 	    do {
 	       tn5250_session_send_field (This, &field_buf, field);
 	       field = field->next;
-	    } while (field != table->field_list);
+	    } while (field != dbuffer->field_list);
 	 }
       }
       break;
 
    case CMD_READ_MDT_FIELDS:
       TN5250_ASSERT(aidcode != 0);
-      field = table->field_list;
-      if (field != NULL) {
-	 do {
-	    if (tn5250_field_mdt(field))
-	       tn5250_session_send_field (This, &field_buf, field);
-	    field = field->next;
-	 } while (field != table->field_list);
+      if (tn5250_dbuffer_send_data_for_aid_key(dbuffer,aidcode)) {
+	 field = dbuffer->field_list;
+	 if (field != NULL) {
+	    do {
+	       if (tn5250_field_mdt(field))
+		  tn5250_session_send_field (This, &field_buf, field);
+	       field = field->next;
+	    } while (field != dbuffer->field_list);
+	 }
       }
       break;
 
@@ -431,44 +433,48 @@ static void tn5250_session_process_stream(Tn5250Session * This)
       TN5250_LOG(("ProcessStream: cur_command = 0x%02X\n", cur_command));
 
       switch (cur_command) {
-      case (CMD_WRITE_TO_DISPLAY):
+      case CMD_WRITE_TO_DISPLAY:
 	 tn5250_session_write_to_display(This);
 	 break;
-      case (CMD_CLEAR_UNIT):
+      case CMD_CLEAR_UNIT:
 	 tn5250_session_clear_unit(This);
 	 break;
-      case (CMD_CLEAR_UNIT_ALTERNATE):
+      case CMD_CLEAR_UNIT_ALTERNATE:
 	 tn5250_session_clear_unit_alternate(This);
 	 break;
-      case (CMD_CLEAR_FORMAT_TABLE):
+      case CMD_CLEAR_FORMAT_TABLE:
 	 tn5250_session_clear_format_table(This);
 	 break;
-      case (CMD_READ_MDT_FIELDS):
+      case CMD_READ_MDT_FIELDS:
 	 tn5250_session_read_mdt_fields(This);
 	 break;
-      case (CMD_READ_IMMEDIATE):
+      case CMD_READ_IMMEDIATE:
 	 tn5250_session_read_immediate(This);
 	 break;
-      case (CMD_READ_INPUT_FIELDS):
+      case CMD_READ_INPUT_FIELDS:
 	 tn5250_session_read_input_fields(This);
 	 break;
-      case (CMD_READ_SCREEN_IMMEDIATE):
+      case CMD_READ_SCREEN_IMMEDIATE:
 	 tn5250_session_read_screen_immediate(This);
 	 break;
-      case (CMD_WRITE_STRUCTURED_FIELD):
+      case CMD_WRITE_STRUCTURED_FIELD:
 	 tn5250_session_write_structured_field(This);
 	 break;
-      case (CMD_SAVE_SCREEN):
+      case CMD_SAVE_SCREEN:
 	 tn5250_session_save_screen(This);
 	 break;
-      case (CMD_WRITE_ERROR_CODE):
+      case CMD_RESTORE_SCREEN:
+	 /* Ignored, the data following this should be a valid
+	  * Write To Display command. */
+	 break;
+      case CMD_WRITE_ERROR_CODE:
 	 tn5250_session_write_error_code(This);
 	 break;
-      case (CMD_ROLL):
+      case CMD_ROLL:
 	 tn5250_session_roll(This);
 	 break;
       default:
-	 TN5250_LOG(("Error: Unknown command %2.2\n", cur_command));
+	 TN5250_LOG(("Error: Unknown command 0x%02X.\n", cur_command));
 	 TN5250_ASSERT(0);
       }
    }
@@ -487,6 +493,7 @@ static void tn5250_session_write_error_code(Tn5250Session * This)
 
    /* FIXME: Use same code as WTD for writing data characters to display
     * (?) */
+   /* FIXME: Use the correct message line? */
 
    tn5250_display_set_cursor(This->display, 23, 0);
    done = 0;
@@ -529,7 +536,6 @@ static void tn5250_session_handle_cc1 (Tn5250Session *This, unsigned char cc1)
    int null_non_bypass_mdt = 0;
    int null_non_bypass = 0;
    Tn5250Field *iter;
-   Tn5250Table *table;
 
    switch (cc1 & 0xE0) {
    case 0x00:
@@ -568,8 +574,8 @@ static void tn5250_session_handle_cc1 (Tn5250Session *This, unsigned char cc1)
       TN5250_LOG(("tn5250_session_handle_cc1: Locking keyboard.\n"));
       tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_X_SYSTEM);
    }
-   table = tn5250_display_table (This->display);
-   if ((iter = table->field_list) != NULL) {
+   TN5250_ASSERT(This->display != NULL && tn5250_display_dbuffer (This->display) != NULL);
+   if ((iter = tn5250_display_dbuffer(This->display)->field_list) != NULL) {
       do {
 	 if (!tn5250_field_is_bypass (iter)) {
 	    if ((null_non_bypass_mdt && tn5250_field_mdt(iter)) || null_non_bypass) {
@@ -581,7 +587,7 @@ static void tn5250_session_handle_cc1 (Tn5250Session *This, unsigned char cc1)
 	 if (reset_all_mdt || (reset_non_bypass_mdt && !tn5250_field_is_bypass (iter)))
 	    tn5250_field_clear_mdt (iter);
 	 iter = iter->next;
-      } while (iter != table->field_list);
+      } while (iter != This->display->display_buffers->field_list);
    }
 }
 
@@ -657,7 +663,7 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
    else {
       /* Set the cursor to the first non-bypass field, if there is one.  If
        * not, set cursor position to 0,0 */
-      Tn5250Field *field = This->display->format_tables->field_list;
+      Tn5250Field *field = This->display->display_buffers->field_list;
       done = 0;
       if (field != NULL) {
 	 do {
@@ -667,7 +673,7 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
 	       break;
 	    }
 	    field = field->next;
-	 } while (field != This->display->format_tables->field_list);
+	 } while (field != This->display->display_buffers->field_list);
       }
       if (!done)
 	 tn5250_display_set_cursor(This->display, 0, 0);
@@ -812,7 +818,7 @@ static void tn5250_session_save_screen(Tn5250Session * This)
    TN5250_LOG(("SaveScreen: entered.\n"));
 
    tn5250_buffer_init (&buffer);
-   tn5250_display_make_wtd_data (This->display, &buffer, NULL, NULL);
+   tn5250_display_make_wtd_data (This->display, &buffer, NULL);
 
    /* Okay, now if we were in a Read MDT Fields or a Read Input Fields,
     * we need to append a command which would put us back in the appropriate
@@ -948,9 +954,8 @@ static void tn5250_session_start_of_field(Tn5250Session * This)
 	 field->start_row = Y;
 	 field->start_col = X;
 
-	 tn5250_table_add_field (
-	       tn5250_display_table (This->display),
-	       field);
+	 tn5250_dbuffer_add_field (
+	       tn5250_display_dbuffer (This->display), field);
       }
    } else {
       TN5250_LOG(("StartOfField: Output only field.\n"));
@@ -993,7 +998,7 @@ static void tn5250_session_start_of_header(Tn5250Session * This)
 
    TN5250_LOG (("StartOfHeader: entered.\n"));
    
-   tn5250_table_clear(tn5250_display_table(This->display));
+   tn5250_dbuffer_clear_table(tn5250_display_dbuffer(This->display));
    tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_X_SYSTEM);
 
    n = tn5250_record_get_byte (This->record);

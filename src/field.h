@@ -23,11 +23,14 @@
 extern "C" {
 #endif
 
+   struct _Tn5250Field;
+   struct _Tn5250DBuffer;
+
    struct _Tn5250Field {
       struct _Tn5250Field /*@dependent@*/ /*@null@*/ *next;
       struct _Tn5250Field /*@dependent@*/ /*@null@*/ *prev;
       int id;
-      struct _Tn5250Table /*@dependent@*/ *table;
+      struct _Tn5250DBuffer /*@dependent@*/ *table;
 
       int w;	/* Display width, needed for some calcs */
 

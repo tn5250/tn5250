@@ -36,7 +36,6 @@ struct _Tn5250Session;
 struct _Tn5250Buffer;
 
 struct _Tn5250Display {
-   struct _Tn5250Table *   format_tables;
    struct _Tn5250DBuffer * display_buffers;
    struct _Tn5250Terminal *terminal;
    struct _Tn5250Session *session;
@@ -54,11 +53,8 @@ extern void		tn5250_display_set_session    (Tn5250Display *This,
 						       struct _Tn5250Session *s);
 
 extern Tn5250DBuffer *  tn5250_display_push_dbuffer   (Tn5250Display *This);
-extern Tn5250Table *	tn5250_display_push_table     (Tn5250Display *This);
 extern void		tn5250_display_restore_dbuffer(Tn5250Display *This,
 						       Tn5250DBuffer *display);
-extern void             tn5250_display_restore_table  (Tn5250Display *This,
-                                                       Tn5250Table *table);
 
 extern void             tn5250_display_set_terminal   (Tn5250Display *This,
                                                        struct _Tn5250Terminal*);
@@ -104,8 +100,7 @@ extern void	  tn5250_display_set_pending_insert   (Tn5250Display *This,
 						       int x);
 extern void	  tn5250_display_make_wtd_data        (Tn5250Display *This,
 						       struct _Tn5250Buffer *b,
-						       struct _Tn5250DBuffer *,
-						       struct _Tn5250Table *);
+						       struct _Tn5250DBuffer *);
 
 /* Key functions */
 extern void	  tn5250_display_do_key               (Tn5250Display *This,int);
@@ -124,8 +119,6 @@ extern void	  tn5250_display_kf_end		      (Tn5250Display *This);
 extern void       tn5250_display_kf_home              (Tn5250Display *This);
 extern void	  tn5250_display_kf_delete            (Tn5250Display *This);
 
-#define tn5250_display_table(This) \
-   ((This)->format_tables)
 #define tn5250_display_dbuffer(This) \
    ((This)->display_buffers)
 #define tn5250_display_indicators(This) \
@@ -155,7 +148,7 @@ extern void	  tn5250_display_kf_delete            (Tn5250Display *This);
 #define tn5250_display_set_ic(This,y,x) \
    (tn5250_dbuffer_set_ic((This)->display_buffers,(y),(x)))
 #define tn5250_display_set_header_data(This,data,len) \
-   (tn5250_table_set_header_data((This)->format_tables,(data),(len)))
+   (tn5250_dbuffer_set_header_data((This)->display_buffers,(data),(len)))
 #define tn5250_display_clear_pending_insert(This) \
    (void)((This)->pending_insert = 0)
 #define tn5250_display_pending_insert(This) \

@@ -27,7 +27,6 @@
 #include "utility.h"
 #include "dbuffer.h"
 #include "field.h"
-#include "formattable.h"
 
 Tn5250Field *tn5250_field_new(int w)
 {
@@ -187,7 +186,7 @@ const char *tn5250_field_adjust_description (Tn5250Field * This)
 
 /*
  *    Return the number of characters in the this field which
- *    are to the left oof the specified cursor position.  Used
+ *    are to the left of the specified cursor position.  Used
  *    as an index to insert data when the user types.
  */
 int tn5250_field_count_left(Tn5250Field *This, int y, int x)
@@ -271,7 +270,7 @@ void tn5250_field_set_mdt (Tn5250Field *This)
    TN5250_ASSERT(This->table != NULL);
 
    This->FFW |= TN5250_FIELD_MODIFIED;
-   tn5250_table_set_mdt(This->table);
+   tn5250_dbuffer_set_mdt(This->table);
 }
 
 /*

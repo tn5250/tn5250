@@ -1,3 +1,24 @@
+2000-01-04 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Happy Y2K!
+- Changed handling of Field+ and Field- in regards to number-only-type
+  fields.
+- No longer ignores the function key bits in the format table header.  This
+  means that we won't transmit the field data for a function key unless the
+  AS/400 has requested it.
+
+1999-12-31 Jay 'Eraserhead' Felice <jasonf@nacs.net>
+
+- Rolled Tn5250Table functionality into Tn5250DBuffer, removed
+  formattable.[ch] and resulting duplicate functionality in display.c
+- Apparently, the AS/400 and S/36 differ in how they send the client the
+  Restore Screen data.  The AS/400 just sends the data raw, while the 
+  System/36 prefixes it with a X'04' X'12' (Restore Screen) opcode.  This
+  is now ignored.
+- Removed portsnoop. It doesn't belong here and there's better stuff out
+  there (check freshmeat.net).  nc seems to work well, and is installed on
+  most distributions by default.
+
 1999-12-20 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 
 - Attention and System Request keys now transmit appropriate requests to the

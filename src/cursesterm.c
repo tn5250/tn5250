@@ -41,7 +41,6 @@
 #include "record.h"
 #include "stream.h"
 #include "field.h"
-#include "formattable.h"
 #include "display.h"
 #include "terminal.h"
 #include "cursesterm.h"

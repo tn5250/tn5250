@@ -61,8 +61,7 @@ void tn5250_buffer_append_data(Tn5250Buffer * This, unsigned char *data, int len
       tn5250_buffer_append_byte(This, *data++);
 }
 
-#ifndef NDEBUG
-void tn5250_buffer_log(Tn5250Buffer * This)
+void tn5250_buffer_log(Tn5250Buffer * This, const char *prefix)
 {
    int pos;
    unsigned char t[17];
@@ -73,7 +72,7 @@ void tn5250_buffer_log(Tn5250Buffer * This)
    TN5250_LOG (("Dumping buffer (length=%d):\n", This->len));
    for (pos = 0; pos < This->len;) {
       memset(t, 0, sizeof(t));
-      TN5250_LOG(("> +%4.4X ", pos));
+      TN5250_LOG(("%s +%4.4X ", prefix, pos));
       for (n = 0; n < 16; n++) {
 	 if (pos < This->len) {
 	    c = This->data[pos];
@@ -90,6 +89,5 @@ void tn5250_buffer_log(Tn5250Buffer * This)
    }
    TN5250_LOG (("\n"));
 }
-#endif
 
 /* vi:set sts=3 sw=3 autoindent: */
