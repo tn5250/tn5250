@@ -100,7 +100,9 @@ extern void	  tn5250_display_set_pending_insert   (Tn5250Display *This,
 						       int y,
 						       int x);
 extern void	  tn5250_display_make_wtd_data        (Tn5250Display *This,
-						       struct _Tn5250Buffer *b);
+						       struct _Tn5250Buffer *b,
+						       struct _Tn5250DBuffer *,
+						       struct _Tn5250Table *);
 
 /* Key functions */
 extern void	  tn5250_display_do_key               (Tn5250Display *This,int);
@@ -149,8 +151,8 @@ extern void	  tn5250_display_kf_delete            (Tn5250Display *This);
    (tn5250_dbuffer_roll((This)->display_buffers,(top),(bottom),(lines)))
 #define tn5250_display_set_ic(This,y,x) \
    (tn5250_dbuffer_set_ic((This)->display_buffers,(y),(x)))
-#define tn5250_display_set_message_line(This,y) \
-   (tn5250_table_set_message_line((This)->format_tables,(y)))
+#define tn5250_display_set_header_data(This,data,len) \
+   (tn5250_table_set_header_data((This)->format_tables,(data),(len)))
 #define tn5250_display_clear_pending_insert(This) \
    (void)((This)->pending_insert = 0)
 #define tn5250_display_pending_insert(This) \
