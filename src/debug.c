@@ -41,6 +41,7 @@
 #include "record.h"
 #include "stream.h"
 #include "dbuffer.h"
+#include "menu.h"
 #include "terminal.h"
 #include "field.h"
 #include "display.h"

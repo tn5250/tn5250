@@ -55,7 +55,6 @@ extern "C"
     struct _Tn5250Window *window_list;
     struct _Tn5250Scrollbar *scrollbar_list;
     struct _Tn5250Menubar *menubar_list;
-    struct _Tn5250Menuitem *menuitem_list;
     int field_count;
     int entry_field_count;
     int window_count;

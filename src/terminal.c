@@ -146,7 +146,8 @@ tn5250_terminal_create_menuitem (Tn5250Terminal * This, Tn5250Display * d,
 }
 
 void
-tn5250_terminal_destroy_menuitem (Tn5250Terminal * This, Tn5250Display * d)
+tn5250_terminal_destroy_menuitem (Tn5250Terminal * This, Tn5250Display * d,
+				  struct _Tn5250Menuitem *i)
 {
-  (*((This)->destroy_menuitem)) ((This), (d));
+  (*((This)->destroy_menuitem)) ((This), (d), (i));
 }

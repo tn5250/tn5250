@@ -40,6 +40,7 @@ extern "C"
 
 
   struct _Tn5250Menubar;
+  struct _Tn5250Menuitem;
   struct _Tn5250DBuffer;
 
 /***** lib5250/Tn5250Menubar
@@ -56,6 +57,8 @@ extern "C"
     struct _Tn5250Menubar *next;
     struct _Tn5250Menubar *prev;
     unsigned int id;		/* Numeric ID of this menubar */
+    struct _Tn5250Menuitem *menuitem_list;
+    int menuitem_count;
     unsigned char mdt;
     short use_scrollbar;
     short num_sep_blank;
@@ -97,8 +100,6 @@ extern "C"
 						 int y);
 
 
-  struct _Tn5250Menuitem;
-  struct _Tn5250DBuffer;
 
 /***** lib5250/Tn5250Menuitem
  * NAME
@@ -114,13 +115,10 @@ extern "C"
     struct _Tn5250Menuitem *next;
     struct _Tn5250Menuitem *prev;
     unsigned int id;		/* Numeric ID of this menuitem */
-    unsigned int row;		/* Row menuitem starts on */
-    unsigned int column;	/* Column menuitem starts on */
-    unsigned int height;	/* height (in characters) of menuitem */
-    unsigned int width;		/* width (in characters) of menuitem */
     unsigned int border[4];	/* Characters used to create borders
 				 * Uses the same masks as buf5250 */
-    struct _Tn5250DBuffer *table;
+    unsigned char *text;
+    struct _Tn5250Menubar *menubar;
   };
 
   typedef struct _Tn5250Menuitem Tn5250Menuitem;
@@ -129,10 +127,6 @@ extern "C"
   extern Tn5250Menuitem *tn5250_menuitem_new ();
   extern Tn5250Menuitem *tn5250_menuitem_copy (Tn5250Menuitem * This);
   extern void tn5250_menuitem_destroy (Tn5250Menuitem * This);
-  extern int tn5250_menuitem_start_row (Tn5250Menuitem * This);
-  extern int tn5250_menuitem_start_col (Tn5250Menuitem * This);
-  extern int tn5250_menuitem_height (Tn5250Menuitem * This);
-  extern int tn5250_menuitem_width (Tn5250Menuitem * This);
 
 /* Manipulate menuitem lists */
   extern Tn5250Menuitem *tn5250_menuitem_list_destroy (Tn5250Menuitem * list);
@@ -146,6 +140,8 @@ extern "C"
   extern Tn5250Menuitem *tn5250_menuitem_hit_test (Tn5250Menuitem * list,
 						   int x, int y);
 
+  void tn5250_menu_add_menuitem (Tn5250Menubar * This,
+				 Tn5250Menuitem * menuitem);
 #ifdef __cplusplus
 }
 
