@@ -138,14 +138,17 @@ tn5250_session_destroy (Tn5250Session * This)
   if (This->stream != NULL)
     {
       tn5250_stream_destroy (This->stream);
+      This->stream = NULL;
     }
   if (This->record != NULL)
     {
       tn5250_record_destroy (This->record);
+      This->record = NULL;
     }
   if (This->config != NULL)
     {
       tn5250_config_unref (This->config);
+      This->config = NULL;
     }
   free (This);
   return;

@@ -868,7 +868,7 @@ static void telnet_stream_host_sb(Tn5250Stream * This, UCHAR *sb_buf,
 	  for(i=0; i<sb_len && sb_buf[i] != IAC; i++)
 	    {
 	      tn5250_buffer_append_byte(&tbuf, sb_buf[i]);
-	      This->options = This->options | (1 << sb_buf[i]+1);
+	      This->options = This->options | (1 << (sb_buf[i]+1));
 	    }
 	  
 	  tn5250_buffer_append_byte(&tbuf, IAC);

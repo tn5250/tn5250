@@ -350,7 +350,7 @@ int tn5250_ssl_stream_init (Tn5250Stream *This)
 {
    int len;
    char methstr[5];
-   static SSL_METHOD *meth=NULL;
+   SSL_METHOD *meth=NULL;
 
    TN5250_LOG(("tn5250_ssl_stream_init() entered.\n"));
 
@@ -1165,7 +1165,7 @@ static void ssl_stream_host_sb(Tn5250Stream * This, UCHAR *sb_buf,
 	  for(i=0; i<sb_len && sb_buf[i] != IAC; i++)
 	    {
 	      tn5250_buffer_append_byte(&tbuf, sb_buf[i]);
-	      This->options = This->options | (1 << sb_buf[i]+1);
+	      This->options = This->options | (1 << (sb_buf[i]+1));
 	    }
 	  
 	  tn5250_buffer_append_byte(&tbuf, IAC);
