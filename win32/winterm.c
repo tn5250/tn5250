@@ -1575,7 +1575,7 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                           "This product includes software written by Tim "
                           "Hudson (tjh@cryptsoft.com).\n"
                           "\n"
-                          "For OpenSSL license information, see the COPYING "
+                          "For OpenSSL license information, see the LICENSE "
                           "file that was included in the OpenSSL package.\n"
 #endif
                           ,PACKAGE, VERSION);
