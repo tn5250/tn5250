@@ -1,3 +1,11 @@
+2000-04-10 Mike Madore <mmadore@turbolinux.com>
+- Fixed problem where we were processing aid keys when we weren't in a read 
+  state.  The new behavior is to save the aid code and process it when we are
+  in a read state.
+- Fixed improper behavior where we were moving to the first non-bypass field
+  even when the display was in an unlocked state.  The proper behavior for the
+  unlocked state is to leave the cursor where it is.
+	
 2000-04-07 Mike Madore <mmadore@turbolinux.com>
 - Created a tests directory and placed the DDS and RPG source file from James 
   Rich <james.rich@m.cc.utah.edu> there.

@@ -1109,7 +1109,12 @@ void tn5250_display_do_aidkey (Tn5250Display *This, int aidcode)
    TN5250_LOG (("tn5250_display_do_aidkey (0x%02X) called.\n", aidcode));
 
    /* FIXME: If this returns zero, we need to stop processing. */
-   ( *(This->session->handle_aidkey)) (This->session, aidcode);
+   if(This->session->read_opcode) {
+      ( *(This->session->handle_aidkey)) (This->session, aidcode);
+   } else {
+      /* No read active.  AID code is pending. */
+      This->session->pending_aid = aidcode;
+   }
 }
 
 /****f* lib5250/tn5250_display_kf_dup

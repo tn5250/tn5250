@@ -624,6 +624,7 @@ static int curses_terminal_waitevent(Tn5250Terminal * This)
    int result = 0;
    int sm;
 
+
    if (This->data->quit_flag)
       return TN5250_TERMINAL_EVENT_QUIT;
 

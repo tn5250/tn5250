@@ -161,6 +161,10 @@ void tn5250_session_main_loop(Tn5250Session * This)
 	    return;
 	 tn5250_session_handle_receive(This);
       }
+      if(This->pending_aid && This->read_opcode) {
+         tn5250_session_handle_aidkey(This, This->pending_aid);
+         This->pending_aid = 0;
+      }
    }
 }
 
@@ -230,6 +234,7 @@ static void tn5250_session_handle_receive(Tn5250Session * This)
 	 tn5250_display_update (This->display);
       }
    }
+
 }
 
 /****i* lib5250/tn5250_session_invite
@@ -529,6 +534,7 @@ static void tn5250_session_process_stream(Tn5250Session * This)
 	 TN5250_ASSERT(0);
       }
    }
+   
 }
 
 /****i* lib5250/tn5250_session_write_error_code
@@ -688,6 +694,8 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
    int done = 0;
    unsigned char end_x = 0xff, end_y = 0xff;
    Tn5250Field *last_field = NULL;
+   int old_x = tn5250_display_cursor_x(This->display);
+   int old_y = tn5250_display_cursor_y(This->display);
 
    TN5250_LOG(("WriteToDisplay: entered.\n"));
 
@@ -788,10 +796,14 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
     * but is probably the first position of the first non-bypass field). */
    if (end_y != 0xff && end_x != 0xff) 
       tn5250_display_set_cursor(This->display, end_y, end_x);
-   else
+   else if(tn5250_display_indicators(This->display) & TN5250_DISPLAY_IND_X_SYSTEM) {
       tn5250_display_set_cursor_home (This->display);
+   } else {
+      tn5250_display_set_cursor(This->display, old_y, old_x);
+   }   
 
    tn5250_session_handle_cc2 (This, CC2);
+   
 }
 
 /****i* lib5250/tn5250_session_handle_cc2
@@ -825,6 +837,8 @@ static void tn5250_session_handle_cc2 (Tn5250Session *This, unsigned char CC2)
    }
    if ((CC2 & TN5250_SESSION_CTL_UNLOCK) != 0)
       tn5250_display_indicator_clear(This->display, TN5250_DISPLAY_IND_X_SYSTEM);
+
+   TN5250_LOG (("Done Processing CC2.\n"));  
 }
 
 /****i* lib5250/tn5250_session_clear_unit
