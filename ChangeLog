@@ -1,3 +1,14 @@
+2000-05-25 Mike Madore <mmadore@turbolinux.com>
+- Started adding logic to conf.c to handle lists.  A list looks like:
+  mylist = [
+     one
+     two
+     three
+  ]
+  I need this functionality for specifying lists of valid ip addresses that
+  are allowed to connect to the 5250 server.  Might be useful for the client
+  also.
+	
 2000-05-25 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - Fixed syntax usage message in tn5250.c
 - Backed out pending_aid stuff. System request/reset now work when X SYSTEM
@@ -5,8 +16,11 @@
 
 2000-05-24 Mike Madore <mmadore@mmadore@turbolinux.com>
 - Updated Makefile.am to build tn5250d daemon.  Fixes to sig_child in utility.c
-for UnixWare.  Changed handling of return code from accept to account for 
-interrupted system calls.  Necessary for UnixWare for some reason.
+  for UnixWare.  Changed handling of return code from accept to account for 
+  interrupted system calls.  Necessary for UnixWare for some reason.  Moved
+  setting of default env.TERM and map to display.c from conf.c.  This is to
+  make conf.c more generic so I can use it for the 5250 server configuration
+  file.
 	
 2000-05-24 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - SIGCHLD/SIGCLD #ifdef magic; should now compile on *BSD again.
