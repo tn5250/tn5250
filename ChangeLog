@@ -1,4 +1,7 @@
 2001-09-28 Scott Klement <klemscot@klements.com>
+- Added a "README.ssl" file to explain how to use SSL with tn5250.
+
+2001-09-28 Scott Klement <klemscot@klements.com>
 - Changed tn5250_stream_open to associate the config object with the
     stream before calling stream_connect()
 - Added config keywords "ssl_verify_server" and "ssl_ca_file" to allow

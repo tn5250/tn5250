@@ -1,0 +1,139 @@
+                    HOW TO SET UP / USE TN5250 WITH SSL
+
+It is possible to configure your AS/400 and tn5250 to encrypt and protect
+it's conversation using the SSL/TLS protocol.  This document tells you how.
+
+SETTING UP YOUR SERVER:
+
+   This section assumes that your AS/400 and TELNET server have not yet
+   been set up to use SSL, and that you wish you create & sign your own
+   SSL certificates (as opposed to buying them from VeriSign on similar
+   company)
+
+   If your system is already set up for SSL, please skip to step 7.
+
+   1) You must install the following software on your AS/400:   
+        -- Digital Certificate Manager, option 34 of OS/400 (5769-SS1)
+        -- IBM HTTP Server for AS/400 (5769-DG1)
+        -- IBM Cryptographic Access Provider (5769-ACx or 5649-ACx)
+
+      The first two options are included on your OS/400 CDs.  The
+      Cryptographic Access Provider must be ordered from IBM, and you
+      may get a different option, depending on the laws in your country
+      regarding encryption, and the model of AS/400 you have.  At the
+      time of this writing, IBM supplies the C.A.P. at no charge.
+
+      If you're given a choice, you'll want to install 5769-AC3, as
+      it has the best cryptography.
+
+   2) Start the HTTP *ADMIN server in order to configure your Digital
+        Certificate Manager.  From the AS/400, type:
+             STRTCPSVR SERVER(*HTTP) HTTPSVR(*ADMIN)
+
+   3) With a web browser, connect to your AS/400's admin server:
+             http://as400.example.com:2001
+
+   4) Click "Digital Certificate Manager", then "Certificate Authority (CA)"
+         then "Create a Certificate Authority."  Fill out the forms, etc.
+
+   6) Click "System Certificates".  IF you haven't done so already,
+         click "Create new certificate store" and follow the prompts for
+         creating the *SYSTEM certificate store.
+
+   7) Select "Work With Secure Applications".  Select 
+         "QIBM_QTV_TELNET_SERVER", then click the 
+         "Work with system certificate" button.  It should tell you
+         that your telnet server has your system certificate assigned
+         to it.  IF not, you can assign it here.
+
+   8) Now you have to start your telnet server on the AS/400.  If it
+         is already running, you'll have to end it, and start it again.
+         On the AS/400, type:
+            ENDTCPSVR SERVER(*TELNET)
+            STRTCPSVR SERVER(*TELNET)
+
+   9) Now, verify that your SSL-enabled Telnet server is running.  
+         on the AS/400, type NETSTAT *CNN.   Press F14 to display
+         the port numbers.  Look for a server that's in "Listen"
+         state on port 992.  This is the SSL telnet server.
+
+If you have problems, or need more detailed information on how to set
+up the TELNET-SSL server on the AS/400, see the TCP/IP configuration area
+of the iSeries Information Center.   
+
+Here's a link to the TELNET section of the Information Center online:
+http://publib.boulder.ibm.com/pubs/html/as400/v4r5/ic2924/info/RZAIWGETSTART.HTM
+Click "Telnet server and SSL" to get started.
+
+
+CONFIGURING TN5250 TO USE SSL:
+
+   1) You must have OpenSSL installed on your Linux/FreeBSD (etc) machine
+       before building tn5250 if you want it to use SSL.   If you don't
+       already have it, you can get it from http://www.openssl.org
+
+   2) One of the first steps of building TN5250 is to run ./configure.
+       To ensure that SSL support is compiled in, type ./configure --with-ssl
+       instead of just ./configure.  (If you omit the --with-ssl, the 
+       script may still use OpenSSL.  The --with-ssl option really just tells it
+       to report an error if OpenSSL cannot be found)
+
+   3) Build tn5250 as normal.  (after configure type 'make' then 'make install'
+       see the README file for more information)
+
+   4) To tell TN5250 to use SSL when you connect to your AS/400, prefix
+       the hostname with ssl: in your configuration.  For example,
+       type: tn5250 ssl:as400.example.com
+
+   At this point, your TN5250 session should be encrypted when sent over
+   the network.  However, you should also consider telling tn5250 to verify
+   the server's certificate when connecting.
+
+
+VERIFYING YOUR SERVERS CERTIFICATE:
+
+   It is a good idea when using SSL to verify the certificate that your
+   telnet-ssl server is sending to tn5250.   This ensures that you are 
+   communicating with the server that you think you are, and that your
+   connection is not being "hijacked" by a 3rd party.
+
+   1) If it's not already running, start the AS/400's HTTP *ADMIN server
+        by typing:  STRTCPSVR SERVER(*HTTP) HTTPSVR(*ADMIN) 
+
+   2) Connect to the Admin server with a web browser:
+        http://as400.example.com:2001
+
+   3) Click "Digital Certificate Manager", then "Certificate Authority (CA)"
+        then "Install CA certificate on your PC", then click 
+        "Copy and paste certificate"
+
+   4) Highlight the certificate that is displayed with your mouse.  Make
+        sure that you include the "----BEGIN CERTIFICATE-----" and the
+        "----END CERTIFICATE-----" in the selection.  Copy & paste this
+        information into a file on your Linux/FreeBSD machine.  For our
+        example, we'll call this file "as400_ca.pem"
+
+   5) Set up tn5250 to verify the server's certificate using the 
+        +ssl_verify_server keyword and the ssl_ca_file= option.
+
+        for example, type the following (as one line):
+           tn5250 +ssl_verify_server ssl_ca_file=/path/to/as400_ca.pem 
+               ssl:as400.example.com
+
+
+USING SSL IN A CONFIGURATION FILE:
+
+If you are using a configuration file  (~/.tn5250rc or /usr/local/etc/tn5250rc)
+with tn5250, set it up like this:
+
+   session1 {
+      host = ssl:as400.example.com
+      +ssl_verify_server
+      ssl_ca_file = /path/to/as400_ca.pem
+      [ .. other options can go here ... ]
+   }
+
+And start tn5250 like this:
+
+   tn5250 session1
+
