@@ -1,3 +1,7 @@
+2000-07-28 Mike Madore <mmadore@turbolinux.com>
+- Updated version of development code to 0.17.0
+- Applied Scott Klement's patch to use the config file system for lp5250d
+	
 2000-06-30 Mike Madore <mmadore@turbolinux.com>
 - Applied Scott Klement's fix for the broken SYSREQ function.
 	
