@@ -23,30 +23,63 @@ extern "C" {
 #endif
 
 #if SIZEOF_SHORT == 2
-   typedef unsigned short Tn5250Uint16;
-   typedef signed short Tn5250Sint16;
+typedef unsigned short Tn5250Uint16;
+typedef signed short Tn5250Sint16;
 #elif SIZEOF_INT == 2
-   typedef unsigned int Tn5250Uint16;
-   typedef signed int Tn5250Sint16;
+typedef unsigned int Tn5250Uint16;
+typedef signed int Tn5250Sint16;
 #else
    ACK!  Need a 16-bit type!
 #endif
 
+typedef unsigned char Tn5250Char;
+
+/****s* lib5250/Tn5250CharMap
+ * NAME
+ *    Tn5250CharMap
+ * SYNOPSIS
+ *    Tn5250CharMap *map = tn5250_char_map_new ("en");
+ *    ec = tn5250_char_map_to_local(map,ac);
+ *    ac = tn5250_char_map_to_host(map,ec);
+ *    if (tn5250_char_map_printable_p (map,ec))
+ *	 ;
+ *    if (tn5250_char_map_attribute_p (map,ec))
+ *	 ;
+ *    tn5250_char_map_destroy(map);
+ * DESCRIPTION
+ *    The Tn5250CharMap object embodies a translation map which can be
+ *    used to translate characters from various flavours of ASCII and
+ *    ISO character sets to various flavours of EBCDIC characters sets
+ *    (and back).
+ * SOURCE
+ */
+struct _Tn5250CharMap {
+   const char *name;
+   const unsigned char *to_local_map;
+   const unsigned char *to_host_map;
+};
+
+typedef struct _Tn5250CharMap Tn5250CharMap;
+/*******/
+
+Tn5250CharMap *tn5250_char_map_new(const char *maping);
+void tn5250_char_map_destroy(Tn5250CharMap *This);
+
+Tn5250Char tn5250_char_map_to_host(Tn5250CharMap *This, Tn5250Char ascii);
+Tn5250Char tn5250_char_map_to_local(Tn5250CharMap *This, Tn5250Char ebcdic);
+
+int tn5250_char_map_printable_p(Tn5250CharMap *This, Tn5250Char data);
+int tn5250_char_map_attribute_p(Tn5250CharMap *This, Tn5250Char data);
+
 /* Idea shamelessly stolen from GTK+ */
 #define tn5250_new(type,count) (type *)malloc (sizeof (type) * (count))
 
-   unsigned char tn5250_ascii2ebcdic(unsigned char ascii);
-   unsigned char tn5250_ebcdic2ascii(unsigned char ebcdic);
-   void tn5250_settransmap(char *map);
-   int tn5250_printable(unsigned char data);
-   int tn5250_attribute(unsigned char data);
-
 #define TN5250_MAKESTRING(expr) #expr
 #ifndef NDEBUG
-   void tn5250_log_open(const char *fname);
-   void tn5250_log_printf(const char *fmt,...);
-   void tn5250_log_close(void);
-   void tn5250_log_assert(int val, char const *expr, char const *file, int line);
+void tn5250_log_open(const char *fname);
+void tn5250_log_printf(const char *fmt,...);
+void tn5250_log_close(void);
+void tn5250_log_assert(int val, char const *expr, char const *file, int line);
 #define TN5250_LOG(args) tn5250_log_printf args
 #define TN5250_ASSERT(expr) \
    tn5250_log_assert((expr), TN5250_MAKESTRING(expr), __FILE__, __LINE__)
@@ -58,6 +91,8 @@ extern FILE * tn5250_logfile;
 
 #ifdef __cplusplus
 }
-
 #endif
+
 #endif				/* UTILITY_H */
+
+/* vi:set sts=3 sw=3: */

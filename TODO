@@ -32,7 +32,11 @@
   </item>
 
   <item>
-    Add Perl scripting-language support.
+    Add Perl scripting language support.
+  </item>
+
+  <item>
+    Add Scheme/guile scripting language support.
   </item>
 
   <item>
@@ -46,14 +50,8 @@
   </item>
 
   <item>
-    We are currently ignoring some useful information in the format table
-    header (given to us with the SOH order).  This includes the `Operator
-    Error Line' and a list of function keys which should be ignored (because
-    they aren't applicable for a particular screen).
-  </item>
-
-  <item>
-    Object-orientize translation map handling.
+    Field resequencing is not implmented; however, an assertion has been added
+    to break the emulator when it is encountered.  So far, no reported problems.
   </item>
 
 </todo>

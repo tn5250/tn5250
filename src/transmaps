@@ -63,7 +63,7 @@ print MAPS <<__EOT__;
 /* This is the translation-map index which is scanned in utility.c
  */
 
-Tn5250TransMap transmaps [] = {
+Tn5250CharMap transmaps [] = {
 __EOT__
 
 foreach $s (@sets) {

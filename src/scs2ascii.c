@@ -69,7 +69,7 @@ int ccp;
 
 int main()
 {
-   tn5250_settransmap("en");
+   Tn5250CharMap *map = tn5250_char_map_new ("en");
    current_line = 1;
    new_line = 1;
    mpp = 132;
@@ -127,13 +127,14 @@ int main()
 	    if (new_line) {
 	       new_line = 0;
 	    }
-	    printf("%c", tn5250_ebcdic2ascii(curchar));
+	    printf("%c", tn5250_char_map_to_local(map, curchar));
 	    ccp++;
 	    fprintf(stderr, ">%x\n", curchar);
 	 }
       }
 
    }
+   tn5250_char_map_destroy (map);
    return (0);
 }
 
@@ -593,3 +594,5 @@ static void scs2ascii_scs()
       fprintf(stderr, "ERROR: Unknown 0x2BD20429 command %x\n", curchar);
    }
 }
+
+/* vi:set sts=3 sw=3: */

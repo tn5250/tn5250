@@ -83,6 +83,6 @@ docs:
 	  rm -f ../doc/*.xref ../doc/index.xrefs )
 
 clean-local:
-	rm -f $(DOCFILES) *.xref index.xrefs index.html
+	rm -f *~ *.xref index.xrefs index.html
 
 .PHONY: lclint

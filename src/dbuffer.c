@@ -384,6 +384,30 @@ Tn5250Field *tn5250_dbuffer_field_yx (Tn5250DBuffer *This, int y, int x)
    return NULL; 
 }
 
+/****f* lib5250/tn5250_dbuffer_first_non_bypass
+ * NAME
+ *    tn5250_dbuffer_first_non_bypass
+ * SYNOPSIS
+ *    field = tn5250_dbuffer_first_non_bypass (dbuffer);
+ * INPUTS
+ *    Tn5250DBuffer *      dbuffer    - The display buffer to use.
+ * DESCRIPTION
+ *    Returns a pointer to the first non-bypass field in the format table,
+ *    or NULL if there are no non-bypass fields.
+ *****/
+Tn5250Field *tn5250_dbuffer_first_non_bypass (Tn5250DBuffer *This)
+{
+   Tn5250Field *iter;
+   if ((iter = This->field_list) != NULL) {
+      do {
+	 if (!tn5250_field_is_bypass (iter))
+	    return iter;
+	 iter = iter->next;
+      } while (iter != This->field_list);
+   }
+   return NULL;
+}
+
 /****f* lib5250/tn5250_dbuffer_right
  * NAME
  *    tn5250_dbuffer_right

@@ -401,7 +401,7 @@ static void tn5250_session_send_field (Tn5250Session * This, Tn5250Buffer *buf, 
 	    tn5250_buffer_append_byte(buf, data[n] == 0 ? 0x40 : data[n]);
 	 c = data[size-2];
 	 tn5250_buffer_append_byte(buf,
-	       tn5250_ebcdic2ascii(data[size-1]) == '-' ?
+	       tn5250_char_map_to_local(tn5250_display_char_map(This->display), data[size-1]) == '-' ?
 	       (0xd0 | (0x0f & c)) : c);
       } else {
 	 for (n = 0; n < size; n++)
@@ -423,8 +423,9 @@ static void tn5250_session_send_field (Tn5250Session * This, Tn5250Buffer *buf, 
       if (tn5250_field_is_signed_num (field)) {
 	 size--;
 	 c = size > 0 ? data[size-1] : 0;
-	 if (size > 1 && data[size] == tn5250_ascii2ebcdic('-') &&
-	       isdigit (tn5250_ebcdic2ascii (c)))
+	 if (size > 1 && data[size] == tn5250_char_map_to_host (
+		 tn5250_display_char_map (This->display), '-') &&
+	       isdigit (tn5250_char_map_to_local (tn5250_display_char_map (This->display),c)))
 	    c = (0xd0 | (0x0f & c));
       }
       
@@ -578,7 +579,7 @@ static void tn5250_session_write_error_code(Tn5250Session * This)
 	 TN5250_LOG(("\n"));
 #endif				/* NDEBUG */
 
-      if (tn5250_printable(c)) {
+      if (tn5250_char_map_printable_p(tn5250_display_char_map (This->display), c)) {
 	 tn5250_display_addch(This->display, c);
 	 continue;
       }
@@ -760,14 +761,15 @@ static void tn5250_session_write_to_display(Tn5250Session * This)
 	    break;
 
 	 default:
-	    if (tn5250_printable(cur_order)) {
+	    if (tn5250_char_map_printable_p(tn5250_display_char_map (This->display),cur_order)) {
 	       tn5250_display_addch(This->display, cur_order);
 #ifndef NDEBUG
-	       if (tn5250_attribute(cur_order)) {
+	       if (tn5250_char_map_attribute_p(tn5250_display_char_map (This->display),cur_order)) {
 		  TN5250_LOG(("(0x%02X) ", cur_order));
 	       } else {
-		  TN5250_LOG(("%c (0x%02X) ", tn5250_ebcdic2ascii(cur_order),
-		       cur_order));
+		  TN5250_LOG(("%c (0x%02X) ", tn5250_char_map_to_local (
+			tn5250_display_char_map (This->display), cur_order),
+		        cur_order));
 	       }
 #endif
 	    } else {
@@ -1509,7 +1511,8 @@ static void tn5250_session_query_reply(Tn5250Session * This)
    sprintf ((char*)temp + 30, "%04d", dev_type);
    sprintf ((char*)temp + 35, "%02d", dev_model);
    for (i = 30; i <= 36; i++)
-      temp[i] = tn5250_ascii2ebcdic(temp[i]);
+      temp[i] = tn5250_char_map_to_host (
+	    tn5250_display_char_map (This->display), temp[i]);
 
    temp[37] = 0x02;		/* Keyboard ID:
 				   X'02' = Standard Keyboard
@@ -1550,3 +1553,4 @@ static void tn5250_session_query_reply(Tn5250Session * This)
 	 (unsigned char *) temp);
 }
 
+/* vi:set sts=3 sw=3: */

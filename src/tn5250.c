@@ -54,7 +54,7 @@
 extern char *version_string;
 
 char *remotehost;
-char *transmapname = "37";
+char *mapname = "37";
 char *sessionname = NULL;
 #if USE_CURSES
 int underscores = 0;
@@ -103,13 +103,14 @@ int main(int argc, char *argv[])
 
    if (parse_options(argc, argv) < 0)
       syntax();
-   tn5250_settransmap(transmapname);
 
    stream = tn5250_stream_open (remotehost);
    if (stream == NULL)
       goto bomb_out;
 
    display = tn5250_display_new ();
+   if (mapname != NULL)
+      tn5250_display_set_char_map (display, mapname);
 
    if (printsession) {
       printsess = tn5250_print_session_new();
@@ -214,7 +215,7 @@ static int parse_options(int argc, char *argv[])
    while ((arg = getopt(argc, argv, "m:s:t:T:P:uVpwy:")) != EOF) {
       switch (arg) {
       case 'm':
-	 transmapname = optarg;
+	 mapname = optarg;
 	 break;
 
       case 'P':

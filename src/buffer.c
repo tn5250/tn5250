@@ -128,6 +128,7 @@ void tn5250_buffer_log(Tn5250Buffer * This, const char *prefix)
    unsigned char c;
    unsigned char a;
    int n;
+   Tn5250CharMap *map = tn5250_char_map_new ("en");
 
    TN5250_LOG (("Dumping buffer (length=%d):\n", This->len));
    for (pos = 0; pos < This->len;) {
@@ -136,7 +137,7 @@ void tn5250_buffer_log(Tn5250Buffer * This, const char *prefix)
       for (n = 0; n < 16; n++) {
 	 if (pos < This->len) {
 	    c = This->data[pos];
-	    a = tn5250_ebcdic2ascii(c);
+	    a = tn5250_char_map_to_local (map, c);
 	    TN5250_LOG(("%02x", c));
 	    t[n] = (isprint(a)) ? a : '.';
 	 } else

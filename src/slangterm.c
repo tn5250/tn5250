@@ -331,7 +331,7 @@ static void slang_terminal_update(Tn5250Terminal * This, Tn5250Display * display
 	       SLsmg_write_char (' ');
 	       slang_terminal_set_attrs (This, temp_attr);
 	    } else {
-	       c = tn5250_ebcdic2ascii(c);
+	       c = tn5250_char_map_to_local (tn5250_display_char_map (display), c);
 	       if ((c < 0x20 && c > 0x00) || c >= 0x7f) { /* UNPRINTABLE */
 		  c = ' ';
 		  curs_attr ^= A_REVERSE;

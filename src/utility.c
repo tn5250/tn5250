@@ -29,119 +29,99 @@
 #include <sys/stat.h>
 #include "utility.h"
 
-static unsigned char const /*@null@*/ *ebcdicmap = NULL;
-static unsigned char const /*@null@*/ *asciimap = NULL;
-
-struct _Tn5250TransMap {
-   char *mapname;
-   unsigned char const *ebcdicmap;
-   unsigned char const *asciimap;
-};
-
-typedef struct _Tn5250TransMap Tn5250TransMap;
-
 #include "transmaps.h"
 
-/****f* lib5250/tn5250_ascii2ebcdic
+/****f* lib5250/tn5250_char_map_to_host
  * NAME
- *    tn5250_ascii2ebcdic
+ *    tn5250_char_map_to_host
  * SYNOPSIS
- *    ret = tn5250_ascii2ebcdic (ascii);
+ *    ret = tn5250_char_map_to_host (map,ascii);
  * INPUTS
- *    unsigned char        ascii      - The ASCII character to translate.
+ *    Tn5250Char           ascii      - The local character to translate.
  * DESCRIPTION
- *    Translate the specified character from ASCII to EBCDIC.
+ *    Translate the specified character from local to host.
  *****/
-unsigned char tn5250_ascii2ebcdic(unsigned char ascii)
+Tn5250Char tn5250_char_map_to_host(Tn5250CharMap *map, Tn5250Char ascii)
 {
-   if (asciimap == NULL)
-      tn5250_settransmap("en");
-   return (asciimap[ascii]);
+   return map->to_host_map[ascii];
 }
 
-/****f* lib5250/tn5250_ebcdic2ascii
+/****f* lib5250/tn5250_char_map_to_local
  * NAME
- *    tn5250_ebcdic2ascii
+ *    tn5250_char_map_to_local
  * SYNOPSIS
- *    ret = tn5250_ebcdic2ascii (ebcdic);
+ *    local = tn5250_char_map_to_local (map, ebcdic);
  * INPUTS
- *    unsigned char        ebcdic     - The EBCDIC character to translate.
+ *    Tn5250Char           ebcdic     - The host character to translate.
  * DESCRIPTION
- *    Translate the specified character from EBCDIC to ASCII.
+ *    Translate the specified character from host character to local.
  *****/
-unsigned char tn5250_ebcdic2ascii(unsigned char ebcdic)
+Tn5250Char tn5250_char_map_to_local(Tn5250CharMap *map, Tn5250Char ebcdic)
 {
-   if (ebcdicmap == NULL)
-      tn5250_settransmap ("en");
    switch (ebcdic) {
    case 0x1C:
-      return '*';
+      return '*'; /* This should be an overstriken asterisk (DUP) */
    case 0:
       return ' ';
    default:
-      return ebcdicmap[ebcdic];
+      return map->to_local_map[ebcdic];
    }
 }
 
-/****f* lib5250/tn5250_settransmap
+/****f* lib5250/tn5250_char_map_new
  * NAME
- *    tn5250_settransmap
+ *    tn5250_char_map_new
  * SYNOPSIS
- *    tn5250_settransmap (map);
+ *    cmap = tn5250_char_map_new ("en");
  * INPUTS
- *    char *               map        - Name of the character translation map.
+ *    const char *         map        - Name of the character translation map.
  * DESCRIPTION
- *    Set the current (program-wide) translation map.
- * BUGS
- *    The translation map is system-wide, and not associated with a display or
- *    session.
+ *    Create a new translation map.
+ * NOTES
+ *    Translation maps are currently statically allocated, although you should
+ *    call tn5250_char_map_destroy (a no-op) for future compatibility.
  *****/
-void tn5250_settransmap(char *map)
+Tn5250CharMap *tn5250_char_map_new (const char *map)
 {
-   Tn5250TransMap *t;
-   for (t = transmaps; t->mapname; t++) {
-      if (strcmp(t->mapname, map) == 0) {
-	 asciimap = t->asciimap;
-	 ebcdicmap = t->ebcdicmap;
-	 break;
-      }
+   Tn5250CharMap *t;
+   for (t = transmaps; t->name; t++) {
+      if (strcmp(t->name, map) == 0)
+	 return t;
    }
-   if (!t->mapname) {
-#ifndef WIN32
-      printf("Invalid mapname: %s\n"
-	     "Try one out of:\n ", map);
-      for (t = transmaps; t->mapname; t++) {
-	 printf("%s ", t->mapname);
-      }
-      printf("\n");
-#else
-      char msg[1024] = "Invalid map name, try one of:\r\n";
-      for (t = transmaps; t->mapname; t++) {
-	 strcat(msg, t->mapname);
-	 if ((t + 1)->mapname)
-	    strcat(msg, ", ");
-      }
-      MessageBox(NULL, msg, "tn5250", MB_ICONEXCLAMATION);
-#endif
-      exit(1);
-   }
-   /* ebcdicmap[0] = ' '; */
+   return NULL;
 }
 
-/****f* lib5250/tn5250_printable
+/****f* lib5250/tn5250_char_map_destroy
  * NAME
- *    tn5250_printable
+ *    tn5250_char_map_destroy
  * SYNOPSIS
- *    ret = tn5250_printable (data);
+ *    tn5250_char_map_destroy (map);
  * INPUTS
- *    unsigned char        data       - the character to test.
+ *    Tn5250CharMap *         map     - The character map to destroy.
+ * DESCRIPTION
+ *    Frees the character map's resources.
+ *****/
+void tn5250_char_map_destroy (Tn5250CharMap *map)
+{
+   /* NOOP */
+}
+
+/****f* lib5250/tn5250_char_map_printable_p
+ * NAME
+ *    tn5250_char_map_printable_p
+ * SYNOPSIS
+ *    if (tn5250_char_map_printable_p (map,ec))
+ *	 ;
+ * INPUTS
+ *    Tn5250CharMap *      map        - the character map to use.
+ *    Tn5250Char           ec         - the character to test.
  * DESCRIPTION
  *    Determines whether the specified character is printable, which means 
  *    either it is a displayable EBCDIC character, an ideographic control
  *    character, a NUL, or a few other odds and ends.
  * SOURCE
  */
-int tn5250_printable(unsigned char data)
+int tn5250_char_map_printable_p(Tn5250CharMap *map, Tn5250Char data)
 {
    switch (data) {
    case 0x00:
@@ -161,17 +141,18 @@ int tn5250_printable(unsigned char data)
 }
 /*******/
 
-/****f* lib5250/tn5250_attribute
+/****f* lib5250/tn5250_char_map_attribute_p
  * NAME
- *    tn5250_attribute
+ *    tn5250_char_map_attribute_p
  * SYNOPSIS
- *    ret = tn5250_attribute (data);
+ *    ret = tn5250_char_map_attribute_p (map,ec);
  * INPUTS
- *    unsigned char        data       - the character to test.
+ *    Tn5250CharMap *      map        - the translation map to use.
+ *    Tn5250Char           ec         - the character to test.
  * DESCRIPTION
  *    Determines whether the character is a 5250 attribute.
  *****/
-int tn5250_attribute(unsigned char data)
+int tn5250_char_map_attribute_p(Tn5250CharMap *map, Tn5250Char data)
 {
    return ((data & 0xE0) == 0x20);
 }
