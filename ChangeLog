@@ -1,3 +1,8 @@
+2005-03-21 James Rich <james@eaerich.com>
+- Add --user=USER option to lp5250d to enable root to start it is another
+  user (useful in startup scripts).  Also added --help option and changed
+  -version to --version.
+
 2005-03-14 James Rich <james@eaerich.com>
 - Pass the scrollbar struct as part of the call to create the scrollbar.
 - Add menu support to the terminal.
