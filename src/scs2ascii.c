@@ -70,7 +70,7 @@ main ()
   scs_main (scs);
 
   tn5250_char_map_destroy (map);
-  g_free (scs);
+  free (scs);
   return (0);
 }
 
@@ -94,7 +94,7 @@ tn5250_scs2ascii_new ()
   /*
      scs->data = tn5250_new(struct _Tn5250SCSPrivate, 1);
      if (scs->data == NULL) {
-     g_free(scs);
+     free(scs);
      return;
      }
    */

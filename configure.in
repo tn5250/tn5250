@@ -27,11 +27,6 @@ AC_ARG_ENABLE(old-keys,
   AC_DEFINE_UNQUOTED(USE_OWN_KEY_PARSING,1)
 ])
 
-dnl *
-dnl * This version of TN5250 depends on GLIB 2.0
-dnl *
-AM_PATH_GLIB_2_0
-
 dnl **************************************************************************
 dnl * Python interface support.						     *
 dnl **************************************************************************

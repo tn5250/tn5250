@@ -113,11 +113,12 @@ main ()
   paw = pw - lm - rm;
   pal = pl - tm - bm;
 
-  /* calculate width & height of each character */
-  /* kluge - can't seem to cast int to float, 
-     /* (Boy it's been a long time since I coded any C!) */
-  /* so I just assigned the ints to temporary float vars */
-  /* This should be fixed! */
+  /* calculate width & height of each character
+   * kluge - can't seem to cast int to float, 
+   * (Boy it's been a long time since I coded any C!)
+   * so I just assigned the ints to temporary float vars
+   * This should be fixed!
+   */
   mppf = mpp;
   pawf = paw;
   charwidth = pawf / mppf;
@@ -133,7 +134,7 @@ main ()
 
   scs2ps_jobfooter ();
   tn5250_char_map_destroy (map);
-  g_free (scs);
+  free (scs);
   return (0);
 }
 
@@ -157,7 +158,7 @@ tn5250_scs2ps_new ()
      scs->data = tn5250_new (struct _Tn5250SCSPrivate, 1);
      if (scs->data == NULL)
      {
-     g_free (scs);
+     free (scs);
      return NULL;
      }
    */

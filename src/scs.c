@@ -355,7 +355,6 @@ scs_ppm (Tn5250SCS * This)
   unsigned char formscontrol, sourcedrawer, destdraweroffset;
   unsigned char destdrawer, quality, duplex;
   unsigned char nextchar;
-  int loop;
 
 #ifdef DEBUG
   fprintf (stderr, "Begin Page Presentation Media (PPM)\n");

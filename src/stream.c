@@ -163,8 +163,6 @@ Tn5250Stream *tn5250_stream_host (SOCKET_TYPE masterfd, long timeout,
 				  int streamtype)
 {
    Tn5250Stream *This = tn5250_new(Tn5250Stream, 1);
-   Tn5250StreamType *iter;
-   const char *postfix;
    int ret;
 
    if (This != NULL) {
@@ -298,11 +296,11 @@ void tn5250_stream_setenv(Tn5250Stream * This, const char *name, const char *val
       This->config = tn5250_config_new ();
       TN5250_ASSERT (This->config != NULL);
    }
-   name_buf = (char*)g_malloc (strlen (name) + 10);
+   name_buf = (char*)malloc (strlen (name) + 10);
    strcpy (name_buf, "env.");
    strcat (name_buf, name);
-   tn5250_config_set (This->config, name_buf, CONFIG_STRING, (gpointer)value);
-   g_free (name_buf);
+   tn5250_config_set (This->config, name_buf, value);
+   free (name_buf);
 }
 
 /****f* lib5250/tn5250_stream_getenv
@@ -324,11 +322,11 @@ const char *tn5250_stream_getenv(Tn5250Stream * This, const char *name)
    if (This->config == NULL)
       return NULL;
 
-   name_buf = (char*)g_malloc (strlen (name) + 10);
+   name_buf = (char*)malloc (strlen (name) + 10);
    strcpy (name_buf, "env.");
    strcat (name_buf, name);
    val = tn5250_config_get (This->config, name_buf);
-   g_free (name_buf);
+   free (name_buf);
    return val;
 }
 
@@ -349,11 +347,11 @@ void tn5250_stream_unsetenv(Tn5250Stream * This, const char *name)
    if (This->config == NULL)
       return; /* Nothing to unset. */
 
-   name_buf = (char*)g_malloc (strlen (name) + 10);
+   name_buf = (char*)malloc (strlen (name) + 10);
    strcpy (name_buf, "env.");
    strcat (name_buf, name);
    tn5250_config_unset (This->config, name_buf);
-   g_free (name_buf);
+   free (name_buf);
 }
 
 int tn5250_stream_socket_handle (Tn5250Stream *This)

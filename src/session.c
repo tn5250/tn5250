@@ -105,7 +105,7 @@ tn5250_session_new ()
   This->record = tn5250_record_new ();
   if (This->record == NULL)
     {
-      g_free (This);
+      free (This);
       return NULL;
     }
 
@@ -562,7 +562,7 @@ tn5250_session_send_field (Tn5250Session * This, Tn5250Buffer * buf,
 		}
 	    }
 
-	  data = g_malloc (size);
+	  data = malloc (size);
 	  /* 2nd loop: Copy the data in the temporary buffer */
 	  for (iter = field; iter->continuous; iter = iter->next)
 	    {
@@ -675,7 +675,7 @@ tn5250_session_send_field (Tn5250Session * This, Tn5250Buffer * buf,
 
   if (field->continuous)
     {
-      g_free (data);
+      free (data);
     }
   return;
 }
@@ -799,7 +799,7 @@ tn5250_session_write_error_code (Tn5250Session * This)
   tn5250_display_set_cursor (This->display,
 			     tn5250_display_msg_line (This->display), 0);
 
-  tempmsg = g_malloc (tn5250_display_width (This->display));
+  tempmsg = malloc (tn5250_display_width (This->display));
   msglen = 0;
 
   while (1)
@@ -839,7 +839,7 @@ tn5250_session_write_error_code (Tn5250Session * This)
     }
 
   tn5250_display_set_msg_line (This->display, tempmsg, msglen);
-  g_free (tempmsg);
+  free (tempmsg);
 
   tn5250_display_set_cursor (This->display, end_y, end_x);
 
@@ -1914,7 +1914,7 @@ tn5250_session_start_of_header (Tn5250Session * This)
   TN5250_ASSERT ((n > 0 && n <= 7));
   if (n > 0)
     {
-      ptr = (unsigned char *) g_malloc (n);
+      ptr = (unsigned char *) malloc (n);
     }
   for (i = 0; i < n; i++)
     {
@@ -1923,7 +1923,7 @@ tn5250_session_start_of_header (Tn5250Session * This)
   tn5250_display_set_header_data (This->display, ptr, n);
   if (ptr != NULL)
     {
-      g_free (ptr);
+      free (ptr);
     }
   return;
 }
@@ -2458,7 +2458,7 @@ tn5250_session_read_screen_immediate (Tn5250Session * This)
   buffer_size = tn5250_display_width (This->display) *
     tn5250_display_height (This->display);
 
-  buffer = (unsigned char *) g_malloc (buffer_size);
+  buffer = (unsigned char *) malloc (buffer_size);
 
   for (row = 0; row < tn5250_display_height (This->display); row++)
     {
@@ -2475,7 +2475,7 @@ tn5250_session_read_screen_immediate (Tn5250Session * This)
 
   tn5250_stream_send_packet (This->stream, buffer_size, header, buffer);
 
-  g_free (buffer);
+  free (buffer);
   return;
 }
 

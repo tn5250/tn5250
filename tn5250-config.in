@@ -21,8 +21,6 @@ includedir="@includedir@"
 oldincludedir="@oldincludedir@"
 LIBS="@LIBS@"
 VERSION="@VERSION@"
-GLIB_LIBS="@GLIB_LIBS@"
-GLIB_CFLAGS="@GLIB_CFLAGS@"
 
 syntax () {
   cat <<EOF
@@ -43,9 +41,9 @@ EOF
 
 case "$1" in
   --cflags)
-    echo "-I$includedir $GLIB_CFLAGS";;
+    echo "-I$includedir";;
   --libs)
-    echo "-L$libdir -l5250 $LIBS $GLIB_LIBS";;
+    echo "-L$libdir -l5250 $LIBS";;
   --version)
     echo "$VERSION";;
   *)

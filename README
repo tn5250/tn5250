@@ -35,23 +35,6 @@ You may receive an error the first time you run this script.  If so, run
 the script a second time to make sure you don't get an error (this is a bug
 with automake).
 
-Glib Dependency
-===============
-
-Versions 0.17.x and up also require a developers version of glib to be 
-installed.  On Linux, this means that you have to install the glib-devel
-package.   On FreeBSD, you need to install the glib12 port. (from the ports
-collection)
-
-On FreeBSD (and possibly some other systems) the "glib-config" script is
-installed as "glib12-config".  To allow tn5250 to find it, you need to set
-the GLIB_CONFIG environment variable.    
-
-For example, a csh/tcsh user might type:
-	setenv GLIB_CONFIG /usr/local/bin/glib12-config 
-or under sh/bash:
-	export GLIB_CONFIG=/usr/local/bin/glib12-config
-
 
 Building and Installing
 =======================
@@ -95,6 +78,7 @@ http://www.midrange.com/linux5250.shtml              - linux5250 List Info
 http://archive.midrange.com/linux5250/index.htm      - linux5250 List Archives
 http://sourceforge.net/projects/tn5250/              - linux5250 at Sourceforge
 http://perso.libertysurf.fr/plinux/tn5250-faq.html   - linux5250 FAQ
+http://www.chowhouse.com/~james/tn5250-HOWTO.pdf     - linux5250 HOWTO
 
 Comments, questions, bug reports and patches are much appreciated - please
 subscribe to the list and post them there if at all possible.  If that's too

@@ -198,7 +198,7 @@ void macro_addline (int **PDest, char *Buff, int Sz)
 
    if (*PDest == NULL)
    {
-      Buffer = (int *)g_malloc((Sz+1)*sizeof(int));
+      Buffer = (int *)malloc((Sz+1)*sizeof(int));
       OSz = 0 ;
    }
    else
@@ -272,7 +272,7 @@ void macro_clearmem (Tn5250Macro *Macro)
    for (i=0;i < 24;i++)
       if (Macro->BuffM[i] != NULL)
       {
-         g_free (Macro->BuffM[i]) ;
+         free (Macro->BuffM[i]) ;
          Macro->BuffM[i] = NULL ;
       }
 }
@@ -291,7 +291,7 @@ char *macro_filename (Tn5250Display *Dsp)
    LPTSTR lpMsgBuf;
    const char *cnf ;
 
-   apppath = g_malloc(PATHSIZE+1);
+   apppath = malloc(PATHSIZE+1);
 
    if (GetModuleFileName(NULL, apppath, PATHSIZE)<1) {
        FormatMessage(
@@ -313,20 +313,20 @@ char *macro_filename (Tn5250Display *Dsp)
         apppath[len+1] = '\0';
    }
 
-   dir = g_malloc(strlen(apppath) + 15);
+   dir = malloc(strlen(apppath) + 15);
 
    strcpy(dir, apppath);
    strcat(dir, "tn5250macros");
-   g_free(apppath);
+   free(apppath);
 
    fname = dir ;
    if ((cnf = tn5250_config_get (Dsp->config,"macros")) != NULL)
    {
-      fname = (char *)g_malloc (strlen(cnf)+1) ;
+      fname = (char *)malloc (strlen(cnf)+1) ;
       if (fname != NULL)
       {
          memcpy (fname,cnf,strlen(cnf)+1) ;
-         g_free (dir) ;
+         free (dir) ;
       }
    }
 
@@ -348,7 +348,7 @@ char *macro_filename (Tn5250Display *Dsp)
    if (pwent == NULL)
       return (NULL) ;
 
-   dir = (char *)g_malloc (strlen (pwent->pw_dir) + 16);
+   dir = (char *)malloc (strlen (pwent->pw_dir) + 16);
    if (dir == NULL)
       return (NULL) ;
 
@@ -358,11 +358,11 @@ char *macro_filename (Tn5250Display *Dsp)
    fname = dir ;
    if ((cnf = tn5250_config_get (Dsp->config,"macros")) != NULL)
    {
-      fname = (char *)g_malloc (strlen(cnf)+1) ;
+      fname = (char *)malloc (strlen(cnf)+1) ;
       if (fname != NULL)
       {
          memcpy (fname,cnf,strlen(cnf)+1) ;
-         g_free (dir) ;
+         free (dir) ;
       }
    }
 
@@ -447,8 +447,7 @@ void macro_write (int Num, int *Buff, FILE *MF)
 char macro_savefile (Tn5250Macro *Macro)
 {
    FILE *MFile ;
-   int i,Sz,Num,CurMacro ;
-   char Buffer[MAX_LINESZ] ;
+   int i;
 
    if (Macro->fname != NULL)
    {
@@ -484,10 +483,10 @@ void tn5250_macro_exit(Tn5250Macro * This)
       /* macro_savefile (This) ; */
 
       if (This->fname != NULL)
-         g_free (This->fname) ;
+         free (This->fname) ;
 
       for (i=0;i<24;i++)
-	 g_free (This->BuffM[i]) ;
+	 free (This->BuffM[i]) ;
       free (This) ;
    }
 }
@@ -594,7 +593,7 @@ void tn5250_macro_enddef (Tn5250Display *This)
 	       }
 	       else
 	       {
-	          g_free (This->macro->BuffM[NumMacro]) ;
+	          free (This->macro->BuffM[NumMacro]) ;
 	          This->macro->BuffM[NumMacro] = NULL ;
 	       }
 
@@ -622,7 +621,7 @@ char tn5250_macro_recfunct (Tn5250Display *This, int key)
 
 	if ((This->macro != NULL) && (This->macro->RState == 1))
 	{
-	       Buffer = (int *)g_malloc((MACRO_BUFSIZE+1)*sizeof(int));
+	       Buffer = (int *)malloc((MACRO_BUFSIZE+1)*sizeof(int));
 	       if (Buffer != NULL)
 	       {
 		  This->macro->RState = 2 ;
@@ -634,13 +633,13 @@ char tn5250_macro_recfunct (Tn5250Display *This, int key)
                      macro_loadfile (This->macro) ;
 
 		     if (This->macro->BuffM[NumMacro] != NULL)
-			g_free (This->macro->BuffM[NumMacro]) ;
+			free (This->macro->BuffM[NumMacro]) ;
 		     This->macro->BuffM[NumMacro] = Buffer ;
 		     This->macro->TleBuff = 0 ;
 		     return (1) ;
 		  }
 		  else
-		     g_free (Buffer) ;
+		     free (Buffer) ;
 	       }
 	}
 	return (0) ;
