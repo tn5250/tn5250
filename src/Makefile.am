@@ -137,6 +137,9 @@ docs:
 clean-local:
 	rm -f *~ *.xref index.xrefs index.html
 
+distclean-local:
+	rm -f config.h
+
 install-exec-local:
 if PYTHON
 	( cd $(pysodir) && ln -sf libtn5250module.so tn5250module.so )
