@@ -18,18 +18,9 @@ AC_ARG_ENABLE(old-keys,
 dnl *
 dnl * Not using gnome, so look for glib and GTK+ instead.
 dnl *
-AC_PATH_PROG(GLIB_CONFIG,glib-config,no)
-if test x$GLIB_CONFIG = xno ; then
-	AC_MSG_ERROR(** Can't find glib-config.  Is glib installed? **)
-fi
-AC_MSG_CHECKING(for glib C flags)
-GLIB_CFLAGS="`$GLIB_CONFIG --cflags glib`"
+AM_PATH_GLIB
 CFLAGS="$CFLAGS $GLIB_CFLAGS"
-AC_MSG_RESULT($GLIB_CFLAGS)
-AC_MSG_CHECKING(for glib libs)
-GLIB_LIBS="`$GLIB_CONFIG --libs glib`"
 LIBS="$LIBS $GLIB_LIBS"
-AC_MSG_RESULT($GLIB_LIBS)
 
 dnl *
 dnl * Check for SWIG
@@ -44,22 +35,12 @@ dnl **************************************************************************
 AC_PATH_PROG(PYTHON,python,no)
 if test x$PYTHON != xno ; then
   AC_MSG_CHECKING(for python prefix)
-changequote({,})dnl
-  PYTHON_PREFIX="`$PYTHON <<EOF
-import sys
-print sys.exec_prefix
-EOF`"
-changequote([,])dnl
+  PYTHON_PREFIX="`$PYTHON -c 'import sys; print sys.exec_prefix' 2>&5`"
   AC_SUBST(PYTHON_PREFIX)
   AC_MSG_RESULT($PYTHON_PREFIX)
 
   AC_MSG_CHECKING(for python version)
-changequote({,})dnl
-  PYTHON_VERSION="`$PYTHON <<EOF
-import sys
-print sys.version[:3]
-EOF`"
-changequote([,])dnl
+  PYTHON_VERSION="`$PYTHON -c 'import sys; print sys.version[[:3]]' 2>&5`"
   AC_SUBST(PYTHON_VERSION)
   AC_MSG_RESULT($PYTHON_VERSION)
 fi
