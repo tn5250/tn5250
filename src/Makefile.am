@@ -17,6 +17,7 @@ lib5250_la_SOURCES =	buffer.c\
 			field.c\
 			printsession.c\
 			record.c\
+			scrollbar.c\
 			scs.c\
 			session.c\
 			slangterm.c\
@@ -27,7 +28,8 @@ lib5250_la_SOURCES =	buffer.c\
 			utility.c\
 			version.c\
 			wtd.c\
-			macro.c
+			macro.c\
+			window.c
 
 lib5250_la_LIBADD =	@with_extra_libs@ @GLIB_LIBS@
 
@@ -81,6 +83,7 @@ pkginclude_HEADERS = 	buffer.h\
 			field.h\
 			printsession.h\
 			record.h\
+			scrollbar.h\
 			scs.h\
 			session.h\
 			slangterm.h\
@@ -88,6 +91,7 @@ pkginclude_HEADERS = 	buffer.h\
 			terminal.h\
 			utility.h\
 			wtd.h\
+			window.h\
 			macro.h
 
 include_HEADERS =	tn5250.h
