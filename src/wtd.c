@@ -191,7 +191,6 @@ static void tn5250_wtd_context_convert_nosrc (Tn5250WTDContext *This)
 	    /* Start of a field, write an SF order.  We have to remove
 	     * the last byte we put on the buffer (since its the attribute,
 	     * which is taken care of here. */
-
 	    tn5250_wtd_context_write_field (This, field, c);
 	 } else
 	    tn5250_wtd_context_ra_putc (This, c);
@@ -218,10 +217,13 @@ static Tn5250Field *tn5250_wtd_context_peek_field (Tn5250WTDContext *This)
 {
    int nx = This->x, ny = This->y;
    Tn5250Field *field;
-   
+
    if (++nx == tn5250_dbuffer_width (This->dst)) {
-      if (++ny == tn5250_dbuffer_height (This->dst))
+     if (++ny == tn5250_dbuffer_height (This->dst)) {
 	 return NULL;
+     } else {
+       nx = 0;
+     }
    }
 
    field = tn5250_dbuffer_field_yx (This->dst, ny, nx);
@@ -359,5 +361,6 @@ static void tn5250_wtd_context_write_field (Tn5250WTDContext *This, Tn5250Field 
    /* Put the field length. */
    tn5250_wtd_context_putc (This, (unsigned char)(field->length >> 8));
    tn5250_wtd_context_putc (This, (unsigned char)(field->length & 0x00ff));
+
 }
 

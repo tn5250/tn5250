@@ -303,6 +303,8 @@ void tn5250_dbuffer_cursor_set(Tn5250DBuffer * This, int y, int x)
    This->cy = y;
    This->cx = x;
 
+   TN5250_LOG(("This->cy = %d, This->cx = %d\n", This->cy, This->cx));
+
    ASSERT_VALID(This);
 }
 
