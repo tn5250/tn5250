@@ -43,14 +43,10 @@ then
 			AC_MSG_ERROR([** You need a curses-compatibale library installed.])
 		fi
 	fi
-	AC_CHECK_HEADER(ncurses.h)
-	if test "$ac_cv_header_ncurses_h" != yes
+	AC_CHECK_HEADERS(ncurses.h curses.h,break)
+	if test "$ac_cv_header_ncurses_h" != yes -a "$ac_cv_header_curses_h" != yes
 	then
-		AC_CHECK_HEADER(curses.h)
-		if test "$ac_cv_header_curses_h" != yes
-		then
-			AC_MSG_ERROR([** Can't find ncurses.h or curses.h **])
-		fi
+		AC_MSG_ERROR([** Can't find ncurses.h or curses.h **])
 	fi
 	
 	#
