@@ -167,7 +167,7 @@ int WINAPI WinMain(HINSTANCE i, HINSTANCE p, PSTR cmd, int show)
    /* parse the "cmd" variable into a seperate string for each argument */
    argc = parse_cmdline(cmd, NULL);
    if (argc>0) {
-       argv = (char **)g_malloc(argc * sizeof(char *));
+       argv = (char **)malloc(argc * sizeof(char *));
        for (x=0; x<argc; x++) argv[x]=NULL;
        parse_cmdline(cmd, argv);
    }
@@ -376,11 +376,11 @@ Tn5250Printer * tn5250_windows_printer_startdoc(void) {
     int len;
     char *temp;
 
-    devname = g_malloc(MAXDEVNAME+1);
+    devname = malloc(MAXDEVNAME+1);
 
     if (tn5250_config_get(config, "outputcommand")) {
         len = strlen(tn5250_config_get(config, "outputcommand"));
-        temp = g_malloc(len+1);
+        temp = malloc(len+1);
         strcpy(temp, tn5250_config_get(config, "outputcommand"));
         if (!strncasecmp(temp, "printer:", 8)) {
              strncpy(devname, &temp[8], MAXDEVNAME);
@@ -392,17 +392,17 @@ Tn5250Printer * tn5250_windows_printer_startdoc(void) {
         else {
              strncpy(devname, temp, MAXDEVNAME);
         }
-        g_free(temp);
+        free(temp);
     }
     else {
         if (GetDefaultPrinter(devname, MAXDEVNAME)<0) {
              msgboxf("ERROR: Unable to retrieve your default printer.");
-             g_free(devname);
+             free(devname);
              return NULL; 
         }
     }
 
-    This = g_malloc(sizeof(Tn5250Printer));
+    This = malloc(sizeof(Tn5250Printer));
 
     if (tn5250_config_get (config, "map")) 
         This->map = tn5250_char_map_new (tn5250_config_get (config, "map"));
@@ -423,7 +423,7 @@ Tn5250Printer * tn5250_windows_printer_startdoc(void) {
         if (This->fileh == NULL) {
            msgboxf("fopen() failed.  Check the outputcommand filename.");
            TN5250_LOG(("fopen() failed!\n"));
-           g_free(devname);
+           free(devname);
            return NULL;
         }
     }
@@ -433,7 +433,7 @@ Tn5250Printer * tn5250_windows_printer_startdoc(void) {
                     "Maybe you don't have a printer called \"%s\"?\n",
                      devname);
             TN5250_LOG(("OpenPrinter() failed!\n"));
-            g_free(devname);
+            free(devname);
             return NULL;
         }
 
@@ -442,7 +442,7 @@ Tn5250Printer * tn5250_windows_printer_startdoc(void) {
         StartDocPrinter(This->devh, 1, (LPBYTE)&di);
     }
 
-    g_free(devname);
+    free(devname);
     return This;
 }
 
@@ -491,7 +491,7 @@ int tn5250_windows_printer_finishdoc(Tn5250Printer *This) {
         fclose(This->fileh);
     }
     tn5250_char_map_destroy (This->map);
-    g_free(This);
+    free(This);
     return 0;
 }
 
@@ -910,7 +910,7 @@ Tn5250PrintSession *tn5250_windows_print_session_new(void)
 
    This->rec = tn5250_record_new();
    if (This->rec == NULL) {
-	   g_free (This);
+	   free (This);
 	   return NULL;
    }
 
@@ -938,10 +938,10 @@ void tn5250_windows_print_session_destroy(Tn5250PrintSession * This)
    if (This->rec != NULL)
       tn5250_record_destroy(This->rec);
    if (This->output_cmd != NULL)
-      g_free(This->output_cmd);
+      free(This->output_cmd);
    if (This->map != NULL)
       tn5250_char_map_destroy (This->map);
-   g_free (This);
+   free (This);
 }
 
 /****f* lib5250/tn5250_windows_print_session_set_fd
@@ -1326,7 +1326,7 @@ int parse_cmdline(char *cmdline, char **my_argv) {
     int state = 0, pos = 0;
     
     if (my_argv!=NULL) {
-         my_argv[0] = g_malloc(MAXARG+1);
+         my_argv[0] = malloc(MAXARG+1);
          GetModuleFileName(NULL, my_argv[0], MAXARG);
     }
 
@@ -1347,7 +1347,7 @@ int parse_cmdline(char *cmdline, char **my_argv) {
                    if (arglen>0 && argcnt<MAXARG) {
                        if (my_argv!=NULL) {
                             my_argv[argcnt] = 
-                                   (char *)g_malloc((arglen+1) * sizeof(char));
+                                   (char *)malloc((arglen+1) * sizeof(char));
                             strcpy(my_argv[argcnt], arg);
                        }
                        argcnt++;
@@ -1380,7 +1380,7 @@ int parse_cmdline(char *cmdline, char **my_argv) {
     }
     if (arglen>0 && argcnt<MAXARG) {
         if (my_argv!=NULL) {
-            my_argv[argcnt] = (char *)g_malloc((arglen+1) * sizeof(char));
+            my_argv[argcnt] = (char *)malloc((arglen+1) * sizeof(char));
             strcpy(my_argv[argcnt], arg);
         }
         argcnt++;
