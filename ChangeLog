@@ -5,6 +5,9 @@
 - In insert mode, shift characters all the way to the end of the field as
   reported by Sean Porterfield.  Also, display is inhibited if last cell of
   field is full and user is trying to insert a character into the field.
+- slangterm.c: Delete key is now handled properly.
+- session.c: The display is now updated after queued keystrokes are
+  handled.
 
 1999-11-27 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 

@@ -204,6 +204,7 @@ void tn5250_display_set_terminal(Tn5250Display * This, Tn5250Terminal * term)
    if (This->terminal != NULL)
       tn5250_terminal_destroy(This->terminal);
    This->terminal = term;
+   This->indicators_dirty = 1;
    tn5250_terminal_update(This->terminal, This);
    tn5250_terminal_update_indicators(This->terminal, This);
 }
@@ -252,13 +253,18 @@ void tn5250_display_beep(Tn5250Display * This)
    tn5250_terminal_beep(This->terminal);
 }
 
+Tn5250Field *tn5250_display_field_at(Tn5250Display *This, int y, int x)
+{
+   return tn5250_table_field_yx(This->format_tables, y, x);
+}
+
 /*
  *    Find the field currently under the cursor.  The answer might be NULL
  *    if there is no field under the cursor.
  */
 Tn5250Field *tn5250_display_current_field(Tn5250Display * This)
 {
-   return tn5250_table_field_yx(This->format_tables,
+   return tn5250_display_field_at(This,
 				tn5250_display_cursor_y(This),
 				tn5250_display_cursor_x(This));
 }
@@ -272,22 +278,22 @@ Tn5250Field *tn5250_display_next_field(Tn5250Display * This)
    Tn5250Field *iter = NULL, *next;
    int y, x;
 
-   y = tn5250_dbuffer_cursor_y(This->display_buffers);
-   x = tn5250_dbuffer_cursor_x(This->display_buffers);
+   y = tn5250_display_cursor_y (This);
+   x = tn5250_display_cursor_x (This);
 
-   iter = tn5250_table_field_yx(This->format_tables, y, x);
+   iter = tn5250_display_field_at (This, y, x);
    if (iter == NULL) {
       /* Find the first field on the display after the cursor, wrapping if we
        * hit the bottom of the display. */
       while (iter == NULL) {
-	 if ((iter = tn5250_table_field_yx(This->format_tables, y, x)) == NULL) {
+	 if ((iter = tn5250_display_field_at(This, y, x)) == NULL) {
 	    if (++x == tn5250_dbuffer_width(This->display_buffers)) {
 	       x = 0;
 	       if (++y == tn5250_dbuffer_height(This->display_buffers))
 		  y = 0;
 	    }
-	    if (y == tn5250_dbuffer_cursor_y(This->display_buffers) &&
-		x == tn5250_dbuffer_cursor_x(This->display_buffers))
+	    if (y == tn5250_display_cursor_y (This) &&
+		x == tn5250_display_cursor_x (This))
 	       return NULL;	/* No fields on display */
 	 }
       }
@@ -313,22 +319,22 @@ Tn5250Field *tn5250_display_prev_field(Tn5250Display * This)
    Tn5250Field *iter = NULL, *prev;
    int y, x;
 
-   y = tn5250_dbuffer_cursor_y(This->display_buffers);
-   x = tn5250_dbuffer_cursor_x(This->display_buffers);
+   y = tn5250_display_cursor_y(This);
+   x = tn5250_display_cursor_x(This);
 
-   iter = tn5250_table_field_yx(This->format_tables, y, x);
+   iter = tn5250_display_field_at(This, y, x);
    if (iter == NULL) {
       /* Find the first field on the display after the cursor, wrapping if we
        * hit the bottom of the display. */
       while (iter == NULL) {
-	 if ((iter = tn5250_table_field_yx(This->format_tables, y, x)) == NULL) {
+	 if ((iter = tn5250_display_field_at(This, y, x)) == NULL) {
 	    if (x-- == 0) {
 	       x = tn5250_dbuffer_width(This->display_buffers) - 1;
 	       if (y-- == 0)
 		  y = tn5250_dbuffer_height(This->display_buffers) - 1;
 	    }
-	    if (y == tn5250_dbuffer_cursor_y(This->display_buffers) &&
-		x == tn5250_dbuffer_cursor_x(This->display_buffers))
+	    if (y == tn5250_display_cursor_y(This) &&
+		x == tn5250_display_cursor_x(This))
 	       return NULL;	/* No fields on display */
 	 }
       }
@@ -452,13 +458,14 @@ void tn5250_display_interactive_addch(Tn5250Display * This, unsigned char ch)
 	       tn5250_display_cursor_x(This)));
    } else
       tn5250_dbuffer_addch(This->display_buffers, tn5250_ascii2ebcdic(ch));
+
    tn5250_field_set_mdt(field);
 
    /* If at the end of the field and not a fer field, advance to the
     * next field. */
    if (end_of_field) {
       if (tn5250_field_is_fer(field))
-	 tn5250_dbuffer_cursor_set(This->display_buffers,
+	 tn5250_display_set_cursor (This,
 				   tn5250_field_end_row(field),
 				   tn5250_field_end_col(field));
       else {

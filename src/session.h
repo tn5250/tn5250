@@ -72,9 +72,7 @@ extern "C" {
       struct _Tn5250Display *		display;
 
       Tn5250Stream /*@owned@*/ /*@null@*/ *stream;
-      Tn5250DBuffer /*@owned@*/ *dsp;
       Tn5250Record /*@owned@*/ *record;
-      Tn5250Table /*@owned@*/ *table;
       int pending_insert;
       int read_opcode;	/* Current read opcode. */
       int invited;
@@ -91,7 +89,6 @@ extern "C" {
 
    extern void tn5250_session_set_terminal(Tn5250Session * This, Tn5250Terminal /*@only@*/ * newterminal);
    extern void tn5250_session_set_stream(Tn5250Session * This, Tn5250Stream /*@only@*/ * newstream);
-#define tn5250_session_terminal(This) ((This)->term)
 #define tn5250_session_stream(This) ((This)->stream)
 
    extern void tn5250_session_main_loop(Tn5250Session * This);
