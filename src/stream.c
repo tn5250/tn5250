@@ -49,7 +49,20 @@ static Tn5250StreamType stream_types[] = {
  * INPUTS
  *    const char *         to         - `URL' of host to connect to.
  * DESCRIPTION
- *    DOCUMENT ME!!!
+ *    Opens a 5250 stream to the specified host.  URL is of the format 
+ *    [protocol]:host:[port], where protocol is currently one of the following:
+ *
+ *       telnet - connect using tn5250 protocol
+ *       tn5250 - connect using tn5250 protocol
+ *       debug  - read recorded session from debug file
+ *
+ *    This is maintained by a protocol -> function mapping.  Each protocol has
+ *    an associated function which is responsible for initializing the stream.
+ *    Stream initialization sets up protocol specific functions to handle
+ *    communication with the host system.
+ *
+ *    The next protocol to add is SNA.  This will allow the emulator to use 
+ *    APPC (LU 6.2) to establish a session with the AS/400.
  *****/
 Tn5250Stream *tn5250_stream_open (const char *to)
 {
