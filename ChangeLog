@@ -1,3 +1,6 @@
+2001-02-20 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Better exception handling/error-checking added to python support code.
+
 2001-02-19 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
 - Rewrote python support, removed SWIG dependency for python support, deleted
   some configure.in baggage.
