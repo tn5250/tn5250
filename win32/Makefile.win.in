@@ -73,6 +73,7 @@ ARCH=-mwindows
 PGMS=tn5250.exe lp5250d.exe dftmap.exe
 TN5250_LIBS=-L./ -l5250 $(OPENSSL_LIB) $(GLIB_LIBS) -lwsock32 -lcomdlg32 -lwinmm
 LP5250D_LIBS=$(TN5250_LIBS) $(GLIB_LIBS) -lwinspool
+DFTMAP_LIBS=-lole32 -luuid -lshell32
 INCLUDES=-I. -I$(SRCDIR) $(OPENSSL_INCLUDE) $(GLIB_INCLUDE)
 DEFINES=$(DEBUG)
 DLL_NAME = lib5250.dll
@@ -95,7 +96,7 @@ lp5250d.exe: $(LP5250D_OBJS)
 	$(CC) $(DEFINES) -o lp5250d $(LP5250D_OBJS) $(ARCH) $(LP5250D_LIBS)
 
 dftmap.exe: $(DFTMAP_OBJS)
-	$(CC) $(DEFINES) -o dftmap $(DFTMAP_OBJS) $(ARCH)
+	$(CC) $(DEFINES) -o dftmap $(DFTMAP_OBJS) $(ARCH) $(DFTMAP_LIBS)
 
 %.o: %.rc
 	$(WINDRES) -i $< -o $@ 

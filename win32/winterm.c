@@ -1796,6 +1796,7 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                         win32_terminal_queuekey(hwnd, 
                                                globTerm,keyup2msg[x].func_key);
                         PostMessage(hwnd, WM_TN5250_KEY_DATA, 0, 0);
+                        TN5250_LOG(("WM_KEYUP: handling key\n"));
                         return 0;
                }
                x++;

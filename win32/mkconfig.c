@@ -221,11 +221,14 @@ if (argc>=2 && !strcmp(argv[1],"netshare400"))
 
   /* Make a tn5250-configure.h file */
 
+   printf("\nCreating tn5250-config.h...\n");
+
    if (create_tn5250_config_h(TN5250_CONFIG_H_IN, "tn5250-config.h", 
            with_openssl, binary_release, package, version, ns400) < 0) {
         exit(1);
    }
 
+   printf("Creating config.h...\n");
    if (create_config_h("tn5250-config.h", "config.h", version) < 0) {
         exit(1);
    }
@@ -234,25 +237,31 @@ if (argc>=2 && !strcmp(argv[1],"netshare400"))
 
    debug[0] = '\0';
 
+   printf("Creating Makefile...\n");
    if (create_makefile("Makefile.win.in", "Makefile", openssl_lib,
          openssl_include, glib_libs, glib_include, innosetupdir, lib5250_objs, 
          installdir, package, version, debug)<0) {
          exit(1);
    }
 
-   if (ns400=='n')
+   if (ns400=='n') {
+      printf("Creating Win32 script for InnoSetup 2...\n");
       if (create_makefile("tn5250_innosetup.iss.in", "tn5250_innosetup.iss", 
             openssl_lib, openssl_include, glib_libs, glib_include, innosetupdir,
             lib5250_objs, installdir, package, version, debug)<0) {
             exit(1);
       }
-   else
+   }
+   else {
+      printf("Creating Netshare400 script for InnoSetup 2...\n");
       if (create_makefile("tn5250_innosetup.iss.in", "tn5250_innosetup.iss", 
             openssl_lib, openssl_include, glib_libs, glib_include, innosetupdir,
             lib5250_objs, installdir, package, version, debug)<0) {
             exit(1);
       }
+   }
 
+   printf("Creating ..\\Makefile...\n");
    make_root_makefile("..\\Makefile");
 
    return 0;
