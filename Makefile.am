@@ -22,4 +22,5 @@ EXTRA_DIST = acconfig.h\
 	BUGS\
 	XTerm\
 	dialogrc\
-	tn5250.m4
+	tn5250.m4\
+	README.ssl

@@ -130,5 +130,8 @@ docs:
 clean-local:
 	rm -f *~ *.xref index.xrefs index.html
 
+distclean-local:
+	rm -f config.h
+
 .PHONY: lclint
 
