@@ -3,6 +3,9 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 gconf_serverdir=@libexecdir@
+krb5includedir=@krb5includedir@
+sslincludedir=@sslincludedir@
+      
  
  
 Name: tn5250
@@ -10,4 +13,4 @@ Description: 5250 Terminal Emulator.
 Requires: glib-2.0
 Version: @VERSION@
 Libs: -L${libdir} -l5250 @LIBS@
-Cflags: -I${includedir}
+Cflags: -I${includedir} ${krb5includedir} ${sslincludedir}

@@ -1,3 +1,7 @@
+2004-03-10 Scott Klement <klemscot@klements.com>
+- Include searched-for include paths for openssl in tn5250.pc file so
+  that projects like gnome-5250 will compile w/pkgconfig
+
 2004-03-06 Scott Klement <klemscot@klements.com>
 - Upgraded GLIB support to use GLIB 2.0.
 
