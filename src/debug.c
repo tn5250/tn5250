@@ -32,7 +32,7 @@
 #include "record.h"
 #include "buffer.h"
 #include "stream.h"
-#include "display.h"
+#include "dbuffer.h"
 #include "terminal.h"
 #include "debug.h"
 
@@ -57,8 +57,8 @@ static void debug_terminal_destroy(Tn5250Terminal /*@only@*/ *This);
 static int debug_terminal_width(Tn5250Terminal *This);
 static int debug_terminal_height(Tn5250Terminal *This);
 static int debug_terminal_flags(Tn5250Terminal *This);
-static void debug_terminal_update(Tn5250Terminal *This, Tn5250Display *display);
-static void debug_terminal_update_indicators(Tn5250Terminal *This, Tn5250Display *display);
+static void debug_terminal_update(Tn5250Terminal *This, Tn5250DBuffer *display);
+static void debug_terminal_update_indicators(Tn5250Terminal *This, Tn5250DBuffer *display);
 static int debug_terminal_waitevent(Tn5250Terminal *This);
 static int debug_terminal_getkey(Tn5250Terminal *This);
 
@@ -157,12 +157,12 @@ static int debug_terminal_flags(Tn5250Terminal *This)
    return (* (This->data->slaveterm->flags)) (This->data->slaveterm);
 }
 
-static void debug_terminal_update(Tn5250Terminal *This, Tn5250Display *display)
+static void debug_terminal_update(Tn5250Terminal *This, Tn5250DBuffer *display)
 {
    (* (This->data->slaveterm->update)) (This->data->slaveterm, display);
 }
 
-static void debug_terminal_update_indicators(Tn5250Terminal *This, Tn5250Display *display)
+static void debug_terminal_update_indicators(Tn5250Terminal *This, Tn5250DBuffer *display)
 {
    (* (This->data->slaveterm->update_indicators)) (This->data->slaveterm, display);
 }

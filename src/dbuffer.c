@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <malloc.h>
 #include "utility.h"
-#include "display.h"
+#include "dbuffer.h"
 
 #ifdef NDEBUG
 #define ASSERT_VALID(This)
@@ -36,10 +36,10 @@
    }
 #endif
 
-Tn5250Display *tn5250_display_new(int width, int height)
+Tn5250DBuffer *tn5250_dbuffer_new(int width, int height)
 {
    int n;
-   Tn5250Display *This = tn5250_new(Tn5250Display, 1);
+   Tn5250DBuffer *This = tn5250_new(Tn5250DBuffer, 1);
 
    if (This == NULL)
       return NULL;
@@ -68,14 +68,14 @@ Tn5250Display *tn5250_display_new(int width, int height)
       }
    }
 
-   tn5250_display_clear(This);
+   tn5250_dbuffer_clear(This);
    return This;
 }
 
-Tn5250Display *tn5250_display_copy(Tn5250Display * dsp)
+Tn5250DBuffer *tn5250_dbuffer_copy(Tn5250DBuffer * dsp)
 {
    int n;
-   Tn5250Display *This = tn5250_new(Tn5250Display, 1);
+   Tn5250DBuffer *This = tn5250_new(Tn5250DBuffer, 1);
    if (This == NULL)
       return NULL;
 
@@ -112,7 +112,7 @@ Tn5250Display *tn5250_display_copy(Tn5250Display * dsp)
    return This;
 }
 
-void tn5250_display_destroy(Tn5250Display * This)
+void tn5250_dbuffer_destroy(Tn5250DBuffer * This)
 {
    int n;
    for (n = 0; n < This->h; n++) {
@@ -125,7 +125,7 @@ void tn5250_display_destroy(Tn5250Display * This)
 /*
  *    Resize the display (say, to 132 columns ;)
  */
-void tn5250_display_set_size(Tn5250Display * This, int rows, int cols)
+void tn5250_dbuffer_set_size(Tn5250DBuffer * This, int rows, int cols)
 {
    int r;
    for (r = 0; r < This->h; r++)
@@ -140,10 +140,10 @@ void tn5250_display_set_size(Tn5250Display * This, int rows, int cols)
 
    This->h = rows;
    This->w = cols;
-   tn5250_display_clear(This);
+   tn5250_dbuffer_clear(This);
 }
 
-void tn5250_display_cursor_set(Tn5250Display * This, int y, int x)
+void tn5250_dbuffer_cursor_set(Tn5250DBuffer * This, int y, int x)
 {
    This->cy = y;
    This->cx = x;
@@ -151,7 +151,7 @@ void tn5250_display_cursor_set(Tn5250Display * This, int y, int x)
    ASSERT_VALID(This);
 }
 
-void tn5250_display_clear(Tn5250Display * This)
+void tn5250_dbuffer_clear(Tn5250DBuffer * This)
 {
    int r, c;
    for (r = 0; r < This->h; r++) {
@@ -163,7 +163,7 @@ void tn5250_display_clear(Tn5250Display * This)
    This->cx = This->cy = 0;
 }
 
-void tn5250_display_right(Tn5250Display * This, int n)
+void tn5250_dbuffer_right(Tn5250DBuffer * This, int n)
 {
    This->cx += n;
    This->cy += (This->cx / This->w);
@@ -173,7 +173,7 @@ void tn5250_display_right(Tn5250Display * This, int n)
    ASSERT_VALID(This);
 }
 
-void tn5250_display_left(Tn5250Display * This)
+void tn5250_dbuffer_left(Tn5250DBuffer * This)
 {
    This->cx--;
    if (This->cx == -1) {
@@ -187,7 +187,7 @@ void tn5250_display_left(Tn5250Display * This)
    ASSERT_VALID(This);
 }
 
-void tn5250_display_up(Tn5250Display * This)
+void tn5250_dbuffer_up(Tn5250DBuffer * This)
 {
    if (--This->cy == -1)
       This->cy = This->h - 1;
@@ -195,7 +195,7 @@ void tn5250_display_up(Tn5250Display * This)
    ASSERT_VALID(This);
 }
 
-void tn5250_display_down(Tn5250Display * This)
+void tn5250_dbuffer_down(Tn5250DBuffer * This)
 {
    if (++This->cy == This->h)
       This->cy = 0;
@@ -203,7 +203,7 @@ void tn5250_display_down(Tn5250Display * This)
    ASSERT_VALID(This);
 }
 
-void tn5250_display_goto_ic(Tn5250Display * This)
+void tn5250_dbuffer_goto_ic(Tn5250DBuffer * This)
 {
    ASSERT_VALID(This);
 
@@ -213,42 +213,42 @@ void tn5250_display_goto_ic(Tn5250Display * This)
    ASSERT_VALID(This);
 }
 
-void tn5250_display_addch(Tn5250Display * This, unsigned char c)
+void tn5250_dbuffer_addch(Tn5250DBuffer * This, unsigned char c)
 {
    ASSERT_VALID(This);
 
    This->rows[This->cy][This->cx] = c;
-   tn5250_display_right(This, 1);
+   tn5250_dbuffer_right(This, 1);
 
    ASSERT_VALID(This);
 }
 
-void tn5250_display_mvaddnstr(Tn5250Display * This, int y, int x,
+void tn5250_dbuffer_mvaddnstr(Tn5250DBuffer * This, int y, int x,
 			      const unsigned char *str, int l)
 {
    int ocx = This->cx, ocy = This->cy;
-   tn5250_display_cursor_set(This, y, x);
+   tn5250_dbuffer_cursor_set(This, y, x);
    for (; l; l--, str++)
-      tn5250_display_addch(This, *str);
+      tn5250_dbuffer_addch(This, *str);
    This->cy = ocy;
    This->cx = ocx;
 
    ASSERT_VALID(This);
 }
 
-void tn5250_display_indicator_set(Tn5250Display * This, int inds)
+void tn5250_dbuffer_indicator_set(Tn5250DBuffer * This, int inds)
 {
-   TN5250_LOG(("tn5250_display_indicator_set: setting indicators X'%02X'.\n", inds));
+   TN5250_LOG(("tn5250_dbuffer_indicator_set: setting indicators X'%02X'.\n", inds));
    This->disp_indicators |= inds;
 }
 
-void tn5250_display_indicator_clear(Tn5250Display * This, int inds)
+void tn5250_dbuffer_indicator_clear(Tn5250DBuffer * This, int inds)
 {
-   TN5250_LOG(("tn5250_display_indicator_clear: clearing indicators X'%02X'.\n", inds));
+   TN5250_LOG(("tn5250_dbuffer_indicator_clear: clearing indicators X'%02X'.\n", inds));
    This->disp_indicators &= ~inds;
 }
 
-void tn5250_display_del(Tn5250Display * This, int shiftcount)
+void tn5250_dbuffer_del(Tn5250DBuffer * This, int shiftcount)
 {
    int x = This->cx, y = This->cy, fwdx, fwdy, i;
 
@@ -268,7 +268,7 @@ void tn5250_display_del(Tn5250Display * This, int shiftcount)
    ASSERT_VALID(This);
 }
 
-void tn5250_display_ins(Tn5250Display * This, unsigned char c, int shiftcount)
+void tn5250_dbuffer_ins(Tn5250DBuffer * This, unsigned char c, int shiftcount)
 {
    int x = This->cx, y = This->cy, i;
    unsigned char c2;
@@ -282,12 +282,12 @@ void tn5250_display_ins(Tn5250Display * This, unsigned char c, int shiftcount)
 	 y++;
       }
    }
-   tn5250_display_right(This, 1);
+   tn5250_dbuffer_right(This, 1);
 
    ASSERT_VALID(This);
 }
 
-void tn5250_display_set_temp_ic(Tn5250Display * This, int y, int x)
+void tn5250_dbuffer_set_temp_ic(Tn5250DBuffer * This, int y, int x)
 {
    This->tcx = x;
    This->tcy = y;
@@ -295,7 +295,7 @@ void tn5250_display_set_temp_ic(Tn5250Display * This, int y, int x)
    ASSERT_VALID(This);
 }
 
-void tn5250_display_roll(Tn5250Display * This, int top, int bot, int lines)
+void tn5250_dbuffer_roll(Tn5250DBuffer * This, int top, int bot, int lines)
 {
    int n, c;
 
@@ -325,7 +325,7 @@ void tn5250_display_roll(Tn5250Display * This, int top, int bot, int lines)
    ASSERT_VALID(This);
 }
 
-unsigned char tn5250_display_char_at(Tn5250Display * This, int y, int x)
+unsigned char tn5250_dbuffer_char_at(Tn5250DBuffer * This, int y, int x)
 {
    ASSERT_VALID(This);
    TN5250_ASSERT(y >= 0);

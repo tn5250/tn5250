@@ -28,13 +28,13 @@
 #include <string.h>
 
 #include "utility.h"
-#include "display.h"
+#include "dbuffer.h"
 #include "field.h"
 #include "formattable.h"
 #include "ctype.h"
 #include "codes5250.h"
 
-Tn5250Table *tn5250_table_new(Tn5250Display * display)
+Tn5250Table *tn5250_table_new(Tn5250DBuffer * display)
 {
    Tn5250Table *This = tn5250_new(Tn5250Table, 1);
    if (This == NULL)
@@ -139,9 +139,9 @@ int tn5250_table_next_field2(Tn5250Table * This, int y, int x)
       return tn5250_table_next_field(This);
 
    do {
-      if (++nx == tn5250_display_width(This->display)) {
+      if (++nx == tn5250_dbuffer_width(This->display)) {
 	 nx = 0;
-	 if (++ny == tn5250_display_height(This->display))
+	 if (++ny == tn5250_dbuffer_height(This->display))
 	    ny = 0;
       }
       This->curfield = tn5250_table_field_number(This, ny, nx);
@@ -190,9 +190,9 @@ int tn5250_table_prev_field2(Tn5250Table * This, int y, int x)
 
    do {
       if (--x < 0) {
-	 x = tn5250_display_width(This->display) - 1;
+	 x = tn5250_dbuffer_width(This->display) - 1;
 	 if (--y < 0)
-	    y = tn5250_display_height(This->display) - 1;
+	    y = tn5250_dbuffer_height(This->display) - 1;
       }
       This->curfield = tn5250_table_field_number(This, y, x);
    } while (This->curfield < 0 && !(nx == x && ny == y));

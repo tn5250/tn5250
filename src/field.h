@@ -27,7 +27,7 @@ extern "C" {
       struct _Tn5250Field /*@dependent@*/ /*@null@*/ *next;
       struct _Tn5250Field /*@dependent@*/ /*@null@*/ *prev;
       int id;
-      struct _Tn5250Display /*@dependent@*/ *display;
+      struct _Tn5250DBuffer /*@dependent@*/ *display;
       struct _Tn5250Table /*@dependent@*/ *table;
 
       Tn5250Uint16 FFW;
@@ -72,7 +72,7 @@ extern "C" {
 #define TN5250_FIELD_MAND_FILL_MASK	0x0007
 
 /* Manipulate fields */
-   extern Tn5250Field /*@only@*/ /*@null@*/ *tn5250_field_new(Tn5250Display /*@dependent@*/ * display);
+   extern Tn5250Field /*@only@*/ /*@null@*/ *tn5250_field_new(Tn5250DBuffer /*@dependent@*/ * display);
    extern Tn5250Field /*@only@*/ /*@null@*/ *tn5250_field_copy(Tn5250Field * This);
    extern void tn5250_field_destroy(Tn5250Field /*@only@*/ * This);
 
