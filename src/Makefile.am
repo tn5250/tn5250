@@ -32,9 +32,9 @@ lib5250_la_SOURCES =	buffer.c\
 			macro.c\
 			window.c
 
-lib5250_la_LIBADD =	@with_extra_libs@ @GLIB_LIBS@
+lib5250_la_LIBADD =	@with_extra_libs@
 
-INCLUDES = @GLIB_CFLAGS@ @PYTHON_CFLAGS@ \
+INCLUDES = @PYTHON_CFLAGS@ \
 	-DSYSCONFDIR=\"$(sysconfdir)\"
 
 # Here's where we build the python module.
@@ -46,7 +46,7 @@ pyso_LTLIBRARIES =	libtn5250module.la
 # just add all the SOURCES (sigh).
 # libtn5250module_la_LIBADD =	lib5250.la
 
-libtn5250module_la_LIBADD =	@with_exra_libs@ @GLIB_LIBS@
+libtn5250module_la_LIBADD =	@with_exra_libs@
 
 libtn5250module_la_SOURCES =	tn5250-python.c\
 			$(lib5250_la_SOURCES)

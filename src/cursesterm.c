@@ -193,9 +193,9 @@ static Key curses_vt100[] = {
    /* ASCII DEL is not correctly reported as the DC key in some
     * termcaps */
    /* But it is backspace in some termcaps... */
-   /* { K_DELETE,		"\177" }, /* ASCII DEL */
+   /* { K_DELETE,		"\177" }, */ /* ASCII DEL */
    { K_DELETE,		"\033\133\063\176" }, /* ASCII DEL Sequence: \E[3~ */
-   
+
 
    /* ESC strings */
    { K_F1,		"\033\061" }, /* ESC 1 */
@@ -263,7 +263,7 @@ Tn5250Terminal *tn5250_curses_terminal_new()
 
    r->data = tn5250_new(struct _Tn5250TerminalPrivate, 1);
    if (r->data == NULL) {
-      g_free(r);
+      free(r);
       return NULL;
    }
 
@@ -315,9 +315,7 @@ Tn5250Terminal *tn5250_curses_terminal_new()
  *****/
 static void curses_terminal_init(Tn5250Terminal * This)
 {
-   char buf[MAX_K_BUF_LEN];
    int i = 0, c, s;
-   struct timeval tv;
    char *str;
    int x;
 
@@ -411,7 +409,7 @@ static void curses_terminal_init(Tn5250Terminal * This)
     * mappings. */
    This->data->k_map_len = (sizeof (curses_vt100) / sizeof (Key)) * 2
       + sizeof (curses_caps) / sizeof (Key) + 1;
-   This->data->k_map = (Key*)g_malloc (sizeof (Key)*This->data->k_map_len);
+   This->data->k_map = (Key*)malloc (sizeof (Key)*This->data->k_map_len);
 
    c = sizeof (curses_caps) / sizeof (Key);
    s = sizeof (curses_vt100) / sizeof (Key);
@@ -514,8 +512,8 @@ void tn5250_curses_terminal_display_ruler (Tn5250Terminal *This, int f)
 void tn5250_curses_terminal_set_xterm_font (Tn5250Terminal *This, 
                                  const char *font80, const char *font132)
 {
-   This->data->font_80 = g_malloc(strlen(font80) + 6);
-   This->data->font_132 = g_malloc(strlen(font132) + 6);
+   This->data->font_80 = malloc(strlen(font80) + 6);
+   This->data->font_132 = malloc(strlen(font132) + 6);
    sprintf(This->data->font_80, "\x1b]50;%s\x07", font80);
    sprintf(This->data->font_132, "\x1b]50;%s\x07", font132);
    TN5250_LOG(("font_80 = %s.\n",This->data->font_80));
@@ -551,15 +549,15 @@ static void curses_terminal_destroy(Tn5250Terminal * This)
 {
 #ifdef USE_OWN_KEY_PARSING
    if (This->data->k_map != NULL)
-      g_free(This->data->k_map);
+      free(This->data->k_map);
 #endif
    if (This->data->font_80 !=NULL) 
-      g_free(This->data->font_80);
+      free(This->data->font_80);
    if (This->data->font_132 !=NULL) 
-      g_free(This->data->font_132);
+      free(This->data->font_132);
    if (This->data != NULL)
-      g_free(This->data);
-   g_free(This);
+      free(This->data);
+   free(This);
 }
 
 /****i* lib5250/curses_terminal_width
@@ -1486,8 +1484,8 @@ void curses_terminal_print_screen(Tn5250Terminal *This, Tn5250Display *display) 
    /* allocate enough memory to store the largest possible string that we
       could output.   Note that it could be twice the size of the screen
       if every single character needs to be escaped... */
-   prttext = g_malloc((2 * tn5250_display_width(display) *
-                         tn5250_display_height(display)) + 1);
+   prttext = malloc((2 * tn5250_display_width(display) *
+		     tn5250_display_height(display)) + 1);
 
    out = popen(outcmd, "w");
    if (out == NULL)
@@ -1633,7 +1631,7 @@ void curses_terminal_print_screen(Tn5250Terminal *This, Tn5250Display *display) 
 
    pclose(out);
 
-   g_free(prttext);
+   free(prttext);
 
    attrset(attribute_map[0]);
    clear();

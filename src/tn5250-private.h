@@ -36,7 +36,6 @@
 #include <ctype.h>
 #include <errno.h>
 #include <signal.h>
-#include <glib.h>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

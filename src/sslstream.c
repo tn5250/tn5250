@@ -403,7 +403,7 @@ int tn5250_ssl_stream_init (Tn5250Stream *This)
    if (This->config!=NULL && tn5250_config_get (This->config,"ssl_pem_pass")){
         TN5250_LOG(("SSL: Setting password callback\n"));
         len = strlen(tn5250_config_get (This->config, "ssl_pem_pass"));
-        This->userdata = g_malloc(len+1);
+        This->userdata = malloc(len+1);
         strncpy(This->userdata,
                 tn5250_config_get (This->config, "ssl_pem_pass"), len);
         SSL_CTX_set_default_passwd_cb(This->ssl_context,
@@ -526,7 +526,7 @@ int tn3270_ssl_stream_init (Tn5250Stream *This)
    if (This->config!=NULL && tn5250_config_get (This->config,"ssl_pem_pass")){
         TN5250_LOG(("SSL: Setting password callback\n"));
         len = strlen(tn5250_config_get (This->config, "ssl_pem_pass"));
-        This->userdata = g_malloc(len+1);
+        This->userdata = malloc(len+1);
         strncpy(This->userdata,
                 tn5250_config_get (This->config, "ssl_pem_pass"), len);
         SSL_CTX_set_default_passwd_cb(This->ssl_context,
@@ -592,7 +592,7 @@ static int ssl_stream_connect(Tn5250Stream * This, const char *to)
    serv_addr.sin_family = AF_INET;
 
    /* Figure out the internet address. */
-   address = (char *)g_malloc (strlen (to)+1);
+   address = (char *)malloc (strlen (to)+1);
    strcpy (address, to);
    if (strchr (address, ':'))
       *strchr (address, ':') = '\0';
@@ -603,7 +603,7 @@ static int ssl_stream_connect(Tn5250Stream * This, const char *to)
       if (pent != NULL)
 	 serv_addr.sin_addr.s_addr = *((u_long *) (pent->h_addr));
    }
-   g_free (address);
+   free (address);
    if (serv_addr.sin_addr.s_addr == INADDR_NONE) {
       TN5250_LOG(("sslstream: Host lookup failed!\n"));
       return -1;
@@ -1275,8 +1275,7 @@ static void ssl_stream_sb(Tn5250Stream * This, unsigned char *sb_buf, int sb_len
 
       This->status = This->status | TERMINAL;
    } else if (sb_buf[0] == NEW_ENVIRON) {
-     GSList * iter;
-     Tn5250ConfigStr *data;
+     Tn5250ConfigStr *iter;
      tn5250_buffer_append_byte(&out_buf, IAC);
      tn5250_buffer_append_byte(&out_buf, SB);
      tn5250_buffer_append_byte(&out_buf, NEW_ENVIRON);
@@ -1285,14 +1284,13 @@ static void ssl_stream_sb(Tn5250Stream * This, unsigned char *sb_buf, int sb_len
       if (This->config != NULL) {
 	 if ((iter = This->config->vars) != NULL) {
 	    do {
-	      data = (Tn5250ConfigStr *)iter->data;
-	       if (strlen (data->name) > 4 && !memcmp (data->name, "env.", 4)) {
+	      if ((strlen (iter->name) > 4) && (!memcmp (iter->name, "env.", 4))) {
 		  ssl_stream_sb_var_value(&out_buf,
-			(unsigned char *) data->name + 4,
-			(unsigned char *) data->value);
+			(unsigned char *) iter->name + 4,
+			(unsigned char *) iter->value);
 	       }
-	       iter = g_slist_next(iter);
-	    } while (iter != NULL);
+	       iter = iter->next;
+	    } while (iter != This->config->vars);
 	 }
       }
       tn5250_buffer_append_byte(&out_buf, IAC);

@@ -92,7 +92,7 @@ void
 tn5250_wtd_context_destroy (Tn5250WTDContext * This)
 {
   TN5250_ASSERT (This != NULL);
-  g_free (This);
+  free (This);
   return;
 }
 

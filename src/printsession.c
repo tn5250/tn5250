@@ -84,7 +84,7 @@ Tn5250PrintSession *tn5250_print_session_new()
 
    This->rec = tn5250_record_new();
    if (This->rec == NULL) {
-	   g_free (This);
+	   free (This);
 	   return NULL;
    }
 
@@ -115,10 +115,10 @@ void tn5250_print_session_destroy(Tn5250PrintSession * This)
    if (This->rec != NULL)
       tn5250_record_destroy(This->rec);
    if (This->output_cmd != NULL)
-      g_free(This->output_cmd);
+      free(This->output_cmd);
    if (This->map != NULL)
       tn5250_char_map_destroy (This->map);
-   g_free (This);
+   free (This);
 }
 
 /****f* lib5250/tn5250_print_session_set_fd
@@ -188,8 +188,8 @@ void tn5250_print_session_set_char_map (Tn5250PrintSession *This, const char *ma
 void tn5250_print_session_set_output_command(Tn5250PrintSession * This, const char *output_cmd)
 {
    if (This->output_cmd != NULL)
-      g_free(This->output_cmd);
-   This->output_cmd = (char *) g_malloc(strlen(output_cmd) + 1);
+      free(This->output_cmd);
+   This->output_cmd = (char *) malloc(strlen(output_cmd) + 1);
    strcpy(This->output_cmd, output_cmd);
 }
 

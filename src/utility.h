@@ -58,7 +58,6 @@ typedef unsigned char Tn5250Char;
  * SOURCE
  */
 
-#include <glib.h>
 
 struct _Tn5250CharMap {
    const char *name;
@@ -84,9 +83,6 @@ void tn5250_char_map_destroy(Tn5250CharMap *This);
 void tn5250_closeall(int fd);
 int tn5250_daemon(int nochdir, int noclose, int ignsigcld);
 int tn5250_make_socket(unsigned short int port);
-GSList * build_addr_list(GSList * addrlist);
-int valid_client(GSList * addrlist, unsigned long int client);
-void destroy_addr_list(GSList * addrlist);
 
 Tn5250Char tn5250_char_map_to_remote(Tn5250CharMap *This, Tn5250Char ascii);
 Tn5250Char tn5250_char_map_to_local(Tn5250CharMap *This, Tn5250Char ebcdic);

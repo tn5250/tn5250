@@ -23,7 +23,6 @@
  */
 
 #include "tn5250-private.h"
-#include <glib.h>
 
 /*
 #define DEBUG
@@ -95,9 +94,22 @@ struct _Tn5250SCSPrivate
 
 unsigned char nextchar;
 Tn5250CharMap *map;
-GArray *textobjects;
 
-GArray *ObjectList;
+struct _expanding_array
+{
+  int *data;
+  int elems;
+  int alloc;
+};
+typedef struct _expanding_array expanding_array;
+
+expanding_array *array_new ();
+void array_append_val (expanding_array * array, int value);
+int array_index (expanding_array * array, int idx);
+void array_free (expanding_array * array);
+
+expanding_array *textobjects;
+expanding_array *ObjectList;
 
 FILE *outfile;
 
@@ -109,8 +121,8 @@ main ()
   Tn5250SCS *scs = NULL;
 
 
-  ObjectList = g_array_new (FALSE, FALSE, sizeof (int));
-  textobjects = g_array_new (FALSE, FALSE, sizeof (int));
+  ObjectList = array_new ();
+  textobjects = array_new ();
 
 
   /* This allows the user to select an output file other than stdout.
@@ -180,7 +192,7 @@ main ()
    * byte count is for the beginning of each object we use ObjectList to 
    * track it.
    */
-  g_array_append_val (ObjectList, scs->data->filesize);
+  array_append_val (ObjectList, scs->data->filesize);
   scs->data->objcount++;
   scs->data->filesize +=
     pdf_begin_stream (scs->data->objcount, COURIER, scs->data->fontsize);
@@ -194,12 +206,12 @@ main ()
   scs_main (scs);
 
 
-  g_array_append_val (textobjects, scs->data->objcount);
+  array_append_val (textobjects, scs->data->objcount);
   scs->data->streamsize += pdf_process_char ('\0', 1);
   scs->data->filesize += scs->data->streamsize;
   scs->data->filesize += pdf_end_stream ();
 
-  g_array_append_val (ObjectList, scs->data->filesize);
+  array_append_val (ObjectList, scs->data->filesize);
   scs->data->objcount++;
   scs->data->filesize +=
     pdf_stream_length (scs->data->objcount, scs->data->streamsize);
@@ -207,7 +219,7 @@ main ()
   fprintf (stderr, "stream length objcount = %d\n", scs->data->objcount);
 #endif
 
-  g_array_append_val (ObjectList, scs->data->filesize);
+  array_append_val (ObjectList, scs->data->filesize);
   scs->data->objcount++;
   scs->data->filesize += pdf_catalog (scs->data->objcount,
 				      scs->data->objcount + 1,
@@ -217,14 +229,14 @@ main ()
   fprintf (stderr, "catalog objcount = %d\n", scs->data->objcount);
 #endif
 
-  g_array_append_val (ObjectList, scs->data->filesize);
+  array_append_val (ObjectList, scs->data->filesize);
   scs->data->objcount++;
   scs->data->filesize += pdf_outlines (scs->data->objcount);
 #ifdef DEBUG
   fprintf (stderr, "outlines objcount = %d\n", scs->data->objcount);
 #endif
 
-  g_array_append_val (ObjectList, scs->data->filesize);
+  array_append_val (ObjectList, scs->data->filesize);
   scs->data->objcount++;
   scs->data->filesize += pdf_procset (scs->data->objcount);
   procsetobject = scs->data->objcount;
@@ -236,7 +248,7 @@ main ()
    * necessarily know if we used bold just make a bold font object anyway.
    * It doesn't hurt to have objects that aren't used.
    */
-  g_array_append_val (ObjectList, scs->data->filesize);
+  array_append_val (ObjectList, scs->data->filesize);
   scs->data->objcount++;
   scs->data->filesize += pdf_font (scs->data->objcount, COURIER);
   fontobject = scs->data->objcount;
@@ -244,7 +256,7 @@ main ()
   fprintf (stderr, "font objcount = %d\n", scs->data->objcount);
 #endif
 
-  g_array_append_val (ObjectList, scs->data->filesize);
+  array_append_val (ObjectList, scs->data->filesize);
   scs->data->objcount++;
   scs->data->filesize += pdf_font (scs->data->objcount, COURIER_BOLD);
   boldfontobject = scs->data->objcount;
@@ -270,7 +282,7 @@ main ()
 	  scs->pagewidth = DEFAULT_PAGE_WIDTH + (720 * i);
 	}
     }
-  g_array_append_val (ObjectList, scs->data->filesize);
+  array_append_val (ObjectList, scs->data->filesize);
   scs->data->objcount++;
   scs->data->filesize += pdf_pages (scs->data->objcount,
 				    scs->data->objcount + 1,
@@ -282,11 +294,11 @@ main ()
 
   for (i = 0; i < scs->data->pagenumber; i++)
     {
-      g_array_append_val (ObjectList, scs->data->filesize);
+      array_append_val (ObjectList, scs->data->filesize);
       scs->data->objcount++;
       scs->data->filesize += pdf_page (scs->data->objcount,
 				       pageparent,
-				       g_array_index (textobjects, int, i),
+				       array_index (textobjects, i),
 				       procsetobject, fontobject,
 				       boldfontobject, scs->pagewidth,
 				       scs->pagelength);
@@ -298,10 +310,10 @@ main ()
   pdf_xreftable (scs->data->objcount);
   pdf_trailer (scs->data->filesize, scs->data->objcount + 1, rootobject);
 
-  g_array_free (textobjects, TRUE);
-  g_array_free (ObjectList, TRUE);
+  array_free (textobjects);
+  array_free (ObjectList);
   tn5250_char_map_destroy (map);
-  g_free (scs);
+  free (scs);
   return (0);
 }
 
@@ -324,7 +336,7 @@ tn5250_scs2pdf_new ()
   scs->data = tn5250_new (struct _Tn5250SCSPrivate, 1);
   if (scs->data == NULL)
     {
-      g_free (scs);
+      free (scs);
       return NULL;
     }
 
@@ -575,13 +587,13 @@ do_newpage (Tn5250SCS * This)
    * put on this page.  We put one stream object on each
    * page.
    */
-  g_array_append_val (textobjects, This->data->objcount);
+  array_append_val (textobjects, This->data->objcount);
 
   This->data->streamsize += pdf_process_char ('\0', 1);
   This->data->filesize += This->data->streamsize;
   This->data->filesize += pdf_end_stream ();
 
-  g_array_append_val (ObjectList, This->data->filesize);
+  array_append_val (ObjectList, This->data->filesize);
   This->data->objcount = This->data->objcount + 1;
 #ifdef DEBUG
   fprintf (stderr, "objcount: %d\n", This->data->objcount);
@@ -597,7 +609,7 @@ do_newpage (Tn5250SCS * This)
    * here constitutes a new page, in conjuction with the
    * pdf_page() function below.
    */
-  g_array_append_val (ObjectList, This->data->filesize);
+  array_append_val (ObjectList, This->data->filesize);
   This->data->objcount = This->data->objcount + 1;
   This->data->filesize += pdf_begin_stream (This->data->objcount,
 					    COURIER, This->data->fontsize);
@@ -925,8 +937,7 @@ pdf_xreftable (int objnum)
    */
   for (curobj = 0; curobj < objnum; curobj++)
     {
-      fprintf (outfile,
-	       "%010d 00000 n \n", g_array_index (ObjectList, int, curobj));
+      fprintf (outfile, "%010d 00000 n \n", array_index (ObjectList, curobj));
     }
 }
 
@@ -996,4 +1007,72 @@ pdf_process_char (char character, int flush)
     }
 }
 
-/* vi:set sts=3 sw=3: */
+
+expanding_array *
+array_new ()
+{
+  expanding_array *array = NULL;
+
+  array = malloc (sizeof (expanding_array));
+  if (array == NULL)
+    return NULL;
+
+  array->data = NULL;
+  array->elems = 0;
+  array->alloc = 0;
+
+  return array;
+}
+
+
+void
+array_append_val (expanding_array * array, int value)
+{
+  int *newdata;
+
+  array->elems++;
+
+  if (array->elems > array->alloc)
+    {
+      array->alloc += 64;
+      if (array->data == NULL)
+	{
+	  array->data = malloc (sizeof (int) * array->alloc);
+	}
+      else
+	{
+	  newdata = realloc (array->data, sizeof (int) * array->alloc);
+	  if (newdata == NULL)
+	    free (array->data);
+	  array->data = newdata;
+	}
+      if (array->data == NULL)
+	{
+	  fprintf (stderr, "array_append_val: Out of memory!\n");
+	  exit (1);
+	}
+    }
+
+  array->data[array->elems - 1] = value;
+  return;
+}
+
+
+int
+array_index (expanding_array * array, int idx)
+{
+  return array->data[idx];
+}
+
+
+void
+array_free (expanding_array * array)
+{
+  if (array->data != NULL)
+    {
+      free (array->data);
+    }
+  free (array);
+  array = NULL;
+  return;
+}

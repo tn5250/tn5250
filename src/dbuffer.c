@@ -77,7 +77,7 @@ tn5250_dbuffer_new (int width, int height)
   This->data = tn5250_new (unsigned char, width * height);
   if (This->data == NULL)
     {
-      g_free (This);
+      free (This);
       return NULL;
     }
 
@@ -118,7 +118,7 @@ tn5250_dbuffer_copy (Tn5250DBuffer * dsp)
   This->data = tn5250_new (unsigned char, dsp->w * dsp->h);
   if (This->data == NULL)
     {
-      g_free (This);
+      free (This);
       return NULL;
     }
   memcpy (This->data, dsp->data, dsp->w * dsp->h);
@@ -128,7 +128,7 @@ tn5250_dbuffer_copy (Tn5250DBuffer * dsp)
   This->header_length = dsp->header_length;
   if (dsp->header_data != NULL)
     {
-      This->header_data = (unsigned char *) g_malloc (This->header_length);
+      This->header_data = (unsigned char *) malloc (This->header_length);
       memcpy (This->header_data, dsp->header_data, dsp->header_length);
     }
   else
@@ -154,14 +154,14 @@ tn5250_dbuffer_copy (Tn5250DBuffer * dsp)
 void
 tn5250_dbuffer_destroy (Tn5250DBuffer * This)
 {
-  g_free (This->data);
+  free (This->data);
   if (This->header_data != NULL)
     {
-      g_free (This->header_data);
+      free (This->header_data);
     }
   (void) tn5250_field_list_destroy (This->field_list);
   (void) tn5250_window_list_destroy (This->window_list);
-  g_free (This);
+  free (This);
   return;
 }
 
@@ -184,13 +184,13 @@ tn5250_dbuffer_set_header_data (Tn5250DBuffer * This, unsigned char *data,
 {
   if (This->header_data != NULL)
     {
-      g_free (This->header_data);
+      free (This->header_data);
     }
   This->header_length = len;
   if (data != NULL)
     {
       TN5250_ASSERT (len > 0);
-      This->header_data = (unsigned char *) g_malloc (len);
+      This->header_data = (unsigned char *) malloc (len);
       memcpy (This->header_data, data, len);
     }
   return;
@@ -496,7 +496,7 @@ tn5250_dbuffer_clear_table (Tn5250DBuffer * This)
   This->header_length = 0;
   if (This->header_data != NULL)
     {
-      g_free (This->header_data);
+      free (This->header_data);
       This->header_data = NULL;
     }
   return;
