@@ -7,6 +7,7 @@
 - slangterm.c: fixed bug causing core on slang terminal bell.
 - debug.c: fixed bug causing core on debug terminal bell.
 - dbuffer.c: fixed assert submitted by Sean Porterfield.
+- Indicators are only updated when necessary.
 
 1999-11-22 Jay 'Eraserhead' Felice <jasonf@nacs.net>
 
