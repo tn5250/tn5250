@@ -1092,16 +1092,15 @@ void tn5250_display_kf_field_plus(Tn5250Display * This)
    unsigned char c;
 
    TN5250_LOG (("Field+ entered.\n"));
+
+   /* NOTE: Field+ should act like field exit on a non-numeric field. */
+   tn5250_display_kf_field_exit(This);
    
    field = tn5250_display_current_field (This);
    if (field == NULL || 
 	 (tn5250_field_type(field) != TN5250_FIELD_SIGNED_NUM) &&
-	 (tn5250_field_type(field) != TN5250_FIELD_NUM_ONLY)) {
-      tn5250_display_inhibit(This);
+	 (tn5250_field_type(field) != TN5250_FIELD_NUM_ONLY))
       return;
-   }
-
-   tn5250_display_kf_field_exit(This);
 
    /* We don't do anything for number only fields.  For signed numeric
     * fields, we change the sign position to a '+'. */
