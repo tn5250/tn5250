@@ -137,9 +137,11 @@ docs:
 clean-local:
 	rm -f *~ *.xref index.xrefs index.html
 
-if PYTHON
 install-exec-local:
+if PYTHON
 	( cd $(pysodir) && ln -sf lib_tn5250module.so _tn5250module.so )
+else
+	: 
 endif
 
 .PHONY: lclint
