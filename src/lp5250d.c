@@ -91,6 +91,8 @@ int daemon(int nochdir, int noclose)
         dup(0); dup(0);
     }
 
+    umask(0);
+
     return 0;
 }
 
