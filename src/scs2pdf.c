@@ -53,7 +53,12 @@ int
 main ()
 {
   Tn5250CharMap *map = tn5250_char_map_new ("37");
-  int pagewidth = 612, pagelength = 792;
+  /* Set a good default value for the page size.  The page size is the
+   * retrieved value divided by 1440 to get inches, then multiplied
+   * by 72 to get points.  So the numbers below are for an 8.5x11 inch
+   * paper.
+   */
+  int pagewidth = 12240, pagelength = 15840;
   int objcount = 0;
   int filesize = 0;
   int streamsize = 0;
@@ -461,10 +466,16 @@ pdf_page (int objnum, int parent, int contents, int procset, int font,
 	  int pagewidth, int pagelength)
 {
   char text[255];
+  float width, length;
 
   /* PDF uses 72 points per inch so 8.5x11 in. page is 612x792 points
    * You can set MediaBox to [0 0 612 792] to force this
    */
+  width = (pagewidth / 1440.0) * 72;
+  length = (pagelength / 1440.0) * 72;
+#ifdef DEBUG
+  fprintf (stderr, "Setting page to %f by %f points\n", width, length);
+#endif
   sprintf (text,
 	   "%d 0 obj\n"
 	   "\t<<\n"
@@ -480,7 +491,7 @@ pdf_page (int objnum, int parent, int contents, int procset, int font,
 	   "\t\t\t>>\n"
 	   "\t>>\n"
 	   "endobj\n\n",
-	   objnum, parent, (pagewidth / 1440 * 72), (pagelength / 1440 * 72),
+	   objnum, parent, (int) width, (int) length,
 	   contents, procset, font);
 
   fprintf (outfile, "%s", text);

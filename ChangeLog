@@ -1,3 +1,8 @@
+2002-03-12 James Rich <james@eaerich.com>
+- Fixed bug with unspecified page sizes in scsp2pdf.  Occasionally the page 
+  size is specified and we were defaulting to a bad value.  We also would 
+  compute incorrect values for unusual page sizes.
+
 2002-03-11 James Rich <james@eaerich.com>
 - Removed all common functions in scs2ascii.c and scs2pdf.c and put them
   in scs.c.  Expanded scs.h to have the appropriate definitions.  Updated
