@@ -1,3 +1,8 @@
+2000-05-25 Jay 'Eraserhead' Felice <jfelice@cronosys.com>
+- Fixed syntax usage message in tn5250.c
+- Backed out pending_aid stuff. System request/reset now work when X SYSTEM
+  or X CLOCK.
+
 2000-05-24 Mike Madore <mmadore@mmadore@turbolinux.com>
 - Updated Makefile.am to build tn5250d daemon.  Fixes to sig_child in utility.c
 for UnixWare.  Changed handling of return code from accept to account for 
