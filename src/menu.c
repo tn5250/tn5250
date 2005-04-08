@@ -258,6 +258,8 @@ tn5250_menuitem_new ()
   This->next = NULL;
   This->prev = NULL;
   This->id = -1;
+  This->available = 0;
+  This->selected = 0;
   return (This);
 }
 

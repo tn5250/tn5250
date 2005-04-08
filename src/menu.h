@@ -115,8 +115,8 @@ extern "C"
     struct _Tn5250Menuitem *next;
     struct _Tn5250Menuitem *prev;
     unsigned int id;		/* Numeric ID of this menuitem */
-    unsigned int border[4];	/* Characters used to create borders
-				 * Uses the same masks as buf5250 */
+    short available;
+    short selected;
     unsigned char *text;
     struct _Tn5250Menubar *menubar;
   };

@@ -3041,6 +3041,7 @@ tn5250_session_define_selection_item (Tn5250Session * This,
   /* The first two bits choice state */
   if ((flagbyte & 0xC0) == 0)
     {
+      menuitem->available = 1;
       TN5250_LOG (("Available and not a default selection\n"));
     }
 
@@ -3053,10 +3054,13 @@ tn5250_session_define_selection_item (Tn5250Session * This,
     {
       if (flagbyte & 0x40)
 	{
+	  menuitem->selected = 1;
+	  menuitem->available = 1;
 	  TN5250_LOG (("Available and is a default selection (selected state)\n"));
 	}
       if (flagbyte & 0x80)
 	{
+	  menuitem->available = 0;
 	  TN5250_LOG (("Not available\n"));
 	}
     }
@@ -3282,6 +3286,7 @@ tn5250_session_create_window_structured_field (Tn5250Session * This,
   unsigned char border_color, border_upperlchar, border_topchar;
   unsigned char border_upperrchar, border_leftchar, border_rightchar;
   unsigned char border_lowerlchar, border_bottomchar, border_lowerrchar;
+  short pulldown = 0;
 
   TN5250_LOG (("Entering tn5250_session_create_window_structured_field()\n"));
 
@@ -3295,8 +3300,8 @@ tn5250_session_create_window_structured_field (Tn5250Session * This,
 
   if (flagbyte1 & 0x40)
     {
-      TN5250_LOG (("Pull down window not supported\n"));
-      return;
+      TN5250_LOG (("Pull down window - data ignored (will use selection field data)\n"));
+      pulldown = 1;
     }
 
   reserved = tn5250_record_get_byte (This->record);
@@ -3306,16 +3311,21 @@ tn5250_session_create_window_structured_field (Tn5250Session * This,
   width = tn5250_record_get_byte (This->record);
   TN5250_LOG (("width = 0x%02X (%d)\n", width, (int) width));
 
-  if ((window =
-       tn5250_window_match_test (This->display->display_buffers->window_list,
-				 tn5250_display_cursor_x (This->display) + 1,
-				 tn5250_display_cursor_y (This->display) + 1,
-				 width, depth)) != NULL)
+  if (!pulldown)
     {
-    }
-  else
-    {
-      window = tn5250_window_new ();
+      if ((window =
+	   tn5250_window_match_test (This->display->display_buffers->
+				     window_list,
+				     tn5250_display_cursor_x (This->display) +
+				     1,
+				     tn5250_display_cursor_y (This->display) +
+				     1, width, depth)) != NULL)
+	{
+	}
+      else
+	{
+	  window = tn5250_window_new ();
+	}
     }
 
   if ((length - 5) > 0)
@@ -3471,27 +3481,31 @@ tn5250_session_create_window_structured_field (Tn5250Session * This,
       length--;
     }
 
-  window->width = (int) width;
-  window->height = (int) depth;
-  window->column = tn5250_display_cursor_x (This->display) + 1;
-  window->row = tn5250_display_cursor_y (This->display) + 1;
-  TN5250_LOG (("window position: %d, %d\n", window->column, window->row));
-  tn5250_dbuffer_add_window (tn5250_display_dbuffer (This->display), window);
-  tn5250_terminal_create_window (This->display->terminal, This->display,
+  if (!pulldown)
+    {
+      window->width = (int) width;
+      window->height = (int) depth;
+      window->column = tn5250_display_cursor_x (This->display) + 1;
+      window->row = tn5250_display_cursor_y (This->display) + 1;
+      TN5250_LOG (("window position: %d, %d\n", window->column, window->row));
+      tn5250_dbuffer_add_window (tn5250_display_dbuffer (This->display),
 				 window);
+      tn5250_terminal_create_window (This->display->terminal, This->display,
+				     window);
 
-  /* Forcibly erase the region of the screen that the window covers.  I
-   * thought that the iSeries would always send an Erase To Address command
-   * after each Create Window command, but that isn't the case.  The weird
-   * part is that sometimes we do get the erase command, and sometimes we
-   * don't.  I have no idea why.
-   */
-  tn5250_display_erase_region (This->display, window->row + 1,
-			       window->column + 2,
-			       window->row + window->height + 1,
-			       window->column + window->column + 2,
-			       window->column + 2,
-			       window->column + window->width + 2);
+      /* Forcibly erase the region of the screen that the window covers.  I
+       * thought that the iSeries would always send an Erase To Address command
+       * after each Create Window command, but that isn't the case.  The weird
+       * part is that sometimes we do get the erase command, and sometimes we
+       * don't.  I have no idea why.
+       */
+      tn5250_display_erase_region (This->display, window->row + 1,
+				   window->column + 2,
+				   window->row + window->height + 1,
+				   window->column + window->column + 2,
+				   window->column + 2,
+				   window->column + window->width + 2);
+    }
   return;
 }
 

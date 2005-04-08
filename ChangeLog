@@ -1,3 +1,7 @@
+2005-04-08 James Rich <james@eaerich.com>
+- Support (but ignore) pull down windows.
+- More support for menus.
+
 2005-04-06 James Rich <james@eaerich.com>
 - Fix seg fault that occurred due to unitialized menubar_count in the
   dbuffer struct.
