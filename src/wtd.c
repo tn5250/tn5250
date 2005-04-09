@@ -37,6 +37,8 @@ static void tn5250_wtd_context_convert_nosrc (Tn5250WTDContext * This);
 static Tn5250Field *tn5250_wtd_context_peek_field (Tn5250WTDContext * This);
 static void tn5250_wtd_context_write_cwsf (Tn5250WTDContext * This,
 					   Tn5250Window * window);
+static void tn5250_wtd_context_write_dsfsf (Tn5250WTDContext * This,
+					    Tn5250Menubar * menubar);
 static void tn5250_wtd_context_write_dsbfsf (Tn5250WTDContext * This,
 					     Tn5250Scrollbar * scrollbar);
 
@@ -157,6 +159,7 @@ tn5250_wtd_context_convert_nosrc (Tn5250WTDContext * This)
   unsigned char c;
   Tn5250Field *field;
   Tn5250Window *window;
+  Tn5250Menubar *menubar;
 
   TN5250_LOG (("wtd_context_convert entered.\n"));
 
@@ -213,6 +216,13 @@ tn5250_wtd_context_convert_nosrc (Tn5250WTDContext * This)
 				       This->y + 1)) != NULL)
 	    {
 	      tn5250_wtd_context_write_cwsf (This, window);
+	    }
+	  else if ((menubar =
+		    tn5250_menubar_hit_test (This->dst->menubar_list,
+					     This->x, This->y)) != NULL)
+	    {
+	      tn5250_wtd_context_write_dsfsf (This, menubar);
+	      This->x = tn5250_dbuffer_width (This->dst);
 	    }
 	  else
 	    {
@@ -505,6 +515,116 @@ tn5250_wtd_context_write_cwsf (Tn5250WTDContext * This, Tn5250Window * window)
   tn5250_wtd_context_putc (This, 0x00);
   tn5250_wtd_context_putc (This, window->height);
   tn5250_wtd_context_putc (This, window->width);
+  return;
+}
+
+
+/****i* lib5250/tn5250_wtd_context_write_dsfsf
+ * NAME
+ *    tn5250_wtd_context_write_wdsf
+ * SYNOPSIS
+ *    tn5250_wtd_context_write_wdsf (This);
+ * INPUTS
+ *    Tn5250WTDContext *   This       - 
+ * DESCRIPTION
+ *    Write the DEFINE SELECTION FIELD Structured Field order.
+ *****/
+static void
+tn5250_wtd_context_write_dsfsf (Tn5250WTDContext * This,
+				Tn5250Menubar * menubar)
+{
+  Tn5250Menuitem *iter;
+  int majorlength, minorlength;
+  int i;
+
+  TN5250_LOG (("Entering tn5250_wtd_context_write_dsfsf()\n"));
+  TN5250_LOG (("menubar:\n\tid: %d\n", menubar->id));
+
+  /* WRITE TO DISPLAY Structured Field order */
+  tn5250_wtd_context_putc (This, 0x15);
+
+  /* Find out the length of the minor structures */
+  minorlength = 0;
+  iter = menubar->menuitem_list;
+  do
+    {
+      minorlength = minorlength + 6 + strlen (iter->text);
+      iter = iter->next;
+    }
+  while (iter != menubar->menuitem_list);
+
+  majorlength = 39 + minorlength;
+
+  /* First two bytes are length of order */
+  if (majorlength > 0xff)
+    {
+      tn5250_wtd_context_putc (This, majorlength - 0xff);
+      tn5250_wtd_context_putc (This, 0xff);
+    }
+  else
+    {
+      tn5250_wtd_context_putc (This, 0x00);
+      tn5250_wtd_context_putc (This, majorlength);
+    }
+  tn5250_wtd_context_putc (This, 0xD9);
+  tn5250_wtd_context_putc (This, 0x50);
+  tn5250_wtd_context_putc (This, menubar->flagbyte1);
+  tn5250_wtd_context_putc (This, menubar->flagbyte2);
+  tn5250_wtd_context_putc (This, menubar->flagbyte3);
+  /* type of selection field */
+  tn5250_wtd_context_putc (This, 0x01);
+  tn5250_wtd_context_putc (This, 0xf1);
+  tn5250_wtd_context_putc (This, 0xf1);
+  tn5250_wtd_context_putc (This, 0xf7);
+  tn5250_wtd_context_putc (This, 0x00);
+  tn5250_wtd_context_putc (This, 0x00);
+  tn5250_wtd_context_putc (This, menubar->itemsize);
+  tn5250_wtd_context_putc (This, menubar->height);
+  tn5250_wtd_context_putc (This, menubar->items);
+  tn5250_wtd_context_putc (This, 0x01);
+  tn5250_wtd_context_putc (This, 0x00);
+  tn5250_wtd_context_putc (This, 0x00);
+  tn5250_wtd_context_putc (This, 0x00);
+  /* Now the "unknown" bytes */
+  tn5250_wtd_context_putc (This, 0x13);
+  tn5250_wtd_context_putc (This, 0x01);
+  tn5250_wtd_context_putc (This, 0xe0);
+  tn5250_wtd_context_putc (This, 0x00);
+  tn5250_wtd_context_putc (This, 0x21);
+  tn5250_wtd_context_putc (This, 0x00);
+  tn5250_wtd_context_putc (This, 0x23);
+  tn5250_wtd_context_putc (This, 0x00);
+  tn5250_wtd_context_putc (This, 0x23);
+  tn5250_wtd_context_putc (This, 0x22);
+  tn5250_wtd_context_putc (This, 0x20);
+  tn5250_wtd_context_putc (This, 0x20);
+  tn5250_wtd_context_putc (This, 0x22);
+  tn5250_wtd_context_putc (This, 0x20);
+  tn5250_wtd_context_putc (This, 0x22);
+  tn5250_wtd_context_putc (This, 0x00);
+  tn5250_wtd_context_putc (This, 0x20);
+  tn5250_wtd_context_putc (This, 0x00);
+  tn5250_wtd_context_putc (This, 0x22);
+
+  /* And now the minor structures */
+  iter = menubar->menuitem_list;
+  do
+    {
+      minorlength = 6 + strlen (iter->text);
+      tn5250_wtd_context_putc (This, minorlength);
+      /* Minor type (always 0x10) */
+      tn5250_wtd_context_putc (This, 0x10);
+      tn5250_wtd_context_putc (This, iter->flagbyte1);
+      tn5250_wtd_context_putc (This, iter->flagbyte2);
+      tn5250_wtd_context_putc (This, iter->flagbyte3);
+      tn5250_wtd_context_putc (This, 0x00);
+      for (i = 0; i < strlen (iter->text); i++)
+	{
+	  tn5250_wtd_context_putc (This, iter->text[i]);
+	}
+      iter = iter->next;
+    }
+  while (iter != menubar->menuitem_list);
   return;
 }
 

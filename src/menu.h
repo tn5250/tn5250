@@ -59,13 +59,9 @@ extern "C"
     unsigned int id;		/* Numeric ID of this menubar */
     struct _Tn5250Menuitem *menuitem_list;
     int menuitem_count;
-    unsigned char mdt;
-    short use_scrollbar;
-    short num_sep_blank;
-    short asterisk;
-    short inputonly;
-    short fieldadvischaradv;
-    short nocursormove;
+    unsigned char flagbyte1;
+    unsigned char flagbyte2;
+    unsigned char flagbyte3;
     unsigned char type;
     unsigned int row;		/* Row menubar starts on */
     unsigned int column;	/* Column menubar starts on */
@@ -99,6 +95,11 @@ extern "C"
   extern Tn5250Menubar *tn5250_menubar_hit_test (Tn5250Menubar * list, int x,
 						 int y);
 
+  extern void tn5250_menubar_select_next (Tn5250Menubar * This, int *x,
+					  int *y);
+  extern void tn5250_menubar_select_prev (Tn5250Menubar * This, int *x,
+					  int *y);
+
 
 
 /***** lib5250/Tn5250Menuitem
@@ -115,9 +116,15 @@ extern "C"
     struct _Tn5250Menuitem *next;
     struct _Tn5250Menuitem *prev;
     unsigned int id;		/* Numeric ID of this menuitem */
+    unsigned char flagbyte1;
+    unsigned char flagbyte2;
+    unsigned char flagbyte3;
+    int size;
     short available;
     short selected;
     unsigned char *text;
+    unsigned int row;		/* Row menubar starts on */
+    unsigned int column;	/* Column menubar starts on */
     struct _Tn5250Menubar *menubar;
   };
 
@@ -127,6 +134,10 @@ extern "C"
   extern Tn5250Menuitem *tn5250_menuitem_new ();
   extern Tn5250Menuitem *tn5250_menuitem_copy (Tn5250Menuitem * This);
   extern void tn5250_menuitem_destroy (Tn5250Menuitem * This);
+  extern int tn5250_menuitem_new_row (Tn5250Menuitem * This);
+  extern int tn5250_menuitem_new_col (Tn5250Menuitem * This);
+#define tn5250_menuitem_start_row(This) ((This)->row)
+#define tn5250_menuitem_start_col(This) ((This)->column)
 
 /* Manipulate menuitem lists */
   extern Tn5250Menuitem *tn5250_menuitem_list_destroy (Tn5250Menuitem * list);

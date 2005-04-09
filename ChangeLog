@@ -1,3 +1,8 @@
+2005-04-09 James Rich <james@eaerich.com>
+- Fix cursor movement through menubars.
+- Change menu items to not translate to local map.
+- Add DEFINE SELECTION FIELD Structured Field support to wtd.c.
+
 2005-04-08 James Rich <james@eaerich.com>
 - Support (but ignore) pull down windows.
 - More support for menus.

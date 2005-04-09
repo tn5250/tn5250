@@ -581,6 +581,19 @@ tn5250_dbuffer_first_non_bypass (Tn5250DBuffer * This)
 void
 tn5250_dbuffer_right (Tn5250DBuffer * This, int n)
 {
+  if (This->menubar_count > 0)
+    {
+      Tn5250Menubar *menubar =
+	tn5250_menubar_hit_test (This->menubar_list, This->cx, This->cy);
+
+      if (menubar != NULL)
+	{
+	  tn5250_menubar_select_next (menubar, &This->cx, &This->cy);
+	  ASSERT_VALID (This);
+	  return;
+	}
+    }
+
   This->cx += n;
   This->cy += (This->cx / This->w);
   This->cx = (This->cx % This->w);
@@ -604,6 +617,19 @@ tn5250_dbuffer_right (Tn5250DBuffer * This, int n)
 void
 tn5250_dbuffer_left (Tn5250DBuffer * This)
 {
+  if (This->menubar_count > 0)
+    {
+      Tn5250Menubar *menubar =
+	tn5250_menubar_hit_test (This->menubar_list, This->cx, This->cy);
+
+      if (menubar != NULL)
+	{
+	  tn5250_menubar_select_prev (menubar, &This->cx, &This->cy);
+	  ASSERT_VALID (This);
+	  return;
+	}
+    }
+
   This->cx--;
   if (This->cx == -1)
     {

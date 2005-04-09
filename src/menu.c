@@ -43,16 +43,16 @@ tn5250_menubar_new ()
 Tn5250Menubar *
 tn5250_menubar_copy (Tn5250Menubar * This)
 {
-  Tn5250Menubar *win = tn5250_new (Tn5250Menubar, 1);
+  Tn5250Menubar *menu = tn5250_new (Tn5250Menubar, 1);
 
-  if (win == NULL)
+  if (menu == NULL)
     {
       return NULL;
     }
-  memcpy (win, This, sizeof (Tn5250Menubar));
-  win->next = NULL;
-  win->prev = NULL;
-  return win;
+  memcpy (menu, This, sizeof (Tn5250Menubar));
+  menu->next = NULL;
+  menu->prev = NULL;
+  return menu;
 }
 
 
@@ -210,7 +210,13 @@ tn5250_menubar_hit_test (Tn5250Menubar * list, int x, int y)
     {
       do
 	{
-	  if ((iter->column == x) && (iter->row == y))
+	  /* We want to find a hit for any column in the menubar row */
+	  /*
+	   * if ((x >= iter->column)
+	   *   && (x <= (iter->column + (iter->itemsize * iter->items)))
+	   *   && (y >= iter->row) && (y <= (iter->row + iter->height - 1)))
+	   */
+	  if ((y >= iter->row) && (y <= (iter->row + iter->height - 1)))
 	    {
 	      return iter;
 	    }
@@ -219,6 +225,46 @@ tn5250_menubar_hit_test (Tn5250Menubar * list, int x, int y)
       while (iter != list);
     }
   return NULL;
+}
+
+
+void
+tn5250_menubar_select_next (Tn5250Menubar * This, int *x, int *y)
+{
+  Tn5250Menuitem *menuitem =
+    tn5250_menuitem_hit_test (This->menuitem_list, *x, *y);
+
+  if (menuitem == NULL)
+    {
+      menuitem = This->menuitem_list->prev;
+    }
+
+  menuitem->selected = 0;
+  menuitem = menuitem->next;
+  menuitem->selected = 1;
+  *y = tn5250_menuitem_start_row (menuitem);
+  *x = tn5250_menuitem_start_col (menuitem);
+  return;
+}
+
+
+void
+tn5250_menubar_select_prev (Tn5250Menubar * This, int *x, int *y)
+{
+  Tn5250Menuitem *menuitem =
+    tn5250_menuitem_hit_test (This->menuitem_list, *x, *y);
+
+  if (menuitem == NULL)
+    {
+      menuitem = This->menuitem_list;
+    }
+
+  menuitem->selected = 0;
+  menuitem = menuitem->prev;
+  menuitem->selected = 1;
+  *y = tn5250_menuitem_start_row (menuitem);
+  *x = tn5250_menuitem_start_col (menuitem);
+  return;
 }
 
 
@@ -258,6 +304,7 @@ tn5250_menuitem_new ()
   This->next = NULL;
   This->prev = NULL;
   This->id = -1;
+  This->size = 0;
   This->available = 0;
   This->selected = 0;
   return (This);
@@ -303,4 +350,54 @@ tn5250_menuitem_list_remove (Tn5250Menuitem * list, Tn5250Menuitem * node)
   node->prev->next = node->next;
   node->prev = node->next = NULL;
   return list;
+}
+
+
+int
+tn5250_menuitem_new_row (Tn5250Menuitem * This)
+{
+  if (This->prev == This)
+    {
+      return (This->menubar->row);
+    }
+  else
+    {
+      return (This->prev->row);
+    }
+}
+
+
+int
+tn5250_menuitem_new_col (Tn5250Menuitem * This)
+{
+  if (This->prev == This)
+    {
+      return (This->menubar->column + 1);
+    }
+  else
+    {
+      return (This->prev->column + This->prev->size + 1);
+    }
+}
+
+
+Tn5250Menuitem *
+tn5250_menuitem_hit_test (Tn5250Menuitem * list, int x, int y)
+{
+  Tn5250Menuitem *iter;
+
+  if ((iter = list) != NULL)
+    {
+      do
+	{
+	  if ((x >= iter->column) && (x <= (iter->column + iter->size))
+	      && (iter->row == y))
+	    {
+	      return iter;
+	    }
+	  iter = iter->next;
+	}
+      while (iter != list);
+    }
+  return NULL;
 }
