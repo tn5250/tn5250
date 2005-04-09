@@ -2768,7 +2768,9 @@ static void
 tn5250_session_define_selection_field (Tn5250Session * This, int length)
 {
   Tn5250Menubar *menubar;
-  unsigned char flagbyte;
+  unsigned char flagbyte1;
+  unsigned char flagbyte2;
+  unsigned char flagbyte3;
   unsigned char fieldtype;
   unsigned char padding;
   unsigned char separator;
@@ -2784,41 +2786,41 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
 
   menubar = tn5250_menubar_new ();
 
-  flagbyte = tn5250_record_get_byte (This->record);
+  flagbyte1 = tn5250_record_get_byte (This->record);
 
   /* The first two bits define mouse characteristics */
-  if ((flagbyte & 0xC0) == 0)
+  if ((flagbyte1 & 0xC0) == 0)
     {
       TN5250_LOG (("Use this selection field in all cases\n"));
     }
 
   /* both bits cannot be on */
-  if ((flagbyte & 0xC0) == 3)
+  if ((flagbyte1 & 0xC0) == 3)
     {
       TN5250_LOG (("Reserved usage of mouse characteristics!\n"));
     }
   else
     {
-      if (flagbyte & 0x40)
+      if (flagbyte1 & 0x40)
 	{
 	  TN5250_LOG (("Use this selection field only if the display does not have a mouse\n"));
 	}
-      if (flagbyte & 0x80)
+      if (flagbyte1 & 0x80)
 	{
 	  TN5250_LOG (("Use this selection field only if the display has a mouse\n"));
 	}
     }
 
   /* bits 4 and 5 define auto enter */
-  if ((flagbyte & 0x0C) == 0)
+  if ((flagbyte1 & 0x0C) == 0)
     {
       TN5250_LOG (("Selection field is not auto-enter\n"));
     }
-  else if ((flagbyte & 0x0C) == 1)
+  else if ((flagbyte1 & 0x0C) == 1)
     {
       TN5250_LOG (("Selection field is auto-enter on selection except if double-digit numeric selection is used\n"));
     }
-  else if ((flagbyte & 0x0C) == 2)
+  else if ((flagbyte1 & 0x0C) == 2)
     {
       TN5250_LOG (("Selection field is auto-enter on selection or deselection except if double-digit numeric selection is used\n"));
     }
@@ -2828,55 +2830,49 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
     }
 
   /* bit six controls auto-select */
-  if (flagbyte & 0x02)
+  if (flagbyte1 & 0x02)
     {
       TN5250_LOG (("Auto-select active\n"));
     }
 
 
-  flagbyte = tn5250_record_get_byte (This->record);
+  flagbyte2 = tn5250_record_get_byte (This->record);
 
-  if (flagbyte & 0x80)
+  if (flagbyte2 & 0x80)
     {
       TN5250_LOG (("Use scroll bar\n"));
-      menubar->use_scrollbar = 1;
       usescrollbar = 1;
     }
 
-  if (flagbyte & 0x40)
+  if (flagbyte2 & 0x40)
     {
       TN5250_LOG (("Add blank after numeric seperator\n"));
-      menubar->num_sep_blank = 1;
     }
 
-  if (flagbyte & 0x20)
+  if (flagbyte2 & 0x20)
     {
       TN5250_LOG (("Use * for unavailable options\n"));
-      menubar->asterisk = 1;
     }
 
-  if (flagbyte & 0x10)
+  if (flagbyte2 & 0x10)
     {
       TN5250_LOG (("Limit cursor to input capable positions\n"));
-      menubar->inputonly = 1;
     }
 
-  if (flagbyte & 0x08)
+  if (flagbyte2 & 0x08)
     {
       TN5250_LOG (("Field advance = character advance\n"));
-      menubar->fieldadvischaradv = 1;
     }
 
-  if (flagbyte & 0x04)
+  if (flagbyte2 & 0x04)
     {
       TN5250_LOG (("Cursor may not exit selection field\n"));
-      menubar->nocursormove = 1;
     }
 
 
-  flagbyte = tn5250_record_get_byte (This->record);
+  flagbyte3 = tn5250_record_get_byte (This->record);
 
-  if (flagbyte & 0x80)
+  if (flagbyte3 & 0x80)
     {
       TN5250_LOG (("Make selected choices available when keyboard is unlocked\n"));
     }
@@ -2925,6 +2921,9 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
       TN5250_LOG (("Invalid field selection type!!\n"));
     }
 
+  menubar->flagbyte1 = flagbyte1;
+  menubar->flagbyte2 = flagbyte2;
+  menubar->flagbyte3 = flagbyte3;
   menubar->type = fieldtype;
 
   reserved = tn5250_record_get_byte (This->record);
@@ -3023,7 +3022,9 @@ tn5250_session_define_selection_item (Tn5250Session * This,
 				      Tn5250Menubar * menubar, int length)
 {
   Tn5250Menuitem *menuitem;
-  unsigned char flagbyte;
+  unsigned char flagbyte1;
+  unsigned char flagbyte2;
+  unsigned char flagbyte3;
   unsigned char reserved;
   short offset_incl = 0;
   short aid_incl = 0;
@@ -3035,30 +3036,30 @@ tn5250_session_define_selection_item (Tn5250Session * This,
 
   menuitem = tn5250_menuitem_new ();
 
-  flagbyte = tn5250_record_get_byte (This->record);
+  flagbyte1 = tn5250_record_get_byte (This->record);
   length--;
 
   /* The first two bits choice state */
-  if ((flagbyte & 0xC0) == 0)
+  if ((flagbyte1 & 0xC0) == 0)
     {
       menuitem->available = 1;
       TN5250_LOG (("Available and not a default selection\n"));
     }
 
   /* both bits cannot be on */
-  if ((flagbyte & 0xC0) == 3)
+  if ((flagbyte1 & 0xC0) == 3)
     {
       TN5250_LOG (("Reserved usage of choice state!\n"));
     }
   else
     {
-      if (flagbyte & 0x40)
+      if (flagbyte1 & 0x40)
 	{
 	  menuitem->selected = 1;
 	  menuitem->available = 1;
 	  TN5250_LOG (("Available and is a default selection (selected state)\n"));
 	}
-      if (flagbyte & 0x80)
+      if (flagbyte1 & 0x80)
 	{
 	  menuitem->available = 0;
 	  TN5250_LOG (("Not available\n"));
@@ -3066,36 +3067,36 @@ tn5250_session_define_selection_item (Tn5250Session * This,
     }
 
   /* bit 2 specifies menu item that start a new row */
-  if (flagbyte & 0x20)
+  if (flagbyte1 & 0x20)
     {
       TN5250_LOG (("Menu item starts a new row\n"));
     }
 
   /* bit 4 indicates mnemonic offset is included */
-  if (flagbyte & 0x08)
+  if (flagbyte1 & 0x08)
     {
       TN5250_LOG (("mnemonic offset is included\n"));
       offset_incl = 1;
     }
 
   /* bit 5 specifies an AID if selected is included in this minor structure */
-  if (flagbyte & 0x04)
+  if (flagbyte1 & 0x04)
     {
       TN5250_LOG (("AID is included\n"));
       aid_incl = 1;
     }
 
   /* bits 6 and 7 define numeric selection characters */
-  if ((flagbyte & 0x03) == 0)
+  if ((flagbyte1 & 0x03) == 0)
     {
       TN5250_LOG (("Numeric selection characters are not included in this minor structure\n"));
     }
-  else if ((flagbyte & 0x0C) == 1)
+  else if ((flagbyte1 & 0x0C) == 1)
     {
       TN5250_LOG (("A single-digit numeric selection character is included in this minor structure\n"));
       selectchars_incl = 1;
     }
-  else if ((flagbyte & 0x0C) == 2)
+  else if ((flagbyte1 & 0x0C) == 2)
     {
       TN5250_LOG (("Double-digit numeric selection characters are included in this minor structure\n"));
       selectchars_incl = 1;
@@ -3106,50 +3107,54 @@ tn5250_session_define_selection_item (Tn5250Session * This,
     }
 
 
-  flagbyte = tn5250_record_get_byte (This->record);
+  flagbyte2 = tn5250_record_get_byte (This->record);
   length--;
 
-  if (flagbyte & 0x80)
+  if (flagbyte2 & 0x80)
     {
       TN5250_LOG (("choice cannot accept a cursor\n"));
     }
 
-  if (flagbyte & 0x40)
+  if (flagbyte2 & 0x40)
     {
       TN5250_LOG (("application user desires a roll-down AID if the Cursor Up key is pressed on this choice\n"));
     }
 
-  if (flagbyte & 0x20)
+  if (flagbyte2 & 0x20)
     {
       TN5250_LOG (("application user desires a roll-up AID if the Cursor Down key is pressed on this choice\n"));
     }
 
-  if (flagbyte & 0x10)
+  if (flagbyte2 & 0x10)
     {
       TN5250_LOG (("application user desires a roll-left AID if the Cursor Left key is pressed on this choice\n"));
     }
 
-  if (flagbyte & 0x08)
+  if (flagbyte2 & 0x08)
     {
       TN5250_LOG (("application user desires a roll-right AID if the Cursor Right key is pressed on this choice\n"));
     }
 
-  if (flagbyte & 0x04)
+  if (flagbyte2 & 0x04)
     {
       TN5250_LOG (("no push-button box is written for this choice\n"));
     }
 
-  if (flagbyte & 0x01)
+  if (flagbyte2 & 0x01)
     {
       TN5250_LOG (("cursor direction is right to left\n"));
     }
 
 
-  flagbyte = tn5250_record_get_byte (This->record);
+  flagbyte3 = tn5250_record_get_byte (This->record);
   length--;
 
+  menuitem->flagbyte1 = flagbyte1;
+  menuitem->flagbyte2 = flagbyte2;
+  menuitem->flagbyte3 = flagbyte3;
+
   /* The first three bits cannot all be off */
-  if ((flagbyte & 0xE0) == 0)
+  if ((flagbyte3 & 0xE0) == 0)
     {
       TN5250_LOG (("Minor structure ignored\n"));
 
@@ -3162,17 +3167,17 @@ tn5250_session_define_selection_item (Tn5250Session * This,
       return;
     }
 
-  if (flagbyte & 0x80)
+  if (flagbyte3 & 0x80)
     {
       TN5250_LOG (("use this minor structure for GUI devices (including GUI-like NWSs)\n"));
     }
 
-  if (flagbyte & 0x40)
+  if (flagbyte3 & 0x40)
     {
       TN5250_LOG (("use this minor structure for non-GUI NWSs that are capable of creating mnemonic underscores\n"));
     }
 
-  if (flagbyte & 0x20)
+  if (flagbyte3 & 0x20)
     {
       TN5250_LOG (("use this minor structure for NWS display devices that are not capable of creating underscores\n"));
     }
@@ -3205,19 +3210,32 @@ tn5250_session_define_selection_item (Tn5250Session * This,
 
   for (i = 0; (i < menubar->itemsize) && (length > 0); i++)
     {
-      menuitem->text[i] = tn5250_char_map_to_local (tn5250_display_char_map
-						    (This->display),
-						    tn5250_record_get_byte
-						    (This->record));
-      TN5250_LOG (("Choice text = %c\n", menuitem->text[i]));
+      menuitem->text[i] = tn5250_record_get_byte (This->record);
+      TN5250_LOG (("Choice text = %c\n", tn5250_char_map_to_local
+		   (tn5250_display_char_map (This->display),
+		    menuitem->text[i])));
       length--;
     }
+
+  /* The size of this menu item is the length of the text plus two
+   * attribute characters.
+   */
+  menuitem->size = i + 2;
+
+  /* fill the rest of the text with nulls since that will allow us to use
+   * strlen() on it.
+   */
   for (; (i < menubar->itemsize + 1); i++)
     {
       menuitem->text[i] = '\0';
     }
 
   tn5250_menu_add_menuitem (menubar, menuitem);
+  /* The row and column must be calculated after adding the menu item to
+   * the list.
+   */
+  menuitem->row = tn5250_menuitem_new_row (menuitem);
+  menuitem->column = tn5250_menuitem_new_col (menuitem);
   tn5250_terminal_create_menuitem (This->display->terminal,
 				   This->display, menuitem);
 
