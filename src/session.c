@@ -2776,7 +2776,6 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
   unsigned char separator;
   unsigned char selectionchar;
   unsigned char cancelaid;
-  unsigned char unknownlength;
   unsigned char reserved;
   int minorlength;
   short usescrollbar = 0;
@@ -2959,22 +2958,6 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
       TN5250_LOG (("Scroll bars not supported in selection fields\n"));
     }
 
-  /* Now we always seem to get some data that doesn't show up in the docs.
-   * I have no idea what it is, so retrieve it and report it.
-   */
-  unknownlength = tn5250_record_get_byte (This->record);
-  TN5250_LOG (("length of unknown data = 0x%02X\n", unknownlength));
-  length--;
-  unknownlength--;
-
-  while (unknownlength > 0)
-    {
-      reserved = tn5250_record_get_byte (This->record);
-      TN5250_LOG (("unknown data = 0x%02X (%d)\n", reserved, (int) reserved));
-      length--;
-      unknownlength--;
-    }
-
   menubar->column = tn5250_display_cursor_x (This->display);
   menubar->row = tn5250_display_cursor_y (This->display);
 
@@ -2983,23 +2966,70 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
   tn5250_terminal_create_menubar (This->display->terminal,
 				  This->display, menubar);
 
-
-  minorlength = 0;
   while (length > 0)
     {
+      minorlength = (int) tn5250_record_get_byte (This->record) - 2;
+      length--;
       reserved = tn5250_record_get_byte (This->record);
-      TN5250_LOG (("byte = 0x%02X (%d)\n", reserved, (int) reserved));
       length--;
 
       if (reserved == 0x10)
 	{
-	  tn5250_session_define_selection_item (This, menubar,
-						minorlength - 2);
-	  length = length - (minorlength - 2);
+	  tn5250_session_define_selection_item (This, menubar, minorlength);
+	  length = length - minorlength;
+	}
+      /* Get the Choice Presentation Display Attributes Minor Structure if
+       * it is there.
+       */
+      else if (reserved == 0x01)
+	{
+	  while (minorlength > 0)
+	    {
+	      reserved = tn5250_record_get_byte (This->record);
+	      TN5250_LOG (("Choice Presentation = 0x%02X\n", reserved));
+	      length--;
+	      minorlength--;
+	    }
+	}
+      /* Get the Menu Bar Separator Minor Structure if it is there.
+       */
+      else if (reserved == 0x09)
+	{
+	  while (minorlength > 0)
+	    {
+	      reserved = tn5250_record_get_byte (This->record);
+	      TN5250_LOG (("Menu Bar Separator = 0x%02X\n", reserved));
+	      length--;
+	      minorlength--;
+	    }
+	}
+      /* Get the Choice Indicator Minor Structure if it is there.
+       */
+      else if (reserved == 0x02)
+	{
+	  while (minorlength > 0)
+	    {
+	      reserved = tn5250_record_get_byte (This->record);
+	      TN5250_LOG (("Choice Indicator = 0x%02X\n", reserved));
+	      length--;
+	      minorlength--;
+	    }
+	}
+      /* Get the Scroll Bar Indicators Minor Structure if it is there.
+       */
+      else if (reserved == 0x03)
+	{
+	  while (minorlength > 0)
+	    {
+	      reserved = tn5250_record_get_byte (This->record);
+	      TN5250_LOG (("Scroll Bar Indicators = 0x%02X\n", reserved));
+	      length--;
+	      minorlength--;
+	    }
 	}
       else
 	{
-	  minorlength = (int) reserved;
+	  TN5250_LOG (("unknown data = 0x%02X\n", reserved));
 	}
     }
   return;
