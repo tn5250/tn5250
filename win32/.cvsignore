@@ -1,0 +1,13 @@
+debug
+release
+tn5250-config.h
+config.h
+Makefile
+lib5250.a
+lib5250.def
+tn5250_innosetup.iss
+*.exe
+*.dll
+*.vcproj
+*.vcproj.vspscc
+*.scc
