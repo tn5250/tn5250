@@ -1,3 +1,6 @@
+2005-04-13 Marc-Antoine Ruel <maruel@users.sf.net>
+- win32/ Disabled window maximizing & resizing when font resizing is disabled
+
 2005-04-09 James Rich <james@eaerich.com>
 - Fix cursor movement through menubars.
 - Change menu items to not translate to local map.
