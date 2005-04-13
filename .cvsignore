@@ -9,3 +9,4 @@ Makefile
 tn5250-config
 xt5250
 *~
+*.scc
