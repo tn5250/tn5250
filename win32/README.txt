@@ -35,12 +35,8 @@ SYSTEM REQUIREMENTS:
               I will give instructions below on how to get and
               install it.
 
-   -- GNU glib-2.0 for Windows.
-
-        Note: This is also open-source, and documented below.
-
    -- If you want SSL support, OpenSSL 0.9.6b or higher is
-        also required.
+        also required. It was at version 0.9.7f at the time of writing.
 
         Note: This is also open-source, and documented below.
 
@@ -107,49 +103,6 @@ Here's how you install MinGW:
      might be the best place to go.
 
 
-GETTING AND INSTALLING GLIB:
-----------------------------------
-
-The glib library is a low-level core library that was originally developed
-for GTK+ and Gnome.  It contains portability wrappers and utilities that
-help programmers manipulate lists and data structures.
-
-1) Since Glib was developed for GTK+ ("GIMP Tool Kit") we will get it
-   from their web page at:
-        http://www.gimp.org/win32/
-
-2) Click on "Downloads".
-
-3) We need the developer's packages of GLIB.  GLIB requires libintl
-   and libiconv to function.  Tn5250 will also use the pkg-config
-   utility to help it find and use glib.
-
-   These are the files I downloaded:
-        -- libiconv-1.7.zip
-        -- libintl-0.10.40-20020101.zip
-        -- glib-2.0.0-20020316.zip
-        -- glib-dev-2.0.0-20020310.zip
-        -- pkgconfig-0.11-20020310.zip
-
-   The versions of the various components should not matter, but the
-   above versions are the ones that I used.
-
-4) The instructions on the web page say that you should unzip those files
-   into a directory of your choice.  They recommend that you do not use
-   "a directory with spaces or other funny character in the name".
-
-   For the sake of simplicity, I called mine "GLIB".   Then I used
-   WinZip to extract the files, and for each one I told it to extract them
-   into the directory "C:\GLIB".
-
-5) Finally, you need to add the C:\GLIB\BIN and C:\GLIB\LIB directories
-   into your path.   My path now looks like:
-            path=%path%;C:\MINGW\BIN;C:\GLIB\BIN;C:\GLIB\LIB
-     
-6) Reboot your computer to activate the new path.
-
-
-
 GETTING AND INSTALLING OPENSSL:
 ----------------------------------
 
@@ -168,11 +121,8 @@ If you wish to use it, and are able, here are the instructions:
           http://www.openssl.org
 
     2) Click on "Source".  It will list the various versions of OpenSSL
-       that are available.  At the time that I downloaded it, the
-       newest version was openssl-0.9.6b.tar.gz.  This is the version I
-       used for development and testing.  (Although, newer version should
-       also work)  Click the version you want, and download it to your
-       hard drive.
+       that are available.  Take the latest version and download it to
+       your hard drive.
 
        Note:  For some versions of OpenSSL there is an "Engine" version
               and a "regular" version.  Unless you have a special
@@ -187,7 +137,7 @@ If you wish to use it, and are able, here are the instructions:
 
     4) Open up an MS-DOS prompt, and switch to the directory that OpenSSL
         was extracted to.  On my system, I type:
-         cd c:\openssl-0.9.6b
+         cd c:\openssl-0.9.7f
 
     5) In this directory there is a file called "INSTALL.W32" which
         contains some instructions for compiling OpenSSL on Win32 systems.
@@ -201,13 +151,13 @@ If you wish to use it, and are able, here are the instructions:
 
     6) Now, I edit my C:\autoexec.bat again, and I add the C:\Perl\bin
         directory to my path.  My path now looks like this:
-               path=%path%;C:\MINGW\BIN;C:\GLIB\BIN;C:\GLIB\LIB;C:\PERL\BIN
+               path=%path%;C:\MINGW\BIN;C:\PERL\BIN
 
         Once again, I re-boot my computer to activate the changes to my
         path.
 
     7) Open up an MS-DOS prompt and go back to the openssl directory:
-         cd \openssl-0.9.6b
+         cd \openssl-0.9.7f
 
     8) Once again looking at the INSTALL.W32 file, it tells me that
          "Mingw32" is a supported compiler for OpenSSL.  How fortunate!
@@ -215,15 +165,8 @@ If you wish to use it, and are able, here are the instructions:
          with it's own assembler, so I don't need to download NASM or
          MASM.
 
-         At the time of this writing, the INSTALL.W32 file's instructions
-         for using MinGW seem a little out-of-date.  It tells me an old
-         URL for getting MinGW, and tells me to run mingw32.bat to set up
-         my path.  These are not needed with the current version of MinGW.
-         It also does not need to be in c:\egcs-1.1.2, putting it in
-         c:\mingw as I described above works just fine for me.
-
     9) OpenSSL takes a while to build.  To start the process, I type the
-         following MS-DOS command from the C:\openssl-0.9.6b directory:
+         following MS-DOS command from the C:\openssl-0.9.7f directory:
             ms\Mingw32
 
          Note: If you have Cygwin installed on your system, you should
@@ -245,7 +188,7 @@ If you wish to use it, and are able, here are the instructions:
        "passed all tests"
 
    11) I then installed OpenSSL on my system by typing:
-             cd c:\openssl-0.9.6b
+             cd c:\openssl-0.9.7f
              md C:\openssl
              md C:\openssl\bin
              md c:\openssl\lib
@@ -272,7 +215,7 @@ If you wish to use it, and are able, here are the instructions:
         for OpenSSL.   Add the path C:\openssl\bin  this made my
         path look like this:
 
- path=%path%;C:\MINGW\BIN;C:\GLIB\BIN;C:\GLIB\LIB;C:\PERL\BIN;C:\OPENSSL\BIN
+ path=%path%;C:\MINGW\BIN;C:\PERL\BIN;C:\OPENSSL\BIN
 
    14) Re-boot your computer to activate the new path.
 
