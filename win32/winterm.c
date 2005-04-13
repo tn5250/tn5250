@@ -639,7 +639,7 @@ static void win32_terminal_init(Tn5250Terminal * This)
    /* create our main window */
    This->data->hwndMain = CreateWindow (TN5250_WNDCLASS, 
 	    		     title,
-		             WS_OVERLAPPEDWINDOW,
+			     This->data->resize_fonts ? WS_OVERLAPPEDWINDOW : (WS_OVERLAPPEDWINDOW&(~WS_MAXIMIZEBOX)),
 			     CW_USEDEFAULT,
 	       		     CW_USEDEFAULT,
 		  	     CW_USEDEFAULT,
@@ -1178,15 +1178,13 @@ static void win32_terminal_update(Tn5250Terminal * This, Tn5250Display *display)
    /* clear the screen buffer (one big black rectangle) */
 
    GetClientRect(This->data->hwndMain, &cr);
-   win32_terminal_clear_screenbuf(This->data->hwndMain, cr.right+1,
-          cr.bottom+1, 0, 0);
+   win32_terminal_clear_screenbuf(This->data->hwndMain, cr.right-cr.left+1,
+          cr.bottom-cr.top+1, 0, 0);
 
    win32_do_terminal_update(bmphdc, This, display, attribute_map, 0, 0);
 
    This->data->caretok = 0;
    win32_terminal_update_indicators(This, display);
-
-   return;
 }
 
 /****i* lib5250/win32_do_terminal_update
@@ -1921,6 +1919,23 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
            }
            return 0;
 
+        case WM_SIZING:
+           // Block it if needed
+           if (!globTerm->data->resize_fonts)
+           {
+              GetWindowRect(hwnd, (RECT*)lParam);
+              return 1;
+           }
+           break;
+
+        /* TBA case WM_NCCALCSIZE:
+           // NCCALCSIZE_PARAMS::rgrc[0] == RECT
+           win32_terminal_on_resize(hwnd, (RECT*)lParam);
+           if (lParam)
+              return WVR_REDRAW;
+           else
+              return 0;*/
+
         case WM_SIZE:
            w = LOWORD(lParam);
            h = HIWORD(lParam);
@@ -1934,18 +1949,17 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
               if (globTerm!=NULL && globDisplay!=NULL) {
                   if (globTerm->data->resize_fonts) {
                        win32_calc_default_font_size(hwnd, 80, 24, &c, &r);
-                       globTerm->data->font_80_h = r;    
-                       globTerm->data->font_80_w = c;    
+                       globTerm->data->font_80_h = r;
+                       globTerm->data->font_80_w = c;
                        win32_calc_default_font_size(hwnd, 132, 27, &c, &r);
-                       globTerm->data->font_132_h = r;    
-                       globTerm->data->font_132_w = c;    
+                       globTerm->data->font_132_h = r;
+                       globTerm->data->font_132_w = c;
                        globTerm->data->resized = 1;
                   }
                   win32_terminal_update(globTerm, globDisplay);
               }
            }
            return 0;
-           break;
 
         case WM_SYSKEYUP:
         case WM_KEYUP:
