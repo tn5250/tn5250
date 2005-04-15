@@ -1,3 +1,6 @@
+2005-04-14 James Rich <james@eaerich.com>
+- Fix seg fault caused by uninitialized menubar_list.
+
 2005-04-13 Marc-Antoine Ruel <maruel@users.sf.net>
 - win32/ Disabled window maximizing & resizing when font resizing is disabled
 
