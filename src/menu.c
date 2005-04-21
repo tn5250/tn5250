@@ -382,6 +382,27 @@ tn5250_menuitem_new_col (Tn5250Menuitem * This)
 
 
 Tn5250Menuitem *
+tn5250_menuitem_list_find_by_id (Tn5250Menuitem * list, int id)
+{
+  Tn5250Menuitem *iter;
+
+  if ((iter = list) != NULL)
+    {
+      do
+	{
+	  if (iter->id == id)
+	    {
+	      return iter;
+	    }
+	  iter = iter->next;
+	}
+      while (iter != list);
+    }
+  return NULL;
+}
+
+
+Tn5250Menuitem *
 tn5250_menuitem_hit_test (Tn5250Menuitem * list, int x, int y)
 {
   Tn5250Menuitem *iter;

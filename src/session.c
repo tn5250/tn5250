@@ -71,7 +71,8 @@ static void tn5250_session_remove_gui_selection_field (Tn5250Session * This,
 						       int length);
 static void tn5250_session_define_selection_item (Tn5250Session * This,
 						  Tn5250Menubar * menubar,
-						  int length);
+						  int length, int count,
+						  short createnew);
 static void tn5250_session_create_window_structured_field (Tn5250Session *
 							   This, int length);
 static void tn5250_session_define_scrollbar (Tn5250Session * This,
@@ -2767,6 +2768,7 @@ tn5250_session_query_reply (Tn5250Session * This)
 static void
 tn5250_session_define_selection_field (Tn5250Session * This, int length)
 {
+  Tn5250DBuffer *dbuffer;
   Tn5250Menubar *menubar;
   unsigned char flagbyte1;
   unsigned char flagbyte2;
@@ -2778,12 +2780,12 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
   unsigned char cancelaid;
   unsigned char reserved;
   int minorlength;
+  int menuitemcount;
   short usescrollbar = 0;
+  short createnewmenubar = 0;
 
   TN5250_LOG (("Entering tn5250_session_define_selection_field()\n"));
 
-
-  menubar = tn5250_menubar_new ();
 
   flagbyte1 = tn5250_record_get_byte (This->record);
 
@@ -2920,6 +2922,22 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
       TN5250_LOG (("Invalid field selection type!!\n"));
     }
 
+  /* Menus can't overlay each other.  If this menu is in the same position as
+   * another, redefine the menu instead of creating a new one.
+   */
+  dbuffer = tn5250_display_dbuffer (This->display);
+
+  if ((menubar = tn5250_menubar_hit_test (dbuffer->menubar_list,
+					  tn5250_display_cursor_x (This->
+								   display),
+					  tn5250_display_cursor_y (This->
+								   display)))
+      == NULL)
+    {
+      menubar = tn5250_menubar_new ();
+      createnewmenubar = 1;
+    }
+
   menubar->flagbyte1 = flagbyte1;
   menubar->flagbyte2 = flagbyte2;
   menubar->flagbyte3 = flagbyte3;
@@ -2958,14 +2976,18 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
       TN5250_LOG (("Scroll bars not supported in selection fields\n"));
     }
 
-  menubar->column = tn5250_display_cursor_x (This->display);
-  menubar->row = tn5250_display_cursor_y (This->display);
+  if (createnewmenubar)
+    {
+      menubar->column = tn5250_display_cursor_x (This->display);
+      menubar->row = tn5250_display_cursor_y (This->display);
 
-  tn5250_dbuffer_add_menubar (tn5250_display_dbuffer (This->display),
-			      menubar);
-  tn5250_terminal_create_menubar (This->display->terminal,
-				  This->display, menubar);
+      tn5250_dbuffer_add_menubar (tn5250_display_dbuffer (This->display),
+				  menubar);
+      tn5250_terminal_create_menubar (This->display->terminal,
+				      This->display, menubar);
+    }
 
+  menuitemcount = 0;
   while (length > 0)
     {
       minorlength = (int) tn5250_record_get_byte (This->record) - 2;
@@ -2975,7 +2997,10 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
 
       if (reserved == 0x10)
 	{
-	  tn5250_session_define_selection_item (This, menubar, minorlength);
+	  tn5250_session_define_selection_item (This, menubar, minorlength,
+						menuitemcount,
+						createnewmenubar);
+	  menuitemcount++;
 	  length = length - minorlength;
 	}
       /* Get the Choice Presentation Display Attributes Minor Structure if
@@ -3049,7 +3074,8 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
  *****/
 static void
 tn5250_session_define_selection_item (Tn5250Session * This,
-				      Tn5250Menubar * menubar, int length)
+				      Tn5250Menubar * menubar, int length,
+				      int count, short createnew)
 {
   Tn5250Menuitem *menuitem;
   unsigned char flagbyte1;
@@ -3064,7 +3090,15 @@ tn5250_session_define_selection_item (Tn5250Session * This,
   TN5250_LOG (("Entering tn5250_session_define_selection_item()\n"));
 
 
-  menuitem = tn5250_menuitem_new ();
+  if (createnew)
+    {
+      menuitem = tn5250_menuitem_new ();
+    }
+  else
+    {
+      menuitem = tn5250_menuitem_list_find_by_id (menubar->menuitem_list,
+						  count);
+    }
 
   flagbyte1 = tn5250_record_get_byte (This->record);
   length--;
@@ -3236,7 +3270,12 @@ tn5250_session_define_selection_item (Tn5250Session * This,
       TN5250_LOG (("Numeric characters: 0x%02X\n", reserved));
     }
 
-  menuitem->text = tn5250_new (unsigned char, menubar->itemsize + 1);
+  if (!createnew)
+    {
+      free (menuitem->text);
+    }
+
+  menuitem->text = tn5250_new (unsigned char, menubar->itemsize + 1); 
 
   for (i = 0; (i < menubar->itemsize) && (length > 0); i++)
     {
@@ -3260,14 +3299,26 @@ tn5250_session_define_selection_item (Tn5250Session * This,
       menuitem->text[i] = '\0';
     }
 
-  tn5250_menu_add_menuitem (menubar, menuitem);
-  /* The row and column must be calculated after adding the menu item to
-   * the list.
-   */
-  menuitem->row = tn5250_menuitem_new_row (menuitem);
-  menuitem->column = tn5250_menuitem_new_col (menuitem);
-  tn5250_terminal_create_menuitem (This->display->terminal,
-				   This->display, menuitem);
+  if (createnew)
+    {
+      tn5250_menu_add_menuitem (menubar, menuitem);
+
+      /* The row and column must be calculated after adding the menu item to
+       * the list.
+       */
+      menuitem->row = tn5250_menuitem_new_row (menuitem);
+      menuitem->column = tn5250_menuitem_new_col (menuitem);
+      /*
+	menuitem->row = tn5250_display_cursor_y (This->display);
+	menuitem->column = tn5250_display_cursor_x (This->display);
+      */
+    }
+
+  if (createnew)
+    {
+      tn5250_terminal_create_menuitem (This->display->terminal,
+				       This->display, menuitem);
+    }
 
   return;
 }
@@ -3361,19 +3412,23 @@ tn5250_session_create_window_structured_field (Tn5250Session * This,
 
   if (!pulldown)
     {
-      if ((window =
-	   tn5250_window_match_test (This->display->display_buffers->
-				     window_list,
-				     tn5250_display_cursor_x (This->display) +
-				     1,
-				     tn5250_display_cursor_y (This->display) +
-				     1, width, depth)) != NULL)
-	{
-	}
-      else
-	{
-	  window = tn5250_window_new ();
-	}
+      /*
+         if ((window =
+         tn5250_window_match_test (This->display->display_buffers->
+         window_list,
+         tn5250_display_cursor_x (This->display) +
+         1,
+         tn5250_display_cursor_y (This->display) +
+         1, width, depth)) != NULL)
+         {
+         }
+         else
+         {
+       */
+      window = tn5250_window_new ();
+      /*
+         }
+       */
     }
 
   if ((length - 5) > 0)
