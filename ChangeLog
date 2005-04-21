@@ -1,3 +1,6 @@
+2005-04-21 James Rich <james@eaerich.com>
+- Additional menu support.
+
 2005-04-14 James Rich <james@eaerich.com>
 - Fix seg fault caused by uninitialized menubar_list.
 
