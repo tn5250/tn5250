@@ -181,7 +181,8 @@ extern "C"
 			    struct _Tn5250Display * display,
 			    struct _Tn5250Menubar * menubar);
     void (*destroy_menubar) (struct _Tn5250Terminal * This,
-			     struct _Tn5250Display * display);
+			     struct _Tn5250Display * display,
+			     struct _Tn5250Menubar * menubar);
     void (*create_menuitem) (struct _Tn5250Terminal * This,
 			     struct _Tn5250Display * display,
 			     struct _Tn5250Menuitem * menuitem);
@@ -233,7 +234,8 @@ extern "C"
 					      struct _Tn5250Display *d,
 					      struct _Tn5250Menubar *m);
   extern void tn5250_terminal_destroy_menubar (Tn5250Terminal * This,
-					       struct _Tn5250Display *d);
+					       struct _Tn5250Display *d,
+					       struct _Tn5250Menubar *m);
   extern void tn5250_terminal_create_menuitem (Tn5250Terminal * This,
 					       struct _Tn5250Display *d,
 					       struct _Tn5250Menuitem *i);
