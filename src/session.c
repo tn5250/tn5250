@@ -1183,8 +1183,21 @@ tn5250_session_clear_unit (Tn5250Session * This)
 
   if (This->display->display_buffers->menubar_count > 0)
     {
-      tn5250_terminal_destroy_menubar (This->display->terminal,
-				       This->display);
+      Tn5250Menubar *iter, *next;
+
+      if ((iter = This->display->display_buffers->menubar_list) != NULL)
+	{
+	  do
+	    {
+	      next = iter->next;
+	      tn5250_terminal_destroy_menubar (This->display->terminal,
+					       This->display,
+					       iter);
+	      iter = next;
+	    }
+	  while (iter != This->display->display_buffers->menubar_list);
+	}
+
       This->display->display_buffers->menubar_list =
 	tn5250_menubar_list_destroy (This->display->display_buffers->
 				     menubar_list);
@@ -3275,7 +3288,7 @@ tn5250_session_define_selection_item (Tn5250Session * This,
       free (menuitem->text);
     }
 
-  menuitem->text = tn5250_new (unsigned char, menubar->itemsize + 1); 
+  menuitem->text = tn5250_new (unsigned char, menubar->itemsize + 1);
 
   for (i = 0; (i < menubar->itemsize) && (length > 0); i++)
     {
@@ -3309,9 +3322,9 @@ tn5250_session_define_selection_item (Tn5250Session * This,
       menuitem->row = tn5250_menuitem_new_row (menuitem);
       menuitem->column = tn5250_menuitem_new_col (menuitem);
       /*
-	menuitem->row = tn5250_display_cursor_y (This->display);
-	menuitem->column = tn5250_display_cursor_x (This->display);
-      */
+         menuitem->row = tn5250_display_cursor_y (This->display);
+         menuitem->column = tn5250_display_cursor_x (This->display);
+       */
     }
 
   if (createnew)
@@ -3349,7 +3362,9 @@ tn5250_session_remove_gui_selection_field (Tn5250Session * This, int length)
   if (tn5250_dbuffer_menubar_count (This->display->display_buffers) > 0)
     {
       tn5250_terminal_destroy_menubar (This->display->terminal,
-				       This->display);
+				       This->display,
+				       This->display->display_buffers->
+				       menubar_list);
       This->display->display_buffers->menubar_list =
 	tn5250_menubar_list_destroy (This->display->display_buffers->
 				     menubar_list);

@@ -133,9 +133,10 @@ tn5250_terminal_create_menubar (Tn5250Terminal * This, Tn5250Display * d,
 }
 
 void
-tn5250_terminal_destroy_menubar (Tn5250Terminal * This, Tn5250Display * d)
+tn5250_terminal_destroy_menubar (Tn5250Terminal * This, Tn5250Display * d,
+				 struct _Tn5250Menubar *m)
 {
-  (*((This)->destroy_menubar)) ((This), (d));
+  (*((This)->destroy_menubar)) ((This), (d), (m));
 }
 
 void

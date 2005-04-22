@@ -54,6 +54,7 @@ extern "C"
  */
   struct _Tn5250Menubar
   {
+    struct _Tn5250MenubarPrivate *data;
     struct _Tn5250Menubar *next;
     struct _Tn5250Menubar *prev;
     unsigned int id;		/* Numeric ID of this menubar */
@@ -113,6 +114,7 @@ extern "C"
  */
   struct _Tn5250Menuitem
   {
+    struct _Tn5250MenuitemPrivate *data;
     struct _Tn5250Menuitem *next;
     struct _Tn5250Menuitem *prev;
     unsigned int id;		/* Numeric ID of this menuitem */
@@ -153,6 +155,20 @@ extern "C"
 
   void tn5250_menu_add_menuitem (Tn5250Menubar * This,
 				 Tn5250Menuitem * menuitem);
+
+
+#ifndef _TN5250_MENU_PRIVATE_DEFINED
+#define _TN5250_MENU_PRIVATE_DEFINED
+  struct _Tn5250MenubarPrivate
+  {
+    long dummy;
+  };
+  struct _Tn5250MenuitemPrivate
+  {
+    long dummy;
+  };
+#endif
+
 #ifdef __cplusplus
 }
 
