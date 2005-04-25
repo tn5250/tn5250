@@ -2800,6 +2800,22 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
   TN5250_LOG (("Entering tn5250_session_define_selection_field()\n"));
 
 
+  /* Menus can't overlay each other.  If this menu is in the same position as
+   * another, redefine the menu instead of creating a new one.
+   */
+  dbuffer = tn5250_display_dbuffer (This->display);
+
+  if ((menubar = tn5250_menubar_hit_test (dbuffer->menubar_list,
+					  tn5250_display_cursor_x (This->
+								   display),
+					  tn5250_display_cursor_y (This->
+								   display)))
+      == NULL)
+    {
+      menubar = tn5250_menubar_new ();
+      createnewmenubar = 1;
+    }
+
   flagbyte1 = tn5250_record_get_byte (This->record);
 
   /* The first two bits define mouse characteristics */
@@ -2880,7 +2896,12 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
 
   if (flagbyte2 & 0x04)
     {
+      menubar->restricted_cursor = 1;
       TN5250_LOG (("Cursor may not exit selection field\n"));
+    }
+  else
+    {
+      menubar->restricted_cursor = 0;
     }
 
 
@@ -2892,11 +2913,12 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
     }
 
 
+  TN5250_LOG (("Selection field type: "));
   fieldtype = tn5250_record_get_byte (This->record);
 
   if (fieldtype == 0x01)
     {
-      TN5250_LOG (("Menubar bar\n"));
+      TN5250_LOG (("Menubar\n"));
     }
   else if (fieldtype == 0x11)
     {
@@ -2933,22 +2955,6 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
   else
     {
       TN5250_LOG (("Invalid field selection type!!\n"));
-    }
-
-  /* Menus can't overlay each other.  If this menu is in the same position as
-   * another, redefine the menu instead of creating a new one.
-   */
-  dbuffer = tn5250_display_dbuffer (This->display);
-
-  if ((menubar = tn5250_menubar_hit_test (dbuffer->menubar_list,
-					  tn5250_display_cursor_x (This->
-								   display),
-					  tn5250_display_cursor_y (This->
-								   display)))
-      == NULL)
-    {
-      menubar = tn5250_menubar_new ();
-      createnewmenubar = 1;
     }
 
   menubar->flagbyte1 = flagbyte1;
@@ -3138,6 +3144,7 @@ tn5250_session_define_selection_item (Tn5250Session * This,
 	}
       if (flagbyte1 & 0x80)
 	{
+	  menuitem->selected = 0;
 	  menuitem->available = 0;
 	  TN5250_LOG (("Not available\n"));
 	}

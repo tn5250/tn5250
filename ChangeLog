@@ -1,3 +1,7 @@
+2005-04-24 James Rich <james@eaerich.com>
+- Fix up/down cursor movement in menus.
+- Initialize selected flag on menu items.
+
 2005-04-21 James Rich <james@eaerich.com>
 - Additional menu support.
 

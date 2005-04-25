@@ -63,6 +63,7 @@ extern "C"
     unsigned char flagbyte1;
     unsigned char flagbyte2;
     unsigned char flagbyte3;
+    unsigned short restricted_cursor;
     unsigned char type;
     unsigned int row;		/* Row menubar starts on */
     unsigned int column;	/* Column menubar starts on */
@@ -78,11 +79,13 @@ extern "C"
   extern Tn5250Menubar *tn5250_menubar_new ();
   extern Tn5250Menubar *tn5250_menubar_copy (Tn5250Menubar * This);
   extern void tn5250_menubar_destroy (Tn5250Menubar * This);
-  extern int tn5250_menubar_start_row (Tn5250Menubar * This);
-  extern int tn5250_menubar_start_col (Tn5250Menubar * This);
-  extern int tn5250_menubar_itemsize (Tn5250Menubar * This);
-  extern int tn5250_menubar_height (Tn5250Menubar * This);
-  extern int tn5250_menubar_items (Tn5250Menubar * This);
+#define tn5250_menubar_restricted_cursor(This) ((This)->restricted_cursor)
+#define tn5250_menubar_type(This) ((This)->type)
+#define tn5250_menubar_start_row(This) ((This)->row)
+#define tn5250_menubar_start_col(This) ((This)->column)
+#define tn5250_menubar_itemsize(This) ((This)->itemsize)
+#define tn5250_menubar_height(This) ((This)->height)
+#define tn5250_menubar_items(This) ((This)->items)
 
 /* Manipulate menubar lists */
   extern Tn5250Menubar *tn5250_menubar_list_destroy (Tn5250Menubar * list);
