@@ -63,41 +63,6 @@ tn5250_menubar_destroy (Tn5250Menubar * This)
 }
 
 
-int
-tn5250_menubar_start_row (Tn5250Menubar * This)
-{
-  return (This->row);
-}
-
-
-int
-tn5250_menubar_start_col (Tn5250Menubar * This)
-{
-  return (This->column);
-}
-
-
-int
-tn5250_menubar_height (Tn5250Menubar * This)
-{
-  return (This->height);
-}
-
-
-int
-tn5250_menubar_itemsize (Tn5250Menubar * This)
-{
-  return (This->itemsize);
-}
-
-
-int
-tn5250_menubar_items (Tn5250Menubar * This)
-{
-  return (This->items);
-}
-
-
 Tn5250Menubar *
 tn5250_menubar_list_destroy (Tn5250Menubar * list)
 {
@@ -356,28 +321,77 @@ tn5250_menuitem_list_remove (Tn5250Menuitem * list, Tn5250Menuitem * node)
 int
 tn5250_menuitem_new_row (Tn5250Menuitem * This)
 {
-  if (This->prev == This)
+  unsigned char menutype = tn5250_menubar_type (This->menubar);
+
+  switch (menutype)
     {
-      return (This->menubar->row);
+    case MENU_TYPE_MENUBAR:
+      if (This->prev == This)
+	{
+	  return (This->menubar->row);
+	}
+      else
+	{
+	  return (This->prev->row);
+	}
+      break;
+    case MENU_TYPE_SINGLE_SELECT_FIELD:
+    case MENU_TYPE_MULTIPLE_SELECT_FIELD:
+    case MENU_TYPE_SINGLE_SELECT_LIST:
+    case MENU_TYPE_MULTIPLE_SELECT_LIST:
+    case MENU_TYPE_SINGLE_SELECT_FIELD_PULL_DOWN:
+    case MENU_TYPE_MULTIPLE_SELECT_FIELD_PULL_DOWN:
+    case MENU_TYPE_PUSH_BUTTONS:
+    case MENU_TYPE_PUSH_BUTTONS_PULL_DOWN:
+      if (This->prev == This)
+	{
+	  return (This->menubar->row);
+	}
+      else
+	{
+	  return (This->prev->row + 1);
+	}
+      break;
+    default:
+      TN5250_LOG (("Invalid selection field type!!\n"));
+      break;
     }
-  else
-    {
-      return (This->prev->row);
-    }
+  return 0;
 }
 
 
 int
 tn5250_menuitem_new_col (Tn5250Menuitem * This)
 {
-  if (This->prev == This)
+  unsigned char menutype = tn5250_menubar_type (This->menubar);
+
+  switch (menutype)
     {
+    case MENU_TYPE_MENUBAR:
+      if (This->prev == This)
+	{
+	  return (This->menubar->column + 1);
+	}
+      else
+	{
+	  return (This->prev->column + This->prev->size + 1);
+	}
+      break;
+    case MENU_TYPE_SINGLE_SELECT_FIELD:
+    case MENU_TYPE_MULTIPLE_SELECT_FIELD:
+    case MENU_TYPE_SINGLE_SELECT_LIST:
+    case MENU_TYPE_MULTIPLE_SELECT_LIST:
+    case MENU_TYPE_SINGLE_SELECT_FIELD_PULL_DOWN:
+    case MENU_TYPE_MULTIPLE_SELECT_FIELD_PULL_DOWN:
+    case MENU_TYPE_PUSH_BUTTONS:
+    case MENU_TYPE_PUSH_BUTTONS_PULL_DOWN:
       return (This->menubar->column + 1);
+      break;
+    default:
+      TN5250_LOG (("Invalid selection field type!!\n"));
+      break;
     }
-  else
-    {
-      return (This->prev->column + This->prev->size + 1);
-    }
+  return 0;
 }
 
 

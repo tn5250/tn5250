@@ -661,6 +661,19 @@ tn5250_dbuffer_left (Tn5250DBuffer * This)
 void
 tn5250_dbuffer_up (Tn5250DBuffer * This)
 {
+  if (This->menubar_count > 0)
+    {
+      Tn5250Menubar *menubar =
+	tn5250_menubar_hit_test (This->menubar_list, This->cx, This->cy);
+
+      if (menubar != NULL)
+	{
+	  tn5250_menubar_select_prev (menubar, &This->cx, &This->cy);
+	  ASSERT_VALID (This);
+	  return;
+	}
+    }
+
   if (--This->cy == -1)
     This->cy = This->h - 1;
 
@@ -682,6 +695,19 @@ tn5250_dbuffer_up (Tn5250DBuffer * This)
 void
 tn5250_dbuffer_down (Tn5250DBuffer * This)
 {
+  if (This->menubar_count > 0)
+    {
+      Tn5250Menubar *menubar =
+	tn5250_menubar_hit_test (This->menubar_list, This->cx, This->cy);
+
+      if (menubar != NULL)
+	{
+	  tn5250_menubar_select_next (menubar, &This->cx, &This->cy);
+	  ASSERT_VALID (This);
+	  return;
+	}
+    }
+
   if (++This->cy == This->h)
     {
       This->cy = 0;
