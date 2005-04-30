@@ -42,6 +42,7 @@ extern "C"
  */
   struct _Tn5250Window
   {
+    struct _Tn5250WindowPrivate *data;
     struct _Tn5250Window *next;
     struct _Tn5250Window *prev;
     unsigned int id;		/* Numeric ID of this window */
@@ -79,6 +80,15 @@ extern "C"
 						 int rows);
   extern Tn5250Window *tn5250_window_hit_test (Tn5250Window * list, int x,
 					       int y);
+
+
+#ifndef _TN5250_WINDOW_PRIVATE_DEFINED
+#define _TN5250_WINDOW_PRIVATE_DEFINED
+  struct _Tn5250WindowPrivate
+  {
+    long dummy;
+  };
+#endif
 
 #ifdef __cplusplus
 }

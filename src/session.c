@@ -1173,8 +1173,21 @@ tn5250_session_clear_unit (Tn5250Session * This)
 
   if (This->display->display_buffers->window_count > 0)
     {
-      TN5250_LOG (("destroy some windows.\n"));
-      tn5250_terminal_destroy_window (This->display->terminal, This->display);
+      Tn5250Window *iter, *next;
+
+      if ((iter = This->display->display_buffers->window_list) != NULL)
+	{
+	  do
+	    {
+	      next = iter->next;
+	      TN5250_LOG (("destroying window id: %d\n", iter->id));
+	      tn5250_terminal_destroy_window (This->display->terminal,
+					      This->display, iter);
+	      iter = next;
+	    }
+	  while (iter != This->display->display_buffers->window_list);
+	}
+
       This->display->display_buffers->window_list =
 	tn5250_window_list_destroy (This->display->display_buffers->
 				    window_list);
@@ -1191,8 +1204,7 @@ tn5250_session_clear_unit (Tn5250Session * This)
 	    {
 	      next = iter->next;
 	      tn5250_terminal_destroy_menubar (This->display->terminal,
-					       This->display,
-					       iter);
+					       This->display, iter);
 	      iter = next;
 	    }
 	  while (iter != This->display->display_buffers->menubar_list);
@@ -1251,7 +1263,21 @@ tn5250_session_clear_unit_alternate (Tn5250Session * This)
 
   if (This->display->display_buffers->window_count > 0)
     {
-      tn5250_terminal_destroy_window (This->display->terminal, This->display);
+      Tn5250Window *iter, *next;
+
+      if ((iter = This->display->display_buffers->window_list) != NULL)
+	{
+	  do
+	    {
+	      next = iter->next;
+	      TN5250_LOG (("destroying window id: %d\n", iter->id));
+	      tn5250_terminal_destroy_window (This->display->terminal,
+					      This->display, iter);
+	      iter = next;
+	    }
+	  while (iter != This->display->display_buffers->window_list);
+	}
+
       This->display->display_buffers->window_list =
 	tn5250_window_list_destroy (This->display->display_buffers->
 				    window_list);
@@ -3727,6 +3753,7 @@ static void
 tn5250_session_remove_gui_window_structured_field (Tn5250Session * This,
 						   int length)
 {
+  Tn5250Window *window;
   unsigned char flagbyte1;
   unsigned char flagbyte2;
   unsigned char reserved;
@@ -3739,11 +3766,20 @@ tn5250_session_remove_gui_window_structured_field (Tn5250Session * This,
 
   if (This->display->display_buffers->window_count > 0)
     {
-      tn5250_terminal_destroy_window (This->display->terminal, This->display);
-      This->display->display_buffers->window_list =
-	tn5250_window_list_destroy (This->display->display_buffers->
-				    window_list);
-      This->display->display_buffers->window_count = 0;
+      window =
+	tn5250_window_hit_test (This->display->display_buffers->window_list,
+				tn5250_display_cursor_x (This->display),
+				tn5250_display_cursor_y (This->display));
+      tn5250_terminal_destroy_window (This->display->terminal, This->display,
+				      window);
+      This->display->display_buffers->window_count--;
+
+      if (This->display->display_buffers->window_count == 0)
+	{
+	  This->display->display_buffers->window_list =
+	    tn5250_window_list_destroy (This->display->display_buffers->
+					window_list);
+	}
     }
 
   if (This->display->display_buffers->scrollbar_count > 0)
@@ -3787,7 +3823,21 @@ tn5250_session_remove_all_gui_constructs_structured_field (Tn5250Session *
 
   if (This->display->display_buffers->window_count > 0)
     {
-      tn5250_terminal_destroy_window (This->display->terminal, This->display);
+      Tn5250Window *iter, *next;
+
+      if ((iter = This->display->display_buffers->window_list) != NULL)
+	{
+	  do
+	    {
+	      next = iter->next;
+	      TN5250_LOG (("destroying window id: %d\n", iter->id));
+	      tn5250_terminal_destroy_window (This->display->terminal,
+					      This->display, iter);
+	      iter = next;
+	    }
+	  while (iter != This->display->display_buffers->window_list);
+	}
+
       This->display->display_buffers->window_list =
 	tn5250_window_list_destroy (This->display->display_buffers->
 				    window_list);

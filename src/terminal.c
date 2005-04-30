@@ -107,9 +107,10 @@ tn5250_terminal_create_window (Tn5250Terminal * This, Tn5250Display * d,
 }
 
 void
-tn5250_terminal_destroy_window (Tn5250Terminal * This, Tn5250Display * d)
+tn5250_terminal_destroy_window (Tn5250Terminal * This, Tn5250Display * d,
+				struct _Tn5250Window * w)
 {
-  (*((This)->destroy_window)) ((This), (d));
+  (*((This)->destroy_window)) ((This), (d), (w));
 }
 
 void
