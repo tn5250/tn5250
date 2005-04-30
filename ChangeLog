@@ -1,3 +1,7 @@
+2005-04-29 James Rich <james@eaerich.com>
+- Add private data structure to window object.
+- Fix tn5250_session_remove_gui_window_structured_field().
+
 2005-04-24 James Rich <james@eaerich.com>
 - Fix up/down cursor movement in menus.
 - Initialize selected flag on menu items.

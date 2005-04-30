@@ -171,7 +171,8 @@ extern "C"
 			   struct _Tn5250Display * display,
 			   struct _Tn5250Window * window);
     void (*destroy_window) (struct _Tn5250Terminal * This,
-			    struct _Tn5250Display * display);
+			    struct _Tn5250Display * display,
+			    struct _Tn5250Window * window);
     void (*create_scrollbar) (struct _Tn5250Terminal * This,
 			      struct _Tn5250Display * display,
 			      struct _Tn5250Scrollbar * scrollbar);
@@ -224,7 +225,8 @@ extern "C"
 					     struct _Tn5250Display *d,
 					     struct _Tn5250Window * w);
   extern void tn5250_terminal_destroy_window (Tn5250Terminal * This,
-					      struct _Tn5250Display *d);
+					      struct _Tn5250Display *d,
+					      struct _Tn5250Window * w);
   extern void tn5250_terminal_create_scrollbar (Tn5250Terminal * This,
 						struct _Tn5250Display *d,
 						struct _Tn5250Scrollbar *s);
