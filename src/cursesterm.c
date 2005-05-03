@@ -297,6 +297,7 @@ Tn5250Terminal *tn5250_curses_terminal_new()
    r->update_indicators = curses_terminal_update_indicators;
    r->waitevent = curses_terminal_waitevent;
    r->getkey = curses_terminal_getkey;
+   r->putkey = NULL;
    r->beep = curses_terminal_beep;
    r->enhanced = curses_terminal_enhanced;
    r->config = curses_terminal_config;

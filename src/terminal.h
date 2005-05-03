@@ -163,6 +163,9 @@ extern "C"
 			       struct _Tn5250Display * display);
     int (*waitevent) (struct _Tn5250Terminal * This);
     int (*getkey) (struct _Tn5250Terminal * This);
+    void (*putkey) (struct _Tn5250Terminal * This,
+		    struct _Tn5250Display * display, unsigned char key,
+		    int row, int column);
     void (*beep) (struct _Tn5250Terminal * This);
     int (*enhanced) (struct _Tn5250Terminal * This);
     int (*config) (struct _Tn5250Terminal * This,
@@ -217,6 +220,9 @@ extern "C"
 						 struct _Tn5250Display *d);
   extern int tn5250_terminal_waitevent (Tn5250Terminal * This);
   extern int tn5250_terminal_getkey (Tn5250Terminal * This);
+  extern void tn5250_terminal_putkey (Tn5250Terminal * This,
+				      struct _Tn5250Display *d,
+				      unsigned char k, int y, int x);
   extern void tn5250_terminal_beep (Tn5250Terminal * This);
   extern int tn5250_terminal_enhanced (Tn5250Terminal * This);
   extern int tn5250_terminal_config (Tn5250Terminal * This,
