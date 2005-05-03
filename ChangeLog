@@ -1,4 +1,12 @@
 2005-04-29 James Rich <james@eaerich.com>
+- Add tn5250_terminal_putkey() and callback which allows putting a character
+  on the screen without having to call the specific terminal update function
+  (though it is still called, however the terminal can simply use the update
+  call to place the caret and set the screen indicators instead of redrawing
+  the entire screen buffer - x5250's x5250_terminal_update()).  This allows
+  terminals to avoid redrawing the entire screen on each key press.
+
+2005-04-29 James Rich <james@eaerich.com>
 - Add private data structure to window object.
 - Fix tn5250_session_remove_gui_window_structured_field().
 
