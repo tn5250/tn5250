@@ -430,6 +430,7 @@ Tn5250Terminal *tn5250_win32_terminal_new(HINSTANCE hInst,
    r->update_indicators = win32_terminal_update_indicators;
    r->waitevent = win32_terminal_waitevent;
    r->getkey = win32_terminal_getkey;
+   r->putkey = NULL;
    r->beep = win32_terminal_beep;
    r->config = win32_terminal_set_config;
    r->enhanced = tn5250_win32_terminal_enhanced;

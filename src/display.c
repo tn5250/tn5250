@@ -413,10 +413,7 @@ tn5250_display_waitevent (Tn5250Display * This)
 
       if (handled_key)
 	{
-	  if (This->terminal->putkey == NULL)
-	    {
-	      tn5250_display_update (This);
-	    }
+	  tn5250_display_update (This);
 	  handled_key = 0;
 	}
       r = tn5250_terminal_waitevent (This->terminal);
