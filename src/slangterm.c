@@ -136,6 +136,7 @@ Tn5250Terminal *tn5250_slang_terminal_new()
    r->update_indicators = slang_terminal_update_indicators;
    r->waitevent = slang_terminal_waitevent;
    r->getkey = slang_terminal_getkey;
+   r->putkey = NULL;
    r->beep = slang_terminal_beep;
    r->flags = slang_terminal_enhanced;
    return r;

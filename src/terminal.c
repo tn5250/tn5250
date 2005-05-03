@@ -82,6 +82,16 @@ tn5250_terminal_getkey (Tn5250Terminal * This)
 }
 
 void
+tn5250_terminal_putkey (Tn5250Terminal * This, Tn5250Display * d,
+			unsigned char k, int y, int x)
+{
+  if ((This)->putkey != NULL)
+    {
+      (*((This)->putkey)) ((This), (d), (k), (y), (x));
+    }
+}
+
+void
 tn5250_terminal_beep (Tn5250Terminal * This)
 {
   (*((This)->beep)) ((This));
