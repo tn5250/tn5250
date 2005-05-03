@@ -1,4 +1,4 @@
-2005-04-29 James Rich <james@eaerich.com>
+2005-05-02 James Rich <james@eaerich.com>
 - Add tn5250_terminal_putkey() and callback which allows putting a character
   on the screen without having to call the specific terminal update function
   (though it is still called, however the terminal can simply use the update
