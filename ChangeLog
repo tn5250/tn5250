@@ -1,3 +1,7 @@
+2005-05-04 James Rich <james@eaerich.com>
+- Reenable the creation of subwindows when using pulldown menus.  It looks
+  ugly, but is probably more correct (and less ugly than without).
+
 2005-05-02 James Rich <james@eaerich.com>
 - Add tn5250_terminal_putkey() and callback which allows putting a character
   on the screen without having to call the specific terminal update function
