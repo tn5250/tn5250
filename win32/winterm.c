@@ -1838,7 +1838,7 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                   return 0;
               case IDM_APP_ABOUT:
                   msgboxf("%s version %s:\n"
-                          "Copyright (C) 1997-2005 by Michael Madore,"
+                          "Copyright (C) 1997-2002 by Michael Madore,"
                           " Jason M. Felice, and Scott Klement\n"
                           "\n"
                           "Portions of this software were contributed "
