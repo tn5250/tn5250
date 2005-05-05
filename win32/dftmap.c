@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2002 Scott Klement
+ * Copyright (C) 2002-2005 Scott Klement
  *
  * This file is part of TN5250.
  * 
