@@ -8,7 +8,9 @@ FreeBSD are in this tarball as well (see freebsd/README for more information).
 
 This, the 0.17.x series, is the development series and may cause severe
 headaches and stomach cramps, if only due to the quality of code :)  If you
-are looking for a stable emulator, get the latest 0.16.x version.
+are looking for a stable emulator, get the latest 0.16.x version.  Even so,
+0.17.x is quite stable and in production at several sites.  Furthermore, for
+the enhanced 5250 protocol 0.17.x is required.
 
 Building from CVS
 =================
@@ -65,8 +67,11 @@ which sets up a standard `xterm' (it will *not* work with an `nxterm' or an
 `rxvt' terminal).
 
 There is one common problem which would cause xt5250 to flash once on the
-screen then disapear.  If the termcap or terminfo entry for the `xterm-5250'
+screen then disappear.  If the termcap or terminfo entry for the `xterm-5250'
 terminal type does not exist, the `xterm' will exit immediately.
+
+x5250 is an X11 front end (which does not use xterm) written by James Rich.
+It can be found at http://www.chowhouse.com/~james/x5250.
 
 Other Information
 =================

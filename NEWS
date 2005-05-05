@@ -1,6 +1,17 @@
 tn5250 NEWS
 ------------------------------------------------------------------------------
 
+Wed May 04, 2005:
+	* The tn5250 project is hosted on sourceforge at:
+		http://tn5250.sourceforge.net
+	* There is a mailing list and archives at David Gibbs midrange site:
+		http://www.midrange.com
+	  The mailing list is at:
+		http://lists.midrange.com/mailman/listinfo/linux5250
+	* There is an X11 front end written by James Rich.  The site is:
+		http://www.chowhouse.com/~james/x5250
+	* For all other news please visit the project page on sourceforge.
+
 Mon Dec 06, 1999:
 	* A FAQ is now in existence, thanks to Philippe Petrinko.  You can
 	  browse the FAQ at http://perso.libertysurf.fr/plinux/tn5250-faq.html
