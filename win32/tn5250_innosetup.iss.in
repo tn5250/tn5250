@@ -27,7 +27,7 @@ Source: "@installdir@\LIB5250.DLL"; DestDir: "{app}"; CopyMode: alwaysoverwrite
 Source: "@installdir@\COPYING.TXT"; DestDir: "{app}"; CopyMode: alwaysoverwrite
 Source: "@installdir@\AUTHORS.TXT"; DestDir: "{app}"; CopyMode: alwaysoverwrite
 Source: "@installdir@\MANUAL.PDF"; DestDir: "{app}"; CopyMode: alwaysoverwrite
-Source: "{src}\options"; DeskDir: "{app}"; CopyMode: alwaysoverwrite; Flags: external skipifsourcedoesntexist
+Source: "{src}\options"; DestDir: "{app}"; CopyMode: alwaysoverwrite; Flags: external skipifsourcedoesntexist
 
 [INI]
 Filename: "{app}\TN5250.url"; Section: "InternetShortcut"; Key: "URL"; String: "http://tn5250.sourceforge.net"
