@@ -3447,7 +3447,10 @@ tn5250_session_create_window_structured_field (Tn5250Session * This,
 
   if (flagbyte1 & 0x40)
     {
+      /*
       TN5250_LOG (("Pull down window - data ignored (will use selection field data)\n"));
+      */
+      TN5250_LOG (("Pull down window\n"));
       pulldown = 1;
     }
 
@@ -3458,8 +3461,10 @@ tn5250_session_create_window_structured_field (Tn5250Session * This,
   width = tn5250_record_get_byte (This->record);
   TN5250_LOG (("width = 0x%02X (%d)\n", width, (int) width));
 
+  /*
   if (!pulldown)
     {
+  */
       /*
          if ((window =
          tn5250_window_match_test (This->display->display_buffers->
@@ -3477,7 +3482,9 @@ tn5250_session_create_window_structured_field (Tn5250Session * This,
       /*
          }
        */
+      /*
     }
+      */
 
   if ((length - 5) > 0)
     {
@@ -3632,8 +3639,10 @@ tn5250_session_create_window_structured_field (Tn5250Session * This,
       length--;
     }
 
+  /*
   if (!pulldown)
     {
+  */
       window->width = (int) width;
       window->height = (int) depth;
       window->column = tn5250_display_cursor_x (This->display) + 1;
@@ -3656,7 +3665,9 @@ tn5250_session_create_window_structured_field (Tn5250Session * This,
 				   window->column + window->column + 2,
 				   window->column + 2,
 				   window->column + window->width + 2);
+      /*
     }
+      */
   return;
 }
 
