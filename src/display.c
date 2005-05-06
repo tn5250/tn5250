@@ -919,6 +919,14 @@ tn5250_display_set_cursor_prev_progression_field (Tn5250Display * This,
     }
 
   origfield = tn5250_display_current_field (This);
+
+  if (tn5250_field_is_bypass (origfield))
+    {
+      field = tn5250_display_prev_field (This);
+      tn5250_display_set_cursor_field (This, field);
+      return;
+    }
+
   orig_id = origfield->id;
   differentfieldfound = 0;
 
