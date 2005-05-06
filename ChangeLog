@@ -1,3 +1,6 @@
+2005-05-06 James Rich <james@eaerich.com>
+- Fix infinite loop bug in tn5250_display_set_cursor_prev_progression_field().
+
 2005-05-04 James Rich <james@eaerich.com>
 - Reenable the creation of subwindows when using pulldown menus.  It looks
   ugly, but is probably more correct (and less ugly than without).
