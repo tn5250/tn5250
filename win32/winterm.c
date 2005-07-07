@@ -173,6 +173,8 @@ void win32_print_screen(Tn5250Terminal *This, Tn5250Display *display);
 static void win32_do_terminal_update(HDC hdc, Tn5250Terminal *This, 
                           Tn5250Display *display, Tn5250Win32Attribute *map,
                           int ox, int oy);
+void win32_move_caret_to(Tn5250Terminal *This, Tn5250Display *disp,
+                         short y, short x);
 
 extern void msgboxf(const char *fmt, ...);
 
@@ -226,6 +228,7 @@ struct _Tn5250TerminalPrivate {
    int            resize_fonts: 1;
    int            local_print: 1;
    int            always_ask: 1;
+   int		  click_moves_caret: 1;
 };
 
 
@@ -413,6 +416,7 @@ Tn5250Terminal *tn5250_win32_terminal_new(HINSTANCE hInst,
    r->data->maximized = 0;
    r->data->dont_auto_size = 0;
    r->data->unix_like_copy = 0;
+   r->data->click_moves_caret = 0;
    r->data->resize_fonts = 0;
    r->data->local_print = 0;
    r->data->always_ask = 0;
@@ -510,6 +514,11 @@ static void win32_terminal_init(Tn5250Terminal * This)
       if ( tn5250_config_get (This->data->config, "unix_like_copy")) {
             This->data->unix_like_copy = 
                tn5250_config_get_bool(This->data->config, "unix_like_copy");
+      }
+
+      if ( tn5250_config_get (This->data->config, "click_moves_cursor")) {
+            This->data->click_moves_caret = 
+               tn5250_config_get_bool(This->data->config, "click_moves_cursor");
       }
 
       if ( tn5250_config_get (This->data->config, "resize_fonts")) {
@@ -1838,7 +1847,7 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                   return 0;
               case IDM_APP_ABOUT:
                   msgboxf("%s version %s:\n"
-                          "Copyright (C) 1997-2002 by Michael Madore,"
+                          "Copyright (C) 1997-2005 by Michael Madore,"
                           " Jason M. Felice, and Scott Klement\n"
                           "\n"
                           "Portions of this software were contributed "
@@ -2132,6 +2141,12 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
            break;
 
         case WM_LBUTTONUP:
+           if (globTerm->data->click_moves_caret && globDisplay!=NULL) {
+                win32_move_caret_to(globTerm, 
+                                    globDisplay, 
+                                    (short)HIWORD(lParam),
+                                    (short)LOWORD(lParam) );
+           }
            if (globTerm->data->selecting && globDisplay!=NULL) {
                 globTerm->data->selecting = 0;
                 globTerm->data->selend.x = (short)LOWORD(lParam);
@@ -2849,4 +2864,42 @@ void win32_print_screen(Tn5250Terminal *This, Tn5250Display *display) {
        win32_destroy_printer_info(This);
 }
     
+/****i* lib5250/win32_move_caret_to
+ * NAME
+ *    win32_move_caret_to
+ * SYNOPSIS
+ *    win32_move_caret_to(globTerm, globDisplay, y, x);
+ * INPUTS
+ *    Tn5250Display   *          This    -  TN5250 terminal object
+ *    Tn5250Display   *          disp    -  TN5250 display object
+ *    short                      y       -  y position (pixels)
+ *    short                      x       -  x position (pixels)
+ * DESCRIPTION
+ *    This moves the caret to a given position on the display. 
+ *    (So that the cursor can be moved to the position that the
+ *    mouse was clicked in.)
+ *****/
+void win32_move_caret_to(Tn5250Terminal *This, Tn5250Display *disp,
+                         short y, short x) {
 
+   int cx, cy;
+   HDC hdc;
+
+   cx = x / This->data->font_width;
+   cy = y / This->data->font_height;
+   This->data->caretx = cx;
+   This->data->carety = cy;
+
+   tn5250_display_set_cursor(disp, cy, cx);
+
+   hdc = GetDC(This->data->hwndMain);
+   win32_move_caret(hdc, globTerm);
+   ReleaseDC(This->data->hwndMain, hdc);
+
+   TN5250_LOG(("Caret moved to %d, %d\n", 
+                tn5250_display_cursor_x(disp),
+                tn5250_display_cursor_y(disp)));
+
+
+   win32_terminal_update(This, disp);
+}
