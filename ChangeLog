@@ -1,3 +1,7 @@
+2005-07-07 Scott Klement <klemscot0@klements.com>
+- Added config opt +click_moves_cursor to Win32 terminal so that user can
+  move the cursor with a mouse click (not enabled by default)
+
 2005-05-06 James Rich <james@eaerich.com>
 - Fix infinite loop bug in tn5250_display_set_cursor_prev_progression_field().
 
