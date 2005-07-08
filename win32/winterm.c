@@ -1825,6 +1825,7 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
      int ctx, ext;
      static int handledkey=0;
      HMENU	hMenu;
+     int redraw;
 
      switch (msg) {
         case WM_CREATE:
@@ -2140,8 +2141,8 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
            }
            break;
 
-        case WM_LBUTTONUP: {
-           int redraw=0;
+        case WM_LBUTTONUP:
+           redraw = 0;
            if (globTerm->data->click_moves_caret && globDisplay!=NULL) {
                 win32_move_caret_to(globTerm, 
                                     globDisplay, 
@@ -2165,7 +2166,6 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 InvalidateRect(hwnd, NULL, FALSE);
                 UpdateWindow(hwnd);
                 return 0;
-           }
            }
            break;
 
