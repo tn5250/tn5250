@@ -1,3 +1,8 @@
+2005-07-08 Scott Klement <klemscot@klements.com>
+- Fix bug in yesterday's +click_moves_cursor commit that caused Win32
+  terminal to crash if you clicked outside the window after moving the
+  cursor with a mouse click.
+
 2005-07-07 Scott Klement <klemscot0@klements.com>
 - Added config opt +click_moves_cursor to Win32 terminal so that user can
   move the cursor with a mouse click (not enabled by default)

@@ -2140,12 +2140,14 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
            }
            break;
 
-        case WM_LBUTTONUP:
+        case WM_LBUTTONUP: {
+           int redraw=0;
            if (globTerm->data->click_moves_caret && globDisplay!=NULL) {
                 win32_move_caret_to(globTerm, 
                                     globDisplay, 
                                     (short)HIWORD(lParam),
                                     (short)LOWORD(lParam) );
+                redraw = 1;
            }
            if (globTerm->data->selecting && globDisplay!=NULL) {
                 globTerm->data->selecting = 0;
@@ -2157,9 +2159,13 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 if (globTerm->data->unix_like_copy) {
                      win32_copy_text_selection(globTerm, globDisplay);
                 }
+                redraw = 1;
+           }
+           if (redraw) {
                 InvalidateRect(hwnd, NULL, FALSE);
                 UpdateWindow(hwnd);
                 return 0;
+           }
            }
            break;
 
@@ -2883,23 +2889,30 @@ void win32_move_caret_to(Tn5250Terminal *This, Tn5250Display *disp,
                          short y, short x) {
 
    int cx, cy;
-   HDC hdc;
+
+   /* erase old caret if needed */
+
+   if (This->data->caret_style == CARETSTYLE_NOBLINK) {
+        This->data->caretok = 0;
+        win32_move_caret(bmphdc, This);
+   }
+
+   /* Set new caret position */
 
    cx = x / This->data->font_width;
    cy = y / This->data->font_height;
-   This->data->caretx = cx;
-   This->data->carety = cy;
-
    tn5250_display_set_cursor(disp, cy, cx);
 
-   hdc = GetDC(This->data->hwndMain);
-   win32_move_caret(hdc, globTerm);
-   ReleaseDC(This->data->hwndMain, hdc);
+   This->data->caretx = cx * This->data->font_width;
+   This->data->carety = cy * This->data->font_height;
+
+   /* redraw caret */
+
+   This->data->caretok = 0;
+   win32_move_caret(bmphdc, This);
 
    TN5250_LOG(("Caret moved to %d, %d\n", 
                 tn5250_display_cursor_x(disp),
                 tn5250_display_cursor_y(disp)));
 
-
-   win32_terminal_update(This, disp);
 }
