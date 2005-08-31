@@ -56,6 +56,7 @@ extern "C"
   };
 
   typedef struct _Tn5250Window Tn5250Window;
+/*******/
 
 /* Manipulate windows */
   extern Tn5250Window *tn5250_window_new ();

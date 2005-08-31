@@ -53,6 +53,7 @@ extern "C"
   };
 
   typedef struct _Tn5250Scrollbar Tn5250Scrollbar;
+/*******/
 
 /* Manipulate scrollbars */
   extern Tn5250Scrollbar *tn5250_scrollbar_new ();

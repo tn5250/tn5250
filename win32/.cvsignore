@@ -3,6 +3,7 @@ release
 tn5250-config.h
 config.h
 Makefile
+Makefile.in
 lib5250.a
 lib5250.def
 tn5250_innosetup.iss
