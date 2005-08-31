@@ -1,4 +1,12 @@
 2005-08-31 Carey Evans <carey.evans@gmail.com>
+- Update the ROBODoc command to ROBODoc 4, moving it to the html
+  target in doc/Makefile.am, and generating a single HTML file.
+- To make it easier to create a proper distribution tarball, remove
+  this generated documentation from the distributed files.
+- Fix ROBODoc markup in macro.h, menu.h, scrollbar.h and window.h.
+- Add everything left after 'make maintainer-clean' to .cvsignore files.
+
+2005-08-31 Carey Evans <carey.evans@gmail.com>
 - Implement TN5250_FIELD_MAG_READER by always returning SRC 0004 on
   keyboard data entry.  This fixes strange behaviour when using push
   buttons without enhanced data stream support.

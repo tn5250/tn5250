@@ -47,6 +47,7 @@ struct _Tn5250Macro {
 };
 
 typedef struct _Tn5250Macro Tn5250Macro;
+/*******/
 
 extern Tn5250Macro *tn5250_macro_init() ;
 extern void tn5250_macro_exit(Tn5250Macro * This) ;

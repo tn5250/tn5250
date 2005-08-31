@@ -74,6 +74,7 @@ extern "C"
   };
 
   typedef struct _Tn5250Menubar Tn5250Menubar;
+/*******/
 
 /* Manipulate menubars */
   extern Tn5250Menubar *tn5250_menubar_new ();
@@ -134,6 +135,7 @@ extern "C"
   };
 
   typedef struct _Tn5250Menuitem Tn5250Menuitem;
+/*******/
 
 /* Manipulate menuitems */
   extern Tn5250Menuitem *tn5250_menuitem_new ();
