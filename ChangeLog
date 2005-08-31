@@ -1,3 +1,8 @@
+2005-08-31 Carey Evans <carey.evans@gmail.com>
+- Implement TN5250_FIELD_MAG_READER by always returning SRC 0004 on
+  keyboard data entry.  This fixes strange behaviour when using push
+  buttons without enhanced data stream support.
+
 2005-07-08 Scott Klement <klemscot@klements.com>
 - Fix bug in yesterday's +click_moves_cursor commit that caused Win32
   terminal to crash if you clicked outside the window after moving the

@@ -200,6 +200,7 @@ extern "C" {
 
 #define TN5250_KBDSRC_NONE		0x0000   /* No Error */
 #define TN5250_KBDSRC_INVALID_CMD	0x0003   /* Bad key following CMD key */
+#define TN5250_KBDSRC_DATA_DISALLOWED	0x0004   /* Keyboard in MSR field */
 #define TN5250_KBDSRC_PROTECT		0x0005   /* Cursor in protected area */
 #define TN5250_KBDSRC_ALPHAONLY		0x0008   /* Field Requires Alpha */
 #define TN5250_KBDSRC_NUMONLY		0x0009   /* Field Requires Numeric */

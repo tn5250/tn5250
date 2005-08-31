@@ -507,8 +507,8 @@ tn5250_field_valid_char (Tn5250Field * field, int ch, int *src)
       return 1;
 
     case TN5250_FIELD_MAG_READER:
-      TN5250_LOG (("MAG_READER not implemented.\n"));
-      return 1;
+      *src = TN5250_KBDSRC_DATA_DISALLOWED;
+      return 0;
 
     case TN5250_FIELD_SIGNED_NUM:
       if (!isdigit (ch))
