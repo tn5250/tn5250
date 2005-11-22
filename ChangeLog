@@ -1,3 +1,11 @@
+2005-11-21 Carey Evans <carey.evans@gmail.com>
+
+- Change autogen.sh to simply run autoreconf.
+- Add "uninhibited" flag to Tn5250Display, for automatic release of Input
+  Inhibited state when movement keys and functions keys are used.
+  Defaults to false for compatibility with previous versions.
+- Fix option parsing in xt5250.
+
 2005-08-31 Carey Evans <carey.evans@gmail.com>
 - Update the ROBODoc command to ROBODoc 4, moving it to the html
   target in doc/Makefile.am, and generating a single HTML file.

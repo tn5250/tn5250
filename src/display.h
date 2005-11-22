@@ -80,6 +80,7 @@ struct _Tn5250Display {
    int indicators_dirty : 1;
    int pending_insert : 1;
    int sign_key_hack : 1;
+   int uninhibited : 1;
 };
 
 typedef struct _Tn5250Display Tn5250Display;

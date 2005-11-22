@@ -63,6 +63,7 @@ tn5250_display_new ()
   This->indicators_dirty = 0;
   This->pending_insert = 0;
   This->sign_key_hack = 1;
+  This->uninhibited = 0;
   This->session = NULL;
   This->key_queue_head = This->key_queue_tail = 0;
   This->saved_msg_line = NULL;
@@ -150,6 +151,12 @@ tn5250_display_config (Tn5250Display * This, Tn5250Config * config)
   if (tn5250_config_get (config, "sign_key_hack"))
     {
       This->sign_key_hack = tn5250_config_get_bool (config, "sign_key_hack");
+    }
+
+  /* check if Input Inhibited should be cleared automatically */
+  if (tn5250_config_get (config, "uninhibited"))
+    {
+      This->uninhibited = tn5250_config_get_bool (config, "uninhibited");
     }
 
   /* Set a terminal type if necessary */
@@ -1519,7 +1526,16 @@ tn5250_display_do_key (Tn5250Display * This, int key)
 	}
       break;
     case TN5250_KEYSTATE_POSTHELP:
-      if (key != K_RESET && key != K_ATTENTION)
+      if (This->uninhibited
+          && (key == K_ENTER || key == K_TAB || key == K_BACKTAB
+              || key == K_ROLLDN || key == K_ROLLUP
+              || (key >= K_FIRST_SPECIAL && key <= K_F24)))
+        {
+          TN5250_LOG (("Resetting posthelp state for key %d.\n", key));
+          tn5250_display_uninhibit (This);
+          This->keystate = TN5250_KEYSTATE_UNLOCKED;
+        }
+      else if (key != K_RESET && key != K_ATTENTION)
 	{
 	  TN5250_LOG (("Denying key %d in posthelp state.\n", key));
 	  tn5250_display_beep (This);
@@ -1529,9 +1545,9 @@ tn5250_display_do_key (Tn5250Display * This, int key)
     }
 
 
-  /* In the case we are in the field exit required state, we inhibit on
-   * everything except left arrow, backspace, field exit, field+, and
-   * field- */
+  /* In the case we are in the field exit required state, we inhibit
+   * on everything except left arrow, backspace, field exit, field+,
+   * field- and help. */
   if ((tn5250_display_indicators (This) & TN5250_DISPLAY_IND_FER) != 0)
     {
       switch (key)
@@ -1554,15 +1570,24 @@ tn5250_display_do_key (Tn5250Display * This, int key)
 	case K_TAB:
 	case K_BACKTAB:
 	case K_RESET:
+	case K_HELP:
 	  pre_FER_clear = 1;
 	  break;
 
 	default:
-	  This->keystate = TN5250_KEYSTATE_PREHELP;
-	  This->keySRC = TN5250_KBDSRC_FER;
-	  tn5250_display_inhibit (This);
-	  TN5250_LOG (("Denying key %d in FER state.\n", key));
-	  return;
+	  if (This->uninhibited && key >= K_F1 && key <= K_F24)
+	    {
+	      pre_FER_clear = 1;
+	    }
+	  else
+	    {
+	      This->keystate = TN5250_KEYSTATE_PREHELP;
+	      This->keySRC = TN5250_KBDSRC_FER;
+	      tn5250_display_inhibit (This);
+	      TN5250_LOG (("Denying key %d in FER state.\n", key));
+	      return;
+	    }
+	  break;
 	}
     }
 

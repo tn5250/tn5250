@@ -172,6 +172,10 @@ option.
 .BI beep_command= COMMAND
 If present, will run the supplied command instead of using the terminal beep.
 .TP
+.BR + / \-uninhibited
+If enabled, automatically resets the input inhibited state when cursor
+movement keys or function keys are pressed.  The default is disabled.
+.TP
 .BI env. VARIABLE = VALUE
 Set any other environment variables controlling the terminal session.
 A list of relevant variables is given in section 5 of
