@@ -1,5 +1,8 @@
 2006-01-13 James Rich <james@eaerich.com>
 - Move files in the src subdirectory into their own specific subdirectories.
+- Change automake files to use new subdirectories.
+- Eliminate use of tn5250-config and tn5250.m4 since automake can discover
+  everything it needs without these.
 
 2005-11-21 Carey Evans <carey.evans@gmail.com>
 
