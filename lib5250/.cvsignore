@@ -1,0 +1,7 @@
+*.o
+*.lo
+slime*
+.libs
+Makefile.in
+Makefile
+lib5250.la

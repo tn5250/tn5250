@@ -1,3 +1,6 @@
+2006-01-14 James Rich <james@eaerich.com>
+- Additional directory cleanups.
+
 2006-01-13 James Rich <james@eaerich.com>
 - Move files in the src subdirectory into their own specific subdirectories.
 - Change automake files to use new subdirectories.
