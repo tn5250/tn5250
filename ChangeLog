@@ -1,3 +1,6 @@
+2006-01-13 James Rich <james@eaerich.com>
+- Move files in the src subdirectory into their own specific subdirectories.
+
 2005-11-21 Carey Evans <carey.evans@gmail.com>
 
 - Change autogen.sh to simply run autoreconf.
