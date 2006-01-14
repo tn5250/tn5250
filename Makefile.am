@@ -1,30 +1,36 @@
 ## Process this file with automake to produce Makefile.in
 
-DIST_SUBDIRS = src doc linux freebsd win32 sun
-SUBDIRS = src doc @SUBDIRS_ADD@
+EXTRA_DIST = tn5250-48x48.xpm\
+        tn5250-48x48.png\
+        tn5250-62x48.xpm\
+        tn5250-62x48.png\
+        XTerm\
+        README.ssl
 
-bin_SCRIPTS = tn5250-config\
-	      xt5250
+# These aren't working
+#if COND_CURSES
+#	MAYBE_CURSES = curses
+#else
+#	MAYBE_CURSES =
+#endif
 
-pkgdata_DATA = dialogrc\
-	       XTerm
+#if COND_SLANG
+#	MAYBE_SLANG = slang
+#else
+#	MAYBE_SLANG =
+#endif
 
-pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = tn5250.pc
+#if COND_PYTHON
+#	MAYBE_PYTHON = python
+#else
+#	MAYBE_PYTHON =
+#endif
 
-aclocal_DATA = tn5250.m4
+SUBDIRS = lib5250 lp5250d $(MAYBE_CURSES) $(MAYBE_SLANG) $(MAYBE_PYTHON) doc
+DIST_SUBDIRS = lib5250 lp5250d curses slang python doc
 
-aclocaldir = $(datadir)/aclocal
+bin_SCRIPTS = xt5250
 
-EXTRA_DIST = tn5250.spec.in\
-	tn5250.spec\
-	tn5250-48x48.xpm\
-	tn5250-48x48.png\
-	tn5250-62x48.xpm\
-	tn5250-62x48.png\
-	BUGS\
-	XTerm\
-	dialogrc\
-	tn5250.m4\
-	README.ssl \
-	tn5250.pc.in
+pkgdata_DATA = XTerm
+
+CLEANFILES = *~
