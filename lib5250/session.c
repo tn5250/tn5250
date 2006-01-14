@@ -33,7 +33,7 @@ static void tn5250_session_send_field (Tn5250Session * This,
 				       Tn5250Buffer * buf,
 				       Tn5250Field * field);
 static void tn5250_session_process_stream (Tn5250Session * This);
-static void tn5250_session_write_error_code (Tn5250Session * This);
+static void tn5250_session_write_error_code (Tn5250Session * This, int readop);
 static void tn5250_session_write_to_display (Tn5250Session * This);
 static void tn5250_session_clear_unit (Tn5250Session * This);
 static void tn5250_session_clear_unit_alternate (Tn5250Session * This);
@@ -43,6 +43,7 @@ static void tn5250_session_read_immediate (Tn5250Session * This);
 /*static void tn5250_session_print (Tn5250Session * This);*/
 static void tn5250_session_output_only (Tn5250Session * This);
 static void tn5250_session_save_screen (Tn5250Session * This);
+static void tn5250_session_save_partial_screen (Tn5250Session * This);
 static void tn5250_session_roll (Tn5250Session * This);
 static void tn5250_session_start_of_field (Tn5250Session * This);
 static void tn5250_session_start_of_header (Tn5250Session * This);
@@ -723,9 +724,6 @@ tn5250_session_process_stream (Tn5250Session * This)
 
       switch (cur_command)
 	{
-	case CMD_WRITE_TO_DISPLAY:
-	  tn5250_session_write_to_display (This);
-	  break;
 	case CMD_CLEAR_UNIT:
 	  tn5250_session_clear_unit (This);
 	  break;
@@ -735,33 +733,72 @@ tn5250_session_process_stream (Tn5250Session * This)
 	case CMD_CLEAR_FORMAT_TABLE:
 	  tn5250_session_clear_format_table (This);
 	  break;
+	case CMD_WRITE_TO_DISPLAY:
+	  tn5250_session_write_to_display (This);
+	  break;
+	case CMD_WRITE_ERROR_CODE:
+	case CMD_WRITE_ERROR_CODE_WINDOW:
+	  tn5250_session_write_error_code (This, cur_command);
+	  break;
+	case CMD_READ_INPUT_FIELDS:
 	case CMD_READ_MDT_FIELDS:
 	case CMD_READ_MDT_FIELDS_ALT:
-	case CMD_READ_INPUT_FIELDS:
 	  tn5250_session_read_cmd (This, cur_command);
-	  break;
-	case CMD_READ_IMMEDIATE:
-	  tn5250_session_read_immediate (This);
 	  break;
 	case CMD_READ_SCREEN_IMMEDIATE:
 	  tn5250_session_read_screen_immediate (This);
 	  break;
-	case CMD_WRITE_STRUCTURED_FIELD:
-	  tn5250_session_write_structured_field (This);
+	case CMD_READ_SCREEN_EXTENDED:
+	  /*tn5250_session_read_screen_extended (This);*/
+	  TN5250_LOG (("ReadScreenExtended (ignored)\n"));
+	  break;
+	case CMD_READ_SCREEN_PRINT:
+	  /*tn5250_session_read_screen_print (This);*/
+	  TN5250_LOG (("ReadScreenPrint (ignored)\n"));
+	  break;
+	case CMD_READ_SCREEN_PRINT_EXTENDED:
+	  /*tn5250_session_read_screen_print_extended (This);*/
+	  TN5250_LOG (("ReadScreenPrintExtended (ignored)\n"));
+	  break;
+	case CMD_READ_SCREEN_PRINT_GRID:
+	  /*tn5250_session_read_screen_print_grid (This);*/
+	  TN5250_LOG (("ReadScreenPrintGrid (ignored)\n"));
+	  break;
+	case CMD_READ_SCREEN_PRINT_EXT_GRID:
+	  /*tn5250_session_read_screen_print_extended_grid (This);*/
+	  TN5250_LOG (("ReadScreenPrintExtendedGrid (ignored)\n"));
+	  break;
+	case CMD_READ_IMMEDIATE:
+	  tn5250_session_read_immediate (This);
+	  break;
+	case CMD_READ_IMMEDIATE_ALT:
+	  /*tn5250_session_read_immediate_alt (This);*/
+	  TN5250_LOG (("ReadImmediateAlt (ignored)\n"));
 	  break;
 	case CMD_SAVE_SCREEN:
 	  tn5250_session_save_screen (This);
+	  break;
+	case CMD_SAVE_PARTIAL_SCREEN:
+	  tn5250_session_save_partial_screen (This);
 	  break;
 	case CMD_RESTORE_SCREEN:
 	  /* Ignored, the data following this should be a valid
 	   * Write To Display command. */
 	  TN5250_LOG (("RestoreScreen (ignored)\n"));
 	  break;
-	case CMD_WRITE_ERROR_CODE:
-	  tn5250_session_write_error_code (This);
+	case CMD_RESTORE_PARTIAL_SCREEN:
+	  /* Ignored, the data following this should be a valid
+	   * Write To Display command because we do basically the
+	   * the same thing for SAVE PARTIAL SCREEN as we do for
+	   * SAVE SCREEN.
+	   */
+	  TN5250_LOG (("RestorePartialScreen (ignored)\n"));
 	  break;
 	case CMD_ROLL:
 	  tn5250_session_roll (This);
+	  break;
+	case CMD_WRITE_STRUCTURED_FIELD:
+	  tn5250_session_write_structured_field (This);
 	  break;
 	case 0x0a:
 	  TN5250_LOG (("Ignoring record!\n"));
@@ -782,15 +819,16 @@ tn5250_session_process_stream (Tn5250Session * This)
  * NAME
  *    tn5250_session_write_error_code
  * SYNOPSIS
- *    tn5250_session_write_error_code (This);
+ *    tn5250_session_write_error_code (This, readop);
  * INPUTS
  *    Tn5250Session *      This       - 
  * DESCRIPTION
  *    DOCUMENT ME!!!
  *****/
 static void
-tn5250_session_write_error_code (Tn5250Session * This)
+tn5250_session_write_error_code (Tn5250Session * This, int readop)
 {
+  unsigned char startwin, endwin;
   unsigned char c;
   int end_x, end_y;
   int have_ic = 0;
@@ -798,6 +836,12 @@ tn5250_session_write_error_code (Tn5250Session * This)
   int msglen;
 
   TN5250_LOG (("WriteErrorCode: entered.\n"));
+
+  if (readop == CMD_WRITE_ERROR_CODE_WINDOW)
+    {
+      startwin = tn5250_record_get_byte (This->record);
+      endwin = tn5250_record_get_byte (This->record);
+    }
 
   end_x = tn5250_display_cursor_x (This->display);
   end_y = tn5250_display_cursor_y (This->display);
@@ -1515,6 +1559,57 @@ tn5250_session_save_screen (Tn5250Session * This)
   StreamHeader header;
 
   TN5250_LOG (("SaveScreen: entered.\n"));
+
+  tn5250_buffer_init (&buffer);
+  tn5250_display_make_wtd_data (This->display, &buffer, NULL);
+
+  /* Okay, now if we were in a Read MDT Fields or a Read Input Fields,
+   * we need to append a command which would put us back in the appropriate
+   * read. */
+  if (This->read_opcode != 0)
+    {
+      tn5250_buffer_append_byte (&buffer, ESC);
+      tn5250_buffer_append_byte (&buffer, This->read_opcode);
+      tn5250_buffer_append_byte (&buffer, 0x00);	/* FIXME: ? CC1 */
+      tn5250_buffer_append_byte (&buffer, 0x00);	/* FIXME: ? CC2 */
+    }
+
+  header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
+  header.h5250.flags = TN5250_RECORD_H_NONE;
+  header.h5250.opcode = TN5250_RECORD_OPCODE_SAVE_SCR;
+
+  tn5250_stream_send_packet (This->stream, tn5250_buffer_length (&buffer),
+			     header, tn5250_buffer_data (&buffer));
+  tn5250_buffer_free (&buffer);
+  return;
+}
+
+
+/****i* lib5250/tn5250_session_save_partial_screen
+ * NAME
+ *    tn5250_session_save_partial_screen
+ * SYNOPSIS
+ *    tn5250_session_save_partial_screen (This);
+ * INPUTS
+ *    Tn5250Session *      This       - 
+ * DESCRIPTION
+ *    DOCUMENT ME!!!
+ *****/
+static void
+tn5250_session_save_partial_screen (Tn5250Session * This)
+{
+  Tn5250Buffer buffer;
+  StreamHeader header;
+  unsigned char flagbyte;
+  int toprow, leftcol, windepth, winwidth;
+
+  TN5250_LOG (("SavePartialScreen: entered.\n"));
+
+  flagbyte = tn5250_record_get_byte (This->record);
+  toprow = tn5250_record_get_byte (This->record);
+  leftcol = tn5250_record_get_byte (This->record);
+  windepth = tn5250_record_get_byte (This->record);
+  winwidth = tn5250_record_get_byte (This->record);
 
   tn5250_buffer_init (&buffer);
   tn5250_display_make_wtd_data (This->display, &buffer, NULL);

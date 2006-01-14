@@ -26,8 +26,6 @@
 extern "C" {
 #endif
 
-#include <tn5250/config.h>
-
 	/* We need this */
 #include <stdio.h>
 
@@ -36,6 +34,8 @@ extern "C" {
 #include <tn5250/codes5250.h>
 #include <tn5250/dbuffer.h>
 #include <tn5250/field.h>
+#include <tn5250/display.h>
+#include <tn5250/macro.h>
 #include <tn5250/menu.h>
 #include <tn5250/record.h>
 #include <tn5250/stream.h>
@@ -45,15 +45,8 @@ extern "C" {
 #include <tn5250/terminal.h>
 #include <tn5250/session.h>
 #include <tn5250/printsession.h>
-#ifdef USE_CURSES
-#include <tn5250/cursesterm.h>
-#endif
-#ifdef USE_SLANG
-#include <tn5250/slangterm.h>
-#endif
 #include <tn5250/debug.h>
 
-#include <tn5250/display.h>
 #include <tn5250/conf.h>
 
 #ifdef __cplusplus

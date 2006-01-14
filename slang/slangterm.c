@@ -21,6 +21,7 @@
  */
 #define _TN5250_TERMINAL_PRIVATE_DEFINED
 #include "tn5250-private.h"
+#include "slangterm.h"
 
 #if USE_SLANG
 

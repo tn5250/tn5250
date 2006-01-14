@@ -26,6 +26,15 @@
 extern "C" {
 #endif
 
+#if USE_SLANG
+#if defined(HAVE_SLANG_H)
+#include <slang.h>
+#elif defined(HAVE_SLANG_SLANG_H)
+#include <slang/slang.h>
+#endif
+#include "slangterm.h"
+#endif
+
 #ifdef USE_SLANG
    extern Tn5250Terminal /*@only@*/ *tn5250_slang_terminal_new(void);
    extern int tn5250_slang_terminal_use_underscores(Tn5250Terminal *, int f);

@@ -3,6 +3,8 @@
 - Change automake files to use new subdirectories.
 - Eliminate use of tn5250-config and tn5250.m4 since automake can discover
   everything it needs without these.
+- Add support for SAVE PARTIAL SCREEN and add messages for the rest of the
+  missing major 5250 commands.  This fixes QSH when using enhanced mode.
 
 2005-11-21 Carey Evans <carey.evans@gmail.com>
 
