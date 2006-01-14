@@ -1547,7 +1547,7 @@ tn5250_display_do_key (Tn5250Display * This, int key)
 
   /* In the case we are in the field exit required state, we inhibit
    * on everything except left arrow, backspace, field exit, field+,
-   * field- and help. */
+   * field-, and help */
   if ((tn5250_display_indicators (This) & TN5250_DISPLAY_IND_FER) != 0)
     {
       switch (key)

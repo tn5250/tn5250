@@ -32,21 +32,29 @@ extern "C" {
 #define ERR_ROW 25
 
 /* Commands */
-#define CMD_WRITE_TO_DISPLAY			0x11
 #define CMD_CLEAR_UNIT				0x40
 #define CMD_CLEAR_UNIT_ALTERNATE		0x20
 #define CMD_CLEAR_FORMAT_TABLE			0x50
-#define CMD_READ_MDT_FIELDS			0x52
-#define CMD_READ_IMMEDIATE			0x72
-#define CMD_READ_SCREEN_IMMEDIATE       	0x62
-#define CMD_WRITE_STRUCTURED_FIELD		0xF3
-#define CMD_SAVE_SCREEN				0x02
-#define CMD_RESTORE_SCREEN			0x12
+#define CMD_WRITE_TO_DISPLAY			0x11
 #define CMD_WRITE_ERROR_CODE            	0x21
+#define CMD_WRITE_ERROR_CODE_WINDOW            	0x22
 #define CMD_READ_INPUT_FIELDS			0x42
-#define CMD_ROLL				0x23
+#define CMD_READ_MDT_FIELDS			0x52
 #define CMD_READ_MDT_FIELDS_ALT			0x82
+#define CMD_READ_SCREEN_IMMEDIATE       	0x62
+#define CMD_READ_SCREEN_EXTENDED 	      	0x64
+#define CMD_READ_SCREEN_PRINT    	   	0x66
+#define CMD_READ_SCREEN_PRINT_EXTENDED       	0x68
+#define CMD_READ_SCREEN_PRINT_GRID       	0x6A
+#define CMD_READ_SCREEN_PRINT_EXT_GRID       	0x6C
+#define CMD_READ_IMMEDIATE			0x72
 #define CMD_READ_IMMEDIATE_ALT			0x83
+#define CMD_SAVE_SCREEN				0x02
+#define CMD_SAVE_PARTIAL_SCREEN			0x03
+#define CMD_RESTORE_SCREEN			0x12
+#define CMD_RESTORE_PARTIAL_SCREEN		0x13
+#define CMD_ROLL				0x23
+#define CMD_WRITE_STRUCTURED_FIELD		0xF3
 
 /* Orders - those tagged FIXME are not implemented: */
 #define SOH	0x01		/* Start of header */

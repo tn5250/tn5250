@@ -1,4 +1,3 @@
-
-#include "tn5250-config.h"
+#include "config.h"
 
 char *version_string = VERSION;
