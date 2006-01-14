@@ -1,0 +1,10 @@
+*.o
+*.lo
+slime*
+.libs
+Makefile.in
+Makefile
+lp5250d
+scs2ascii
+scs2pdf
+scs2ps
