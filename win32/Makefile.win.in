@@ -51,7 +51,7 @@ INNO_SETUP_DIR = @inno_setup_dir@
 #
 # Directory where lib5250 sources are:
 #  
-SRCDIR=../src
+SRCDIR=../lib5250
 
 #
 # Programs:
@@ -131,14 +131,13 @@ clean:
 	$(RM) *.exe
 
 distclean: clean
-	$(RM) tn5250-config.h
 	$(RM) config.h
 	$(RM) Makefile.in
 	$(RM) Makefile
 	$(RM) tn5250_innosetup.iss
 
 do-release:
-	type "C:\openssl-0.9.7g\LICENSE" >> "$(INSTALLDIR)\COPYING.txt"
+	type "C:\openssl\LICENSE" >> "$(INSTALLDIR)\COPYING.txt"
 	copy ..\..\windocs\windocs.pdf "$(INSTALLDIR)\manual.pdf"
 	copy afterinstall.txt "$(INSTALLDIR)\AFTERINSTALL.TXT"
 	$(INNO_SETUP_DIR)\iscc tn5250_innosetup.iss

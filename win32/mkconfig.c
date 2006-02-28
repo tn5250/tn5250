@@ -28,10 +28,10 @@
 #define MAXBUFSIZE 2048
 #define SMALLBUFSIZE 32
 
-#define POSIX_CONFIG_IN      "..\\configure.in"
-#define LIB5250_MAKEFILE_AM "..\\src\\Makefile.am"
-#define TN5250_CONFIG_H_IN  "..\\src\\tn5250-config.h.in"
-#define AC_INIT_AUTOMAKE    "AM_INIT_AUTOMAKE("
+#define POSIX_CONFIG_IN      "..\\configure.ac"
+#define LIB5250_MAKEFILE_AM "..\\lib5250\\Makefile.am"
+#define TN5250_CONFIG_H_IN  "..\\lib5250\\tn5250-config.h.in"
+#define AC_INIT_AUTOMAKE    "AC_INIT("
 
 struct _replace_undef {
    char *from;
@@ -136,7 +136,7 @@ if (argc>=2 && !strcmp(argv[1],"netshare400"))
    ns400='y';
 
 
-/* Get the PACKAGE and VERSION info from configure.in */
+/* Get the PACKAGE and VERSION info from configure.ac */
 
    if (get_package_version(version, package, SMALLBUFSIZE)<0) {
        fprintf(stderr, "Unable to find package info in %s\n", POSIX_CONFIG_IN);
@@ -206,15 +206,10 @@ if (argc>=2 && !strcmp(argv[1],"netshare400"))
 
   /* Make a tn5250-configure.h file */
 
-   printf("\nCreating tn5250-config.h...\n");
+   printf("\nCreating config.h...\n");
 
-   if (create_tn5250_config_h(TN5250_CONFIG_H_IN, "tn5250-config.h", 
+   if (create_tn5250_config_h(TN5250_CONFIG_H_IN, "config.h", 
            with_openssl, binary_release, package, version, ns400) < 0) {
-        exit(1);
-   }
-
-   printf("Creating config.h...\n");
-   if (create_config_h("tn5250-config.h", "config.h", version) < 0) {
         exit(1);
    }
 
@@ -263,7 +258,7 @@ if (argc>=2 && !strcmp(argv[1],"netshare400"))
  *    char      *        package -
  *    int                maxlen  -
  * DESCRIPTION
- *    Scan the ..\configure.in file for the TN5250 package name
+ *    Scan the ..\configure.ac file for the TN5250 package name
  *    and version level so we can output them later to our config.h
  *****/
 int get_package_version(char *version, char *package, int maxlen) {
@@ -285,21 +280,25 @@ int get_package_version(char *version, char *package, int maxlen) {
    while (fgets(buf, MAXBUFSIZE, uconf)!=NULL) {
         if ((p=strstr(buf, AC_INIT_AUTOMAKE))!=NULL) {
             p += strlen(AC_INIT_AUTOMAKE);
+            if (*p == '[') p++;
             p2 = strchr(p, ',');
             if (p2!=NULL) {
                  int len = (p2 - p);
                  if (len>maxlen) len = maxlen;
                  strncpy(package, p, len);
                  package[len] = '\0';
- 
+                 if (package[len-1] == ']') package[len-1]='\0';
+
                  p+=len+1; 
-                 while ((*p)==' ') p++;
-                 p2 = strchr(p, ')');
+                 while ((*p)==' '||(*p)=='[') p++;
+                 p2 = strchr(p, ',');
+                 if (p2==NULL) p2 = strchr(p, ')');
                  if (p2!=NULL) {
                     len = (p2 - p);
                     if (len>maxlen) len = maxlen;
                     strncpy(version, p, len);
                     version[len] = '\0';
+                    if (version[len-1] == ']') version[len-1] = '\0';
                  }
             }
             if (*version && *package) break;
@@ -642,53 +641,6 @@ int create_tn5250_config_h(const char *infile, const char *outfile,
      }
      return 0;
 }     
-
-
-/****f* create_config_h
- * NAME
- *    create_config_h
- * SYNOPSIS
- *    x = create_config_h ("tn5250-config.h", "config.h", ver);
- * INPUTS
- *    const char  *      infile       -
- *    const char  *      outfile      -
- *    const char  *      version      -
- * DESCRIPTION
- *    The UN*X Makefile will use a simple sed command to convert
- *    the string "VERSION" to "TN5250_LIB_VERSION".  We do the same
- *    thing here, manually, so that Windows users don't need sed.
- *****/
-int create_config_h(const char *infile, const char *outfile, 
-                        const char *version) {
-
-     FILE *in, *out;
-     char rec[MAXBUFSIZE+1];
-
-     in = fopen(infile, "r");
-     if (in==NULL) {
-        fprintf(stderr, "%s: %s\n", infile, strerror(errno));
-        return -1;
-     }
-
-     out = fopen(outfile, "w");
-     if (out==NULL) {
-        fprintf(stderr, "%s: %s\n", outfile, strerror(errno));
-        fclose(in);
-        return -1;
-     }
-
-     while (fgets(rec, MAXBUFSIZE, in)!=NULL) {
-          if (strstr(rec, "VERSION")!=NULL) {
-               fprintf(out, "#define TN5250_LIB_VERSION \"%s\"\n", version);
-          } else {
-               fprintf(out, "%s", rec);
-          }
-     }
-     fclose(in);
-     fclose(out);
-
-     return 0;
-}
 
 
 /****f* create_makefile

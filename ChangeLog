@@ -1,3 +1,7 @@
+2006-02-28 Scott Klement <klemscot@klements.com>
+- Update Win32 configure tools to use James' new directory structure,
+   configure.ac file, and remove tn5250-config.h
+
 2006-01-14 James Rich <james@eaerich.com>
 - Additional directory cleanups.
 
