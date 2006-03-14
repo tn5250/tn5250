@@ -34,6 +34,7 @@ void tn5250_display_wordwrap_delete (Tn5250Display * This);
 void tn5250_display_wordwrap_insert (Tn5250Display * This, unsigned char c,
 				     int shiftcount);
 void tn5250_display_wordwrap_addch (Tn5250Display * This, unsigned char c);
+int display_check_pccmd(Tn5250Display *This);
 
 
 /****f* lib5250/tn5250_display_new
@@ -157,6 +158,12 @@ tn5250_display_config (Tn5250Display * This, Tn5250Config * config)
   if (tn5250_config_get (config, "uninhibited"))
     {
       This->uninhibited = tn5250_config_get_bool (config, "uninhibited");
+    }
+
+  /* check if user wants to allow the host to run commands via strpccmd */
+  if (tn5250_config_get (config, "allow_strpccmd"))
+    {
+      This->allow_strpccmd = tn5250_config_get_bool (config, "allow_strpccmd");
     }
 
   /* Set a terminal type if necessary */
@@ -360,14 +367,17 @@ tn5250_display_update (Tn5250Display * This)
       memcpy (This->display_buffers->data +
 	      tn5250_display_width (This) * l, This->msg_line, This->msg_len);
     }
-  if (This->terminal != NULL)
+  if (display_check_pccmd(This) == 0) 
     {
-      tn5250_terminal_update (This->terminal, This);
-      if (This->indicators_dirty)
-	{
-	  tn5250_terminal_update_indicators (This->terminal, This);
-	  This->indicators_dirty = 0;
-	}
+      if (This->terminal != NULL)
+        {
+          tn5250_terminal_update (This->terminal, This);
+          if (This->indicators_dirty)
+    	    {
+	       tn5250_terminal_update_indicators (This->terminal, This);
+	       This->indicators_dirty = 0;
+	   }
+       }
     }
   return;
 }
@@ -3612,4 +3622,110 @@ tn5250_display_wordwrap (Tn5250Display * This, unsigned char *text,
     }
 
   return;
+}
+
+/****f* lib5250/display_check_pccmd
+ * NAME
+ *    display_check_pccmd
+ * SYNOPSIS
+ *    display_check_pccmd (This);
+ * INPUTS
+ *    Tn5250Display *      This       - 
+ * DESCRIPTION
+ *    Check the display buffer to see if it is a command sent via
+ *    the STRPCCMD command.
+ *****/
+int display_check_pccmd(Tn5250Display *This) {
+
+   int b,c;
+   int header[5];
+   int wait = 0;
+   char cmdstr[124];
+
+   if (This->allow_strpccmd == 0) 
+     return 0;
+
+   /* A command string will have an attribute of 0x27 (nondisplay) in
+      col 0, row 0, and the letters 'PCO ' starting in col 3 of row 0. */
+
+   if ( tn5250_display_char_at(This, 0, 0) != 0x27    /* non display */
+     || tn5250_display_char_at(This, 0, 2) != 0xfc    /* ?? always 0xfc */
+     || tn5250_display_char_at(This, 0, 3) != 0xd7    /* P */
+     || tn5250_display_char_at(This, 0, 4) != 0xc3    /* C */
+     || tn5250_display_char_at(This, 0, 5) != 0xd6    /* O */
+     || tn5250_display_char_at(This, 0, 6) != 0x40) { /* space */
+        return 0;
+   }
+
+
+   /* Col 1, Row 0 will contain 0x80 if there's a command to be run, or
+            0x00 if the command has already been run.  This might be the
+            length of the command (5 bytes header, 123 bytes command)? */
+
+   c = tn5250_display_char_at(This, 0, 1);
+   if (c == 0x00) {
+        tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ENTER);
+        return 1;
+   }
+   else if (c != 0x80) {
+        return 0;
+   }
+
+
+   /* The next 5 bytes are header bytes. If anyone has some docs on what
+      they do, please let me know!!  -SK */
+
+   header[0] = This->display_buffers->data[7];
+   header[1] = This->display_buffers->data[8];
+   header[2] = This->display_buffers->data[9];
+   header[3] = This->display_buffers->data[10];
+   header[4] = This->display_buffers->data[11];
+
+   TN5250_LOG(("PCO Header Bytes: %x %x %x %x %x\n",
+         header[0], header[1], header[2], header[3], header[4]));
+
+
+   /* The last bit of the 5th header byte will be 0 if the emulator should
+      wait for the command, or 1 otherwise. */
+
+   if (header[4] & 0x01) 
+        wait = 0;
+   else
+        wait = 1;
+
+
+   /* The header bytes are followed by a 123 character fixed-length command
+      string. */
+
+   memcpy(cmdstr, This->display_buffers->data + 12, 123);
+   cmdstr[123] = '\0';
+
+
+   /* Strip any trailing blanks from the command string */
+
+   for (b=0; b<123; b++) {
+       cmdstr[b] = tn5250_char_map_to_local(
+                      tn5250_display_char_map(This), cmdstr[b]);
+   }
+
+   b=122;
+   while (b && cmdstr[b] == ' ') {
+      cmdstr[b] = '\0';
+      b--;
+   }
+
+   TN5250_LOG(("PCO Command: wait=%d, String: \"%s\"\n", wait,cmdstr));
+
+
+   /* Run the command, then mark the display buffer with 0x00 so we know 
+      that it has been run */
+
+   tn5250_run_cmd(cmdstr, wait);
+   This->display_buffers->data[1] = 0x00;
+
+
+   /* Send back the ENTER key to tell the host that the command was run */
+
+   tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ENTER);
+   return 1;
 }

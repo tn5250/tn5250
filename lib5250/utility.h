@@ -114,6 +114,8 @@ extern FILE * tn5250_logfile;
 
 int tn5250_parse_color(Tn5250Config *config, const char *colorname, 
                         int *r, int *g, int *b);
+int tn5250_run_cmd(const char *cmd, int wait);
+
 #ifdef __cplusplus
 }
 #endif
