@@ -81,6 +81,7 @@ struct _Tn5250Display {
    int pending_insert : 1;
    int sign_key_hack : 1;
    int uninhibited : 1;
+   int allow_strpccmd : 1;
 };
 
 typedef struct _Tn5250Display Tn5250Display;
