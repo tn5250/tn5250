@@ -1,3 +1,8 @@
+2006-05-23 Scott Klement <klemscot@klements.com>
+- allow_strpccmd wasnt initialized if not set in configuration.  Fixed.
+- Applied patch from Holger Schurig to fix bug in debugging output of 
+   telnetstr.c
+
 2006-03-14 Scott Klement <klemscot@klements.com>
 - Added new config option +/-allow_strpccmd 
 - Added support for commands to be sent from the host via the STRPCCMD command

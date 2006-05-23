@@ -72,6 +72,7 @@ tn5250_display_new ()
   This->map = NULL;
   This->keystate = TN5250_KEYSTATE_UNLOCKED;
   This->keySRC = TN5250_KBDSRC_NONE;
+  This->allow_strpccmd = 0;
 
   tn5250_display_add_dbuffer (This, tn5250_dbuffer_new (80, 24));
   return This;
