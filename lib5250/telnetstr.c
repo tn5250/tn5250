@@ -160,7 +160,8 @@ static const UCHAR SB_Str_TermType[]={IAC, SB, TERMINAL_TYPE, SEND, IAC, SE};
 
 static char *getTelOpt(what)
 {
-   char *wcp, wbuf[10];
+   char *wcp;
+   static char wbuf[12];
 
    switch (what) {
       case TERMINAL_TYPE:
@@ -179,7 +180,7 @@ static char *getTelOpt(what)
 		wcp = "<EOR>";
 		break;
       default:
-		sprintf(wcp=wbuf, "<%02X>", what);
+		snprintf(wcp=wbuf, sizeof(wbuf), "<%02X>", what);
 		break;
    }
    return wcp;
