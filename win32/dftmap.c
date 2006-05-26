@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (C) 2002-2005 Scott Klement
  *
  * This file is part of TN5250.
@@ -124,7 +124,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, PSTR cmdLine, int iCmdShow)
 
  /* if the tn5250rc file exists, should we mess with it? */
 
-   if (stat(fn, &discard)==0) {
+   if (!use_opt && stat(fn, &discard)==0) {
        quesfmt = "You already have a TN5250 configuration file called\r\n"
                  "%s\r\n\r\n"
                  "Would you like to replace it?";
@@ -242,6 +242,9 @@ void use_options_file(const char *fn, FILE *rcfile, const char *path) {
     FILE *optf;
     int first;
 
+    FILE *log;
+    log = fopen("testsck.log", "w");
+   
     optf = fopen(fn, "r");
     if (optf==NULL) {
          MessageBox(NULL, "Unable to open Options file!", "Setup", MB_OK);
@@ -275,6 +278,7 @@ void use_options_file(const char *fn, FILE *rcfile, const char *path) {
     }
 
     fclose(optf);
+    fclose(log);
     return;
 }
 
@@ -285,9 +289,7 @@ void install_icon(const char *buf, const char *path) {
      char pgmname[20];
      int x;
 
-     OleInitialize(NULL);   
-
-     mybuf = malloc(strlen(buf)) + 1;
+     mybuf = malloc(strlen(buf) + 1);
      if (mybuf == NULL) {
          MessageBox(NULL, "Out of Memory!", "Setup", MB_OK);
          exit (1);
@@ -303,7 +305,6 @@ void install_icon(const char *buf, const char *path) {
      if (location == NULL) {
          MessageBox(NULL, "Invalid icon specification!", "Setup", MB_OK);
          free(mybuf);
-         OleUninitialize();
          return;
      }
 
@@ -314,7 +315,6 @@ void install_icon(const char *buf, const char *path) {
      if (type == NULL) {
          MessageBox(NULL, "Invalid icon specification!", "Setup", MB_OK);
          free(mybuf);
-         OleUninitialize();
          return;
      }
      
@@ -325,7 +325,6 @@ void install_icon(const char *buf, const char *path) {
      if (name == NULL) {
          MessageBox(NULL, "Invalid icon specification!", "Setup", MB_OK);
          free(mybuf);
-         OleUninitialize();
          return;
      }
      
@@ -340,6 +339,8 @@ void install_icon(const char *buf, const char *path) {
 
      if (strcmp(location, "desktop")==0) {
          GetShellFolderPath(CSIDL_DESKTOPDIRECTORY, iconpath);
+     } else if (strcmp(location, "cdesktop")==0) {
+         GetShellFolderPath(CSIDL_COMMON_DESKTOPDIRECTORY, iconpath);
      } else if (strcmp(location, "start menu")==0) {
          GetShellFolderPath(CSIDL_STARTMENU, iconpath);
      } else if (strcmp(location, "programs")==0) {
@@ -347,7 +348,6 @@ void install_icon(const char *buf, const char *path) {
      } else {
          free(mybuf);
          MessageBox(NULL, "Invalid icon location!", "Setup", MB_OK);
-         OleUninitialize();
          return;
      }
 
@@ -363,7 +363,6 @@ void install_icon(const char *buf, const char *path) {
      else {
          free(mybuf);
          MessageBox(NULL, "Invalid icon location!", "Setup", MB_OK);
-         OleUninitialize();
          return;
      }
           
@@ -381,7 +380,6 @@ void install_icon(const char *buf, const char *path) {
   
      free(mybuf);
 
-     OleUninitialize();
      return;
 }
 
@@ -412,6 +410,8 @@ HRESULT CreateLink(LPCSTR lpszPathObj, LPCSTR lpszArgs,
     IShellLinkA *psl;
     char msg[1024];
 
+    CoInitialize(NULL);
+
     // Get a pointer to the IShellLink interface.
     hres = CoCreateInstance(&CLSID_ShellLink, NULL,
         CLSCTX_INPROC_SERVER, &IID_IShellLink, (LPVOID *) &psl);
@@ -440,9 +440,14 @@ HRESULT CreateLink(LPCSTR lpszPathObj, LPCSTR lpszArgs,
 
             // Save the link by calling IPersistFile::Save.
             hres = ppf->lpVtbl->Save(ppf, wsz, TRUE);
+            ppf->lpVtbl->SaveCompleted(ppf, wsz);
             ppf->lpVtbl->Release(ppf);
-            
-            if (hres != S_OK) {
+
+            if (hres == 0x8007007b) {
+               sprintf(msg, "SaveLink: Bad filename: %s", lpszPathLink);
+               MessageBox(NULL, msg, "Setup", MB_OK);
+            }
+            else if (hres != S_OK) {
                sprintf(msg, "SaveLink: Unknown failure (0x%X)", hres);
                MessageBox(NULL, msg, "Setup", MB_OK);
             }
@@ -465,6 +470,7 @@ HRESULT CreateLink(LPCSTR lpszPathObj, LPCSTR lpszArgs,
           MessageBox(NULL, msg, "Setup", MB_OK);
         }
     }
+    CoUninitialize();
     return hres;
 }
 
@@ -487,18 +493,34 @@ HRESULT GetShellFolderPath(int nFolder, LPSTR lpszShellPath) {
   LPMALLOC     pShellMalloc;
   char         szDir[MAX_PATH];
   HRESULT      hres;
+  char         msg[1024];
 
-  hres = S_FALSE;
-  if (SUCCEEDED(SHGetMalloc(&pShellMalloc))) {
-      if (SUCCEEDED(SHGetSpecialFolderLocation(NULL, nFolder, &pidl))) {
-          if (SHGetPathFromIDList(pidl, szDir)) {         
-                strcpy(lpszShellPath, szDir);
-                hres = S_OK;
-          }
-          pShellMalloc->lpVtbl->Free(pShellMalloc, pidl);
-      }
+  hres = SHGetMalloc(&pShellMalloc);
+  if (!SUCCEEDED(hres)) {
+      sprintf(msg, "GetShellFolderPath: SHGetMalloc failed (hresult 0x%X)",
+                    hres);
+      MessageBox(NULL, msg, "Setup", MB_OK);
+      return hres;
+  } 
+       
+  hres = SHGetSpecialFolderLocation(NULL, nFolder, &pidl);
+  if (!SUCCEEDED(hres)) {
+      sprintf(msg, "GetShellFolderPath: SHGetSpecialFolderLocation"
+                   " failed. (folder=0x%X, hresult 0x%X)", nFolder, hres);
+      MessageBox(NULL, msg, "Setup", MB_OK);
       pShellMalloc->lpVtbl->Release(pShellMalloc);
+      return hres;
+  } 
+
+ 
+  if (SHGetPathFromIDList(pidl, szDir) == FALSE) {
+      pShellMalloc->lpVtbl->Free(pShellMalloc, pidl);
+      pShellMalloc->lpVtbl->Release(pShellMalloc);
+      MessageBox(NULL, "GetShellFolderPath: SHGetPathFromIDList"
+                       " failed", "Setup", MB_OK);
+      return S_FALSE;
   }
-	
-  return hres;
+
+  strcpy(lpszShellPath, szDir);
+  return S_OK;
 }
