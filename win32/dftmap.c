@@ -241,9 +241,6 @@ void use_options_file(const char *fn, FILE *rcfile, const char *path) {
     char buf[1024];
     FILE *optf;
     int first;
-
-    FILE *log;
-    log = fopen("testsck.log", "w");
    
     optf = fopen(fn, "r");
     if (optf==NULL) {
@@ -278,7 +275,6 @@ void use_options_file(const char *fn, FILE *rcfile, const char *path) {
     }
 
     fclose(optf);
-    fclose(log);
     return;
 }
 
