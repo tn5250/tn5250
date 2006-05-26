@@ -1,3 +1,8 @@
+2006-05-26 Scott Klement <klemscot@klements.com>
+- Fix bug (Win32 only) in dftmap.c where doing p = malloc(len)+1 instead
+   of p=malloc(len+1)
+- Added better error reporting to dftmap.c
+
 2006-05-23 Scott Klement <klemscot@klements.com>
 - allow_strpccmd wasnt initialized if not set in configuration.  Fixed.
 - Applied patch from Holger Schurig to fix bug in debugging output of 
