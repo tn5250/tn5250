@@ -1780,7 +1780,7 @@ void win32_terminal_choosefont(HWND hwnd) {
             strcpy(globTerm->data->font_80, globTerm->data->font_in_use.lfFaceName);
             globTerm->data->font_80_h = globTerm->data->font_in_use.lfHeight;
             globTerm->data->font_80_w = globTerm->data->font_in_use.lfWidth;
-            win32_terminal_font(globTerm, globTerm->data->font_in_use.lfFaceName, tn5250_display_width (globDisplay), tn5250_display_height (globDisplay), globTerm->data->font_80_w, globTerm->data->font_80_h);
+            win32_terminal_font(globTerm, globTerm->data->font_in_use.lfFaceName, tn5250_display_width (globDisplay), tn5250_display_height (globDisplay)+1, globTerm->data->font_80_w, globTerm->data->font_80_h);
             tn5250_config_set(globTerm->data->config, "font_80", fontName);
         }
         else {
@@ -1792,7 +1792,7 @@ void win32_terminal_choosefont(HWND hwnd) {
             strcpy(globTerm->data->font_132, globTerm->data->font_in_use.lfFaceName);
             globTerm->data->font_132_h = globTerm->data->font_in_use.lfHeight;
             globTerm->data->font_132_w = globTerm->data->font_in_use.lfWidth;
-            win32_terminal_font(globTerm, globTerm->data->font_in_use.lfFaceName, tn5250_display_width (globDisplay), tn5250_display_height (globDisplay), globTerm->data->font_132_w, globTerm->data->font_132_h);
+            win32_terminal_font(globTerm, globTerm->data->font_in_use.lfFaceName, tn5250_display_width (globDisplay), tn5250_display_height (globDisplay)+1, globTerm->data->font_132_w, globTerm->data->font_132_h);
             tn5250_config_set(globTerm->data->config, "font_132", fontName);
         }
     }
