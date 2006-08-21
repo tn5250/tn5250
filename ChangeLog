@@ -1,3 +1,7 @@
+2006-08-21 Scott Klement <klemscot@klements.com>
+- Fix bug in Win32 where bottom line disappeared after a font change.
+- Fixed problems linking Win32 with snprintf function
+
 2006-05-26 Scott Klement <klemscot@klements.com>
 - Fix bug (Win32 only) in dftmap.c where doing p = malloc(len)+1 instead
    of p=malloc(len+1)

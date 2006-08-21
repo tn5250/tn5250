@@ -607,6 +607,8 @@ int create_tn5250_config_h(const char *infile, const char *outfile,
                  fprintf(out, "%s", rec);
              }
           }
+
+          fprintf(out, "#define snprintf _snprintf\n");
      
           fclose(in);
           fclose(out);
@@ -637,6 +639,7 @@ int create_tn5250_config_h(const char *infile, const char *outfile,
 		i++;
            }
 
+           fprintf(out, "#define snprintf _snprintf\n");
            fclose(out);
      }
      return 0;
