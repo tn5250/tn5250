@@ -1,3 +1,7 @@
+2006-09-11 Scott Klement <klemscot@klements.com>
+- Added a nodaemon option to lp5250d to stop lp5250d from running
+   in the background (when required)
+
 2006-08-21 Scott Klement <klemscot@klements.com>
 - Fix bug in Win32 where bottom line disappeared after a font change.
 - Fixed problems linking Win32 with snprintf function
