@@ -36,7 +36,7 @@ static void syntax (void);
 /* This just checks what arguments (options) were passed to lp5250d on the
  * command line.
  */
-int check_options (int argc, char **argv, char **user);
+int check_options (int argc, char **argv, char **user, int *nodaemon);
 
 /* This sets the current UID to the uid of the user passed.
  */
@@ -52,8 +52,9 @@ int
 main (int argc, char *argv[])
 {
   char *user = NULL;
+  int nodaemon = 0;
 
-  if (check_options (argc, argv, &user) != 0)
+  if (check_options (argc, argv, &user, &nodaemon) != 0)
     {
       exit (1);
     }
@@ -94,12 +95,15 @@ main (int argc, char *argv[])
       syntax ();
     }
 
+  if (!nodaemon)
+      nodaemon = tn5250_config_get_bool (config, "nodaemon");
 
-  if (tn5250_daemon (0, 0, 0) < 0)
-    {
-      perror ("tn5250_daemon");
-      exit (2);
-    }
+  if (!nodaemon) 
+      if (tn5250_daemon (0, 0, 0) < 0)
+        {
+          perror ("tn5250_daemon");
+          exit (2);
+        }
 
 #ifndef NDEBUG
   if (tn5250_config_get (config, "trace"))
@@ -187,6 +191,7 @@ syntax ()
 	  "\toutputcommand=CMD          specify the print output command\n"
 	  "\t-u,--user=NAME             display user to run as\n"
 	  "\t-v,--version               display version\n"
+	  "\t-N,--nodaemon              do not run as daemon (run in foreground)\n"
 	  "\t-H,--help                  display this help\n");
 
   exit (255);
@@ -196,7 +201,7 @@ syntax ()
 /* This checks the options lp5250d was passed.
  */
 int
-check_options (int argc, char **argv, char **user)
+check_options (int argc, char **argv, char **user, int *nodaemon)
 {
 #ifdef HAVE_GETOPT_H
   struct option options[4];
@@ -217,16 +222,20 @@ check_options (int argc, char **argv, char **user)
   options[2].has_arg = no_argument;
   options[2].flag = NULL;
   options[2].val = 'H';
-  options[3].name = 0;
-  options[3].has_arg = 0;
-  options[3].flag = 0;
-  options[3].val = 0;
+  options[3].name = "nodaemon";
+  options[3].has_arg = no_argument;
+  options[3].flag = NULL;
+  options[3].val = 'N';
+  options[4].name = 0;
+  options[4].has_arg = 0;
+  options[4].flag = 0;
+  options[4].val = 0;
 #endif
 
 #ifdef HAVE_GETOPT_H
-  while ((i = getopt_long (argc, argv, "u:vH", options, NULL)) != -1)
+  while ((i = getopt_long (argc, argv, "u:vHN", options, NULL)) != -1)
 #else
-  while ((i = getopt (argc, argv, "u:vH")) != -1)
+  while ((i = getopt (argc, argv, "u:vHN")) != -1)
 #endif
     {
       switch (i)
@@ -243,6 +252,9 @@ check_options (int argc, char **argv, char **user)
 	case 'v':
 	  printf ("lp5250d version:  %s\n", VERSION);
 	  return -1;
+	case 'N':
+	  *nodaemon=1;
+          break;
 	default:
 	  syntax ();
 	  return -1;
