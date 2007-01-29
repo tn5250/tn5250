@@ -1,3 +1,9 @@
+2007-01-29 Scott Klement <klemscot@klements.com>
+- Change configure.ac to define USE_OWN_KEY_PARSING by default
+   when --with-curses=yes.  This was the case prior to 2006-01-13
+   when James re-vamped the source tree, but was (accidentally?) 
+   left out when James re-wrote configure.ac for the new layout.
+
 2006-09-11 Scott Klement <klemscot@klements.com>
 - Added a nodaemon option to lp5250d to stop lp5250d from running
    in the background (when required)
