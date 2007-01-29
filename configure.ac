@@ -10,6 +10,7 @@ AM_CONFIG_HEADER(config.h)
 # Automake
 #
 AH_TEMPLATE([SOCKET_TYPE], [Define to your system's socket descriptor type.])
+AH_TEMPLATE([USE_OWN_KEY_PARSING], [Define to let cursesterm handle key mapping.])
 
 # Checks for programs.
 AC_PROG_CC
@@ -46,6 +47,8 @@ AC_DEFINE_UNQUOTED(SOCKET_TYPE,int)
 
 # User specified optional packages
 AC_ARG_WITH([curses],AS_HELP_STRING([--with-curses],[curses terminal support (default=yes)]),[ac_cv_use_curses=$withval],[ac_cv_use_curses=yes]) AC_CACHE_CHECK([whether to build curses terminal],[ac_cv_use_curses], [ac_cv_use_curses=yes])
+AC_ARG_WITH([curses-old-keys],AS_HELP_STRING([--with-curses-old-keys],[curses terminal will use old key handler (default=no)]),[ac_cv_use_old_keys=$withval],[ac_cv_use_old_keys=no]) AC_CACHE_CHECK([whether to use old key handler],[ac_cv_use_old_keys], [ac_cv_use_old_keys=no])
+
 
 if test "$ac_cv_use_curses" = "yes"
 then
@@ -62,6 +65,10 @@ then
 		fi
 	fi
 	AC_SUBST([CURSES_LIB])
+        if test "$ac_cv_use_old_keys" != "yes";
+        then
+              AC_DEFINE_UNQUOTED(USE_OWN_KEY_PARSING,1)
+        fi
 else
 	MAYBE_CURSES=
 fi

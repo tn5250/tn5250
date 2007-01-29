@@ -179,6 +179,9 @@
 /* Define to 1 if your <sys/time.h> declares `struct tm'. */
 #undef TM_IN_SYS_TIME
 
+/* Define to let cursesterm handle key mapping. */
+#undef USE_OWN_KEY_PARSING
+
 /* Version number of package */
 #undef VERSION
 
