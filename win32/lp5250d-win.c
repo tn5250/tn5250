@@ -1168,7 +1168,7 @@ static int tn5250_windows_print_session_waitevent(Tn5250PrintSession * This)
    while ( GetMessage (&msg, NULL, 0, 0) ) {
           TranslateMessage (&msg);
           DispatchMessage(&msg);
-          if (msg.message = WM_TN5250_STREAM_DATA) {
+          if (msg.message == WM_TN5250_STREAM_DATA) {
               result = 1;
               break;
           }

@@ -1,3 +1,6 @@
+2007-04-25 Scott Klement <klemscot@klements.com>
+- Fix silly mistake in lp5250d-win.c
+
 2007-01-29 Scott Klement <klemscot@klements.com>
 - Change configure.ac to define USE_OWN_KEY_PARSING by default
    when --with-curses=yes.  This was the case prior to 2006-01-13
