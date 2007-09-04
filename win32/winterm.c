@@ -175,6 +175,7 @@ static void win32_do_terminal_update(HDC hdc, Tn5250Terminal *This,
                           int ox, int oy);
 void win32_move_caret_to(Tn5250Terminal *This, Tn5250Display *disp,
                          short y, short x);
+static int setNumLock(int state);
 
 extern void msgboxf(const char *fmt, ...);
 
@@ -680,9 +681,43 @@ static void win32_terminal_init(Tn5250Terminal * This)
    ShowWindow (This->data->hwndMain, This->data->show);
    UpdateWindow (This->data->hwndMain);
 
+   if ( tn5250_config_get (This->data->config, "numlock") )
+       setNumLock(tn5250_config_get_bool(This->data->config, "numlock"));
+
    /* FIXME: This might be a nice place to load the keyboard map */
 
 }
+
+static int setNumLock(int state) {
+
+      BYTE keys[256];
+      int curstate;
+      memset(keys, 0, sizeof(keys));
+
+      /* ---- Get the current num-lock state ---- */ 
+
+      if (!GetKeyboardState(keys)) 
+         return -1;
+
+      curstate = keys[VK_NUMLOCK] ? 1 : 0;
+
+      /* ---- If it needs to toggle, send keypress as if the actual
+              key was pressed on the keyboard ---- */ 
+
+      if (state != curstate) {
+         keybd_event( VK_NUMLOCK, 
+                      0x45, 
+                      KEYEVENTF_EXTENDEDKEY, 
+                      0);
+         keybd_event( VK_NUMLOCK, 
+                      0x45, 
+                      KEYEVENTF_EXTENDEDKEY|KEYEVENTF_KEYUP,
+                      0);
+      }
+
+      return 0;
+}
+
 
 
 /****i* lib5250/win32_terminal_set_config

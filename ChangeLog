@@ -1,3 +1,7 @@
+2007-09-04 Scott Klement <klemscot@klements.com>
+- Added +/-numlock option to Win32 terminal so you can turn numlock
+   on/off when the emulator starts
+
 2007-04-25 Scott Klement <klemscot@klements.com>
 - Fix silly mistake in lp5250d-win.c
 
