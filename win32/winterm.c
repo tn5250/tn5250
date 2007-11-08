@@ -2390,14 +2390,14 @@ void win32_expand_text_selection(Tn5250Terminal *This) {
 
       GetClientRect(This->data->hwndMain, &cr);
 
-      if (This->data->selend.x < cr.left) This->data->selend.x = cr.left;
-      if (This->data->selend.x > cr.right) This->data->selend.x = cr.right;
-      if (This->data->selend.y < cr.top) This->data->selend.y = cr.top;
+      if (This->data->selend.x < cr.left)   This->data->selend.x = cr.left;
+      if (This->data->selend.x > cr.right)  This->data->selend.x = cr.right;
+      if (This->data->selend.y < cr.top)    This->data->selend.y = cr.top;
       if (This->data->selend.y > cr.bottom) This->data->selend.y = cr.bottom;
 
-      if (This->data->selstr.x < cr.left) This->data->selstr.x = cr.left;
-      if (This->data->selstr.x > cr.right) This->data->selstr.x = cr.right;
-      if (This->data->selstr.y < cr.top) This->data->selstr.y = cr.top;
+      if (This->data->selstr.x < cr.left)   This->data->selstr.x = cr.left;
+      if (This->data->selstr.x > cr.right)  This->data->selstr.x = cr.right;
+      if (This->data->selstr.y < cr.top)    This->data->selstr.y = cr.top;
       if (This->data->selstr.y > cr.bottom) This->data->selstr.y = cr.bottom;
 
 
@@ -2408,17 +2408,18 @@ void win32_expand_text_selection(Tn5250Terminal *This) {
       cy = This->data->selstr.y / This->data->font_height;
       This->data->selstr.y = cy * This->data->font_height;
 
+      TN5250_LOG (("Selection starts at sx=%d,sy=%d\n", cx,cy));
 
    /* move selection end position to nearest character */
 
       cx = This->data->selend.x / This->data->font_width;
-      if (This->data->selend.x % This->data->font_width) 
-          cx++;
-      This->data->selend.x = cx * This->data->font_width;
+      This->data->selend.x = cx * This->data->font_width
+                           + (This->data->font_width-1);
       cy = This->data->selend.y / This->data->font_height;
-      if (This->data->selend.y % This->data->font_height)
-          cy++;
-      This->data->selend.y = cy * This->data->font_height;
+      This->data->selend.y = cy * This->data->font_height
+                           + (This->data->font_height-1);
+
+      TN5250_LOG (("Selection ends at ex=%d,ey=%d\n", cx,cy));
 
 }
 
@@ -2461,19 +2462,21 @@ void win32_copy_text_selection(Tn5250Terminal *This, Tn5250Display *display)
 
       while (ey>tn5250_display_height(display)) ey--;
 
-      bufsize = ((ex-sx)+1) * ((ey-sy)+1) + 1;
+      TN5250_LOG (("Copy to clipboard sx=%d,sy=%d,ex=%d,ey=%d\n",
+                   sx,sy,ex,ey));
+
+      bufsize = ((ex-sx)+3) * ((ey-sy)+1) - 1;
       hBuf = GlobalAlloc(GHND|GMEM_SHARE, bufsize);
       TN5250_ASSERT(hBuf!=NULL);
-
 
    /* populate the global buffer with the text data, inserting CR/LF 
       in between each line that was selected */
 
       buf = GlobalLock(hBuf); 
       bp = -1;
-      for (y = sy; y < ey; y++) {
+      for (y = sy; y <= ey; y++) {
 
-           for (x = sx; x < ex; x++) {
+           for (x = sx; x <= ex; x++) {
                 c = tn5250_display_char_at(display, y, x);
 	        if (((c & 0xe0) == 0x20 )||(c < 0x40 && c > 0x00)||(c == 0xff)) 
                      c = ' ';
@@ -2485,7 +2488,7 @@ void win32_copy_text_selection(Tn5250Terminal *This, Tn5250Display *display)
                 buf[bp] = c;
            }
 
-           if (y != (ey-1)) {
+           if (y != ey) {
                 bp++;
                 if (bp==bufsize) break;
                 buf[bp] = '\r';
@@ -2495,6 +2498,13 @@ void win32_copy_text_selection(Tn5250Terminal *This, Tn5250Display *display)
            }
 
       }
+
+      TN5250_LOG (("Clipboard buffer size = %d\n", bufsize));
+      for (bp=0; bp<bufsize; bp++) {
+         TN5250_LOG (("%x ", buf[bp]));
+      }
+      TN5250_LOG (("<end>\n"));
+
       GlobalUnlock(hBuf);
 
       /* create a bitmap version of the copy buffer as well... 
