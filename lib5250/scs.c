@@ -16,9 +16,14 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ *
+ * The SCS print stream is described in "IPDS and SCS Technical Reference"
+ * S544-5312-07
  */
 
 #include "tn5250-private.h"
+#include <syslog.h>
 
 /*
 #define DEBUG
@@ -30,7 +35,10 @@
 void scs_sic (Tn5250SCS * This);
 void scs_sea (Tn5250SCS * This);
 void scs_noop (Tn5250SCS * This);
+void scs_rpt (Tn5250SCS * This);
+void scs_sw (Tn5250SCS * This);
 void scs_transparent (Tn5250SCS * This);
+void scs_bel (Tn5250SCS * This);
 void scs_spsu (Tn5250SCS * This);
 
 /* Page control */
@@ -49,7 +57,7 @@ void scs_sffc (Tn5250SCS * This);
 void scs_scgl (Tn5250SCS * This);
 void scs_scg (Tn5250SCS * This);
 void scs_sfg (Tn5250SCS * This);
-void scs_scd (int *cpi);
+void scs_scd (Tn5250SCS * This);
 
 /* Cursor control */
 void scs_pp (Tn5250SCS * This);
@@ -79,14 +87,17 @@ void scs_process2b (Tn5250SCS * This);
 void scs_processd2 (Tn5250SCS * This);
 void scs_process03 (unsigned char nextchar, unsigned char curchar);
 void scs_scs (int *cpi);
-void scs_process04 (unsigned char nextchar, unsigned char curchar, int *cpi);
-void scs_processd1 ();
+void scs_process04 (Tn5250SCS * This, unsigned char nextchar,
+		    unsigned char curchar);
+void scs_processd1 (Tn5250SCS * This);
 void scs_process06 ();
-void scs_process07 ();
-void scs_processd103 ();
+void scs_process07 (Tn5250SCS * This);
+void scs_processd103 (Tn5250SCS * This);
 void scs_jtf (unsigned char curchar);
 void scs_sjm (unsigned char curchar);
 void scs_processd3 (Tn5250SCS * This);
+void scs_cpi2points (Tn5250SCS * This);
+void scs_setfont (Tn5250SCS * This);
 void scs_main (Tn5250SCS * This);
 void scs_init (Tn5250SCS * This);
 void scs_default (Tn5250SCS * This);
@@ -109,6 +120,10 @@ scs_sic (Tn5250SCS * This)
 
   if (curchar != 1 && curchar != 255)
     {
+      if (This->usesyslog)
+	{
+	  syslog (LOG_INFO, "Invalid SIC parameter (SIC = %x)", curchar);
+	}
       fprintf (stderr, "Invalid SIC parameter (SIC = %x)\n", curchar);
     }
   else
@@ -156,6 +171,10 @@ scs_sea (Tn5250SCS * This)
       exception = fgetc (stdin);
       if (exception > 4)
 	{
+	  if (This->usesyslog)
+	    {
+	      syslog (LOG_INFO, "Invalid exception class (%d)", exception);
+	    }
 	  fprintf (stderr, "Invalid exception class (%d)\n", exception);
 	}
       else
@@ -167,6 +186,12 @@ scs_sea (Tn5250SCS * This)
       action = fgetc (stdin);
       if (action > 3)
 	{
+	  if (This->usesyslog)
+	    {
+	      syslog (LOG_INFO,
+		      "Invalid action (exception class: %d, action %d)",
+		      exception, action);
+	    }
 	  fprintf (stderr,
 		   "Invalid action (exception class: %d, action %d)\n",
 		   exception, action);
@@ -182,12 +207,24 @@ scs_sea (Tn5250SCS * This)
 	      {
 		if (exception == 0)
 		  {
+		    if (This->usesyslog)
+		      {
+			syslog (LOG_INFO,
+				"Using action ACCEPT for exception class %d (all exception classes)",
+				exception);
+		      }
 		    fprintf (stderr,
 			     "\tUsing action ACCEPT for exception class %d (all exception classes)",
 			     exception);
 		  }
 		else
 		  {
+		    if (This->usesyslog)
+		      {
+			syslog (LOG_INFO,
+				"Using action ACCEPT for exception class %d",
+				exception);
+		      }
 		    fprintf (stderr,
 			     "\tUsing action ACCEPT for exception class %d",
 			     exception);
@@ -198,12 +235,24 @@ scs_sea (Tn5250SCS * This)
 	      {
 		if (exception == 0)
 		  {
+		    if (This->usesyslog)
+		      {
+			syslog (LOG_INFO,
+				"Using action IGNORE for exception class %d (all exception classes)",
+				exception);
+		      }
 		    fprintf (stderr,
 			     "\tUsing action IGNORE for exception class %d (all exception classes)",
 			     exception);
 		  }
 		else
 		  {
+		    if (This->usesyslog)
+		      {
+			syslog (LOG_INFO,
+				"Using action IGNORE for exception class %d",
+				exception);
+		      }
 		    fprintf (stderr,
 			     "\tUsing action IGNORE for exception class %d",
 			     exception);
@@ -214,12 +263,24 @@ scs_sea (Tn5250SCS * This)
 	      {
 		if (exception == 0)
 		  {
+		    if (This->usesyslog)
+		      {
+			syslog (LOG_INFO,
+				"Using action TERMINATE for exception class %d (all exception classes)",
+				exception);
+		      }
 		    fprintf (stderr,
 			     "\tUsing action TERMINATE for exception class %d (all exception classes)",
 			     exception);
 		  }
 		else
 		  {
+		    if (This->usesyslog)
+		      {
+			syslog (LOG_INFO,
+				"Using action TERMINATE for exception class %d",
+				exception);
+		      }
 		    fprintf (stderr,
 			     "\tUsing action TERMINATE for exception class %d",
 			     exception);
@@ -230,12 +291,24 @@ scs_sea (Tn5250SCS * This)
 	      {
 		if (exception == 0)
 		  {
+		    if (This->usesyslog)
+		      {
+			syslog (LOG_INFO,
+				"Using action SUSPEND for exception class %d (all exception classes)",
+				exception);
+		      }
 		    fprintf (stderr,
 			     "\tUsing action SUSPEND for exception class %d (all exception classes)",
 			     exception);
 		  }
 		else
 		  {
+		    if (This->usesyslog)
+		      {
+			syslog (LOG_INFO,
+				"Using action SUSPEND for exception class %d",
+				exception);
+		      }
 		    fprintf (stderr,
 			     "\tUsing action SUSPEND for exception class %d",
 			     exception);
@@ -266,6 +339,32 @@ scs_noop (Tn5250SCS * This)
 }
 
 
+/* Repeat (RPT).  This is part of Device Control.
+ * According to the manual this is ignored by printers.
+ */
+void
+scs_rpt (Tn5250SCS * This)
+{
+#ifdef DEBUG
+  fprintf (stderr, "RPT\n");
+#endif
+  return;
+}
+
+
+/* Switch (SW).  This is part of Device Control.
+ * According to the manual this is ignored by printers.
+ */
+void
+scs_sw (Tn5250SCS * This)
+{
+#ifdef DEBUG
+  fprintf (stderr, "SW\n");
+#endif
+  return;
+}
+
+
 /* ASCII Transparency (ATRN).  This is part of Device Control.
  * Only used to send PCL codes to an ascii printer.
  */
@@ -276,11 +375,31 @@ scs_transparent (Tn5250SCS * This)
   int loop;
 
   bytecount = fgetc (stdin);
+
+  if (This->usesyslog)
+    {
+      syslog (LOG_INFO, "Printing %x transparent bytes", bytecount);
+    }
+
   fprintf (stderr, "TRANSPARENT (%x) = ", bytecount);
+
   for (loop = 0; loop < bytecount; loop++)
     {
       fprintf (stderr, "%c", fgetc (stdin));
     }
+  return;
+}
+
+
+/* Bell/Stop (BEL/STP).  This is part of Device Control.
+ * According to the manual this is ignored by printers.
+ */
+void
+scs_bel (Tn5250SCS * This)
+{
+#ifdef DEBUG
+  fprintf (stderr, "BEL/STP\n");
+#endif
   return;
 }
 
@@ -301,6 +420,7 @@ scs_spsu (Tn5250SCS * This)
 
   nextchar = fgetc (stdin);
   trayparm = fgetc (stdin);
+
 #ifdef DEBUG
   fprintf (stderr, "SPSU (%x) = %x%x", This->curchar, nextchar, trayparm);
 #endif
@@ -319,21 +439,37 @@ scs_spsu (Tn5250SCS * This)
 	{
 	case 0:
 	  {
+	    if (This->usesyslog)
+	      {
+		syslog (LOG_INFO, "Paper source tray left unchanged");
+	      }
 	    fprintf (stderr, "\tPaper source tray left unchanged");
 	    break;
 	  }
 	case 1:
 	  {
+	    if (This->usesyslog)
+	      {
+		syslog (LOG_INFO, "Paper source tray set to manual");
+	      }
 	    fprintf (stderr, "\tPaper source tray set to manual");
 	    break;
 	  }
 	case 2:
 	  {
+	    if (This->usesyslog)
+	      {
+		syslog (LOG_INFO, "Paper source tray set to tray 1");
+	      }
 	    fprintf (stderr, "\tPaper source tray set to tray 1");
 	    break;
 	  }
 	case 3:
 	  {
+	    if (This->usesyslog)
+	      {
+		syslog (LOG_INFO, "Paper source tray set to tray 1");
+	      }
 	    fprintf (stderr, "\tPaper source tray set to tray 1");
 	    break;
 	  }
@@ -356,6 +492,11 @@ scs_ppm (Tn5250SCS * This)
   unsigned char destdrawer, quality, duplex;
   unsigned char nextchar;
 
+  if (This->usesyslog)
+    {
+      syslog (LOG_INFO, "Begin Page Presentation Media (PPM)");
+      syslog (LOG_INFO, "Length of PPM parameters: %d", This->curchar);
+    }
 #ifdef DEBUG
   fprintf (stderr, "Begin Page Presentation Media (PPM)\n");
   fprintf (stderr, "Length of PPM parameters: %d\n", This->curchar);
@@ -363,12 +504,24 @@ scs_ppm (Tn5250SCS * This)
   nextchar = fgetc (stdin);
   nextchar = fgetc (stdin);
   formscontrol = fgetc (stdin);
+
+  if (This->usesyslog)
+    {
+      syslog (LOG_INFO, "Forms control = %x", formscontrol);
+    }
+
 #ifdef DEBUG
   fprintf (stderr, "\tForms control = %x\n", formscontrol);
 #endif
+
   if (This->curchar > 5)
     {
       sourcedrawer = fgetc (stdin);
+
+      if (This->usesyslog)
+	{
+	  syslog (LOG_INFO, "Source drawer = %x", sourcedrawer);
+	}
 #ifdef DEBUG
       fprintf (stderr, "\tSource drawer = %x\n", sourcedrawer);
 #endif
@@ -376,6 +529,12 @@ scs_ppm (Tn5250SCS * This)
   if (This->curchar > 6)
     {
       destdraweroffset = fgetc (stdin);
+
+      if (This->usesyslog)
+	{
+	  syslog (LOG_INFO, "Destination drawer offset = %x",
+		  destdraweroffset);
+	}
 #ifdef DEBUG
       fprintf (stderr, "\tDestination drawer offset = %x\n",
 	       destdraweroffset);
@@ -384,6 +543,11 @@ scs_ppm (Tn5250SCS * This)
   if (This->curchar > 7)
     {
       destdrawer = fgetc (stdin);
+
+      if (This->usesyslog)
+	{
+	  syslog (LOG_INFO, "Destination drawer = %x", destdrawer);
+	}
 #ifdef DEBUG
       fprintf (stderr, "\tDestination drawer = %x\n", destdrawer);
 #endif
@@ -391,6 +555,11 @@ scs_ppm (Tn5250SCS * This)
   if (This->curchar > 8)
     {
       quality = fgetc (stdin);
+
+      if (This->usesyslog)
+	{
+	  syslog (LOG_INFO, "Quality = %x", quality);
+	}
 #ifdef DEBUG
       fprintf (stderr, "\tQuality = %x\n", quality);
 #endif
@@ -398,9 +567,19 @@ scs_ppm (Tn5250SCS * This)
   if (This->curchar > 9)
     {
       duplex = fgetc (stdin);
+
+      if (This->usesyslog)
+	{
+	  syslog (LOG_INFO, "Duplex = %x", duplex);
+	}
 #ifdef DEBUG
       fprintf (stderr, "\tDuplex = %x\n", duplex);
 #endif
+    }
+
+  if (This->usesyslog)
+    {
+      syslog (LOG_INFO, "End Page Presentation Media (PPM)");
     }
 #ifdef DEBUG
   fprintf (stderr, "End Page Presentation Media (PPM)\n");
@@ -417,6 +596,13 @@ scs_ppm (Tn5250SCS * This)
  * Definately look at the IBM docs for this one.  Particularly note that
  * the presentation size can be different (even larger) than the actual
  * page size.
+ *
+ * This control causes the page orientation to be calculated according to
+ * several rules described in the manual.  Specifically, since we always
+ * consider any presentation surface size to be legal for the current
+ * physical paper size (since we aren't printing on any actual paper), then
+ * the size dimensions are compared.  If the shorter dimension is specified
+ * as the depth, then landscape is used;  otherwise, portrait is used.
  */
 void
 scs_spps (Tn5250SCS * This)
@@ -431,6 +617,11 @@ scs_spps (Tn5250SCS * This)
   length = (length << 8) + fgetc (stdin);
   This->pagelength = length;
 
+  if (This->usesyslog)
+    {
+      syslog (LOG_INFO, "SPPS (width = %d) (length = %d)", width, length);
+    }
+
 #ifdef DEBUG
   fprintf (stderr, "SPPS (width = %d) (length = %d)", width, length);
 #ifdef VERBOSE
@@ -439,39 +630,110 @@ scs_spps (Tn5250SCS * This)
 #endif
   fprintf (stderr, "\n");
 #endif
+
+  if (width > length)
+    {
+      if (This->usesyslog)
+	{
+	  syslog (LOG_INFO, "Using landscape orientation");
+	}
+      This->rotation = SCS_ROTATE90;
+    }
   return;
 }
 
 
 /* Set Horizontal Format (SHF).  This is part of Page Controls.
- * Specifies the presentation surface width.
+ * Specifies the presentation surface width by specifying the number of
+ * characters per line in an optional parameter.  If omitted, or if its
+ * value is zero, the right margin is set to 13.2 inches.
+ *
+ * The specification in characters is converted to a specification in
+ * inches, based on the current setting of the font width.
  */
 void
 scs_shf (Tn5250SCS * This)
 {
-  unsigned char shf1, shf2;
+  int length;
+  int shf1 = 0;
 
-  shf1 = fgetc (stdin);
-  shf2 = fgetc (stdin);
+  length = fgetc (stdin);
+
+  if (length > 0)
+    {
+      shf1 = fgetc (stdin);
+    }
+
+  if (shf1 != 0)
+    {
+      if (This->cpi != 0)
+	{
+	  This->pagewidth = (shf1 / This->cpi) * 1440;
+	}
+      else
+	{
+	  This->pagewidth = (shf1 / 10) * 1440;
+	}
+    }
+  else
+    {
+      This->pagewidth = 19008;
+    }
+
+  if (This->usesyslog)
+    {
+      syslog (LOG_INFO, "SHF set page width to %d", This->pagewidth);
+    }
 #ifdef DEBUG
-  fprintf (stderr, "SHF = %x %x\n", shf1, shf2);
+  fprintf (stderr, "SHF = %x %x\n", length, shf1);
 #endif
   return;
 }
 
 
 /* Set Vertical Format (SVF).  This is part of Page Controls.
- * Specifies the presentation surface depth.
+ * Specifies the presentation surface depth by specifying the number of
+ * lines per page in an optional parameter.  If omitted, or if its
+ * value is zero, the right margin is set to 66 lines.
+ *
+ * The specification in lines is converted to a specification in
+ * inches, based on the current setting of the lines per inch.
  */
 void
 scs_svf (Tn5250SCS * This)
 {
-  unsigned char svf1, svf2;
+  int length;
+  int svf1 = 0;
 
-  svf1 = fgetc (stdin);
-  svf2 = fgetc (stdin);
+  length = fgetc (stdin);
+
+  if (length > 0)
+    {
+      svf1 = fgetc (stdin);
+    }
+
+  if (svf1 != 0)
+    {
+      if (This->lpi != 0)
+	{
+	  This->pagelength = (svf1 / This->lpi) * 1440;
+	}
+      else
+	{
+	  This->pagelength = (svf1 / 6) * 1440;
+	}
+    }
+  else
+    {
+      This->pagelength = 15840;
+    }
+
+  if (This->usesyslog)
+    {
+      syslog (LOG_INFO, "SVF set page length to %d", This->pagelength);
+    }
 #ifdef DEBUG
-  fprintf (stderr, "SVF = %x %x\n", svf1, svf2);
+  fprintf (stderr, "SVF = %x %x\n", length, svf1);
 #endif
   return;
 }
@@ -483,6 +745,10 @@ scs_svf (Tn5250SCS * This)
 void
 scs_ff (Tn5250SCS * This)
 {
+  if (This->usesyslog)
+    {
+      syslog (LOG_INFO, "Form feed");
+    }
 #ifdef DEBUG
   fprintf (stderr, "FF\n");
 #endif
@@ -497,6 +763,10 @@ scs_ff (Tn5250SCS * This)
 void
 scs_rff (Tn5250SCS * This)
 {
+  if (This->usesyslog)
+    {
+      syslog (LOG_INFO, "Required form feed");
+    }
 #ifdef DEBUG
   fprintf (stderr, "RFF\n");
 #endif
@@ -535,48 +805,96 @@ scs_sto (Tn5250SCS * This)
   pagerot2 = fgetc (stdin);
 #ifdef DEBUG
   fprintf (stderr, "%x%x %x%x", charrot1, charrot2, pagerot1, pagerot2);
-#ifdef VERBOSE
+#endif
+
   switch (pagerot1)
     {
     case 0x00:
       {
-	fprintf (stderr, "\tPrinting normal portrait");
+	if (This->usesyslog)
+	  {
+	    syslog (LOG_INFO, "STO set aspect to normal portrait");
+	  }
+#ifdef VERBOSE
+	fprintf (stderr, "\tPrinting normal portrait\n");
+#endif
+	This->rotation = SCS_ROTATE0;
 	break;
       }
     case 0x2D:
       {
-	fprintf (stderr, "\tPrinting landscape left");
+	if (This->usesyslog)
+	  {
+	    syslog (LOG_INFO, "STO set aspect to landscape left");
+	  }
+#ifdef VERBOSE
+	fprintf (stderr, "\tPrinting landscape left\n");
+#endif
+	This->rotation = SCS_ROTATE90;
 	break;
       }
     case 0x5A:
       {
-	fprintf (stderr, "\tPrinting portrait upside down");
+	if (This->usesyslog)
+	  {
+	    syslog (LOG_INFO, "STO set aspect to portrait upside down");
+	  }
+#ifdef VERBOSE
+	fprintf (stderr, "\tPrinting portrait upside down\n");
+#endif
+	This->rotation = SCS_ROTATE180;
 	break;
       }
     case 0x87:
       {
-	fprintf (stderr, "\tPrinting landscape right");
+	if (This->usesyslog)
+	  {
+	    syslog (LOG_INFO, "STO set aspect to landscape right");
+	  }
+#ifdef VERBOSE
+	fprintf (stderr, "\tPrinting landscape right\n");
+#endif
+	This->rotation = SCS_ROTATE270;
 	break;
       }
     case 0xFF:
       {
+#ifdef DEBUG
+	fprintf (stderr, "Unhandled page rotation!\n");
+#endif
 	if (pagerot2 == 0xFE)
 	  {
-	    fprintf (stderr, "\tSelected COR mode");
+	    if (This->usesyslog)
+	      {
+		syslog (LOG_INFO, "STO used unhandled page rotation: COR");
+	      }
+#ifdef VERBOSE
+	    fprintf (stderr, "\tSelected COR mode\n");
+#endif
 	  }
 	else
 	  {
+	    if (This->usesyslog)
+	      {
+		syslog (LOG_INFO,
+			"STO used unhandled page rotation: Setting text orientation based on SPPS command");
+	      }
+#ifdef VERBOSE
 	    fprintf (stderr,
-		     "\tSetting text orientation based on SPPS command");
+		     "\tSetting text orientation based on SPPS command\n");
+#endif
 	  }
+	break;
       }
-    }
-#endif
-  fprintf (stderr, "\n");
-#endif
-  if (pagerot1 != 0xFF && pagerot2 != 0xFF)
-    {
-      fprintf (stderr, "Unhandled page rotation!!\n");
+    default:
+      {
+	if (This->usesyslog)
+	  {
+	    syslog (LOG_INFO, "STO used unhandled page rotation");
+	  }
+	fprintf (stderr, "Unhandled page rotation!\n");
+	break;
+      }
     }
   return;
 }
@@ -584,37 +902,46 @@ scs_sto (Tn5250SCS * This)
 
 /* Set Horizontal Margins (SHM).  This is part of Page Controls.
  * Sets the left margin and optionally the right margin in terms
- * of 1440ths of an inch from the left and optionally right edges
- * of the paper.  Valid values are 0 - 32767.  A value of 0 means
+ * of 1440ths of an inch from the left edge of the paper.
+ * Valid values are 0 - 32767.  A value of 0 means
  * to leave the margins unchanged.
  */
 void
 scs_shm (Tn5250SCS * This)
 {
-  unsigned char left1;
-  unsigned char left2;
-  unsigned char right1;
-  unsigned char right2;
+  int left, right;
 
-  left1 = fgetc (stdin);
-  left2 = fgetc (stdin);
+  left = fgetc (stdin);
+  left = (left << 8) + fgetc (stdin);
+  This->leftmargin = left;
+
+  if (This->usesyslog)
+    {
+      syslog (LOG_INFO, "SHM set left margin to %d", left);
+    }
 #ifdef DEBUG
-  fprintf (stderr, "SHM = %d%d", left1, left2);
+  fprintf (stderr, "SHM = %d", left);
 #endif
   if (This->curchar > 5)
     {
-      right1 = fgetc (stdin);
-      right2 = fgetc (stdin);
+      right = fgetc (stdin);
+      right = (right << 8) + fgetc (stdin);
+      This->rightmargin = right;
+
+      if (This->usesyslog)
+	{
+	  syslog (LOG_INFO, "SHM set right margin to %d", right);
+	}
 #ifdef DEBUG
-      fprintf (stderr, " %d%d", right1, right2);
+      fprintf (stderr, " %d", right);
 #endif
 #ifdef VERBOSE
       fprintf (stderr,
-	       "\tSetting margins to %d%d 1440ths of an inch in from the left\n",
-	       left1, left2);
+	       "\tSetting margins to %d 1440ths of an inch in from the left\n",
+	       left);
       fprintf (stderr,
-	       "\t\tedge and %d%d 1440ths of an inch in from the right edge",
-	       right1, right2);
+	       "\t\tedge and %d 1440ths of an inch in from the right edge",
+	       right);
 #endif
     }
 #ifdef DEBUG
@@ -626,36 +953,45 @@ scs_shm (Tn5250SCS * This)
 
 /* Set Vertical Margins (SVM).  This is part of Page Controls.
  * Sets the top margin and optionally the bottom margin in terms
- * of 1440ths of an inch from the top and optionally bottom edges
- * of the paper.  Valid values are 0 - 32767.  A value of 0 means
+ * of 1440ths of an inch from the top edge of the paper.
+ * Valid values are 0 - 32767.  A value of 0 means
  * to leave the margins unchanged.
  */
 void
 scs_svm (Tn5250SCS * This)
 {
-  unsigned char top1;
-  unsigned char top2;
-  unsigned char bottom1;
-  unsigned char bottom2;
+  int top, bottom;
 
-  top1 = fgetc (stdin);
-  top2 = fgetc (stdin);
+  top = fgetc (stdin);
+  top = (top << 8) + fgetc (stdin);
+  This->topmargin = top;
+
+  if (This->usesyslog)
+    {
+      syslog (LOG_INFO, "SVM set top margin to %d", top);
+    }
 #ifdef DEBUG
-  fprintf (stderr, "SVM = %d%d", top1, top2);
+  fprintf (stderr, "SVM = %d", top);
 #endif
   if (This->curchar > 5)
     {
-      bottom1 = fgetc (stdin);
-      bottom2 = fgetc (stdin);
+      bottom = fgetc (stdin);
+      bottom = (bottom << 8) + fgetc (stdin);
+      This->bottommargin = bottom;
+
+      if (This->usesyslog)
+	{
+	  syslog (LOG_INFO, "SVM set bottom margin to %d", bottom);
+	}
 #ifdef DEBUG
-      fprintf (stderr, " %d%d", bottom1, bottom2);
+      fprintf (stderr, " %d", bottom);
 #ifdef VERBOSE
       fprintf (stderr,
-	       "\tSetting margins to %d%d 1440ths of an inch in from the top\n",
-	       top1, top2);
+	       "\tSetting margins to %d 1440ths of an inch in from the top\n",
+	       top);
       fprintf (stderr,
-	       "\t\tedge and %d%d 1440ths of an inch in from the bottom edge",
-	       bottom1, bottom2);
+	       "\t\tedge and %d 1440ths of an inch in from the bottom edge",
+	       bottom);
 #endif
 #endif
     }
@@ -677,6 +1013,11 @@ scs_sffc (Tn5250SCS * This)
   unsigned char nextchar;
 
   nextchar = fgetc (stdin);
+
+  if (This->usesyslog)
+    {
+      syslog (LOG_INFO, "SFFC set %x form feeds", nextchar);
+    }
 #ifdef DEBUG
   fprintf (stderr, "SFFC=%x\n", nextchar);
 #ifdef VERBOSE
@@ -700,6 +1041,11 @@ scs_scgl (Tn5250SCS * This)
   unsigned char nextchar;
 
   nextchar = fgetc (stdin);
+
+  if (This->usesyslog)
+    {
+      syslog (LOG_INFO, "SCGL = %x", nextchar);
+    }
   if (nextchar != 0xFF)
     {
       fprintf (stderr, "SCGL = %x\n", nextchar);
@@ -729,6 +1075,11 @@ scs_scg (Tn5250SCS * This)
 
   gcgid = fgetc (stdin);
   cpgid = fgetc (stdin);
+
+  if (This->usesyslog)
+    {
+      syslog (LOG_INFO, "SCG set GCGID = %x, CPGID = %x", gcgid, cpgid);
+    }
 #ifdef DEBUG
   fprintf (stderr, "GCGID = %d, CPGID = %d\n", gcgid, cpgid);
 #endif
@@ -745,18 +1096,64 @@ scs_sfg (Tn5250SCS * This)
 {
   unsigned char globalfontid1;
   unsigned char globalfontid2;
-  unsigned char fontwidth1;
-  unsigned char fontwidth2;
+  int fontwidth;
   unsigned char fontattribute;
 
   globalfontid1 = fgetc (stdin);
   globalfontid2 = fgetc (stdin);
-  fontwidth1 = fgetc (stdin);
-  fontwidth2 = fgetc (stdin);
+
+  if (This->usesyslog)
+    {
+      syslog (LOG_INFO, "SFG set global font ID %x%x", globalfontid1,
+	      globalfontid2);
+    }
+
+  fontwidth = fgetc (stdin);
+  fontwidth = (fontwidth << 8) + fgetc (stdin);
+  This->charwidth = fontwidth;
+  This->cpi = 1440 / fontwidth;
+
+  if (This->usesyslog)
+    {
+      syslog (LOG_INFO, "SFG set font width %d", fontwidth);
+      syslog (LOG_INFO, "Using %d CPI", This->cpi);
+    }
+
+  This->cpi2points (This);
+  This->setfont (This);
   fontattribute = fgetc (stdin);
+
+  switch (fontattribute)
+    {
+    case 0x01:
+      {
+	if (This->usesyslog)
+	  {
+	    syslog (LOG_INFO, "SFG set mono-spaced font");
+	  }
+	break;
+      }
+    case 0x02:
+      {
+	if (This->usesyslog)
+	  {
+	    syslog (LOG_INFO, "SFG set proportional-spaced font");
+	  }
+	break;
+      }
+    case 0x04:
+      {
+	if (This->usesyslog)
+	  {
+	    syslog (LOG_INFO, "SFG set typographic font. Point size: %d",
+		    (fontwidth * 3 / 20));
+	  }
+	break;
+      }
+    }
 #ifdef DEBUG
-  fprintf (stderr, "FID = %x%x %x%x %x\n", globalfontid1, globalfontid2,
-	   fontwidth1, fontwidth2, fontattribute);
+  fprintf (stderr, "FID = %x%x %d %x\n", globalfontid1, globalfontid2,
+	   fontwidth, fontattribute);
 #endif
   return;
 }
@@ -777,82 +1174,77 @@ scs_sfg (Tn5250SCS * This)
  * all others - invalid
  */
 void
-scs_scd (int *cpi)
+scs_scd (Tn5250SCS * This)
 {
   unsigned char chardist1;
   unsigned char chardist2;
+  int changefont = 0;
 
   chardist1 = fgetc (stdin);
   chardist2 = fgetc (stdin);
 #ifdef DEBUG
   fprintf (stderr, "SCD = %x%x", chardist1, chardist2);
 #endif
-  /* Here we convert characters per inch (CPI) to point size.  In the
-   * future we will probably want these to be user definable.
-   */
+
   switch (chardist2)
     {
     case 0x05:
       {
-	*cpi = 14;
-#ifdef DEBUG
-#ifdef VERBOSE
-	fprintf (stderr, "\tFont set to Courier %d", *cpi);
-#endif
-#endif
+	This->cpi = 5;
+	changefont = 1;
 	break;
       }
     case 0x0A:
       {
-	*cpi = 10;
-#ifdef DEBUG
-#ifdef VERBOSE
-	fprintf (stderr, "\tFont set to Courier %d", *cpi);
-#endif
-#endif
+	This->cpi = 10;
+	changefont = 1;
 	break;
       }
     case 0x0B:
       {
-	*cpi = 9;
-#ifdef DEBUG
-#ifdef VERBOSE
-	fprintf (stderr, "\tFont set to Courier %d", *cpi);
-#endif
-#endif
+	This->cpi = 12;
+	changefont = 1;
 	break;
       }
     case 0x0C:
       {
-	*cpi = 10;
-#ifdef DEBUG
-#ifdef VERBOSE
-	fprintf (stderr, "\tFont set to Courier %d", *cpi);
-#endif
-#endif
+	This->cpi = 12;
+	changefont = 1;
 	break;
       }
     case 0x0F:
       {
-	*cpi = 7;
-#ifdef DEBUG
-#ifdef VERBOSE
-	fprintf (stderr, "\tFont set to Courier %d", *cpi);
-#endif
-#endif
+	This->cpi = 15;
+	changefont = 1;
 	break;
       }
-    default:
+    case 0xFF:
       {
-	*cpi = 10;
-#ifdef DEBUG
-#ifdef VERBOSE
-	fprintf (stderr, "\tFont set to Courier %d", *cpi);
-#endif
-#endif
+	/* In this case we're supposed to "select the default characters per
+	 * from the op panel" which in our case is 10 CPI.
+	 */
+	This->cpi = 10;
+	changefont = 1;
 	break;
       }
     }
+
+  if (changefont)
+    {
+      This->cpi2points (This);
+      This->setfont (This);
+    }
+
+  if (This->usesyslog)
+    {
+      syslog (LOG_INFO, "SCD set %d CPI", This->cpi);
+    }
+
+#ifdef DEBUG
+#ifdef VERBOSE
+  fprintf (stderr, "\tFont set to Courier %d pitch", This->cpi);
+#endif
+#endif
 #ifdef DEBUG
   fprintf (stderr, "\n");
 #endif
@@ -862,6 +1254,21 @@ scs_scd (int *cpi)
 
 /* Presentation Position (PP).  This is part of Cursor Controls.
  * Moves the current cursor position based on the given parameters.
+ *
+ * This takes two one-byte parameters:  function and value.  The meanings are
+ * as follows:
+ *
+ * function:
+ *   0x4c - relative move down
+ *   0xc0 - absolute horizontal move
+ *   0xc4 - absolute vertical move
+ *   0xc8 - relative move to the right
+ *
+ * value:
+ *   Either the distance or the absolute coordinate, depending on whether the
+ *   move is relative or absolute.  In either case, the units of measure are
+ *   unsigned and are columns (that is, font widths) for horizontal and lines
+ *   for vertical.
  */
 void
 scs_pp (Tn5250SCS * This)
@@ -869,6 +1276,7 @@ scs_pp (Tn5250SCS * This)
   unsigned char curchar;
 
   curchar = fgetc (stdin);
+
   switch (curchar)
     {
     case SCS_RDPP:
@@ -905,12 +1313,19 @@ scs_pp (Tn5250SCS * This)
 void
 scs_rdpp (Tn5250SCS * This)
 {
-  unsigned char rdpp;
+  int rdpp;
 
   rdpp = fgetc (stdin);
+
+  if ((This->usesyslog) && (This->loglevel > 0))
+    {
+      syslog (LOG_INFO, "PP sent relative move down of %d", rdpp);
+    }
+
 #ifdef DEBUG
   fprintf (stderr, "RDPP %d\n", rdpp);
 #endif
+  This->row = This->row + rdpp;
   return;
 }
 
@@ -921,28 +1336,28 @@ void
 scs_ahpp (Tn5250SCS * This)
 {
   int position;
-  int i;
 
   position = fgetc (stdin);
 
-  if (This->row > position)
+  if ((This->usesyslog) && (This->loglevel > 0))
     {
-      for (i = 0; i < position; i++)
+      syslog (LOG_INFO,
+	      "PP sent absolute horizontal move of %d (cursor currently on column %d)",
+	      position, This->column);
+    }
+
+  if (This->column > position)
+    {
+      if ((This->usesyslog) && (This->loglevel > 0))
 	{
-	  /* Each application needs to process its own way for adding
-	   * spaces.  Add one space for each iteration
-	   */
-	  /*printf(" "); */
+	  syslog (LOG_INFO, "Moving left");
 	}
     }
   else
     {
-      for (i = 0; i < (position - This->row); i++)
+      if ((This->usesyslog) && (This->loglevel > 0))
 	{
-	  /* Each application needs to process its own way for adding
-	   * spaces.  Add one space for each iteration
-	   */
-	  /*printf(" "); */
+	  syslog (LOG_INFO, "Moving right");
 	}
     }
   This->row = position;
@@ -959,12 +1374,30 @@ scs_ahpp (Tn5250SCS * This)
 void
 scs_avpp (Tn5250SCS * This)
 {
-  unsigned char nextchar;
+  int newrow;
 
-  nextchar = fgetc (stdin);
+  newrow = fgetc (stdin);
+
+  if ((This->usesyslog) && (This->loglevel > 0))
+    {
+      syslog (LOG_INFO,
+	      "PP sent absolute vertical move of %d (cursor currently on row %d)",
+	      newrow, This->row);
+    }
+
 #ifdef DEBUG
-  fprintf (stderr, "AVPP %d\n", nextchar);
+  fprintf (stderr, "AVPP %d\n", newrow);
 #endif
+
+  if (newrow < This->row)
+    {
+      This->ff (This);
+      This->row = newrow;
+    }
+  else
+    {
+      This->row = newrow;
+    }
   return;
 }
 
@@ -974,12 +1407,19 @@ scs_avpp (Tn5250SCS * This)
 void
 scs_rrpp (Tn5250SCS * This)
 {
-  unsigned char nextchar;
+  int newcol;
 
-  nextchar = fgetc (stdin);
+  newcol = fgetc (stdin);
+
+  if ((This->usesyslog) && (This->loglevel > 0))
+    {
+      syslog (LOG_INFO, "PP sent relative horizontal move of %d", newcol);
+    }
+
 #ifdef DEBUG
-  fprintf (stderr, "RRPP %d\n", nextchar);
+  fprintf (stderr, "RRPP %d\n", newcol);
 #endif
+  This->column = This->column + newcol;
   return;
 }
 
@@ -989,6 +1429,10 @@ scs_rrpp (Tn5250SCS * This)
 void
 scs_sbs (Tn5250SCS * This)
 {
+  if ((This->usesyslog) && (This->loglevel > 0))
+    {
+      syslog (LOG_INFO, "Starting subscript");
+    }
 #ifdef DEBUG
   fprintf (stderr, "SBS\n");
 #endif
@@ -1001,6 +1445,10 @@ scs_sbs (Tn5250SCS * This)
 void
 scs_sps (Tn5250SCS * This)
 {
+  if ((This->usesyslog) && (This->loglevel > 0))
+    {
+      syslog (LOG_INFO, "Starting superscript");
+    }
 #ifdef DEBUG
   fprintf (stderr, "SPS\n");
 #endif
@@ -1013,6 +1461,10 @@ scs_sps (Tn5250SCS * This)
 void
 scs_nl (Tn5250SCS * This)
 {
+  if ((This->usesyslog) && (This->loglevel > 0))
+    {
+      syslog (LOG_INFO, "Doing new line");
+    }
 #ifdef DEBUG
   fprintf (stderr, "NL\n");
 #endif
@@ -1026,6 +1478,10 @@ scs_nl (Tn5250SCS * This)
 void
 scs_irs (Tn5250SCS * This)
 {
+  if ((This->usesyslog) && (This->loglevel > 0))
+    {
+      syslog (LOG_INFO, "Doing Interchange Record Separator (new line)");
+    }
 #ifdef DEBUG
   fprintf (stderr, "IRS\n");
 #endif
@@ -1038,6 +1494,10 @@ scs_irs (Tn5250SCS * This)
 void
 scs_rnl (Tn5250SCS * This)
 {
+  if ((This->usesyslog) && (This->loglevel > 0))
+    {
+      syslog (LOG_INFO, "Doing new line and resetting indent level");
+    }
 #ifdef DEBUG
   fprintf (stderr, "RNL\n");
 #endif
@@ -1051,6 +1511,11 @@ scs_rnl (Tn5250SCS * This)
 void
 scs_irt (Tn5250SCS * This)
 {
+  if ((This->usesyslog) && (This->loglevel > 0))
+    {
+      syslog (LOG_INFO,
+	      "Doing Index Return (new line and reset indent level)");
+    }
 #ifdef DEBUG
   fprintf (stderr, "IRT\n");
 #endif
@@ -1069,6 +1534,10 @@ scs_stab (Tn5250SCS * This)
   unsigned char nextchar;
   int loop;
 
+  if ((This->usesyslog) && (This->loglevel > 0))
+    {
+      syslog (LOG_INFO, "Setting tab stops");
+    }
 #ifdef DEBUG
   fprintf (stderr, "STAB = ");
 #endif
@@ -1092,6 +1561,10 @@ scs_stab (Tn5250SCS * This)
 void
 scs_ht (Tn5250SCS * This)
 {
+  if ((This->usesyslog) && (This->loglevel > 0))
+    {
+      syslog (LOG_INFO, "Moving to next tab stop");
+    }
 #ifdef DEBUG
   fprintf (stderr, "HT\n");
 #endif
@@ -1101,11 +1574,15 @@ scs_ht (Tn5250SCS * This)
 
 /* Indent Tab (IT).  This is part of Cursor Controls.
  * This is processed the same as horizontal tab except that the left
- * margin is moved to the nex tab stop.
+ * margin is moved to the next tab stop.
  */
 void
 scs_it (Tn5250SCS * This)
 {
+  if ((This->usesyslog) && (This->loglevel > 0))
+    {
+      syslog (LOG_INFO, "Moving left margin to next tab stop");
+    }
 #ifdef DEBUG
   fprintf (stderr, "IT\n");
 #endif
@@ -1119,6 +1596,11 @@ void
 scs_sil (Tn5250SCS * This)
 {
   unsigned char curchar;
+
+  if ((This->usesyslog) && (This->loglevel > 0))
+    {
+      syslog (LOG_INFO, "Setting indent level");
+    }
 
   curchar = fgetc (stdin);
 #ifdef DEBUG
@@ -1135,6 +1617,10 @@ scs_sil (Tn5250SCS * This)
 void
 scs_lf (Tn5250SCS * This)
 {
+  if ((This->usesyslog) && (This->loglevel > 0))
+    {
+      syslog (LOG_INFO, "Processing line feed");
+    }
 #ifdef DEBUG
   fprintf (stderr, "LF\n");
 #endif
@@ -1149,6 +1635,10 @@ scs_lf (Tn5250SCS * This)
 void
 scs_cr (Tn5250SCS * This)
 {
+  if ((This->usesyslog) && (This->loglevel > 0))
+    {
+      syslog (LOG_INFO, "Processing carriage return");
+    }
 #ifdef DEBUG
   fprintf (stderr, "CR\n");
 #endif
@@ -1165,7 +1655,7 @@ scs_process2b (Tn5250SCS * This)
     {
     case 0xD1:
       {
-	scs_processd1 ();
+	scs_processd1 (This);
 	break;
       }
     case 0xD2:
@@ -1185,7 +1675,7 @@ scs_process2b (Tn5250SCS * This)
       }
     case 0xC1:
       {
-	scs_shf (This);
+	This->shf (This);
 	break;
       }
     case 0xC2:
@@ -1237,7 +1727,7 @@ scs_sgea (Tn5250SCS * This)
 }
 
 void
-scs_processd1 ()
+scs_processd1 (Tn5250SCS * This)
 {
   unsigned char curchar;
 
@@ -1251,12 +1741,12 @@ scs_processd1 ()
       }
     case 0x07:
       {
-	scs_process07 ();
+	scs_process07 (This);
 	break;
       }
     case 0x03:
       {
-	scs_processd103 ();
+	scs_processd103 (This);
 	break;
       }
     default:
@@ -1285,14 +1775,14 @@ scs_process06 ()
 }
 
 void
-scs_process07 ()
+scs_process07 (Tn5250SCS * This)
 {
   unsigned char curchar;
 
   curchar = fgetc (stdin);
   if (curchar == 0x05)
     {
-      scs_sfg (NULL);
+      scs_sfg (This);
     }
   else
     {
@@ -1302,7 +1792,7 @@ scs_process07 ()
 }
 
 void
-scs_processd103 ()
+scs_processd103 (Tn5250SCS * This)
 {
   unsigned char curchar;
 
@@ -1311,12 +1801,12 @@ scs_processd103 ()
     {
     case 0x81:
       {
-	scs_scgl (NULL);
+	scs_scgl (This);
 	break;
       }
     case 0x87:
       {
-	scs_sffc (NULL);
+	scs_sffc (This);
 	break;
       }
     default:
@@ -1338,7 +1828,6 @@ scs_processd2 (Tn5250SCS * This)
   This->curchar = curchar;
   nextchar = fgetc (stdin);
 
-
   switch (nextchar)
     {
     case 0x01:
@@ -1351,9 +1840,24 @@ scs_processd2 (Tn5250SCS * This)
 	scs_jtf (This->curchar);
 	break;
       }
+    case 0x0A:
+      {
+	This->rpt (This);
+	break;
+      }
     case 0x0D:
       {
 	scs_sjm (This->curchar);
+	break;
+      }
+    case 0x2A:
+      {
+	This->sw (This);
+	break;
+      }
+    case 0x2F:
+      {
+	This->bel (This);
 	break;
       }
     case 0x40:
@@ -1397,7 +1901,7 @@ scs_processd2 (Tn5250SCS * This)
 	    }
 	  case 0x04:
 	    {
-	      scs_process04 (nextchar, curchar, &(This->cpi));
+	      scs_process04 (This, nextchar, curchar);
 	      break;
 	    }
 	  default:
@@ -1497,7 +2001,8 @@ scs_sls (Tn5250SCS * This)
 }
 
 void
-scs_process04 (unsigned char nextchar, unsigned char curchar, int *cpi)
+scs_process04 (Tn5250SCS * This, unsigned char nextchar,
+	       unsigned char curchar)
 {
   switch (nextchar)
     {
@@ -1508,7 +2013,7 @@ scs_process04 (unsigned char nextchar, unsigned char curchar, int *cpi)
       }
     case 0x29:
       {
-	scs_scd (cpi);
+	scs_scd (This);
 	/*scs_scs (cpi); */
 	break;
       }
@@ -1531,6 +2036,55 @@ scs_ssld (Tn5250SCS * This)
 #ifdef DEBUG
   fprintf (stderr, "SSLD = %d %d \n", curchar, nextchar);
 #endif
+  return;
+}
+
+void
+scs_cpi2points (Tn5250SCS * This)
+{
+  switch (This->cpi)
+    {
+    case 10:
+      {
+	This->fontpointsize = 11;
+	break;
+      }
+    case 12:
+      {
+	This->fontpointsize = 10;
+	break;
+      }
+    case 15:
+      {
+	This->fontpointsize = 8;
+	break;
+      }
+    case 17:
+      {
+	This->fontpointsize = 7;
+	break;
+      }
+    default:
+      {
+	This->fontpointsize = 10;
+	break;
+      }
+    }
+
+  if (This->usesyslog)
+    {
+      syslog (LOG_INFO, "Using %d point font", This->fontpointsize);
+    }
+  return;
+}
+
+/* This is primarily used by other output formats to specify what font to
+ * use.  For example, scs2pdf will substitute its own version of this function
+ * to create the correct font sizes in the PDF.
+ */
+void
+scs_setfont (Tn5250SCS * This)
+{
   return;
 }
 
@@ -1749,7 +2303,10 @@ tn5250_scs_new ()
   scs->sic = scs_sic;
   scs->sea = scs_sea;
   scs->noop = scs_noop;
+  scs->rpt = scs_rpt;
+  scs->sw = scs_sw;
   scs->transparent = scs_transparent;
+  scs->bel = scs_bel;
   scs->spsu = scs_spsu;
   scs->ppm = scs_ppm;
   scs->spps = scs_spps;
@@ -1782,12 +2339,24 @@ tn5250_scs_new ()
   scs->sls = scs_sls;
   scs->sgea = scs_sgea;
   scs->process2b = scs_process2b;
+  scs->cpi2points = scs_cpi2points;
+  scs->setfont = scs_setfont;
   scs->scsdefault = scs_default;
   scs->pagewidth = 0;
   scs->pagelength = 0;
+  scs->charwidth = 0;
   scs->cpi = 0;
+  scs->lpi = 0;
+  scs->fontpointsize = 0;
+  scs->leftmargin = 0;
+  scs->rightmargin = 0;
+  scs->topmargin = 0;
+  scs->bottommargin = 0;
   scs->column = 0;
   scs->row = 0;
+  scs->rotation = SCS_ROTATE0;
+  scs->usesyslog = 0;
+  scs->loglevel = 0;
   scs->curchar = 0;
   scs->data = NULL;
   return scs;

@@ -49,6 +49,17 @@
 #define SCS_LF		0x25	/* Line Feed */
 #define SCS_CR		0x0D
 
+/* These are for page handling convenience */
+#define SCS_ROTATE0	0
+#define SCS_ROTATE90	1
+#define SCS_ROTATE180	2
+#define SCS_ROTATE270	3
+
+/* Logging levels */
+#define SCS_LOG_BASIC	0
+#define SCS_LOG_DETAIL	1
+#define SCS_LOG_MAX	1
+
 #endif
 
 
@@ -62,7 +73,10 @@ struct _Tn5250SCS
   void (*sic) (struct _Tn5250SCS * This);
   void (*sea) (struct _Tn5250SCS * This);
   void (*noop) (struct _Tn5250SCS * This);
+  void (*rpt) (struct _Tn5250SCS * This);
+  void (*sw) (struct _Tn5250SCS * This);
   void (*transparent) (struct _Tn5250SCS * This);
+  void (*bel) (struct _Tn5250SCS * This);
   void (*spsu) (struct _Tn5250SCS * This);
   void (*ppm) (struct _Tn5250SCS * This);
   void (*spps) (struct _Tn5250SCS * This);
@@ -77,7 +91,7 @@ struct _Tn5250SCS
   void (*scgl) (struct _Tn5250SCS * This);
   void (*scg) (struct _Tn5250SCS * This);
   void (*sfg) (struct _Tn5250SCS * This);
-  void (*scd) (int *cpi);
+  void (*scd) (struct _Tn5250SCS * This);
   void (*pp) (struct _Tn5250SCS * This);
   void (*sbs) (struct _Tn5250SCS * This);
   void (*sps) (struct _Tn5250SCS * This);
@@ -95,12 +109,24 @@ struct _Tn5250SCS
   void (*sls) (struct _Tn5250SCS * This);
   void (*sgea) (struct _Tn5250SCS * This);
   void (*process2b) (struct _Tn5250SCS * This);
+  void (*cpi2points) (struct _Tn5250SCS * This);
+  void (*setfont) (struct _Tn5250SCS * This);
   void (*scsdefault) (struct _Tn5250SCS * This);
   int pagewidth;
   int pagelength;
+  int charwidth;
   int cpi;
+  int lpi;
+  int fontpointsize;
+  int leftmargin;
+  int rightmargin;
+  int topmargin;
+  int bottommargin;
   int column;
   int row;
+  int rotation;
+  int usesyslog;
+  int loglevel;
   unsigned char curchar;
 };
 
