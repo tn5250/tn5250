@@ -1,3 +1,7 @@
+2007-11-20 James Rich <james@eaerich.com>
+- Enhanced SCS support and add support for different page sizes and font
+  sizes to scs2pdf.
+
 2007-11-07 Scott Klement <klemscot@klements.com>
 - Fixed some size calculation problems when copying to clipboard
    in Win32 terminal
