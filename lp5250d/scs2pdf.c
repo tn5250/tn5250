@@ -1,5 +1,6 @@
 /* scs2pdf -- Converts scs from standard input into PDF.
  * Copyright (C) 2000 Michael Madore
+ * Copyright (C) 2007 James Rich
  *
  * This file is part of TN5250.
  *
@@ -23,6 +24,16 @@
  */
 
 #include "tn5250-private.h"
+#include <syslog.h>
+
+/* If getopt.h exists then getopt_long() probably does as well.  If
+ * getopt.h doesn't exist (like on Solaris) then we probably need to use
+ * plain old getopt().
+ */
+#ifdef HAVE_GETOPT_H
+#define _GNU_SOURCE
+#include <getopt.h>
+#endif
 
 /*
 #define DEBUG
@@ -55,27 +66,32 @@
 void scs2pdf_nl (Tn5250SCS * This);
 void scs2pdf_pp (Tn5250SCS * This);
 void scs2pdf_ff (Tn5250SCS * This);
-int scs2pdf_ahpp (int *curpos, int *boldchars);
+int scs2pdf_ahpp (Tn5250SCS * This, int *boldchars);
+void scs2pdf_cr (Tn5250SCS * This);
 void scs2pdf_process2b (Tn5250SCS * This);
 void scs2pdf_default (Tn5250SCS * This);
+void scs2pdf_setfont (Tn5250SCS * This);
 
 void do_newpage (Tn5250SCS * This);
 
 int pdf_header ();
 int pdf_catalog (int objnum, int outlinesobject, int pageobject);
 int pdf_outlines (int objnum);
-int pdf_begin_stream (int objnum, int fontname, int fontsize);
-int pdf_end_stream ();
+int pdf_begin_stream (Tn5250SCS * This, int fontname);
+int pdf_end_stream (Tn5250SCS * This);
 int pdf_stream_length (int objnum, int objlength);
 int pdf_pages (int objnum, int pagechildren, int pages);
 int pdf_page (int objnum, int parent, int contents, int procset, int font,
-	      int boldfont, int pagewidth, int pagelength);
+	      int boldfont, int pagewidth, int pagelength, int pdfleftmargin,
+	      int pdftopmargin);
 int pdf_procset (int objnum);
 int pdf_font (int objnum, int fontname);
 void pdf_xreftable (int objnum);
 void pdf_trailer (int offset, int size, int root);
 int pdf_process_char (char character, int flush);
 Tn5250SCS *tn5250_scs2pdf_new ();
+
+void print_help ();
 
 struct _Tn5250SCSPrivate
 {
@@ -84,6 +100,8 @@ struct _Tn5250SCSPrivate
   unsigned long streamsize;
   unsigned long filesize;
   int fontsize;
+  int pdfleftmargin;
+  int pdftopmargin;
   unsigned int pagenumber;
   int columncheck;
   int boldchars;
@@ -114,15 +132,78 @@ expanding_array *ObjectList;
 FILE *outfile;
 
 int
-main ()
+main (int argc, char **argv)
 {
+#ifdef HAVE_GETOPT_H
+  extern char *optarg;
+  struct option options[4];
+#endif
   int pageparent, procsetobject, fontobject, boldfontobject, rootobject;
   int i;
+  int usesyslog = 0;
+  int loglevel = 0;
   Tn5250SCS *scs = NULL;
+
+
+#ifdef HAVE_GETOPT_H
+  options[0].name = "help";
+  options[0].has_arg = no_argument;
+  options[0].flag = NULL;
+  options[0].val = 'H';
+  options[1].name = "syslog";
+  options[1].has_arg = no_argument;
+  options[1].flag = NULL;
+  options[1].val = 's';
+  options[2].name = "loglevel";
+  options[2].has_arg = required_argument;
+  options[2].flag = NULL;
+  options[2].val = 'l';
+  options[3].name = 0;
+  options[3].has_arg = 0;
+  options[3].flag = 0;
+  options[3].val = 0;
+#endif
+
+#ifdef HAVE_GETOPT_H
+  while ((i = getopt_long (argc, argv, "Hsl:", options, NULL)) != EOF)
+#else
+  while ((i = getopt (argc, argv, "Hsl:")) != EOF)
+#endif
+    {
+      switch (i)
+	{
+	case '?':
+	  print_help ();
+	  return -1;
+	case 'H':
+	  print_help ();
+	  return -1;
+	case 's':
+	  usesyslog = 1;
+	  break;
+	case 'l':
+	  loglevel = atoi (optarg);
+	  if (loglevel > SCS_LOG_MAX)
+	    {
+	      printf ("Invalid log level.  Highest log level is %d\n",
+		      SCS_LOG_MAX);
+	      print_help ();
+	      return -1;
+	    }
+	  break;
+	}
+    }
 
 
   ObjectList = array_new ();
   textobjects = array_new ();
+
+
+  /* set up the syslog communication */
+  if (usesyslog)
+    {
+      openlog ("scs2pdf", LOG_PID, LOG_DAEMON);
+    }
 
 
   /* This allows the user to select an output file other than stdout.
@@ -167,14 +248,19 @@ main ()
       return (-1);
     }
 
-  scs->cpi = 0;
+  scs->cpi = 10;
+  scs->fontpointsize = 11;
+  scs->topmargin = 240;
+  scs->column = 1;
+  scs->usesyslog = usesyslog;
+  scs->loglevel = loglevel;
   scs->data->newfontsize = 0;
   scs->data->objcount = 0;
   scs->data->streamsize = 0;
   scs->data->filesize = 0;
-  scs->data->fontsize = 10;
+  scs->data->pdfleftmargin = 18;
+  scs->data->pdftopmargin = 18;
   scs->data->pagenumber = 1;
-  scs->column = 1;
   scs->data->columncheck = 0;
   scs->data->boldchars = 0;
   scs->data->do_bold = 0;
@@ -194,8 +280,7 @@ main ()
    */
   array_append_val (ObjectList, scs->data->filesize);
   scs->data->objcount++;
-  scs->data->filesize +=
-    pdf_begin_stream (scs->data->objcount, COURIER, scs->data->fontsize);
+  scs->data->filesize += pdf_begin_stream (scs, COURIER);
 #ifdef DEBUG
   fprintf (stderr, "objcount = %d\n", scs->data->objcount);
 #endif
@@ -209,7 +294,7 @@ main ()
   array_append_val (textobjects, scs->data->objcount);
   scs->data->streamsize += pdf_process_char ('\0', 1);
   scs->data->filesize += scs->data->streamsize;
-  scs->data->filesize += pdf_end_stream ();
+  scs->data->filesize += pdf_end_stream (scs);
 
   array_append_val (ObjectList, scs->data->filesize);
   scs->data->objcount++;
@@ -301,7 +386,9 @@ main ()
 				       array_index (textobjects, i),
 				       procsetobject, fontobject,
 				       boldfontobject, scs->pagewidth,
-				       scs->pagelength);
+				       scs->pagelength,
+				       scs->data->pdfleftmargin,
+				       scs->data->pdftopmargin);
 #ifdef DEBUG
       fprintf (stderr, "page objcount = %d\n", scs->data->objcount);
 #endif
@@ -346,7 +433,9 @@ tn5250_scs2pdf_new ()
   scs->rnl = scs2pdf_nl;
   scs->ff = scs2pdf_ff;
   scs->rff = scs2pdf_ff;
-  scs->process2b = scs2pdf_process2b;
+  scs->cr = scs2pdf_cr;
+  scs->setfont = scs2pdf_setfont;
+  /*scs->process2b = scs2pdf_process2b; */
   scs->scsdefault = scs2pdf_default;
   return scs;
 }
@@ -370,6 +459,16 @@ scs2pdf_default (Tn5250SCS * This)
    */
   This->column = This->column + 1;
 
+  /* If the current position on the page (column) is further to the
+   * right than our current maximum line length (columncheck)
+   * increase our length.  This is used later to see if we need a
+   * larger page width if the page width is unspecified.
+   */
+  if (This->column > This->data->columncheck)
+    {
+      This->data->columncheck = This->column;
+    }
+
   /* If we are currently printing bold character then decrement the
    * bold character count (boldchars) given above by
    * scs2pdf_pp() until there aren't any bold characters left
@@ -387,7 +486,7 @@ scs2pdf_default (Tn5250SCS * This)
 	  This->data->do_bold = 0;
 	  This->data->streamsize += pdf_process_char ('\0', 1);
 	  sprintf (This->data->text, "\t\t/F%d %d Tf\n",
-		   COURIER, This->data->fontsize);
+		   COURIER, This->fontpointsize);
 	  fprintf (outfile, "%s", This->data->text);
 	  This->data->streamsize += strlen (This->data->text);
 	}
@@ -397,7 +496,10 @@ scs2pdf_default (Tn5250SCS * This)
 
 
 
-/* Custom process 0x2B function */
+/* Custom process 0x2B function
+ *
+ * No longer used
+ */
 void
 scs2pdf_process2b (Tn5250SCS * This)
 {
@@ -408,18 +510,19 @@ scs2pdf_process2b (Tn5250SCS * This)
    * now we always reset the font to COURIER, even if we are using
    * a different font.  This will be changed soon.
    */
-  if (This->cpi > 0)
-    {
-#ifdef DEBUG
-      fprintf (stderr, "Changing font size to %d\n", This->cpi);
-#endif
-      This->data->streamsize += pdf_process_char ('\0', 1);
-      sprintf (This->data->text, "\t\t/F%d %d Tf\n", COURIER, This->cpi);
-      fprintf (outfile, "%s", This->data->text);
-      This->data->streamsize += strlen (This->data->text);
-      This->data->fontsize = This->cpi;
-      This->cpi = 0;
-    }
+  /*
+     if (This->cpi > 0)
+     {
+     #ifdef DEBUG
+     fprintf (stderr, "Changing font size to %d\n", This->cpi);
+     #endif
+     This->data->streamsize += pdf_process_char ('\0', 1);
+     sprintf (This->data->text, "\t\t/F%d %d Tf\n", COURIER, This->cpi);
+     fprintf (outfile, "%s", This->data->text);
+     This->data->streamsize += strlen (This->data->text);
+     This->cpi = 0;
+     }
+   */
   return;
 }
 
@@ -458,6 +561,7 @@ scs2pdf_ff (Tn5250SCS * This)
 {
   scs_ff (This);
   This->data->newpage = 1;
+  do_newpage (This);
   return;
 }
 
@@ -481,22 +585,22 @@ scs2pdf_pp (Tn5250SCS * This)
     {
     case SCS_RDPP:
       {
-	scs_rdpp (NULL);
+	scs_rdpp (This);
 	break;
       }
     case SCS_AVPP:
       {
-	scs_avpp (NULL);
+	scs_avpp (This);
 	break;
       }
     case SCS_AHPP:
       {
-	bytes = scs2pdf_ahpp (&(This->column), &(This->data->boldchars));
+	bytes = scs2pdf_ahpp (This, &(This->data->boldchars));
 	break;
       }
     case SCS_RRPP:
       {
-	scs_rrpp (NULL);
+	scs_rrpp (This);
 	break;
       }
     default:
@@ -519,7 +623,7 @@ scs2pdf_pp (Tn5250SCS * This)
 #endif
       This->data->streamsize += pdf_process_char ('\0', 1);
       sprintf (This->data->text, "\t\t/F%d %d Tf\n",
-	       COURIER_BOLD, This->data->fontsize);
+	       COURIER_BOLD, This->fontpointsize);
       fprintf (outfile, "%s", This->data->text);
       This->data->streamsize += strlen (This->data->text);
     }
@@ -533,21 +637,45 @@ scs2pdf_pp (Tn5250SCS * This)
  * is the only one that handles bold this is unique.
  */
 int
-scs2pdf_ahpp (int *curpos, int *boldchars)
+scs2pdf_ahpp (Tn5250SCS * This, int *boldchars)
 {
   int position, bytes;
   int i;
 
   bytes = 0;
   position = fgetc (stdin);
+
+  if ((This->usesyslog) && (This->loglevel > 0))
+    {
+      syslog (LOG_INFO,
+	      "PP sent absolute horizontal move of %d (cursor currently on column %d)",
+	      position, This->column);
+    }
+
+  if (This->column > position)
+    {
+      if ((This->usesyslog) && (This->loglevel > 0))
+	{
+	  syslog (LOG_INFO, "Moving left");
+	}
+    }
+  else
+    {
+      if ((This->usesyslog) && (This->loglevel > 0))
+	{
+	  syslog (LOG_INFO, "Moving right");
+	}
+    }
+
 #ifdef DEBUG
-  fprintf (stderr, "AHPP %d (current position: %d)\n", position, *curpos);
+  fprintf (stderr, "AHPP %d (current position: %d)\n", position,
+	   This->column);
 #endif
 
-  if ((*curpos - 1) > position)
+  if ((This->column - 1) > position)
     {
       /* Frank Richter <frichter@esda.com> noticed that we should be
-       * going back and printing over the same line if *curpos is greater
+       * going back and printing over the same line if This->column is greater
        * than position.  Without this his reports were wrong.  His patch
        * fixes the printouts.  What this does now is to go back to the
        * beginning of the line and print blanks over what is already there
@@ -556,7 +684,7 @@ scs2pdf_ahpp (int *curpos, int *boldchars)
        * This is gives a bold effect on real SCS printers.  This ought to
        * be handled a better way to get bold.
        */
-      *boldchars = *curpos - position;
+      *boldchars = This->column - position;
       bytes += pdf_process_char ('\0', 1);
       fprintf (outfile, "0 0 Td\n");
       bytes += 7;
@@ -568,14 +696,56 @@ scs2pdf_ahpp (int *curpos, int *boldchars)
     }
   else
     {
-      for (i = 0; i < (position - *curpos); i++)
+      for (i = 0; i < (position - This->column); i++)
 	{
 	  bytes += pdf_process_char (' ', 0);
 	}
     }
-  *curpos = position;
-
+  This->column = position;
   return (bytes);
+}
+
+
+
+/* Handle carriage return uniquely to track column number
+ */
+void
+scs2pdf_cr (Tn5250SCS * This)
+{
+  scs_cr (This);
+
+  /* If the current position on the page (column) is further to the
+   * right than our current maximum line length (columncheck)
+   * increase our length.  This is used later to see if we need a
+   * larger page width if the page width is unspecified.
+   */
+  if (This->column > This->data->columncheck)
+    {
+      This->data->columncheck = This->column;
+    }
+  /* On carriage return flush the buffer and move to the beginning of the
+   * current line.
+   */
+  This->data->streamsize += pdf_process_char ('\0', 1);
+  fprintf (outfile, "0 0 Td\n");
+  This->data->streamsize += 7;
+  This->column = 1;
+  return;
+}
+
+
+
+/* Set the correct font size.
+ */
+void
+scs2pdf_setfont (Tn5250SCS * This)
+{
+  This->data->streamsize += pdf_process_char ('\0', 1);
+  sprintf (This->data->text, "\t\t/F%d %d Tf\n",
+	   COURIER, This->fontpointsize);
+  fprintf (outfile, "%s", This->data->text);
+  This->data->streamsize += strlen (This->data->text);
+  return;
 }
 
 
@@ -591,7 +761,7 @@ do_newpage (Tn5250SCS * This)
 
   This->data->streamsize += pdf_process_char ('\0', 1);
   This->data->filesize += This->data->streamsize;
-  This->data->filesize += pdf_end_stream ();
+  This->data->filesize += pdf_end_stream (This);
 
   array_append_val (ObjectList, This->data->filesize);
   This->data->objcount = This->data->objcount + 1;
@@ -611,8 +781,7 @@ do_newpage (Tn5250SCS * This)
    */
   array_append_val (ObjectList, This->data->filesize);
   This->data->objcount = This->data->objcount + 1;
-  This->data->filesize += pdf_begin_stream (This->data->objcount,
-					    COURIER, This->data->fontsize);
+  This->data->filesize += pdf_begin_stream (This, COURIER);
 #ifdef DEBUG
   fprintf (stderr, "objcount = %d\n", This->data->objcount);
 #endif
@@ -687,33 +856,66 @@ pdf_outlines (int objnum)
  * page will contain.
  */
 int
-pdf_begin_stream (int objnum, int fontname, int fontsize)
+pdf_begin_stream (Tn5250SCS * This, int fontname)
 {
-  char text[255];
+  char text1[255] = { '\0' };
+  char text2[255] = { '\0' };
+  int leftmargin;
+  int pagelength;
+  float topsize;
+  int topmargin;
 
-  sprintf (text,
+  sprintf (text1,
 	   "%d 0 obj\n"
 	   "\t<<\n"
 	   "\t\t/Length %d 0 R\n"
 	   "\t>>\n"
-	   "stream\n"
-	   "\tBT\n" "\t\t/F%d %d Tf\n" "\t\t36 756 Td\n",
-	   objnum, objnum + 1, fontname, fontsize);
+	   "stream\n", This->data->objcount, This->data->objcount + 1);
+  fprintf (outfile, "%s", text1);
 
-  fprintf (outfile, "%s", text);
+  if (This->leftmargin == 0)
+    {
+      leftmargin = 1;
+    }
+  else
+    {
+      leftmargin = This->leftmargin;
+    }
 
-  return (strlen (text));
+  if (This->pagelength == 0)
+    {
+      pagelength = 15840;
+    }
+  else
+    {
+      pagelength = This->pagelength;
+    }
+
+  topsize = ((pagelength - This->topmargin) / 1440.0) * 72.0;
+  topmargin = topsize - This->data->pdftopmargin;
+  sprintf (text2, "\tBT\n" "\t\t/F%d %d Tf\n" "\t\t%d %d Td\n", fontname,
+	   This->fontpointsize,
+	   (((leftmargin - 1) / 1440) * 72) + This->data->pdfleftmargin,
+	   topmargin);
+  fprintf (outfile, "%s", text2);
+  This->data->streamsize += strlen (text2);
+
+  /* Don't return the length added to the stream size since the stream size
+   * will be added to the file size once the stream has finished.
+   */
+  /*return (strlen (text1) + strlen (text2)); */
+  return (strlen (text1));
 }
 
 
 /* And this ends the stream object started above.*/
 int
-pdf_end_stream ()
+pdf_end_stream (Tn5250SCS * This)
 {
   char *text = "\tET\n" "endstream\n" "endobj\n\n";
 
   fprintf (outfile, "%s", text);
-
+  This->data->streamsize += 4;
   return (strlen (text));
 }
 
@@ -728,14 +930,8 @@ pdf_stream_length (int objnum, int objlength)
 {
   char text[255];
 
-  /* Add 32 to objlength since that is how many characters pdf_begin_stream()
-   * and pdf_end_stream() add to the stream.  These functions already add
-   * to the filesize correctly so we don't add 32 to filesize anywhere.
-   */
-  sprintf (text, "%d 0 obj\n" "\t%d\n" "endobj\n\n", objnum, objlength + 32);
-
+  sprintf (text, "%d 0 obj\n" "\t%d\n" "endobj\n\n", objnum, objlength);
   fprintf (outfile, "%s", text);
-
   return (strlen (text));
 }
 
@@ -780,7 +976,8 @@ pdf_pages (int objnum, int pagechildren, int pages)
  */
 int
 pdf_page (int objnum, int parent, int contents, int procset, int font,
-	  int boldfont, int pagewidth, int pagelength)
+	  int boldfont, int pagewidth, int pagelength, int pdfleftmargin,
+	  int pdftopmargin)
 {
   char text[255];
   float width, length;
@@ -802,8 +999,8 @@ pdf_page (int objnum, int parent, int contents, int procset, int font,
 #endif
       pagelength = DEFAULT_PAGE_LENGTH;
     }
-  width = (pagewidth / 1440.0) * 72;
-  length = (pagelength / 1440.0) * 72;
+  width = ((pagewidth / 1440.0) * 72) + (pdfleftmargin * 2);
+  length = ((pagelength / 1440.0) * 72) + (pdftopmargin * 2);
 #ifdef DEBUG
   fprintf (stderr, "Setting page to %d (%f) by %d (%f) points\n",
 	   (int) width, width, (int) length, length);
@@ -1074,5 +1271,31 @@ array_free (expanding_array * array)
     }
   free (array);
   array = NULL;
+  return;
+}
+
+
+void
+print_help ()
+{
+  printf ("Usage: scs2pdf [OPTION]\n");
+  printf ("Convert SCS print stream to PDF\n");
+  printf ("\n");
+#ifdef HAVE_GETOPT_H
+  printf ("Mandatory arguments to long options are mandatory ");
+  printf ("for short options too.\n");
+#endif
+#ifdef HAVE_GETOPT_H
+  printf ("  -s, --syslog\t\tTurn on logging to system log daemon\n");
+  printf ("  -l, --loglevel\tSet the logging level of detail (0 to %d)\n",
+	  SCS_LOG_MAX);
+  printf ("  -H, --help\t\tprint this help and exit\n");
+#else
+  printf ("  -s\tTurn on logging to system log daemon\n");
+  printf ("  -l\tSet the logging level of detail (0 to %d)\n", SCS_LOG_MAX);
+  printf ("  -H\tprint this help and exit\n");
+#endif
+  printf ("\n");
+  printf ("Report bugs to <linux5250@midrange.com>.\n");
   return;
 }
