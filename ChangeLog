@@ -4,6 +4,8 @@
   is done via a file passed to scs2pdf in a command line argument with the
   -i option.  For now this requires modifying tn5250rc but hopefully later
   on lp5250d will handle this automatically.
+- Fix a problem with extra form feeds being sent when receiving an absolute
+  vertical positioning command.
 
 2007-11-20 James Rich <james@eaerich.com>
 - Enhanced SCS support and add support for different page sizes and font

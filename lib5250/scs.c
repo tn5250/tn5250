@@ -1388,7 +1388,22 @@ scs_avpp (Tn5250SCS * This)
 
   if (newrow < This->row)
     {
-      This->ff (This);
+      /* From the IPDS and SCS Technical Reference:
+       * Absolute vertical moves above the current cursor position cause
+       * the current page to be printed and the cursor to be positioned at
+       * that line on the next page.  An absolute vertical move to line 1
+       * guarantees that the printer is on a page boundary and will not
+       * cause a form feed of a blank sheet if the printer is already on
+       * line 1.  Absolute vertical moves below the bottom margin trigger
+       * a new page.
+       *
+       * So it appears that if newrow is less than This->row we should send
+       * a form feed.  However, in practice that doesn't work.  Simply
+       * sending a form feed whenever newrow is less than This->row results
+       * in extra form feeds being sent.  I am unsure of exactly what
+       * conditions are supposed to trigger a form feed as described above.
+       */
+      /*This->ff (This);*/
       This->row = newrow;
     }
   else
