@@ -96,7 +96,6 @@ void scs_processd103 (Tn5250SCS * This);
 void scs_jtf (unsigned char curchar);
 void scs_sjm (unsigned char curchar);
 void scs_processd3 (Tn5250SCS * This);
-void scs_cpi2points (Tn5250SCS * This);
 void scs_setfont (Tn5250SCS * This);
 void scs_main (Tn5250SCS * This);
 void scs_init (Tn5250SCS * This);
@@ -1119,7 +1118,6 @@ scs_sfg (Tn5250SCS * This)
       syslog (LOG_INFO, "Using %d CPI", This->cpi);
     }
 
-  This->cpi2points (This);
   This->setfont (This);
   fontattribute = fgetc (stdin);
 
@@ -1231,7 +1229,6 @@ scs_scd (Tn5250SCS * This)
 
   if (changefont)
     {
-      This->cpi2points (This);
       This->setfont (This);
     }
 
@@ -2039,45 +2036,6 @@ scs_ssld (Tn5250SCS * This)
   return;
 }
 
-void
-scs_cpi2points (Tn5250SCS * This)
-{
-  switch (This->cpi)
-    {
-    case 10:
-      {
-	This->fontpointsize = 11;
-	break;
-      }
-    case 12:
-      {
-	This->fontpointsize = 10;
-	break;
-      }
-    case 15:
-      {
-	This->fontpointsize = 8;
-	break;
-      }
-    case 17:
-      {
-	This->fontpointsize = 7;
-	break;
-      }
-    default:
-      {
-	This->fontpointsize = 10;
-	break;
-      }
-    }
-
-  if (This->usesyslog)
-    {
-      syslog (LOG_INFO, "Using %d point font", This->fontpointsize);
-    }
-  return;
-}
-
 /* This is primarily used by other output formats to specify what font to
  * use.  For example, scs2pdf will substitute its own version of this function
  * to create the correct font sizes in the PDF.
@@ -2339,7 +2297,6 @@ tn5250_scs_new ()
   scs->sls = scs_sls;
   scs->sgea = scs_sgea;
   scs->process2b = scs_process2b;
-  scs->cpi2points = scs_cpi2points;
   scs->setfont = scs_setfont;
   scs->scsdefault = scs_default;
   scs->pagewidth = 0;
