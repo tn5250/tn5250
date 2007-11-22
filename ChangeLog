@@ -1,3 +1,10 @@
+2007-11-21 James Rich <james@eaerich.com>
+- Fix font scaling to handle different CPI settings better in scs2pdf.
+- Add support for remembering printer state between jobs in scs2pdf.  This
+  is done via a file passed to scs2pdf in a command line argument with the
+  -i option.  For now this requires modifying tn5250rc but hopefully later
+  on lp5250d will handle this automatically.
+
 2007-11-20 James Rich <james@eaerich.com>
 - Enhanced SCS support and add support for different page sizes and font
   sizes to scs2pdf.

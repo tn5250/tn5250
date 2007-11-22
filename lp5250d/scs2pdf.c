@@ -96,6 +96,7 @@ void print_help ();
 struct _Tn5250SCSPrivate
 {
   int newfontsize;
+  int fontscalingfactor;
   unsigned long objcount;
   unsigned long streamsize;
   unsigned long filesize;
@@ -136,13 +137,15 @@ main (int argc, char **argv)
 {
 #ifdef HAVE_GETOPT_H
   extern char *optarg;
-  struct option options[4];
+  struct option options[5];
 #endif
   int pageparent, procsetobject, fontobject, boldfontobject, rootobject;
   int i;
   int usesyslog = 0;
   int loglevel = 0;
   Tn5250SCS *scs = NULL;
+  FILE *initfile;
+  int useinitfile = 0;
 
 
 #ifdef HAVE_GETOPT_H
@@ -158,16 +161,20 @@ main (int argc, char **argv)
   options[2].has_arg = required_argument;
   options[2].flag = NULL;
   options[2].val = 'l';
-  options[3].name = 0;
-  options[3].has_arg = 0;
-  options[3].flag = 0;
-  options[3].val = 0;
+  options[3].name = "initfile";
+  options[3].has_arg = required_argument;
+  options[3].flag = NULL;
+  options[3].val = 'i';
+  options[4].name = 0;
+  options[4].has_arg = 0;
+  options[4].flag = 0;
+  options[4].val = 0;
 #endif
 
 #ifdef HAVE_GETOPT_H
-  while ((i = getopt_long (argc, argv, "Hsl:", options, NULL)) != EOF)
+  while ((i = getopt_long (argc, argv, "Hsl:i:", options, NULL)) != EOF)
 #else
-  while ((i = getopt (argc, argv, "Hsl:")) != EOF)
+  while ((i = getopt (argc, argv, "Hsl:i:")) != EOF)
 #endif
     {
       switch (i)
@@ -190,6 +197,17 @@ main (int argc, char **argv)
 	      print_help ();
 	      return -1;
 	    }
+	  break;
+	case 'i':
+	  initfile = fopen (optarg, "r+");
+
+	  if (initfile == NULL)
+	    {
+	      fprintf (stderr,
+		       "Could not open printer initialization file.\n");
+	      return -1;
+	    }
+	  useinitfile = 1;
 	  break;
 	}
     }
@@ -249,12 +267,13 @@ main (int argc, char **argv)
     }
 
   scs->cpi = 10;
-  scs->fontpointsize = 11;
+  scs->fontpointsize = 12;
   scs->topmargin = 240;
   scs->column = 1;
   scs->usesyslog = usesyslog;
   scs->loglevel = loglevel;
   scs->data->newfontsize = 0;
+  scs->data->fontscalingfactor = 100;
   scs->data->objcount = 0;
   scs->data->streamsize = 0;
   scs->data->filesize = 0;
@@ -266,6 +285,78 @@ main (int argc, char **argv)
   scs->data->do_bold = 0;
   scs->data->text[0] = '\0';
   scs->data->newpage = 0;
+
+
+  if (useinitfile)
+    {
+      char buf[10] = { '\0' };
+
+      if (scs->usesyslog)
+	{
+	  syslog (LOG_INFO, "Reading printer state initialization file");
+	}
+      for (i = 0; fscanf (initfile, "%s", buf) != EOF; i++)
+	{
+	  switch (i)
+	    {
+	    case 0:
+	      scs->pagewidth = atoi (buf);
+	      break;
+	    case 1:
+	      scs->pagelength = atoi (buf);
+	      break;
+	    case 2:
+	      scs->charwidth = atoi (buf);
+	      break;
+	    case 3:
+	      scs->cpi = atoi (buf);
+	      break;
+	    case 4:
+	      scs->lpi = atoi (buf);
+	      break;
+	    case 5:
+	      scs->fontpointsize = atoi (buf);
+	      break;
+	    case 6:
+	      scs->data->fontscalingfactor = atoi (buf);
+	      break;
+	    case 7:
+	      scs->leftmargin = atoi (buf);
+	      break;
+	    case 8:
+	      scs->rightmargin = atoi (buf);
+	      break;
+	    case 9:
+	      scs->topmargin = atoi (buf);
+	      break;
+	    case 10:
+	      scs->bottommargin = atoi (buf);
+	      break;
+	    case 11:
+	      scs->rotation = atoi (buf);
+	      break;
+	    }
+	}
+      rewind (initfile);
+
+      if (scs->usesyslog)
+	{
+	  syslog (LOG_INFO, "Page width: %d", scs->pagewidth);
+	  syslog (LOG_INFO, "Page length: %d", scs->pagelength);
+	  syslog (LOG_INFO, "Character width: %d", scs->charwidth);
+	  syslog (LOG_INFO, "CPI: %d", scs->cpi);
+	  syslog (LOG_INFO, "LPI: %d", scs->lpi);
+	  syslog (LOG_INFO, "Font size: %d", scs->fontpointsize);
+	  syslog (LOG_INFO, "Font scaling factor: %d",
+		  scs->data->fontscalingfactor);
+	  syslog (LOG_INFO, "Left margin: %d", scs->leftmargin);
+	  syslog (LOG_INFO, "Right margin: %d", scs->rightmargin);
+	  syslog (LOG_INFO, "Top margin: %d", scs->topmargin);
+	  syslog (LOG_INFO, "Bottom margin: %d", scs->bottommargin);
+	  syslog (LOG_INFO, "Page orientation: %d", scs->rotation);
+	  syslog (LOG_INFO, "End of printer state initialization");
+	}
+    }
 
 
   /* Write out the PDF header.  filesize tracks how big the PDF is since
@@ -397,6 +488,22 @@ main (int argc, char **argv)
   pdf_xreftable (scs->data->objcount);
   pdf_trailer (scs->data->filesize, scs->data->objcount + 1, rootobject);
 
+  if (useinitfile)
+    {
+      fprintf (initfile, "%d\n", scs->pagewidth);
+      fprintf (initfile, "%d\n", scs->pagelength);
+      fprintf (initfile, "%d\n", scs->charwidth);
+      fprintf (initfile, "%d\n", scs->cpi);
+      fprintf (initfile, "%d\n", scs->lpi);
+      fprintf (initfile, "%d\n", scs->fontpointsize);
+      fprintf (initfile, "%d\n", scs->data->fontscalingfactor);
+      fprintf (initfile, "%d\n", scs->leftmargin);
+      fprintf (initfile, "%d\n", scs->rightmargin);
+      fprintf (initfile, "%d\n", scs->topmargin);
+      fprintf (initfile, "%d\n", scs->bottommargin);
+      fprintf (initfile, "%d\n", scs->rotation);
+    }
+
   array_free (textobjects);
   array_free (ObjectList);
   tn5250_char_map_destroy (map);
@@ -485,8 +592,9 @@ scs2pdf_default (Tn5250SCS * This)
 #endif
 	  This->data->do_bold = 0;
 	  This->data->streamsize += pdf_process_char ('\0', 1);
-	  sprintf (This->data->text, "\t\t/F%d %d Tf\n",
-		   COURIER, This->fontpointsize);
+	  sprintf (This->data->text, "\t\t/F%d %d Tf\n" "\t\t/F%d %d Tz\n",
+		   COURIER, This->fontpointsize, COURIER,
+		   This->data->fontscalingfactor);
 	  fprintf (outfile, "%s", This->data->text);
 	  This->data->streamsize += strlen (This->data->text);
 	}
@@ -533,6 +641,11 @@ scs2pdf_process2b (Tn5250SCS * This)
 void
 scs2pdf_nl (Tn5250SCS * This)
 {
+  if (This->data->newpage == 1)
+    {
+      do_newpage (This);
+    }
+
   scs_nl (This);
 
   /* If the current position on the page (column) is further to the
@@ -560,8 +673,8 @@ void
 scs2pdf_ff (Tn5250SCS * This)
 {
   scs_ff (This);
+  This->column = 1;
   This->data->newpage = 1;
-  do_newpage (This);
   return;
 }
 
@@ -622,8 +735,9 @@ scs2pdf_pp (Tn5250SCS * This)
       fprintf (stderr, "Starting bold font\n");
 #endif
       This->data->streamsize += pdf_process_char ('\0', 1);
-      sprintf (This->data->text, "\t\t/F%d %d Tf\n",
-	       COURIER_BOLD, This->fontpointsize);
+      sprintf (This->data->text, "\t\t/F%d %d Tf\n" "\t\t/F%d %d Tz\n",
+	       COURIER_BOLD, This->fontpointsize, COURIER,
+	       This->data->fontscalingfactor);
       fprintf (outfile, "%s", This->data->text);
       This->data->streamsize += strlen (This->data->text);
     }
@@ -641,6 +755,11 @@ scs2pdf_ahpp (Tn5250SCS * This, int *boldchars)
 {
   int position, bytes;
   int i;
+
+  if (This->data->newpage == 1)
+    {
+      do_newpage (This);
+    }
 
   bytes = 0;
   position = fgetc (stdin);
@@ -712,6 +831,11 @@ scs2pdf_ahpp (Tn5250SCS * This, int *boldchars)
 void
 scs2pdf_cr (Tn5250SCS * This)
 {
+  if (This->data->newpage == 1)
+    {
+      do_newpage (This);
+    }
+
   scs_cr (This);
 
   /* If the current position on the page (column) is further to the
@@ -735,14 +859,23 @@ scs2pdf_cr (Tn5250SCS * This)
 
 
 
-/* Set the correct font size.
+/* Set the correct font width.
  */
 void
 scs2pdf_setfont (Tn5250SCS * This)
 {
+  float scale;
+
+  /* The scaling factor is based on a 12 point Courier font which is 10 CPI.
+   * 10 CPI means each character 144 units wide (one inch = 1440 units : 1440
+   * units divided by 10 characters per inch equals 144 units per character)
+   */
+  scale = This->charwidth / 144.0;
+  This->data->fontscalingfactor = scale * 100;
+
   This->data->streamsize += pdf_process_char ('\0', 1);
-  sprintf (This->data->text, "\t\t/F%d %d Tf\n",
-	   COURIER, This->fontpointsize);
+  sprintf (This->data->text, "\t\t/F%d %d Tz\n", COURIER,
+	   This->data->fontscalingfactor);
   fprintf (outfile, "%s", This->data->text);
   This->data->streamsize += strlen (This->data->text);
   return;
@@ -893,8 +1026,10 @@ pdf_begin_stream (Tn5250SCS * This, int fontname)
 
   topsize = ((pagelength - This->topmargin) / 1440.0) * 72.0;
   topmargin = topsize - This->data->pdftopmargin;
-  sprintf (text2, "\tBT\n" "\t\t/F%d %d Tf\n" "\t\t%d %d Td\n", fontname,
-	   This->fontpointsize,
+  sprintf (text2,
+	   "\tBT\n" "\t\t/F%d %d Tf\n" "\t\t/F%d %d Tz\n" "\t\t%d %d Td\n",
+	   fontname, This->fontpointsize, COURIER,
+	   This->data->fontscalingfactor,
 	   (((leftmargin - 1) / 1440) * 72) + This->data->pdfleftmargin,
 	   topmargin);
   fprintf (outfile, "%s", text2);
@@ -1289,10 +1424,12 @@ print_help ()
   printf ("  -s, --syslog\t\tTurn on logging to system log daemon\n");
   printf ("  -l, --loglevel\tSet the logging level of detail (0 to %d)\n",
 	  SCS_LOG_MAX);
+  printf ("  -i, --initfile\tFile to use for printer state initialization\n");
   printf ("  -H, --help\t\tprint this help and exit\n");
 #else
   printf ("  -s\tTurn on logging to system log daemon\n");
   printf ("  -l\tSet the logging level of detail (0 to %d)\n", SCS_LOG_MAX);
+  printf ("  -i\tFile to use for printer state initialization\n");
   printf ("  -H\tprint this help and exit\n");
 #endif
   printf ("\n");
