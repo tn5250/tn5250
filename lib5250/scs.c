@@ -78,6 +78,7 @@ void scs_sil (Tn5250SCS * This);
 void scs_lf (Tn5250SCS * This);
 void scs_cr (Tn5250SCS * This);
 void scs_ssld (Tn5250SCS * This);
+void scs_sld (Tn5250SCS * This);
 void scs_sls (Tn5250SCS * This);
 
 /* Generation controls */
@@ -1695,6 +1696,11 @@ scs_process2b (Tn5250SCS * This)
 	scs_svf (This);
 	break;
       }
+    case 0xC6:
+      {
+	This->sld (This);
+	break;
+      }
     default:
       {
 	fprintf (stderr, "ERROR: Unknown 0x2B command %x\n", curchar);
@@ -2020,12 +2026,12 @@ scs_process04 (Tn5250SCS * This, unsigned char nextchar,
     {
     case 0x15:
       {
-	scs_ssld (NULL);
+	This->ssld (This);
 	break;
       }
     case 0x29:
       {
-	scs_scd (This);
+	This->scd (This);
 	/*scs_scs (cpi); */
 	break;
       }
@@ -2040,14 +2046,57 @@ scs_process04 (Tn5250SCS * This, unsigned char nextchar,
 void
 scs_ssld (Tn5250SCS * This)
 {
-  unsigned char curchar;
-  unsigned char nextchar;
+  int distance;
 
-  curchar = fgetc (stdin);
-  nextchar = fgetc (stdin);
-#ifdef DEBUG
-  fprintf (stderr, "SSLD = %d %d \n", curchar, nextchar);
-#endif
+  distance = fgetc (stdin);
+  distance = (distance << 8) + fgetc (stdin);
+
+  if (distance > 0)
+    {
+      This->lpi = 1440 / distance;
+    }
+  else
+    {
+      This->lpi = 6;
+    }
+
+  if (This->usesyslog)
+    {
+      syslog (LOG_INFO, "SSLD set LPI to %d", This->lpi);
+    }
+  return;
+}
+
+void
+scs_sld (Tn5250SCS * This)
+{
+  int length;
+  int density = 0;
+
+  length = fgetc (stdin);
+
+  if (length > 0)
+    {
+      density = fgetc (stdin);
+    }
+  else
+    {
+      density = 12;
+    }
+
+  if (density > 0)
+    {
+      This->lpi = 72 / density;
+    }
+  else
+    {
+      This->lpi = 6;
+    }
+
+  if ((This->usesyslog) && (This->loglevel > 0))
+    {
+      syslog (LOG_INFO, "SLD set LPI to %d", This->lpi);
+    }
   return;
 }
 
@@ -2309,6 +2358,7 @@ tn5250_scs_new ()
   scs->lf = scs_lf;
   scs->cr = scs_cr;
   scs->ssld = scs_ssld;
+  scs->sld = scs_sld;
   scs->sls = scs_sls;
   scs->sgea = scs_sgea;
   scs->process2b = scs_process2b;
@@ -2319,7 +2369,6 @@ tn5250_scs_new ()
   scs->charwidth = 0;
   scs->cpi = 0;
   scs->lpi = 0;
-  scs->fontpointsize = 0;
   scs->leftmargin = 0;
   scs->rightmargin = 0;
   scs->topmargin = 0;

@@ -106,6 +106,7 @@ struct _Tn5250SCS
   void (*lf) (struct _Tn5250SCS * This);
   void (*cr) (struct _Tn5250SCS * This);
   void (*ssld) (struct _Tn5250SCS * This);
+  void (*sld) (struct _Tn5250SCS * This);
   void (*sls) (struct _Tn5250SCS * This);
   void (*sgea) (struct _Tn5250SCS * This);
   void (*process2b) (struct _Tn5250SCS * This);
@@ -117,7 +118,6 @@ struct _Tn5250SCS
   int charwidth;
   int cpi;
   int lpi;
-  int fontpointsize;
   int leftmargin;
   int rightmargin;
   int topmargin;
