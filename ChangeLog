@@ -1,3 +1,7 @@
+2007-11-23 James Rich <james@eaerich.com>
+- Change the printer state file reading code to hopefully be more bulletproof.
+- Handle SSLD and SLD codes (LPI setting).
+
 2007-11-21 James Rich <james@eaerich.com>
 - Fix font scaling to handle different CPI settings better in scs2pdf.
 - Add support for remembering printer state between jobs in scs2pdf.  This
