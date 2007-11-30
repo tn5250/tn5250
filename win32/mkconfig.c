@@ -70,7 +70,6 @@ replace_undef redefs[] =
 #define DEF_PACKAGE        6
 #define DEF_VERSION        7
 #define DEF_BINARY         8
-#define DEF_NETSHARE400    9
 
 struct _manual_def {
      char *from;
@@ -88,7 +87,6 @@ manual_def mredefs[] =
   {"PACKAGE",        DEF_PACKAGE},
   {"VERSION",        DEF_VERSION},
   {"BINARY_RELEASE", DEF_BINARY},
-  {"NETSHARE400",    DEF_NETSHARE400},
   {NULL, -1},
 };
 
@@ -101,7 +99,7 @@ void strtrim(char *str);
 void get_path(const char *prompt, const char *file, char *path, int maxlen);
 int create_tn5250_config_h(const char *infile, const char *outfile, 
                    char with_openssl, char binary_release, 
-                   const char *package, const char *version, char netshare400);
+                   const char *package, const char *version);
 int create_config_h(const char *infile, const char *outfile, 
                         const char *version);
 int create_makefile(const char *infile, const char *outfile,
@@ -113,7 +111,7 @@ int create_makefile(const char *infile, const char *outfile,
 void replacedata(const char *from, const char *to, char *line, int maxlen);
 int make_root_makefile(const char *fn);
 char *manual_redef(int redefnum, char with_openssl, char binary_release,
-                  const char *package, const char *version, char netshare400);
+                  const char *package, const char *version);
 
 
 
@@ -129,11 +127,7 @@ int main(unsigned argc, char **argv) {
    char package[SMALLBUFSIZE+1], version[SMALLBUFSIZE+1];
    char debug[SMALLBUFSIZE+1];
    char with_openssl, binary_release='n';
-   char ns400='n';
    int ch, rc;
-
-if (argc>=2 && !strcmp(argv[1],"netshare400"))
-   ns400='y';
 
 
 /* Get the PACKAGE and VERSION info from configure.ac */
@@ -209,7 +203,7 @@ if (argc>=2 && !strcmp(argv[1],"netshare400"))
    printf("\nCreating config.h...\n");
 
    if (create_tn5250_config_h(TN5250_CONFIG_H_IN, "config.h", 
-           with_openssl, binary_release, package, version, ns400) < 0) {
+           with_openssl, binary_release, package, version) < 0) {
         exit(1);
    }
 
@@ -224,21 +218,11 @@ if (argc>=2 && !strcmp(argv[1],"netshare400"))
          exit(1);
    }
 
-   if (ns400=='n') {
-      printf("Creating Win32 script for InnoSetup 2...\n");
-      if (create_makefile("tn5250_innosetup.iss.in", "tn5250_innosetup.iss", 
-            openssl_lib, openssl_include, innosetupdir,
-            lib5250_objs, installdir, package, version, debug)<0) {
-            exit(1);
-      }
-   }
-   else {
-      printf("Creating Netshare400 script for InnoSetup 2...\n");
-      if (create_makefile("tn5250_innosetup.iss.in", "tn5250_innosetup.iss", 
-            openssl_lib, openssl_include, innosetupdir,
-            lib5250_objs, installdir, package, version, debug)<0) {
-            exit(1);
-      }
+   printf("Creating Win32 script for InnoSetup 2...\n");
+   if (create_makefile("tn5250_innosetup.iss.in", "tn5250_innosetup.iss", 
+         openssl_lib, openssl_include, innosetupdir,
+         lib5250_objs, installdir, package, version, debug)<0) {
+         exit(1);
    }
 
    printf("Creating ..\\Makefile...\n");
@@ -543,7 +527,6 @@ void get_path(const char *prompt, const char *file, char *path, int maxlen) {
  *    char             binary_release -
  *    const char  *    package        -
  *    const char  *    version        -
- *    char             netshare400    -
  * DESCRIPTION
  *    Create a create a config.h file.  This is really a quick,
  *    minimal routine to allow us to get by without having autoconf
@@ -552,7 +535,7 @@ void get_path(const char *prompt, const char *file, char *path, int maxlen) {
  *****/
 int create_tn5250_config_h(const char *infile, const char *outfile, 
                char with_openssl, char binary_release, const char *package, 
-               const char *version, char netshare400) {
+               const char *version) {
 
       FILE *in;
       FILE *out;
@@ -593,7 +576,7 @@ int create_tn5250_config_h(const char *infile, const char *outfile,
                     while (mredefs[i].from!=NULL) {
                        if (strstr(rec, mredefs[i].from)!=NULL) {
                            s = manual_redef(mredefs[i].def, with_openssl, 
-                                 binary_release, package, version, netshare400);
+                                 binary_release, package, version);
                            if (s[0]!='\0') {
                                changed = 1;
                                fprintf(out, "%s\n", s);
@@ -632,7 +615,7 @@ int create_tn5250_config_h(const char *infile, const char *outfile,
            i = 0;
            while (mredefs[i].from!=NULL) {
                 s = manual_redef(mredefs[i].def, with_openssl, 
-                           binary_release, package, version, netshare400);
+                           binary_release, package, version);
                 if (s[0]!='\0') {
                       fprintf(out, "%s\n", s);
                 }
@@ -808,7 +791,6 @@ int make_root_makefile(const char *fn) {
  *    int                binary_release -
  *    const char    *    package        -
  *    const char    *    version        -
- *    char               netshare400    -
  * DESCRIPTION
  *    Certain #define's that need to be put in config.h
  *    require some calculations to determine what the macro
@@ -816,7 +798,7 @@ int make_root_makefile(const char *fn) {
  *    and returns the string to put in the config.h file.
  *****/
 char *manual_redef(int redefnum, char with_openssl, char binary_release,
-                   const char *package, const char *version, char netshare400) {
+                   const char *package, const char *version) {
 
      switch (redefnum) {
        case DEF_HAVE_LIBCRYPTO:
@@ -850,12 +832,6 @@ char *manual_redef(int redefnum, char with_openssl, char binary_release,
          *my_redef = '\0';
          if (binary_release=='y') {
               strcpy(my_redef, "#define BINARY_RELEASE 1");
-         }
-         break;
-       case DEF_NETSHARE400:
-         *my_redef = '\0';
-         if (netshare400=='y') {
-              strcpy(my_redef, "#define NETSHARE400 1");
          }
          break;
      }
