@@ -41,6 +41,17 @@ BEGIN
 	BEGIN
 	        MENUITEM "Change &font...",             IDM_VIEW_FONT
 	END
+	POPUP "&Macro"
+	BEGIN
+	        MENUITEM "&Record/Stop F1\tCtrl-S F1",	IDM_MACRO_RECORD1
+	        MENUITEM "&Record/Stop F2\tCtrl-S F2",	IDM_MACRO_RECORD2
+	        MENUITEM "&Record/Stop F3\tCtrl-S F3",	IDM_MACRO_RECORD3
+	        MENUITEM "&Record/Stop F4\tCtrl-S F4",	IDM_MACRO_RECORD4
+	        MENUITEM "&Execute F1\tCtrl-W F1",	IDM_MACRO_EXEC1
+	        MENUITEM "&Execute F2\tCtrl-W F2",	IDM_MACRO_EXEC2
+	        MENUITEM "&Execute F3\tCtrl-W F3",	IDM_MACRO_EXEC3
+	        MENUITEM "&Execute F4\tCtrl-W F4",	IDM_MACRO_EXEC4
+	END
 	POPUP "&Help"
 	BEGIN
 		MENUITEM "&About Tn5250",	IDM_APP_ABOUT

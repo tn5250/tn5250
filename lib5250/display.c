@@ -24,7 +24,6 @@
 
 static void tn5250_display_add_dbuffer (Tn5250Display * display,
 					Tn5250DBuffer * dbuffer);
-void tn5250_display_kf_macro (Tn5250Display * This, int Ch);
 void tn5250_display_set_cursor_next_progression_field (Tn5250Display *
 						       This, int nextfield);
 void tn5250_display_set_cursor_prev_progression_field (Tn5250Display *
