@@ -1960,6 +1960,30 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
               case IDM_VIEW_FONT:
                   win32_terminal_choosefont(hwnd);
                   return 0;
+              case IDM_MACRO_RECORD1:
+              case IDM_MACRO_RECORD2:
+              case IDM_MACRO_RECORD3:
+              case IDM_MACRO_RECORD4:
+                  tn5250_display_kf_macro(globDisplay, K_MEMO);
+                  if (tn5250_macro_rstate(globDisplay)) {
+                     int key = LOWORD(wParam) - IDM_MACRO_RECORD1;
+                     win32_terminal_queuekey(hwnd, globTerm, K_F1+key);
+                     PostMessage(hwnd, WM_TN5250_KEY_DATA, 0, 0);
+                  }
+                  else {
+                     win32_terminal_update(globTerm,globDisplay);
+                  }
+                  return 0;
+              case IDM_MACRO_EXEC1: 
+              case IDM_MACRO_EXEC2: 
+              case IDM_MACRO_EXEC3: 
+              case IDM_MACRO_EXEC4: {
+                  int key = LOWORD(wParam) - IDM_MACRO_EXEC1;
+                  tn5250_display_kf_macro(globDisplay, K_EXEC);
+                  win32_terminal_queuekey(hwnd, globTerm, K_F1+key);
+                  PostMessage(hwnd, WM_TN5250_KEY_DATA, 0, 0);
+                  return 0;
+                  }
               default:
                   break;
            }

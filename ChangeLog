@@ -1,3 +1,7 @@
+2007-11-30 Scott Klement <klemscot@klements.com>
+- Added a Macro menu to the Win32 terminal since I can never remember
+   what the control/fkey combo is.
+
 2007-11-29 Scott Klement <klemscot@klements.com>
 - Remove old Netshare400 logic now that they are discontinuing their
   services.
