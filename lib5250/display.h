@@ -82,6 +82,7 @@ struct _Tn5250Display {
    int sign_key_hack : 1;
    int uninhibited : 1;
    int allow_strpccmd : 1;
+   int field_minus_in_char : 1;
 };
 
 typedef struct _Tn5250Display Tn5250Display;
