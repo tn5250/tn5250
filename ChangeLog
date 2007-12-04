@@ -1,3 +1,7 @@
+2007-12-04 Scott Klement <klemscot@klements.com>
+- Added +/- field_minus_in_char option to make field minus act like
+   field exit when it's in a character field
+
 2007-11-30 Scott Klement <klemscot@klements.com>
 - Added a Macro menu to the Win32 terminal since I can never remember
    what the control/fkey combo is.

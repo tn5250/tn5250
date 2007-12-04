@@ -63,6 +63,7 @@ tn5250_display_new ()
   This->indicators_dirty = 0;
   This->pending_insert = 0;
   This->sign_key_hack = 1;
+  This->field_minus_in_char = 0;
   This->uninhibited = 0;
   This->session = NULL;
   This->key_queue_head = This->key_queue_tail = 0;
@@ -164,6 +165,13 @@ tn5250_display_config (Tn5250Display * This, Tn5250Config * config)
   if (tn5250_config_get (config, "allow_strpccmd"))
     {
       This->allow_strpccmd = tn5250_config_get_bool (config, "allow_strpccmd");
+    }
+
+  /* Should field minus act like field exit in a char field? */
+  if (tn5250_config_get (config, "field_minus_in_char"))
+    {
+      This->field_minus_in_char = 
+           tn5250_config_get_bool (config, "field_minus_in_char");
     }
 
   /* Set a terminal type if necessary */
@@ -1972,6 +1980,10 @@ tn5250_display_kf_field_minus (Tn5250Display * This)
       ((tn5250_field_type (field) != TN5250_FIELD_SIGNED_NUM) &&
        (tn5250_field_type (field) != TN5250_FIELD_NUM_ONLY)))
     {
+      if (This->field_minus_in_char) {
+         tn5250_display_kf_field_exit(This);
+         return;
+      }
       This->keystate = TN5250_KEYSTATE_PREHELP;
       This->keySRC = TN5250_KBDSRC_FLDM_DISALLOWED;
       tn5250_display_inhibit (This);
