@@ -15,12 +15,17 @@ bin_SCRIPTS 	= 5250keys
 #
 install-data-local:
 	@( good=no ; \
+	   termcapfile=$(prefix)/../share/misc/termcap ; \
 	  if [ "`uname -s`" = "FreeBSD" ]; then \
-              grep -q "xterm-5250" $(prefix)/../share/misc/termcap || good=yes; \
-              if [ x$$good = xyes ]; then \
-		  echo "Adding termcap entry..." ; \
-	          cat sample.termcap >> $(prefix)/../share/misc/termcap ; \
-                  cap_mkdb $(prefix)/../share/misc/termcap ; \
+	      if [ ! -f $$termcapfile ]; then \
+	         good=yes ; \
+	      else \
+                 grep -q "xterm-5250" $$termcapfile || good=yes; \
+                 if [ x$$good = xyes ]; then \
+		     echo "Adding termcap entry..." ; \
+	             cat sample.termcap >> $$termcapfile; \
+                     cap_mkdb $$termcapfile ; \
+	         fi ; \
 	      fi ; \
 	  else \
 	      good=yes ; \

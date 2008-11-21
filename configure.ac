@@ -240,5 +240,9 @@ AC_CONFIG_FILES([Makefile
 		 lp5250d/Makefile
 		 python/Makefile
 		 slang/Makefile
+		 freebsd/Makefile
+		 linux/Makefile
+		 sun/Makefile
+		 win32/Makefile
 		 xt5250])
 AC_OUTPUT
