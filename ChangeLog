@@ -1,4 +1,11 @@
 2008-11-20 Scott Klement <klemscot@klements.com>
+- For some reason, the freebsd, linux, sun and win32 directories 
+   were missing from the distro.
+- Special code to install FreeBSD termcap was broken during
+   "make distcheck" because it installs to a prefix that doesnt
+   contain the termcap file -- fixed that.
+
+2008-11-20 Scott Klement <klemscot@klements.com>
 - Disabled SLang, since it has fallen into repair, and AFIAK
    nobody uses it.  
 
