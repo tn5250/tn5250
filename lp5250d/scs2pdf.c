@@ -1,6 +1,6 @@
 /* scs2pdf -- Converts scs from standard input into PDF.
  * Copyright (C) 2000 Michael Madore
- * Copyright (C) 2007 James Rich
+ * Copyright (C) 2007-2008 James Rich
  *
  * This file is part of TN5250.
  *

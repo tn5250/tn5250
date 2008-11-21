@@ -1,5 +1,5 @@
 /* scs.c -- Converts scs to forms useable by scs2ascii, scs2ps, and scs2pdf.
- * Copyright (C) 2000 Michael Madore
+ * Copyright (C) 2000-2008 Michael Madore
  *
  * This file is part of TN5250.
  *
