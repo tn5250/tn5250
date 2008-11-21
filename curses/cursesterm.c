@@ -1,5 +1,5 @@
 /* TN5250
- * Copyright (C) 1997 Michael Madore
+ * Copyright (C) 1997-2008 Michael Madore
  * 
  * This file is part of TN5250.
  *

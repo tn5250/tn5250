@@ -2,7 +2,7 @@
 #define WINDOW_H
 
 /* TN5250 - An implementation of the 5250 telnet protocol.
- * Copyright (C) 2005 James Rich
+ * Copyright (C) 2005-2008 James Rich
  * 
  * This file is part of TN5250.
  *

@@ -1,5 +1,5 @@
 /* LINUX5250
- * Copyright (C) 2001 Jay 'Eraserhead' Felice
+ * Copyright (C) 2001-2008 Jay 'Eraserhead' Felice
  *
  * This file is part of TN5250.
  *

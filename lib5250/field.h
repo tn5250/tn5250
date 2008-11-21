@@ -2,7 +2,7 @@
 #define FIELD_H
 
 /* TN5250 - An implementation of the 5250 telnet protocol.
- * Copyright (C) 1997 Michael Madore
+ * Copyright (C) 1997-2008 Michael Madore
  * 
  * This file is part of TN5250.
  *
