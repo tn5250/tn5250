@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([tn5250],[0.17.4],[linux5250@midrange.com])
+AC_INIT([tn5250],[0.17.5],[linux5250@midrange.com])
 AM_INIT_AUTOMAKE
 AM_CONFIG_HEADER(config.h)
 
