@@ -54,6 +54,7 @@ struct _Tn5250Printer {
      FILE *fileh;
      unsigned char prevchar;
      Tn5250CharMap *map;
+     char *cmd;
 };
 typedef struct _Tn5250Printer Tn5250Printer;
 
@@ -372,9 +373,10 @@ Tn5250Printer * tn5250_windows_printer_startdoc(void) {
     DOC_INFO_1 di;
     Tn5250Printer *This;
     LPTSTR devname;
-    int isfile=0;
+    int isfile=0, iscmd=0;
     int len;
     char *temp;
+    char *cmd=NULL;
 
     devname = malloc(MAXDEVNAME+1);
 
@@ -388,6 +390,11 @@ Tn5250Printer * tn5250_windows_printer_startdoc(void) {
         else if (!strncasecmp(temp, "file:", 5)) {
              strncpy(devname, &temp[5], MAXDEVNAME);
              isfile=1;
+        }
+        else if (!strncasecmp(temp, "exec:", 5)) {
+             strncpy(devname, &temp[5], MAXDEVNAME);
+             isfile=1;
+             iscmd=1;
         }
         else {
              strncpy(devname, temp, MAXDEVNAME);
@@ -417,6 +424,16 @@ Tn5250Printer * tn5250_windows_printer_startdoc(void) {
     This->curline = 1;
     This->prevchar = 0;
     This->count = 0;
+    This->cmd = NULL;
+
+    if (iscmd) {
+        cmd = strchr(devname, '?');
+        if (cmd!=NULL) {
+           This->cmd = malloc(strlen(cmd+1)+1);
+           strcpy(This->cmd, cmd+1);
+           *cmd = '\0';
+        }
+    }
 
     if (isfile) {
         This->fileh = fopen(devname, "w");
@@ -489,6 +506,10 @@ int tn5250_windows_printer_finishdoc(Tn5250Printer *This) {
     }
     else if (This->fileh!=NULL) {
         fclose(This->fileh);
+    }
+    if (This->cmd != NULL) {
+       win32_run_process(This->cmd, 1);
+       free(This->cmd);
     }
     tn5250_char_map_destroy (This->map);
     free(This);

@@ -1,3 +1,7 @@
+2009-02-27 Scott Klement <klemscot@klements.com>
+- in Win32 lp5250d, added support for exec: which
+   writes to a file, then runs a command
+
 2008-11-21 James Rich <james@eaerich.com>
 - Version 0.17.4 tagged and released.
 
