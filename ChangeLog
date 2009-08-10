@@ -1,3 +1,9 @@
+2009-08-10 Scott Klement <klemscot@klements.com>
+- Applying Win32 fixes provided by Ken Koehler <kenkoehler-at-usa-dot-net>
+   - Fix Window size "creep" when switching to/from 132 cols w/+resize_fonts
+   - Fix copy to clipboard bounds checking (was causing crash)
+   - Fix crashes with WinXP locked screen
+
 2009-02-27 Scott Klement <klemscot@klements.com>
 - in Win32 lp5250d, added support for exec: which
    writes to a file, then runs a command

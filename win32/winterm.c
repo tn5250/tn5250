@@ -20,6 +20,11 @@
  *
  */
 
+#define RowsFor80Col 24
+#define RowsFor132Col 27
+#define MIN(a, b)  (((a) < (b)) ? (a) : (b))
+#define MAX(a, b)  (((a) > (b)) ? (a) : (b))
+
 #define _TN5250_TERMINAL_PRIVATE_DEFINED
 #include "tn5250-private.h"
 #include "resource.h"
@@ -810,8 +815,9 @@ void tn5250_win32_init_fonts (Tn5250Terminal *This,
    int h, w;
    int default_h, default_w;
 
+   /* Allow for screen size plus status line */
    win32_calc_default_font_size(This->data->hwndMain, 
-                                80, 25, &default_w, &default_h);
+                                80, RowsFor80Col+1, &default_w, &default_h);
 
    if (myfont80 != NULL) {
        size = strlen(myfont80) + 1;
@@ -832,7 +838,7 @@ void tn5250_win32_init_fonts (Tn5250Terminal *This,
        This->data->font_80_w = default_w;
    }
 
-   win32_terminal_font(This, This->data->font_80, 80, 25, This->data->font_80_w, This->data->font_80_h);
+   win32_terminal_font(This, This->data->font_80, 80, RowsFor80Col+1, This->data->font_80_w, This->data->font_80_h);
 
    if (myfont132 != NULL) {
        size = strlen(myfont132) + 1;
@@ -1254,7 +1260,7 @@ static void win32_do_terminal_update(HDC hdc, Tn5250Terminal *This,
    int y, x;
    int mx, my;
    unsigned char attr, c;
-   unsigned char text[132*27];
+   unsigned char text[132*RowsFor132Col];
    HBRUSH oldbrush;
    HPEN oldpen;
    int len;
@@ -1861,6 +1867,7 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
      static int handledkey=0;
      HMENU	hMenu;
      int redraw;
+     int lReturn = 0;
 
      switch (msg) {
         case WM_CREATE:
@@ -2018,10 +2025,10 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
               win32_terminal_clear_screenbuf(hwnd, w, h, 1, 1);
               if (globTerm!=NULL && globDisplay!=NULL) {
                   if (globTerm->data->resize_fonts) {
-                       win32_calc_default_font_size(hwnd, 80, 24, &c, &r);
+                       win32_calc_default_font_size(hwnd, 80, RowsFor80Col+1, &c, &r);
                        globTerm->data->font_80_h = r;
                        globTerm->data->font_80_w = c;
-                       win32_calc_default_font_size(hwnd, 132, 27, &c, &r);
+                       win32_calc_default_font_size(hwnd, 132, RowsFor132Col+1, &c, &r);
                        globTerm->data->font_132_h = r;
                        globTerm->data->font_132_w = c;
                        globTerm->data->resized = 1;
@@ -2145,24 +2152,27 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
            if (BitBlt(hdc, x, y, w, h, bmphdc, x, y, SRCCOPY)==0) {
                 TN5250_LOG(("WIN32: BitBlt failed: %d\n", GetLastError()));
                 TN5250_ASSERT(0);
+                lReturn = 1;  
            }
-           if (globTerm->data->caret_style != CARETSTYLE_NOBLINK) {
-               if (hwnd == GetFocus()) 
-                   win32_move_caret(hdc, globTerm);
-           }
-           if (globTerm->data->selected) {
-                SetROP2(hdc, R2_NOT);
-                if (globTerm->data->selecting)
-                     SelectObject(hdc, GetStockObject(NULL_BRUSH) );
-                else
-                     SelectObject(hdc, GetStockObject(WHITE_BRUSH) );
-                Rectangle(hdc, globTerm->data->selstr.x, 
-                               globTerm->data->selstr.y,
-                               globTerm->data->selend.x, 
-                               globTerm->data->selend.y);
+           if (lReturn==0) {
+               if (globTerm->data->caret_style != CARETSTYLE_NOBLINK) {
+                   if (hwnd == GetFocus())
+                       win32_move_caret(hdc, globTerm);
+               }
+               if (globTerm->data->selected) {
+                    SetROP2(hdc, R2_NOT);
+                    if (globTerm->data->selecting)
+                         SelectObject(hdc, GetStockObject(NULL_BRUSH) );
+                    else
+                         SelectObject(hdc, GetStockObject(WHITE_BRUSH) );
+                    Rectangle(hdc, globTerm->data->selstr.x,
+                                   globTerm->data->selstr.y,
+                                   globTerm->data->selend.x,
+                                   globTerm->data->selend.y);
+               }
            }
            EndPaint (hwnd, &ps);
-           return 0;
+           return lReturn;
            break;
 
         case WM_RBUTTONDOWN:
@@ -2484,10 +2494,37 @@ void win32_copy_text_selection(Tn5250Terminal *This, Tn5250Display *display)
       sy = This->data->selstr.y / This->data->font_height;
       ey = This->data->selend.y / This->data->font_height;
 
-      while (ey>tn5250_display_height(display)) ey--;
+   /* Restrict copy to actual screen size. */
+      TN5250_LOG(("WIN32-win32_copy_text_selection: Width=%d\n", 
+                tn5250_display_width (globDisplay)));
+      if (tn5250_display_width (globDisplay)<100) {
+         ex = MIN(ex, (80-1));
+         ey = MIN(ey, (RowsFor80Col-1)); /* -1 for zero-based */
+      } else {
+         ex = MIN(ex, (132-1));
+         ey = MIN(ey, (RowsFor132Col-1)); /* -1 for zero-based */
+      }
+
+      /* Limit to actual screen size (not calculated) */
+      TN5250_LOG(("WIN32-win32_copy_text_selection: Width=%d\n", 
+               tn5250_display_width (globDisplay)));
+      if (tn5250_display_width (globDisplay)<100) {
+         ex = MIN(ex, (80-1));
+         ey = MIN(ey, (RowsFor80Col-1)); /* -1 for zero-based */
+      } else {
+         ex = MIN(ex, (132-1));
+         ey = MIN(ey, (RowsFor132Col-1)); /* -1 for zero-based */
+      }
 
       TN5250_LOG (("Copy to clipboard sx=%d,sy=%d,ex=%d,ey=%d\n",
                    sx,sy,ex,ey));
+
+      /* Bad selection... exit early */
+
+      if ((sx > ex) || (sy > ey))
+          return; 
+
+      while (ey>tn5250_display_height(display)) ey--;
 
       bufsize = ((ex-sx)+3) * ((ey-sy)+1) - 1;
       hBuf = GlobalAlloc(GHND|GMEM_SHARE, bufsize);
@@ -2968,8 +3005,11 @@ void win32_move_caret_to(Tn5250Terminal *This, Tn5250Display *disp,
 
    /* Set new caret position */
 
-   cx = x / This->data->font_width;
-   cy = y / This->data->font_height;
+   cx = MIN( x / This->data->font_width, 
+           ((tn5250_display_width (globDisplay)<100) ? (80-1) : (132-1)));
+   cy = MIN( y / This->data->font_height, 
+           ((tn5250_display_width (globDisplay)<100) ? (RowsFor80Col-1) : (RowsFor132Col-1)));
+
    tn5250_display_set_cursor(disp, cy, cx);
 
    This->data->caretx = cx * This->data->font_width;
