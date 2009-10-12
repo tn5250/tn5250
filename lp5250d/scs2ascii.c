@@ -29,7 +29,7 @@
 
 static void scs2ascii_pp (Tn5250SCS * This);
 static void scs2ascii_ahpp (int *curpos);
-static void scs2ascii_avpp (int *curline);
+void scs2ascii_avpp (Tn5250SCS * This);
 void scs2ascii_transparent (Tn5250SCS * This);
 void scs2ascii_ff (Tn5250SCS * This);
 void scs2ascii_nl (Tn5250SCS * This);
@@ -106,6 +106,7 @@ tn5250_scs2ascii_new ()
   scs->nl = scs2ascii_nl;
   scs->rnl = scs2ascii_nl;
   scs->pp = scs2ascii_pp;
+  scs->avpp = scs2ascii_avpp;
   scs->scsdefault = scs2ascii_default;
   return scs;
 }
@@ -172,7 +173,7 @@ scs2ascii_pp (Tn5250SCS * This)
     {
     case SCS_AVPP:
       {
-	scs2ascii_avpp (&(This->row));
+	This->avpp (This);
 	break;
       }
     case SCS_AHPP:
@@ -185,6 +186,42 @@ scs2ascii_pp (Tn5250SCS * This)
 	fprintf (stderr, "ERROR: Unknown 0x34 command %x\n", curchar);
       }
     }
+}
+
+void
+scs2ascii_avpp (Tn5250SCS * This)
+{
+  int i;
+  int newrow;
+  int lines;
+
+#ifdef DEBUG
+#ifdef VERBOSE
+  fprintf (stderr, "doing scs2ascii_avpp()\n");
+#endif
+#endif
+  newrow = fgetc (stdin);
+#ifdef DEBUG
+  fprintf (stderr, "AVPP %d\n", newrow);
+#endif
+
+  if (newrow < This->row)
+    {
+      printf ("\f");
+      This->row = 1;
+    }
+  else
+    {
+      lines = newrow - This->row;
+
+      for (i = 0; i < lines; i++)
+	{
+	  printf ("\n");
+	}
+
+      This->row = newrow;
+    }
+  return;
 }
 
 static void
@@ -243,35 +280,6 @@ scs2ascii_transparent (Tn5250SCS * This)
     {
       printf ("%c", fgetc (stdin));
     }
-}
-
-static void
-scs2ascii_avpp (int *curline)
-{
-  int line;
-
-#ifdef DEBUG
-#ifdef VERBOSE
-  fprintf (stderr, "doing scs2ascii_avpp()\n");
-#endif
-#endif
-  line = fgetc (stdin);
-#ifdef DEBUG
-  fprintf (stderr, "AVPP %d\n", line);
-#endif
-
-  if (*curline > line)
-    {
-      printf ("\f");
-      *curline = 1;
-    }
-
-  while (*curline < line)
-    {
-      printf ("\n");
-      (*curline)++;
-    }
-
 }
 
 /* vi:set sts=3 sw=3: */
