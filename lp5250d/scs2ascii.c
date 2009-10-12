@@ -141,7 +141,6 @@ scs2ascii_ff (Tn5250SCS * This)
 #endif
   scs_ff (This);
   printf ("\f");
-  This->row = 1;
   return;
 }
 
@@ -155,8 +154,6 @@ scs2ascii_nl (Tn5250SCS * This)
 #endif
   scs_nl (This);
   printf ("\n");
-  This->column = 1;
-  This->row = This->row + 1;
   return;
 }
 

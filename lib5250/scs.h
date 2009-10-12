@@ -109,6 +109,7 @@ struct _Tn5250SCS
   void (*sld) (struct _Tn5250SCS * This);
   void (*sls) (struct _Tn5250SCS * This);
   void (*sgea) (struct _Tn5250SCS * This);
+  void (*avpp) (struct _Tn5250SCS * This);
   void (*process2b) (struct _Tn5250SCS * This);
   void (*cpi2points) (struct _Tn5250SCS * This);
   void (*setfont) (struct _Tn5250SCS * This);

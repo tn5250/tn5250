@@ -66,6 +66,7 @@
 void scs2pdf_nl (Tn5250SCS * This);
 void scs2pdf_pp (Tn5250SCS * This);
 void scs2pdf_ff (Tn5250SCS * This);
+void scs2pdf_avpp (Tn5250SCS * This);
 int scs2pdf_ahpp (Tn5250SCS * This, int *boldchars);
 void scs2pdf_cr (Tn5250SCS * This);
 void scs2pdf_ssld (Tn5250SCS * This);
@@ -548,6 +549,7 @@ tn5250_scs2pdf_new ()
   scs->sld = scs2pdf_sld;
   scs->setfont = scs2pdf_setfont;
   /*scs->process2b = scs2pdf_process2b; */
+  scs->avpp = scs2pdf_avpp;
   scs->scsdefault = scs2pdf_default;
   return scs;
 }
@@ -648,6 +650,7 @@ scs2pdf_nl (Tn5250SCS * This)
 {
   float leftmargin;
   int leftmarginint;
+  int currentcol;
   char text[256] = {'\0'};
 
   if (This->data->newpage == 1)
@@ -655,6 +658,7 @@ scs2pdf_nl (Tn5250SCS * This)
       do_newpage (This);
     }
 
+  currentcol = This->column;
   scs_nl (This);
 
   /* If the current position on the page (column) is further to the
@@ -662,9 +666,9 @@ scs2pdf_nl (Tn5250SCS * This)
    * increase our length.  This is used later to see if we need a
    * larger page width if the page width is unspecified.
    */
-  if (This->column > This->data->columncheck)
+  if (currentcol > This->data->columncheck)
     {
-      This->data->columncheck = This->column;
+      This->data->columncheck = currentcol;
     }
 
   leftmargin = (This->leftmargin - 1) / 1440.0;
@@ -677,7 +681,6 @@ scs2pdf_nl (Tn5250SCS * This)
   sprintf (text, "%d -%d Td", leftmarginint, 72 / This->lpi);
   fprintf (outfile, "%s\n", text);
   This->data->streamsize += (strlen(text) + 1);
-  This->column = 1;
   return;
 }
 
@@ -687,7 +690,6 @@ void
 scs2pdf_ff (Tn5250SCS * This)
 {
   scs_ff (This);
-  This->column = 1;
   This->data->newpage = 1;
   return;
 }
@@ -717,7 +719,7 @@ scs2pdf_pp (Tn5250SCS * This)
       }
     case SCS_AVPP:
       {
-	scs_avpp (This);
+	This->avpp (This);
 	break;
       }
     case SCS_AHPP:
@@ -754,6 +756,67 @@ scs2pdf_pp (Tn5250SCS * This)
 	       This->data->fontscalingfactor);
       fprintf (outfile, "%s", This->data->text);
       This->data->streamsize += strlen (This->data->text);
+    }
+  return;
+}
+
+
+/* Absolute Vertical move (AVPP).  This is part of Cursor Controls.
+ */
+void
+scs2pdf_avpp (Tn5250SCS * This)
+{
+  int i;
+  int newrow;
+  int lines;
+
+  newrow = fgetc (stdin);
+
+  if ((This->usesyslog) && (This->loglevel > 0))
+    {
+      syslog (LOG_INFO,
+	      "PP sent absolute vertical move of %d (cursor currently on row %d)",
+	      newrow, This->row);
+    }
+
+#ifdef DEBUG
+  fprintf (stderr, "AVPP %d\n", newrow);
+#endif
+
+  if (newrow < This->row)
+    {
+      /* From the IPDS and SCS Technical Reference:
+       * Absolute vertical moves above the current cursor position cause
+       * the current page to be printed and the cursor to be positioned at
+       * that line on the next page.  An absolute vertical move to line 1
+       * guarantees that the printer is on a page boundary and will not
+       * cause a form feed of a blank sheet if the printer is already on
+       * line 1.  Absolute vertical moves below the bottom margin trigger
+       * a new page.
+       *
+       * So it appears that if newrow is less than This->row we should send
+       * a form feed.  However, in practice that doesn't work.  Simply
+       * sending a form feed whenever newrow is less than This->row results
+       * in extra form feeds being sent.  I am unsure of exactly what
+       * conditions are supposed to trigger a form feed as described above.
+       */
+      /*This->ff (This);*/
+      This->row = newrow;
+    }
+  else
+    {
+      lines = newrow - This->row;
+
+      if ((This->usesyslog) && (This->loglevel > 0))
+	{
+	  syslog (LOG_INFO, "Forcing %d new lines", lines);
+	}
+
+      for (i = 0; i < lines; i++)
+	{
+	  scs2pdf_nl (This);
+	}
+      This->row = newrow;
     }
   return;
 }

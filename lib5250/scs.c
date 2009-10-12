@@ -752,6 +752,8 @@ scs_ff (Tn5250SCS * This)
 #ifdef DEBUG
   fprintf (stderr, "FF\n");
 #endif
+  This->column = 1;
+  This->row = 1;
   return;
 }
 
@@ -770,6 +772,8 @@ scs_rff (Tn5250SCS * This)
 #ifdef DEBUG
   fprintf (stderr, "RFF\n");
 #endif
+  This->column = 1;
+  This->row = 1;
   return;
 }
 
@@ -1284,7 +1288,7 @@ scs_pp (Tn5250SCS * This)
       }
     case SCS_AVPP:
       {
-	scs_avpp (This);
+	This->avpp (This);
 	break;
       }
     case SCS_AHPP:
@@ -1358,11 +1362,11 @@ scs_ahpp (Tn5250SCS * This)
 	  scs_log("Moving right");
 	}
     }
-  This->row = position;
 
 #ifdef DEBUG
   fprintf (stderr, "AHPP %d\n", position);
 #endif
+  This->column = position;
   return;
 }
 
@@ -1478,9 +1482,12 @@ scs_nl (Tn5250SCS * This)
     {
       scs_log("Doing new line");
     }
+
 #ifdef DEBUG
   fprintf (stderr, "NL\n");
 #endif
+  This->row = This->row + 1;
+  This->column = 1;
   return;
 }
 
@@ -1514,6 +1521,8 @@ scs_rnl (Tn5250SCS * This)
 #ifdef DEBUG
   fprintf (stderr, "RNL\n");
 #endif
+  This->row = This->row + 1;
+  This->column = 1;
   return;
 }
 
@@ -1637,6 +1646,7 @@ scs_lf (Tn5250SCS * This)
 #ifdef DEBUG
   fprintf (stderr, "LF\n");
 #endif
+  This->row = This->row + 1;
   return;
 }
 
@@ -1655,6 +1665,7 @@ scs_cr (Tn5250SCS * This)
 #ifdef DEBUG
   fprintf (stderr, "CR\n");
 #endif
+  This->column = 1;
   return;
 }
 
@@ -2361,6 +2372,7 @@ tn5250_scs_new ()
   scs->sld = scs_sld;
   scs->sls = scs_sls;
   scs->sgea = scs_sgea;
+  scs->avpp = scs_avpp;
   scs->process2b = scs_process2b;
   scs->setfont = scs_setfont;
   scs->scsdefault = scs_default;
@@ -2373,8 +2385,8 @@ tn5250_scs_new ()
   scs->rightmargin = 0;
   scs->topmargin = 0;
   scs->bottommargin = 0;
-  scs->column = 0;
-  scs->row = 0;
+  scs->column = 1;
+  scs->row = 1;
   scs->rotation = SCS_ROTATE0;
   scs->usesyslog = 0;
   scs->loglevel = 0;

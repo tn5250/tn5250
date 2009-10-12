@@ -319,7 +319,7 @@ scs2ps_pp (Tn5250SCS * This)
     {
     case SCS_AVPP:
       {
-	scs_avpp (NULL);
+	This->avpp (This);
 	break;
       }
     case SCS_AHPP:
