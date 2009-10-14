@@ -536,8 +536,8 @@ tn5250_session_send_field (Tn5250Session * This, Tn5250Buffer * buf,
   TN5250_LOG (("Sending:\n"));
   tn5250_field_dump (field);
 
-  TN5250_ASSERT (!tn5250_field_is_continued_middle (field) &&
-		 !tn5250_field_is_continued_last (field));
+  TN5250_ASSERT (!(tn5250_field_is_continued_middle (field) &&
+		   tn5250_field_is_continued_last (field)));
 
 
   /* find the following fields with the continuous flag set
