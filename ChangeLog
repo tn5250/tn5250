@@ -1,3 +1,9 @@
+2009-21-21 Scott Klement <tn5250@scottklement.com>
+- in Win32, removed TN5250_ASSERT() when BitBit fails. Apparently,
+    BitBlt() fails whenever data is received and the Windows screen
+    is locked.  The TN5250_ASSERT() caused TN5250 to crash. Removing it
+    seems to fix the issue.
+
 2009-08-10 Scott Klement <klemscot@klements.com>
 - Applying Win32 fixes provided by Ken Koehler <kenkoehler-at-usa-dot-net>
    - Fix Window size "creep" when switching to/from 132 cols w/+resize_fonts

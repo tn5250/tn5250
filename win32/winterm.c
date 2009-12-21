@@ -2151,7 +2151,7 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
            SelectObject(bmphdc, screenbuf);
            if (BitBlt(hdc, x, y, w, h, bmphdc, x, y, SRCCOPY)==0) {
                 TN5250_LOG(("WIN32: BitBlt failed: %d\n", GetLastError()));
-                TN5250_ASSERT(0);
+                /* TN5250_ASSERT(0); */
                 lReturn = 1;  
            }
            if (lReturn==0) {
