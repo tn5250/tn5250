@@ -33,7 +33,7 @@ void tn5250_display_wordwrap_delete (Tn5250Display * This);
 void tn5250_display_wordwrap_insert (Tn5250Display * This, unsigned char c,
 				     int shiftcount);
 void tn5250_display_wordwrap_addch (Tn5250Display * This, unsigned char c);
-int display_check_pccmd(Tn5250Display *This);
+int display_check_pccmd (Tn5250Display * This);
 
 
 /****f* lib5250/tn5250_display_new
@@ -62,6 +62,7 @@ tn5250_display_new ()
   This->indicators = 0;
   This->indicators_dirty = 0;
   This->pending_insert = 0;
+  This->destructive_backspace = 0;
   This->sign_key_hack = 1;
   This->field_minus_in_char = 0;
   This->uninhibited = 0;
@@ -149,6 +150,13 @@ tn5250_display_config (Tn5250Display * This, Tn5250Config * config)
     }
   This->config = config;
 
+  /* check if destructive backspace should be enabled */
+  if (tn5250_config_get (config, "destructive_backspace"))
+    {
+      This->destructive_backspace =
+	tn5250_config_get_bool (config, "destructive_backspace");
+    }
+
   /* check if the +/- sign keyboard hack should be enabled */
   if (tn5250_config_get (config, "sign_key_hack"))
     {
@@ -164,14 +172,15 @@ tn5250_display_config (Tn5250Display * This, Tn5250Config * config)
   /* check if user wants to allow the host to run commands via strpccmd */
   if (tn5250_config_get (config, "allow_strpccmd"))
     {
-      This->allow_strpccmd = tn5250_config_get_bool (config, "allow_strpccmd");
+      This->allow_strpccmd =
+	tn5250_config_get_bool (config, "allow_strpccmd");
     }
 
   /* Should field minus act like field exit in a char field? */
   if (tn5250_config_get (config, "field_minus_in_char"))
     {
-      This->field_minus_in_char = 
-           tn5250_config_get_bool (config, "field_minus_in_char");
+      This->field_minus_in_char =
+	tn5250_config_get_bool (config, "field_minus_in_char");
     }
 
   /* Set a terminal type if necessary */
@@ -375,17 +384,17 @@ tn5250_display_update (Tn5250Display * This)
       memcpy (This->display_buffers->data +
 	      tn5250_display_width (This) * l, This->msg_line, This->msg_len);
     }
-  if (display_check_pccmd(This) == 0) 
+  if (display_check_pccmd (This) == 0)
     {
       if (This->terminal != NULL)
-        {
-          tn5250_terminal_update (This->terminal, This);
-          if (This->indicators_dirty)
-    	    {
-	       tn5250_terminal_update_indicators (This->terminal, This);
-	       This->indicators_dirty = 0;
-	   }
-       }
+	{
+	  tn5250_terminal_update (This->terminal, This);
+	  if (This->indicators_dirty)
+	    {
+	      tn5250_terminal_update_indicators (This->terminal, This);
+	      This->indicators_dirty = 0;
+	    }
+	}
     }
   return;
 }
@@ -796,8 +805,7 @@ tn5250_display_set_cursor_next_field (Tn5250Display * This)
   if ((currentfield != NULL) && (currentfield->nextfieldprogressionid != 0))
     {
       tn5250_display_set_cursor_next_progression_field (This,
-							currentfield->
-							nextfieldprogressionid);
+							currentfield->nextfieldprogressionid);
     }
   else
     {
@@ -906,8 +914,7 @@ tn5250_display_set_cursor_prev_field (Tn5250Display * This)
   if ((currentfield != NULL) && (currentfield->entry_id != 0))
     {
       tn5250_display_set_cursor_prev_progression_field (This,
-							currentfield->
-							entry_id);
+							currentfield->entry_id);
     }
   else
     {
@@ -1177,8 +1184,8 @@ tn5250_display_interactive_addch (Tn5250Display * This, unsigned char ch)
       if (tn5250_field_is_wordwrap (field))
 	{
 	  tn5250_display_wordwrap_insert (This,
-					  tn5250_char_map_to_remote (This->
-								     map, ch),
+					  tn5250_char_map_to_remote
+					  (This->map, ch),
 					  tn5250_field_count_right (field,
 								    tn5250_display_cursor_y
 								    (This),
@@ -1511,6 +1518,15 @@ tn5250_display_do_key (Tn5250Display * This, int key)
   TN5250_LOG (("@key %d\n", key));
 
   /* FIXME: Translate from terminal key via keyboard map to 5250 key. */
+  /* James Rich:  I don't think this is the correct place to do key mapping,
+   * contrary to the FIXME above.  I think each terminal should implement
+   * its own keymapping since the terminal will know the capabilities of the
+   * hardware better than lib5250.  For example, xterm doesn't distinguish
+   * between right and left control keys but X11 does, allowing x5250 to
+   * map right control but the curses terminal can't.  I think we should
+   * assume that the terminal has already done whatever mapping is necessary
+   * and that at this point we have received the key the user intended.
+   */
 
   switch (This->keystate)
     {
@@ -1545,14 +1561,14 @@ tn5250_display_do_key (Tn5250Display * This, int key)
       break;
     case TN5250_KEYSTATE_POSTHELP:
       if (This->uninhibited
-          && (key == K_ENTER || key == K_TAB || key == K_BACKTAB
-              || key == K_ROLLDN || key == K_ROLLUP
-              || (key >= K_FIRST_SPECIAL && key <= K_F24)))
-        {
-          TN5250_LOG (("Resetting posthelp state for key %d.\n", key));
-          tn5250_display_uninhibit (This);
-          This->keystate = TN5250_KEYSTATE_UNLOCKED;
-        }
+	  && (key == K_ENTER || key == K_TAB || key == K_BACKTAB
+	      || key == K_ROLLDN || key == K_ROLLUP
+	      || (key >= K_FIRST_SPECIAL && key <= K_F24)))
+	{
+	  TN5250_LOG (("Resetting posthelp state for key %d.\n", key));
+	  tn5250_display_uninhibit (This);
+	  This->keystate = TN5250_KEYSTATE_UNLOCKED;
+	}
       else if (key != K_RESET && key != K_ATTENTION)
 	{
 	  TN5250_LOG (("Denying key %d in posthelp state.\n", key));
@@ -1564,17 +1580,15 @@ tn5250_display_do_key (Tn5250Display * This, int key)
 
 
   /* In the case we are in the field exit required state, we inhibit
-   * on everything except left arrow, backspace, field exit, field+,
-   * field-, and help */
+   * on everything except left arrow, nondestructive backspace, field exit,
+   * field+, field-, and help */
   if ((tn5250_display_indicators (This) & TN5250_DISPLAY_IND_FER) != 0)
     {
       switch (key)
 	{
 	case K_LEFT:
-	case K_BACKSPACE:
 	  tn5250_display_indicator_clear (This, TN5250_DISPLAY_IND_FER);
 	  return;
-
 	case K_UP:
 	case K_DOWN:
 	case K_RIGHT:
@@ -1591,6 +1605,13 @@ tn5250_display_do_key (Tn5250Display * This, int key)
 	case K_HELP:
 	  pre_FER_clear = 1;
 	  break;
+
+	case K_BACKSPACE:
+	  if (!(This->destructive_backspace))
+	    {
+	      tn5250_display_indicator_clear (This, TN5250_DISPLAY_IND_FER);
+	      return;
+	    }
 
 	default:
 	  if (This->uninhibited && key >= K_F1 && key <= K_F24)
@@ -1618,6 +1639,10 @@ tn5250_display_do_key (Tn5250Display * This, int key)
 
     case K_BACKSPACE:
       tn5250_display_kf_backspace (This);
+      if (This->destructive_backspace)
+	{
+	  tn5250_display_kf_delete (This);
+	}
       break;
 
     case K_LEFT:
@@ -1980,10 +2005,11 @@ tn5250_display_kf_field_minus (Tn5250Display * This)
       ((tn5250_field_type (field) != TN5250_FIELD_SIGNED_NUM) &&
        (tn5250_field_type (field) != TN5250_FIELD_NUM_ONLY)))
     {
-      if (This->field_minus_in_char) {
-         tn5250_display_kf_field_exit(This);
-         return;
-      }
+      if (This->field_minus_in_char)
+	{
+	  tn5250_display_kf_field_exit (This);
+	  return;
+	}
       This->keystate = TN5250_KEYSTATE_PREHELP;
       This->keySRC = TN5250_KBDSRC_FLDM_DISALLOWED;
       tn5250_display_inhibit (This);
@@ -2756,9 +2782,10 @@ tn5250_display_kf_nextfld (Tn5250Display * This)
 
       /* If found a blank previously and a non-blank now, exit */
       if ((foundblank)
-	  && (This->display_buffers->
-	      data[This->display_buffers->cy * This->display_buffers->w +
-		   This->display_buffers->cx] > 0x40))
+	  && (This->
+	      display_buffers->data[This->display_buffers->cy *
+				    This->display_buffers->w +
+				    This->display_buffers->cx] > 0x40))
 	{
 	  break;
 	}
@@ -3003,8 +3030,9 @@ tn5250_display_erase_region (Tn5250Display * This, unsigned int startrow,
     {
       for (j = startcol - 1; j < endcol; j++)
 	{
-	  This->display_buffers->
-	    data[((startrow - 1) * This->display_buffers->w) + j] =
+	  This->
+	    display_buffers->data[((startrow -
+				    1) * This->display_buffers->w) + j] =
 	    tn5250_char_map_to_remote (This->map, ' ');
 	}
     }
@@ -3306,9 +3334,10 @@ tn5250_display_wordwrap_addch (Tn5250Display * This, unsigned char c)
   /* Use our own version of tn5250_dbuffer_addch().  We can't use the real
    * version because we don't want to advance the cursor position.
    */
-  This->display_buffers->
-    data[(This->display_buffers->cy * This->display_buffers->w) +
-	 This->display_buffers->cx] = c;
+  This->
+    display_buffers->data[(This->display_buffers->cy *
+			   This->display_buffers->w) +
+			  This->display_buffers->cx] = c;
 
   /* First allocate enough space to do the copying.  This will be sum of
    * the lengths of the word wrap fields in this group starting from the
@@ -3502,10 +3531,8 @@ tn5250_display_wordwrap (Tn5250Display * This, unsigned char *text,
 		  for (j = 0; j < strlen (line); j++)
 		    {
 		      tn5250_dbuffer_addch (This->display_buffers,
-					    tn5250_char_map_to_remote (This->
-								       map,
-								       line
-								       [j]));
+					    tn5250_char_map_to_remote
+					    (This->map, line[j]));
 		    }
 		  for (; j < tn5250_field_length (iter); j++)
 		    {
@@ -3647,97 +3674,104 @@ tn5250_display_wordwrap (Tn5250Display * This, unsigned char *text,
  *    Check the display buffer to see if it is a command sent via
  *    the STRPCCMD command.
  *****/
-int display_check_pccmd(Tn5250Display *This) {
+int
+display_check_pccmd (Tn5250Display * This)
+{
 
-   int b,c;
-   int header[5];
-   int wait = 0;
-   char cmdstr[124];
+  int b, c;
+  int header[5];
+  int wait = 0;
+  char cmdstr[124];
 
-   if (This->allow_strpccmd == 0) 
-     return 0;
+  if (This->allow_strpccmd == 0)
+    return 0;
 
-   /* A command string will have an attribute of 0x27 (nondisplay) in
-      col 0, row 0, and the letters 'PCO ' starting in col 3 of row 0. */
+  /* A command string will have an attribute of 0x27 (nondisplay) in
+     col 0, row 0, and the letters 'PCO ' starting in col 3 of row 0. */
 
-   if ( tn5250_display_char_at(This, 0, 0) != 0x27    /* non display */
-     || tn5250_display_char_at(This, 0, 2) != 0xfc    /* ?? always 0xfc */
-     || tn5250_display_char_at(This, 0, 3) != 0xd7    /* P */
-     || tn5250_display_char_at(This, 0, 4) != 0xc3    /* C */
-     || tn5250_display_char_at(This, 0, 5) != 0xd6    /* O */
-     || tn5250_display_char_at(This, 0, 6) != 0x40) { /* space */
-        return 0;
-   }
-
-
-   /* Col 1, Row 0 will contain 0x80 if there's a command to be run, or
-            0x00 if the command has already been run.  This might be the
-            length of the command (5 bytes header, 123 bytes command)? */
-
-   c = tn5250_display_char_at(This, 0, 1);
-   if (c == 0x00) {
-        tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ENTER);
-        return 1;
-   }
-   else if (c != 0x80) {
-        return 0;
-   }
+  if (tn5250_display_char_at (This, 0, 0) != 0x27	/* non display */
+      || tn5250_display_char_at (This, 0, 2) != 0xfc	/* ?? always 0xfc */
+      || tn5250_display_char_at (This, 0, 3) != 0xd7	/* P */
+      || tn5250_display_char_at (This, 0, 4) != 0xc3	/* C */
+      || tn5250_display_char_at (This, 0, 5) != 0xd6	/* O */
+      || tn5250_display_char_at (This, 0, 6) != 0x40)
+    {				/* space */
+      return 0;
+    }
 
 
-   /* The next 5 bytes are header bytes. If anyone has some docs on what
-      they do, please let me know!!  -SK */
+  /* Col 1, Row 0 will contain 0x80 if there's a command to be run, or
+     0x00 if the command has already been run.  This might be the
+     length of the command (5 bytes header, 123 bytes command)? */
 
-   header[0] = This->display_buffers->data[7];
-   header[1] = This->display_buffers->data[8];
-   header[2] = This->display_buffers->data[9];
-   header[3] = This->display_buffers->data[10];
-   header[4] = This->display_buffers->data[11];
-
-   TN5250_LOG(("PCO Header Bytes: %x %x %x %x %x\n",
-         header[0], header[1], header[2], header[3], header[4]));
-
-
-   /* The last bit of the 5th header byte will be 0 if the emulator should
-      wait for the command, or 1 otherwise. */
-
-   if (header[4] & 0x01) 
-        wait = 0;
-   else
-        wait = 1;
+  c = tn5250_display_char_at (This, 0, 1);
+  if (c == 0x00)
+    {
+      tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ENTER);
+      return 1;
+    }
+  else if (c != 0x80)
+    {
+      return 0;
+    }
 
 
-   /* The header bytes are followed by a 123 character fixed-length command
-      string. */
+  /* The next 5 bytes are header bytes. If anyone has some docs on what
+     they do, please let me know!!  -SK */
 
-   memcpy(cmdstr, This->display_buffers->data + 12, 123);
-   cmdstr[123] = '\0';
+  header[0] = This->display_buffers->data[7];
+  header[1] = This->display_buffers->data[8];
+  header[2] = This->display_buffers->data[9];
+  header[3] = This->display_buffers->data[10];
+  header[4] = This->display_buffers->data[11];
+
+  TN5250_LOG (("PCO Header Bytes: %x %x %x %x %x\n",
+	       header[0], header[1], header[2], header[3], header[4]));
 
 
-   /* Strip any trailing blanks from the command string */
+  /* The last bit of the 5th header byte will be 0 if the emulator should
+     wait for the command, or 1 otherwise. */
 
-   for (b=0; b<123; b++) {
-       cmdstr[b] = tn5250_char_map_to_local(
-                      tn5250_display_char_map(This), cmdstr[b]);
-   }
+  if (header[4] & 0x01)
+    wait = 0;
+  else
+    wait = 1;
 
-   b=122;
-   while (b && cmdstr[b] == ' ') {
+
+  /* The header bytes are followed by a 123 character fixed-length command
+     string. */
+
+  memcpy (cmdstr, This->display_buffers->data + 12, 123);
+  cmdstr[123] = '\0';
+
+
+  /* Strip any trailing blanks from the command string */
+
+  for (b = 0; b < 123; b++)
+    {
+      cmdstr[b] =
+	tn5250_char_map_to_local (tn5250_display_char_map (This), cmdstr[b]);
+    }
+
+  b = 122;
+  while (b && cmdstr[b] == ' ')
+    {
       cmdstr[b] = '\0';
       b--;
-   }
+    }
 
-   TN5250_LOG(("PCO Command: wait=%d, String: \"%s\"\n", wait,cmdstr));
-
-
-   /* Run the command, then mark the display buffer with 0x00 so we know 
-      that it has been run */
-
-   tn5250_run_cmd(cmdstr, wait);
-   This->display_buffers->data[1] = 0x00;
+  TN5250_LOG (("PCO Command: wait=%d, String: \"%s\"\n", wait, cmdstr));
 
 
-   /* Send back the ENTER key to tell the host that the command was run */
+  /* Run the command, then mark the display buffer with 0x00 so we know 
+     that it has been run */
 
-   tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ENTER);
-   return 1;
+  tn5250_run_cmd (cmdstr, wait);
+  This->display_buffers->data[1] = 0x00;
+
+
+  /* Send back the ENTER key to tell the host that the command was run */
+
+  tn5250_display_do_aidkey (This, TN5250_SESSION_AID_ENTER);
+  return 1;
 }

@@ -1,3 +1,6 @@
+2010-01-27 James Rich <james@eaerich.com>
+- Added support for destructive backspace.
+
 2009-21-21 Scott Klement <tn5250@scottklement.com>
 - in Win32, removed TN5250_ASSERT() when BitBit fails. Apparently,
     BitBlt() fails whenever data is received and the Windows screen
