@@ -62,6 +62,20 @@ tn5250_scrollbar_destroy (Tn5250Scrollbar * This)
 
 
 int
+tn5250_scrollbar_start_row (Tn5250Scrollbar * This)
+{
+  return (This->row);
+}
+
+
+int
+tn5250_scrollbar_start_column (Tn5250Scrollbar * This)
+{
+  return (This->column);
+}
+
+
+int
 tn5250_scrollbar_direction (Tn5250Scrollbar * This)
 {
   return (This->direction);
@@ -69,7 +83,7 @@ tn5250_scrollbar_direction (Tn5250Scrollbar * This)
 
 
 int
-tn5250_scrollbar_start_rowscols (Tn5250Scrollbar * This)
+tn5250_scrollbar_rowscols (Tn5250Scrollbar * This)
 {
   return (This->rowscols);
 }

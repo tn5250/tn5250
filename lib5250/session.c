@@ -1,5 +1,7 @@
 /* TN5250 - An implementation of the 5250 telnet protocol.
  * Copyright (C) 1997-2008 Michael Madore
+ *
+ * Portions Copyright (C) 2010-2015 James Rich
  * 
  * This file is part of TN5250.
  *
@@ -33,7 +35,8 @@ static void tn5250_session_send_field (Tn5250Session * This,
 				       Tn5250Buffer * buf,
 				       Tn5250Field * field);
 static void tn5250_session_process_stream (Tn5250Session * This);
-static void tn5250_session_write_error_code (Tn5250Session * This, int readop);
+static void tn5250_session_write_error_code (Tn5250Session * This,
+					     int readop);
 static void tn5250_session_write_to_display (Tn5250Session * This);
 static void tn5250_session_clear_unit (Tn5250Session * This);
 static void tn5250_session_clear_unit_alternate (Tn5250Session * This);
@@ -749,30 +752,30 @@ tn5250_session_process_stream (Tn5250Session * This)
 	  tn5250_session_read_screen_immediate (This);
 	  break;
 	case CMD_READ_SCREEN_EXTENDED:
-	  /*tn5250_session_read_screen_extended (This);*/
+	  /*tn5250_session_read_screen_extended (This); */
 	  TN5250_LOG (("ReadScreenExtended (ignored)\n"));
 	  break;
 	case CMD_READ_SCREEN_PRINT:
-	  /*tn5250_session_read_screen_print (This);*/
+	  /*tn5250_session_read_screen_print (This); */
 	  TN5250_LOG (("ReadScreenPrint (ignored)\n"));
 	  break;
 	case CMD_READ_SCREEN_PRINT_EXTENDED:
-	  /*tn5250_session_read_screen_print_extended (This);*/
+	  /*tn5250_session_read_screen_print_extended (This); */
 	  TN5250_LOG (("ReadScreenPrintExtended (ignored)\n"));
 	  break;
 	case CMD_READ_SCREEN_PRINT_GRID:
-	  /*tn5250_session_read_screen_print_grid (This);*/
+	  /*tn5250_session_read_screen_print_grid (This); */
 	  TN5250_LOG (("ReadScreenPrintGrid (ignored)\n"));
 	  break;
 	case CMD_READ_SCREEN_PRINT_EXT_GRID:
-	  /*tn5250_session_read_screen_print_extended_grid (This);*/
+	  /*tn5250_session_read_screen_print_extended_grid (This); */
 	  TN5250_LOG (("ReadScreenPrintExtendedGrid (ignored)\n"));
 	  break;
 	case CMD_READ_IMMEDIATE:
 	  tn5250_session_read_immediate (This);
 	  break;
 	case CMD_READ_IMMEDIATE_ALT:
-	  /*tn5250_session_read_immediate_alt (This);*/
+	  /*tn5250_session_read_immediate_alt (This); */
 	  TN5250_LOG (("ReadImmediateAlt (ignored)\n"));
 	  break;
 	case CMD_SAVE_SCREEN:
@@ -1233,8 +1236,8 @@ tn5250_session_clear_unit (Tn5250Session * This)
 	}
 
       This->display->display_buffers->window_list =
-	tn5250_window_list_destroy (This->display->display_buffers->
-				    window_list);
+	tn5250_window_list_destroy (This->display->
+				    display_buffers->window_list);
       This->display->display_buffers->window_count = 0;
     }
 
@@ -1255,8 +1258,8 @@ tn5250_session_clear_unit (Tn5250Session * This)
 	}
 
       This->display->display_buffers->menubar_list =
-	tn5250_menubar_list_destroy (This->display->display_buffers->
-				     menubar_list);
+	tn5250_menubar_list_destroy (This->display->
+				     display_buffers->menubar_list);
       This->display->display_buffers->menubar_count = 0;
     }
 
@@ -1265,8 +1268,8 @@ tn5250_session_clear_unit (Tn5250Session * This)
       tn5250_terminal_destroy_scrollbar (This->display->terminal,
 					 This->display);
       This->display->display_buffers->scrollbar_list =
-	tn5250_scrollbar_list_destroy (This->display->display_buffers->
-				       scrollbar_list);
+	tn5250_scrollbar_list_destroy (This->display->
+				       display_buffers->scrollbar_list);
       This->display->display_buffers->scrollbar_count = 0;
     }
 
@@ -1323,8 +1326,8 @@ tn5250_session_clear_unit_alternate (Tn5250Session * This)
 	}
 
       This->display->display_buffers->window_list =
-	tn5250_window_list_destroy (This->display->display_buffers->
-				    window_list);
+	tn5250_window_list_destroy (This->display->
+				    display_buffers->window_list);
       This->display->display_buffers->window_count = 0;
     }
 
@@ -1333,8 +1336,8 @@ tn5250_session_clear_unit_alternate (Tn5250Session * This)
       tn5250_terminal_destroy_scrollbar (This->display->terminal,
 					 This->display);
       This->display->display_buffers->scrollbar_list =
-	tn5250_scrollbar_list_destroy (This->display->display_buffers->
-				       scrollbar_list);
+	tn5250_scrollbar_list_destroy (This->display->
+				       display_buffers->scrollbar_list);
       This->display->display_buffers->scrollbar_count = 0;
     }
 
@@ -2927,11 +2930,10 @@ tn5250_session_define_selection_field (Tn5250Session * This, int length)
   dbuffer = tn5250_display_dbuffer (This->display);
 
   if ((menubar = tn5250_menubar_hit_test (dbuffer->menubar_list,
-					  tn5250_display_cursor_x (This->
-								   display),
-					  tn5250_display_cursor_y (This->
-								   display)))
-      == NULL)
+					  tn5250_display_cursor_x
+					  (This->display),
+					  tn5250_display_cursor_y
+					  (This->display))) == NULL)
     {
       menubar = tn5250_menubar_new ();
       createnewmenubar = 1;
@@ -3491,11 +3493,11 @@ tn5250_session_remove_gui_selection_field (Tn5250Session * This, int length)
     {
       tn5250_terminal_destroy_menubar (This->display->terminal,
 				       This->display,
-				       This->display->display_buffers->
-				       menubar_list);
+				       This->display->
+				       display_buffers->menubar_list);
       This->display->display_buffers->menubar_list =
-	tn5250_menubar_list_destroy (This->display->display_buffers->
-				     menubar_list);
+	tn5250_menubar_list_destroy (This->display->
+				     display_buffers->menubar_list);
       This->display->display_buffers->menubar_count = 0;
     }
 
@@ -3543,8 +3545,8 @@ tn5250_session_create_window_structured_field (Tn5250Session * This,
   if (flagbyte1 & 0x40)
     {
       /*
-      TN5250_LOG (("Pull down window - data ignored (will use selection field data)\n"));
-      */
+         TN5250_LOG (("Pull down window - data ignored (will use selection field data)\n"));
+       */
       TN5250_LOG (("Pull down window\n"));
       pulldown = 1;
     }
@@ -3557,29 +3559,29 @@ tn5250_session_create_window_structured_field (Tn5250Session * This,
   TN5250_LOG (("width = 0x%02X (%d)\n", width, (int) width));
 
   /*
-  if (!pulldown)
-    {
-  */
-      /*
-         if ((window =
-         tn5250_window_match_test (This->display->display_buffers->
-         window_list,
-         tn5250_display_cursor_x (This->display) +
-         1,
-         tn5250_display_cursor_y (This->display) +
-         1, width, depth)) != NULL)
-         {
-         }
-         else
-         {
-       */
-      window = tn5250_window_new ();
-      /*
-         }
-       */
-      /*
-    }
-      */
+     if (!pulldown)
+     {
+   */
+  /*
+     if ((window =
+     tn5250_window_match_test (This->display->display_buffers->
+     window_list,
+     tn5250_display_cursor_x (This->display) +
+     1,
+     tn5250_display_cursor_y (This->display) +
+     1, width, depth)) != NULL)
+     {
+     }
+     else
+     {
+   */
+  window = tn5250_window_new ();
+  /*
+     }
+   */
+  /*
+     }
+   */
 
   if ((length - 5) > 0)
     {
@@ -3735,34 +3737,33 @@ tn5250_session_create_window_structured_field (Tn5250Session * This,
     }
 
   /*
-  if (!pulldown)
-    {
-  */
-      window->width = (int) width;
-      window->height = (int) depth;
-      window->column = tn5250_display_cursor_x (This->display) + 1;
-      window->row = tn5250_display_cursor_y (This->display) + 1;
-      TN5250_LOG (("window position: %d, %d\n", window->column, window->row));
-      tn5250_dbuffer_add_window (tn5250_display_dbuffer (This->display),
+     if (!pulldown)
+     {
+   */
+  window->width = (int) width;
+  window->height = (int) depth;
+  window->column = tn5250_display_cursor_x (This->display) + 1;
+  window->row = tn5250_display_cursor_y (This->display) + 1;
+  TN5250_LOG (("window position: %d, %d\n", window->column, window->row));
+  tn5250_dbuffer_add_window (tn5250_display_dbuffer (This->display), window);
+  tn5250_terminal_create_window (This->display->terminal, This->display,
 				 window);
-      tn5250_terminal_create_window (This->display->terminal, This->display,
-				     window);
 
-      /* Forcibly erase the region of the screen that the window covers.  I
-       * thought that the iSeries would always send an Erase To Address command
-       * after each Create Window command, but that isn't the case.  The weird
-       * part is that sometimes we do get the erase command, and sometimes we
-       * don't.  I have no idea why.
-       */
-      tn5250_display_erase_region (This->display, window->row + 1,
-				   window->column + 2,
-				   window->row + window->height + 1,
-				   window->column + window->column + 2,
-				   window->column + 2,
-				   window->column + window->width + 2);
-      /*
-    }
-      */
+  /* Forcibly erase the region of the screen that the window covers.  I
+   * thought that the iSeries would always send an Erase To Address command
+   * after each Create Window command, but that isn't the case.  The weird
+   * part is that sometimes we do get the erase command, and sometimes we
+   * don't.  I have no idea why.
+   */
+  tn5250_display_erase_region (This->display, window->row + 1,
+			       window->column + 2,
+			       window->row + window->height + 1,
+			       window->column + window->column + 2,
+			       window->column + 2,
+			       window->column + window->width + 2);
+  /*
+     }
+   */
   return;
 }
 
@@ -3784,13 +3785,21 @@ tn5250_session_define_scrollbar (Tn5250Session * This, int length)
   Tn5250Scrollbar *scrollbar;
   unsigned char flagbyte1;
   unsigned char reserved;
-  unsigned char totalrowscols;
-  unsigned char sliderpos;
+  unsigned char totalrowscols1;
+  unsigned char totalrowscols2;
+  unsigned char totalrowscols3;
+  unsigned char totalrowscols4;
+  unsigned char sliderpos1;
+  unsigned char sliderpos2;
+  unsigned char sliderpos3;
+  unsigned char sliderpos4;
   unsigned char size;
 
   TN5250_LOG (("Entering tn5250_session_define_scrollbar()\n"));
   scrollbar = tn5250_scrollbar_new ();
 
+  scrollbar->row = This->display->display_buffers->cy + 1;
+  scrollbar->column = This->display->display_buffers->cx + 1;
   flagbyte1 = tn5250_record_get_byte (This->record);
   length--;
 
@@ -3807,35 +3816,42 @@ tn5250_session_define_scrollbar (Tn5250Session * This, int length)
 
   reserved = tn5250_record_get_byte (This->record);
   length--;
-  totalrowscols = tn5250_record_get_byte (This->record);
+  totalrowscols1 = tn5250_record_get_byte (This->record);
   length--;
-  scrollbar->rowscols = (int) totalrowscols;
+  totalrowscols2 = tn5250_record_get_byte (This->record);
+  length--;
+  totalrowscols3 = tn5250_record_get_byte (This->record);
+  length--;
+  totalrowscols4 = tn5250_record_get_byte (This->record);
+  length--;
+  scrollbar->rowscols =
+    (1000 * (int) totalrowscols1) + (100 * (int) totalrowscols2) +
+    (10 * (int) totalrowscols3) + (int) totalrowscols4;
   TN5250_LOG (("Total rows/columns that can be scrolled: %d\n",
-	       (int) totalrowscols));
-  sliderpos = tn5250_record_get_byte (This->record);
+	       scrollbar->rowscols));
+  sliderpos1 = tn5250_record_get_byte (This->record);
   length--;
-  scrollbar->sliderpos = (int) sliderpos;
-  TN5250_LOG (("Slider position: %d\n", (int) sliderpos));
-
-  if (length > 0)
-    {
-      size = tn5250_record_get_byte (This->record);
-      length--;
-      scrollbar->size = (int) size;
-      TN5250_LOG (("Scrollbar size: %d\n", (int) size));
-    }
+  sliderpos2 = tn5250_record_get_byte (This->record);
+  length--;
+  sliderpos3 = tn5250_record_get_byte (This->record);
+  length--;
+  sliderpos4 = tn5250_record_get_byte (This->record);
+  length--;
+  scrollbar->sliderpos =
+    (1000 * (int) sliderpos1) + (100 * (int) sliderpos2) +
+    (10 * (int) sliderpos3) + (int) sliderpos4;
+  TN5250_LOG (("Slider position: %d\n", scrollbar->sliderpos));
+  size = tn5250_record_get_byte (This->record);
+  length--;
+  scrollbar->size = (int) size;
+  TN5250_LOG (("Scrollbar size: %d\n", scrollbar->size));
 
   while (length > 0)
     {
       reserved = tn5250_record_get_byte (This->record);
       length--;
     }
-  /*
-     scrollbar5250.direction = This->display->terminal->scrollbar.direction;
-     scrollbar5250.rowscols = This->display->terminal->scrollbar.rowscols;
-     scrollbar5250.sliderpos = This->display->terminal->scrollbar.sliderpos;
-     scrollbar5250.size = This->display->terminal->scrollbar.size;
-   */
+
   tn5250_dbuffer_add_scrollbar (tn5250_display_dbuffer (This->display),
 				scrollbar);
   tn5250_terminal_create_scrollbar (This->display->terminal, This->display,
@@ -3883,8 +3899,8 @@ tn5250_session_remove_gui_window_structured_field (Tn5250Session * This,
       if (This->display->display_buffers->window_count == 0)
 	{
 	  This->display->display_buffers->window_list =
-	    tn5250_window_list_destroy (This->display->display_buffers->
-					window_list);
+	    tn5250_window_list_destroy (This->display->
+					display_buffers->window_list);
 	}
     }
 
@@ -3893,8 +3909,8 @@ tn5250_session_remove_gui_window_structured_field (Tn5250Session * This,
       tn5250_terminal_destroy_scrollbar (This->display->terminal,
 					 This->display);
       This->display->display_buffers->scrollbar_list =
-	tn5250_scrollbar_list_destroy (This->display->display_buffers->
-				       scrollbar_list);
+	tn5250_scrollbar_list_destroy (This->display->
+				       display_buffers->scrollbar_list);
       This->display->display_buffers->scrollbar_count = 0;
     }
 
@@ -3945,8 +3961,8 @@ tn5250_session_remove_all_gui_constructs_structured_field (Tn5250Session *
 	}
 
       This->display->display_buffers->window_list =
-	tn5250_window_list_destroy (This->display->display_buffers->
-				    window_list);
+	tn5250_window_list_destroy (This->display->
+				    display_buffers->window_list);
       This->display->display_buffers->window_count = 0;
     }
 
@@ -3955,8 +3971,8 @@ tn5250_session_remove_all_gui_constructs_structured_field (Tn5250Session *
       tn5250_terminal_destroy_scrollbar (This->display->terminal,
 					 This->display);
       This->display->display_buffers->scrollbar_list =
-	tn5250_scrollbar_list_destroy (This->display->display_buffers->
-				       scrollbar_list);
+	tn5250_scrollbar_list_destroy (This->display->
+				       display_buffers->scrollbar_list);
       This->display->display_buffers->scrollbar_count = 0;
     }
 

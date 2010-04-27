@@ -45,6 +45,8 @@ extern "C"
     struct _Tn5250Scrollbar *next;
     struct _Tn5250Scrollbar *prev;
     unsigned int id;		/* Numeric ID of this scrollbar */
+    unsigned int row;		/* row scrollbar begins in */
+    unsigned int column;	/* column scrollbar begins in */
     unsigned int direction;	/* 1=horizontal, 0=vertical */
     unsigned int rowscols;	/* number of scrollable rows/columns */
     unsigned int sliderpos;	/* position of slider */
@@ -59,6 +61,8 @@ extern "C"
   extern Tn5250Scrollbar *tn5250_scrollbar_new ();
   extern Tn5250Scrollbar *tn5250_scrollbar_copy (Tn5250Scrollbar * This);
   extern void tn5250_scrollbar_destroy (Tn5250Scrollbar * This);
+  extern int tn5250_scrollbar_row (Tn5250Scrollbar * This);
+  extern int tn5250_scrollbar_column (Tn5250Scrollbar * This);
   extern int tn5250_scrollbar_direction (Tn5250Scrollbar * This);
   extern int tn5250_scrollbar_rowscols (Tn5250Scrollbar * This);
   extern int tn5250_scrollbar_sliderpos (Tn5250Scrollbar * This);

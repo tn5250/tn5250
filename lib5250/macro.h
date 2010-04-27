@@ -1,5 +1,7 @@
 /* TN5250 - An implementation of the 5250 telnet protocol.
  * Copyright (C) 1997-2008 Michael Madore
+ *
+ * Portions Copyright (C) 2010-2015 James Rich
  * 
  * This file is part of TN5250.
  *
@@ -28,6 +30,25 @@ extern "C" {
 
 #define	MACRO_BUFSIZE	2000		/* 9999 Max */
 
+/****s* lib5250/Tn5250MacroData
+ * NAME
+ *    Tn5250MacroData
+ * SYNOPSIS
+ *
+ * DESCRIPTION
+ *    For each macro defined, this contains the macro contents, a name,
+ *    and an optional description.
+ *
+ * SOURCE
+ */
+struct _Tn5250MacroData {
+  int *BuffM;
+  unsigned char *name;
+  unsigned char *description;
+};
+
+typedef struct _Tn5250MacroData Tn5250MacroData;
+
 /****s* lib5250/Tn5250Macro
  * NAME
  *    Tn5250Macro
@@ -41,7 +62,7 @@ struct _Tn5250Macro {
    char	RState ;		/* Macro record state */
    char	EState ;		/* Macro execution state */
    int	FctnKey ;
-   int	*BuffM[24] ;
+   Tn5250MacroData data[24];
    int	TleBuff ;
    char	*fname ;		/* Macro file name */
 };
