@@ -1,3 +1,6 @@
+2010-04-28 James Rich <james@eaerich.com>
+- Save the macro name when saving the macro.
+
 2010-04-26 James Rich <james@eaerich.com>
 - Improved scrollbar support.
 

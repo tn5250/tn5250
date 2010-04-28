@@ -105,6 +105,7 @@ static const MacroKey MKey[] = {
 char PState[12];		/* Printable state */
 
 int macro_isnewmacro (char *Buff, unsigned char **name);
+void macro_write (int Num, unsigned char *name, int *Buff, FILE * MF);
 
 /*
  * Clean trailing CRs. Returns line size
@@ -283,8 +284,8 @@ macro_loadfile (Tn5250Macro * Macro)
 		  if (macroname != NULL)
 		    {
 		      Macro->data[CurMacro - 1].name =
-			(unsigned char *) realloc (Macro->data[CurMacro - 1].
-						   name,
+			(unsigned char *) realloc (Macro->
+						   data[CurMacro - 1].name,
 						   sizeof (unsigned char) *
 						   (strlen (macroname) + 1));
 		      strcpy (Macro->data[CurMacro - 1].name, macroname);
@@ -454,11 +455,11 @@ tn5250_macro_init ()
  * Write one macro to file
  */
 void
-macro_write (int Num, int *Buff, FILE * MF)
+macro_write (int Num, unsigned char *name, int *Buff, FILE * MF)
 {
   int i, j, Sz;
 
-  fprintf (MF, "[M%02i]\n", Num);
+  fprintf (MF, "[M%02i]%s\n", Num, name);
 
   i = Sz = 0;
   while (Buff[i] != 0)
@@ -509,7 +510,8 @@ macro_savefile (Tn5250Macro * Macro)
 	  for (i = 0; i < 24; i++)
 	    if (Macro->data[i].BuffM != NULL)
 	      {
-		macro_write (i + 1, Macro->data[i].BuffM, MFile);
+		macro_write (i + 1, Macro->data[i].name, Macro->data[i].BuffM,
+			     MFile);
 	      }
 	  fclose (MFile);
 	}
@@ -543,6 +545,8 @@ tn5250_macro_exit (Tn5250Macro * This)
       for (i = 0; i < 24; i++)
 	{
 	  free (This->data[i].BuffM);
+	  free (This->data[i].name);
+	  free (This->data[i].description);
 	}
       free (This);
     }
