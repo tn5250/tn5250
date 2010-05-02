@@ -3782,6 +3782,7 @@ tn5250_session_create_window_structured_field (Tn5250Session * This,
 static void
 tn5250_session_define_scrollbar (Tn5250Session * This, int length)
 {
+  Tn5250DBuffer *dbuffer;
   Tn5250Scrollbar *scrollbar;
   unsigned char flagbyte1;
   unsigned char reserved;
@@ -3794,12 +3795,26 @@ tn5250_session_define_scrollbar (Tn5250Session * This, int length)
   unsigned char sliderpos3;
   unsigned char sliderpos4;
   unsigned char size;
+  short createnewscrollbar = 0;
 
   TN5250_LOG (("Entering tn5250_session_define_scrollbar()\n"));
-  scrollbar = tn5250_scrollbar_new ();
 
-  scrollbar->row = This->display->display_buffers->cy + 1;
-  scrollbar->column = This->display->display_buffers->cx + 1;
+
+  /* Menus can't overlay each other.  If this menu is in the same position as
+   * another, redefine the menu instead of creating a new one.
+   */
+  dbuffer = tn5250_display_dbuffer (This->display);
+
+  if ((scrollbar = tn5250_scrollbar_hit_test (dbuffer->scrollbar_list,
+					      tn5250_display_cursor_x
+					      (This->display) + 1,
+					      tn5250_display_cursor_y
+					      (This->display) + 1)) == NULL)
+    {
+      scrollbar = tn5250_scrollbar_new ();
+      createnewscrollbar = 1;
+    }
+
   flagbyte1 = tn5250_record_get_byte (This->record);
   length--;
 
@@ -3852,10 +3867,16 @@ tn5250_session_define_scrollbar (Tn5250Session * This, int length)
       length--;
     }
 
-  tn5250_dbuffer_add_scrollbar (tn5250_display_dbuffer (This->display),
-				scrollbar);
-  tn5250_terminal_create_scrollbar (This->display->terminal, This->display,
+  if (createnewscrollbar)
+    {
+      scrollbar->column = tn5250_display_cursor_x (This->display) + 1;
+      scrollbar->row = tn5250_display_cursor_y (This->display) + 1;
+      tn5250_dbuffer_add_scrollbar (tn5250_display_dbuffer (This->display),
 				    scrollbar);
+      tn5250_terminal_create_scrollbar (This->display->terminal, This->display,
+					scrollbar);
+    }
+
   return;
 }
 

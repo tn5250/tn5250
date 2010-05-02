@@ -1,5 +1,5 @@
-2010-04-28 James Rich <james@eaerich.com>
-- Save the macro name when saving the macro.
+2010-05-01 James Rich <james@eaerich.com>
+- Only create scrollbar if it doesn't already exist in the same position.
 
 2010-04-26 James Rich <james@eaerich.com>
 - Improved scrollbar support.

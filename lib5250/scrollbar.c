@@ -204,3 +204,24 @@ tn5250_scrollbar_list_copy (Tn5250Scrollbar * This)
     }
   return new_list;
 }
+
+
+Tn5250Scrollbar *
+tn5250_scrollbar_hit_test (Tn5250Scrollbar * list, int x, int y)
+{
+  Tn5250Scrollbar *iter;
+
+  if ((iter = list) != NULL)
+    {
+      do
+	{
+	  if ((iter->column == x) && (iter->row == y))
+	    {
+	      return iter;
+	    }
+	  iter = iter->next;
+	}
+      while (iter != list);
+    }
+  return NULL;
+}

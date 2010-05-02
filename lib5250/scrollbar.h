@@ -80,7 +80,8 @@ extern "C"
   extern Tn5250Scrollbar *tn5250_scrollbar_list_find_by_id (Tn5250Scrollbar *
 							    list, int id);
   extern Tn5250Scrollbar *tn5250_scrollbar_list_copy (Tn5250Scrollbar * list);
-
+  extern Tn5250Scrollbar *tn5250_scrollbar_hit_test (Tn5250Scrollbar * list,
+						     int x, int y);
 #ifdef __cplusplus
 }
 
