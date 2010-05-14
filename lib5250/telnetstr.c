@@ -21,6 +21,12 @@
  */
 #include "tn5250-private.h"
 
+#ifdef USES_NACCEPT
+#ifdef accept
+#undef accept
+#endif
+#endif
+
 static int telnet_stream_get_next(Tn5250Stream * This, unsigned char *buf, int size);
 static void telnet_stream_do_verb(Tn5250Stream * This, unsigned char verb, unsigned char what);
 static int telnet_stream_host_verb(Tn5250Stream * This, unsigned char verb,

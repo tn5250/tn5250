@@ -24,6 +24,12 @@
 
 #include "tn5250-private.h"
 
+#ifdef USES_NACCEPT
+#ifdef accept
+#undef accept
+#endif
+#endif
+
 #ifdef HAVE_LIBSSL
 
 #include <openssl/ssl.h>

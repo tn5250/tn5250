@@ -21,6 +21,12 @@
  */
 #include "tn5250-private.h"
 
+#ifdef USES_NACCEPT
+#ifdef accept
+#undef accept
+#endif
+#endif
+
 /* External declarations of initializers for each type of stream. */
 extern int tn5250_telnet_stream_init (Tn5250Stream *This);
 extern int tn3270_telnet_stream_init (Tn5250Stream *This);

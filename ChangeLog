@@ -1,3 +1,6 @@
+2010-05-14 James Rich <james@eaerich.com>
+- Handle AIX redefinition of accept to naccept.
+
 2010-05-01 James Rich <james@eaerich.com>
 - Only create scrollbar if it doesn't already exist in the same position.
 
