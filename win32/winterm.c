@@ -1,18 +1,18 @@
-/* 
+/*
  * Copyright (C) 2001-2008 Scott Klement
- * 
+ *
  * This file is part of TN5250
  *
  * TN5250 is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation; either version 2.1, or (at your option)
  * any later version.
- * 
+ *
  * TN5250 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this software; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
@@ -88,7 +88,7 @@ struct _Tn5250Win32Attribute {
 typedef struct _Tn5250Win32Attribute Tn5250Win32Attribute;
 
 
-static Tn5250Win32Attribute attribute_map[] = 
+static Tn5250Win32Attribute attribute_map[] =
 {
  { 0, A_5250_GREEN, 0 },
  { 0, A_5250_GREEN, A_REVERSE },
@@ -124,7 +124,7 @@ static Tn5250Win32Attribute attribute_map[] =
  { 0, A_5250_BLACK, A_NONDISPLAY },
  { -1, -1, -1 },
 };
- 
+
 static HFONT font_80;
 static HFONT font_132;
 static HBITMAP screenbuf;
@@ -142,9 +142,9 @@ void tn5250_win32_init_fonts (Tn5250Terminal *This,
                                  const char *myfont80, const char *myfont132);
 static void win32_terminal_font(Tn5250Terminal *This, const char *fontname,
                          int cols, int rows, int fontwidth, int fontheight);
-void win32_parse_fontspec(const char *fontspec, char *fontname, 
+void win32_parse_fontspec(const char *fontspec, char *fontname,
                           int maxlen, int *w, int *h);
-void win32_calc_default_font_size(HWND hwnd, 
+void win32_calc_default_font_size(HWND hwnd,
                           int cols, int rows, int *w, int *h);
 static int win32_terminal_width(Tn5250Terminal * This);
 static int win32_terminal_height(Tn5250Terminal * This);
@@ -163,19 +163,19 @@ void tn5250_win32_set_beep (Tn5250Terminal *This, const char *beepfile);
 void tn5250_win32_terminal_display_ruler (Tn5250Terminal *This, int f);
 static void win32_terminal_beep(Tn5250Terminal * This);
 void win32_terminal_draw_text(HDC hdc, int attr, const char *text, int len, int x, int y, int *spacing, Tn5250Win32Attribute *map, int ox, int oy);
-LRESULT CALLBACK 
+LRESULT CALLBACK
 win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 void win32_make_new_caret(Tn5250Terminal *This);
 void win32_move_caret(HDC hdc, Tn5250Terminal *This);
 void win32_hide_caret(HDC hdc, Tn5250Terminal *This);
 void win32_expand_text_selection(Tn5250Terminal *This);
 void win32_copy_text_selection(Tn5250Terminal *This, Tn5250Display *display);
-void win32_paste_text_selection(HWND hwnd, Tn5250Terminal *term, 
+void win32_paste_text_selection(HWND hwnd, Tn5250Terminal *term,
                                            Tn5250Display *display);
 PRINTDLG * win32_get_printer_info(Tn5250Terminal *This);
 void win32_destroy_printer_info(Tn5250Terminal *This);
 void win32_print_screen(Tn5250Terminal *This, Tn5250Display *display);
-static void win32_do_terminal_update(HDC hdc, Tn5250Terminal *This, 
+static void win32_do_terminal_update(HDC hdc, Tn5250Terminal *This,
                           Tn5250Display *display, Tn5250Win32Attribute *map,
                           int ox, int oy);
 void win32_move_caret_to(Tn5250Terminal *This, Tn5250Display *disp,
@@ -217,7 +217,7 @@ struct _Tn5250TerminalPrivate {
    int            caretok;
    MY_POINT	  selstr;
    MY_POINT	  selend;
-   int  *         spacing;       
+   int  *         spacing;
    Tn5250Config * config;
    BYTE           copymode;
    BYTE		  caret_style;
@@ -238,7 +238,7 @@ struct _Tn5250TerminalPrivate {
 };
 
 
-/* 
+/*
  *  This array converts windows "keystrokes" into character messages
  *  for those that aren't handled by the "TranslateMessage" function.
  *
@@ -259,35 +259,35 @@ static keystroke_to_msg keydown2msg[] =
 {
 /*  KeyState    Win32 VirtKey    5250 key   ctx ext  */
    { VK_SHIFT,   VK_TAB,          K_BACKTAB, 0, 0 },
-   { VK_SHIFT,   VK_F1,           K_F13    , 0, 0 },   
-   { VK_SHIFT,   VK_F2,           K_F14    , 0, 0 },   
-   { VK_SHIFT,   VK_F3,           K_F15    , 0, 0 },   
-   { VK_SHIFT,   VK_F4,           K_F16    , 0, 0 },   
-   { VK_SHIFT,   VK_F5,           K_F17    , 0, 0 },   
-   { VK_SHIFT,   VK_F6,           K_F18    , 0, 0 },   
-   { VK_SHIFT,   VK_F7,           K_F19    , 0, 0 },   
-   { VK_SHIFT,   VK_F8,           K_F20    , 0, 0 },   
-   { VK_SHIFT,   VK_F9,           K_F21    , 0, 0 },   
-   { VK_SHIFT,   VK_F10,          K_F22    , 0, 0 },   
-   { VK_SHIFT,   VK_F11,          K_F23    , 0, 0 },   
-   { VK_SHIFT,   VK_F12,          K_F24    , 0, 0 },   
-   { VK_SHIFT,   VK_INSERT,       K_PASTE_TEXT, 0, 1 },   
-   { VK_SHIFT,   VK_DELETE,       K_COPY_TEXT, 0, 1 },   
+   { VK_SHIFT,   VK_F1,           K_F13    , 0, 0 },
+   { VK_SHIFT,   VK_F2,           K_F14    , 0, 0 },
+   { VK_SHIFT,   VK_F3,           K_F15    , 0, 0 },
+   { VK_SHIFT,   VK_F4,           K_F16    , 0, 0 },
+   { VK_SHIFT,   VK_F5,           K_F17    , 0, 0 },
+   { VK_SHIFT,   VK_F6,           K_F18    , 0, 0 },
+   { VK_SHIFT,   VK_F7,           K_F19    , 0, 0 },
+   { VK_SHIFT,   VK_F8,           K_F20    , 0, 0 },
+   { VK_SHIFT,   VK_F9,           K_F21    , 0, 0 },
+   { VK_SHIFT,   VK_F10,          K_F22    , 0, 0 },
+   { VK_SHIFT,   VK_F11,          K_F23    , 0, 0 },
+   { VK_SHIFT,   VK_F12,          K_F24    , 0, 0 },
+   { VK_SHIFT,   VK_INSERT,       K_PASTE_TEXT, 0, 1 },
+   { VK_SHIFT,   VK_DELETE,       K_COPY_TEXT, 0, 1 },
    { VK_CONTROL, VK_LEFT,         K_PREVFLD, 0, 1 },
    { VK_CONTROL, VK_RIGHT,        K_NEXTFLD, 0, 1 },
    { VK_SHIFT,    K_ENTER,        K_NEWLINE, 0, 1 },
-   { 0,          VK_F1,           K_F1     , 0, 0 },   
-   { 0,          VK_F2,           K_F2     , 0, 0 },   
-   { 0,          VK_F3,           K_F3     , 0, 0 },   
-   { 0,          VK_F4,           K_F4     , 0, 0 },   
-   { 0,          VK_F5,           K_F5     , 0, 0 },   
-   { 0,          VK_F6,           K_F6     , 0, 0 },   
-   { 0,          VK_F7,           K_F7     , 0, 0 },   
-   { 0,          VK_F8,           K_F8     , 0, 0 },   
-   { 0,          VK_F9,           K_F9     , 0, 0 },   
-   { 0,          VK_F10,          K_F10    , 0, 0 },   
-   { 0,          VK_F11,          K_F11    , 0, 0 },   
-   { 0,          VK_F12,          K_F12    , 0, 0 },   
+   { 0,          VK_F1,           K_F1     , 0, 0 },
+   { 0,          VK_F2,           K_F2     , 0, 0 },
+   { 0,          VK_F3,           K_F3     , 0, 0 },
+   { 0,          VK_F4,           K_F4     , 0, 0 },
+   { 0,          VK_F5,           K_F5     , 0, 0 },
+   { 0,          VK_F6,           K_F6     , 0, 0 },
+   { 0,          VK_F7,           K_F7     , 0, 0 },
+   { 0,          VK_F8,           K_F8     , 0, 0 },
+   { 0,          VK_F9,           K_F9     , 0, 0 },
+   { 0,          VK_F10,          K_F10    , 0, 0 },
+   { 0,          VK_F11,          K_F11    , 0, 0 },
+   { 0,          VK_F12,          K_F12    , 0, 0 },
    { 0,          VK_PRIOR,        K_ROLLDN , 0, 1 },
    { 0,          VK_NEXT,         K_ROLLUP , 0, 1 },
    { 0,          VK_UP,	          K_UP     , 0, 1 },
@@ -376,7 +376,7 @@ static int tn5250_win32_terminal_enhanced(Tn5250Terminal * This)
  * DESCRIPTION
  *    Create a new Windows terminal object
  *****/
-Tn5250Terminal *tn5250_win32_terminal_new(HINSTANCE hInst, 
+Tn5250Terminal *tn5250_win32_terminal_new(HINSTANCE hInst,
 	 HINSTANCE hPrev, int show)
 {
    Tn5250Terminal *r = tn5250_new(Tn5250Terminal, 1);
@@ -458,7 +458,7 @@ Tn5250Terminal *tn5250_win32_terminal_new(HINSTANCE hInst,
  * SYNOPSIS
  *    win32_terminal_init (This);
  * INPUTS
- *    Tn5250Terminal *     This       - 
+ *    Tn5250Terminal *     This       -
  * DESCRIPTION
  *    DOCUMENT ME!!!
  *****/
@@ -497,10 +497,10 @@ static void win32_terminal_init(Tn5250Terminal * This)
           This->data->always_ask = 1;
 
       if (tn5250_config_get(This->data->config, "copymode")) {
-          if (!strcasecmp(tn5250_config_get(This->data->config,"copymode"), 
+          if (!strcasecmp(tn5250_config_get(This->data->config,"copymode"),
                  "text"))
              This->data->copymode = 1;
-          if (!strcasecmp(tn5250_config_get(This->data->config,"copymode"), 
+          if (!strcasecmp(tn5250_config_get(This->data->config,"copymode"),
                  "bitmap"))
              This->data->copymode = 2;
       }
@@ -511,24 +511,24 @@ static void win32_terminal_init(Tn5250Terminal * This)
                      tn5250_config_get_bool (This->data->config, "ruler"));
       }
 
-      if ( tn5250_config_get (This->data->config, "pcspeaker")) 
+      if ( tn5250_config_get (This->data->config, "pcspeaker"))
           tn5250_win32_set_beep(This, "!!PCSPEAKER!!");
-      else 
-          tn5250_win32_set_beep(This, 
+      else
+          tn5250_win32_set_beep(This,
                tn5250_config_get (This->data->config, "beepfile"));
 
       if ( tn5250_config_get (This->data->config, "unix_like_copy")) {
-            This->data->unix_like_copy = 
+            This->data->unix_like_copy =
                tn5250_config_get_bool(This->data->config, "unix_like_copy");
       }
 
       if ( tn5250_config_get (This->data->config, "click_moves_cursor")) {
-            This->data->click_moves_caret = 
+            This->data->click_moves_caret =
                tn5250_config_get_bool(This->data->config, "click_moves_cursor");
       }
 
       if ( tn5250_config_get (This->data->config, "resize_fonts")) {
-            This->data->resize_fonts = 
+            This->data->resize_fonts =
                tn5250_config_get_bool(This->data->config, "resize_fonts");
       }
 
@@ -549,10 +549,10 @@ static void win32_terminal_init(Tn5250Terminal * This)
       if ( (cs=tn5250_config_get (This->data->config, "caret_style"))) {
             if (!strcmp(cs, "line")) {
                   This->data->caret_style = CARETSTYLE_LINE;
-            } 
+            }
             else if (!strcmp(cs, "blink")) {
                   This->data->caret_style = CARETSTYLE_BLINK;
-            } 
+            }
       }
 
      /* FIXME: This opt should not exist when we have full keyboard mapping */
@@ -585,12 +585,12 @@ static void win32_terminal_init(Tn5250Terminal * This)
            colorlist[A_5250_BLACK].ref = RGB(0,0,0);
       }
 
-    
+
     /* load any colors from the config file & set the attribute map */
 
-      i = 0; 
+      i = 0;
       while (colorlist[i].name != NULL) {
-          if (tn5250_parse_color(This->data->config, colorlist[i].name, 
+          if (tn5250_parse_color(This->data->config, colorlist[i].name,
                                                            &r, &g, &b)!=-1) {
               colorlist[i].ref = RGB(r, g, b);
           }
@@ -611,15 +611,15 @@ static void win32_terminal_init(Tn5250Terminal * This)
    lb.lbColor = colorlist[A_5250_BLACK].ref;
    lb.lbHatch = 0;
    background_brush = CreateBrushIndirect(&lb);
-               
-   
+
+
    if ( tn5250_config_get (This->data->config, "host") ) {
-      if ( tn5250_config_get (This->data->config, "env.DEVNAME") ) { 
+      if ( tn5250_config_get (This->data->config, "env.DEVNAME") ) {
           len = strlen(tn5250_config_get(This->data->config,"host"));
           len += strlen(tn5250_config_get(This->data->config,"env.DEVNAME"));
           len += strlen("tn5250 - x - x");
           title = malloc(len+1);
-          sprintf(title, "tn5250 - %s - %s", 
+          sprintf(title, "tn5250 - %s - %s",
                  tn5250_config_get(This->data->config, "env.DEVNAME"),
                  tn5250_config_get(This->data->config, "host"));
       }
@@ -627,7 +627,7 @@ static void win32_terminal_init(Tn5250Terminal * This)
           len = strlen("tn5250 - x");
           len += strlen(tn5250_config_get(This->data->config, "host"));
           title = malloc(len+1);
-          sprintf(title, "tn5250 - %s", 
+          sprintf(title, "tn5250 - %s",
                  tn5250_config_get(This->data->config, "host"));
       }
    }
@@ -653,7 +653,7 @@ static void win32_terminal_init(Tn5250Terminal * This)
    RegisterClassEx (&wndclass);
 
    /* create our main window */
-   This->data->hwndMain = CreateWindow (TN5250_WNDCLASS, 
+   This->data->hwndMain = CreateWindow (TN5250_WNDCLASS,
 	    		     title,
 			     This->data->resize_fonts ? WS_OVERLAPPEDWINDOW : (WS_OVERLAPPEDWINDOW&(~WS_MAXIMIZEBOX)),
 			     CW_USEDEFAULT,
@@ -679,7 +679,7 @@ static void win32_terminal_init(Tn5250Terminal * This)
    bmphdc = CreateCompatibleDC(NULL);
    win32_terminal_clear_screenbuf(This->data->hwndMain, width, height, 0, 1);
 
-   tn5250_win32_init_fonts(This, 
+   tn5250_win32_init_fonts(This,
              tn5250_config_get(This->data->config, "font_80"),
              tn5250_config_get(This->data->config, "font_132"));
 
@@ -699,23 +699,23 @@ static int setNumLock(int state) {
       int curstate;
       memset(keys, 0, sizeof(keys));
 
-      /* ---- Get the current num-lock state ---- */ 
+      /* ---- Get the current num-lock state ---- */
 
-      if (!GetKeyboardState(keys)) 
+      if (!GetKeyboardState(keys))
          return -1;
 
       curstate = keys[VK_NUMLOCK] ? 1 : 0;
 
       /* ---- If it needs to toggle, send keypress as if the actual
-              key was pressed on the keyboard ---- */ 
+              key was pressed on the keyboard ---- */
 
       if (state != curstate) {
-         keybd_event( VK_NUMLOCK, 
-                      0x45, 
-                      KEYEVENTF_EXTENDEDKEY, 
+         keybd_event( VK_NUMLOCK,
+                      0x45,
+                      KEYEVENTF_EXTENDEDKEY,
                       0);
-         keybd_event( VK_NUMLOCK, 
-                      0x45, 
+         keybd_event( VK_NUMLOCK,
+                      0x45,
                       KEYEVENTF_EXTENDEDKEY|KEYEVENTF_KEYUP,
                       0);
       }
@@ -780,10 +780,10 @@ void tn5250_win32_terminal_display_ruler (Tn5250Terminal *This, int f)
  *****/
 void tn5250_win32_set_beep (Tn5250Terminal *This, const char *beepfile)
 {
-      if (This->data->beepfile != NULL) 
+      if (This->data->beepfile != NULL)
 	  free(This->data->beepfile);
 
-      if (beepfile==NULL) 
+      if (beepfile==NULL)
 	  This->data->beeptype = MB_OK;
       else if (!strcmp(beepfile, "!!PCSPEAKER!!"))
 	  This->data->beeptype = 0xFFFFFFFF;
@@ -816,7 +816,7 @@ void tn5250_win32_init_fonts (Tn5250Terminal *This,
    int default_h, default_w;
 
    /* Allow for screen size plus status line */
-   win32_calc_default_font_size(This->data->hwndMain, 
+   win32_calc_default_font_size(This->data->hwndMain,
                                 80, RowsFor80Col+1, &default_w, &default_h);
 
    if (myfont80 != NULL) {
@@ -871,15 +871,15 @@ void tn5250_win32_init_fonts (Tn5250Terminal *This,
  * SYNOPSIS
  *    win32_parse_fontspec ("System-5x10", fontname, sizeof(fontname), &w &h);
  * INPUTS
- *    const char  *       fontspec   - 
- *    char        *       fontname   - 
- *    int                 maxlen     - 
- *    int         *       w          - 
- *    int         *       h          - 
+ *    const char  *       fontspec   -
+ *    char        *       fontname   -
+ *    int                 maxlen     -
+ *    int         *       w          -
+ *    int         *       h          -
  * DESCRIPTION
  *    DOCUMENT ME!!!
  *****/
-void win32_parse_fontspec(const char *fontspec, char *fontname, 
+void win32_parse_fontspec(const char *fontspec, char *fontname,
                           int maxlen, int *w, int *h) {
 
     const char *p;
@@ -894,14 +894,14 @@ void win32_parse_fontspec(const char *fontspec, char *fontname,
     *width = '\0';
     *height = '\0';
     *fontname = '\0';
-    
+
     while (*p) {
         ch = *p;
         switch (state) {
            case 0:
-              if (ch == ' ') 
+              if (ch == ' ')
                   break;
-              else 
+              else
                   state++;
               /* FALLTHROUGH */
 
@@ -949,19 +949,19 @@ void win32_parse_fontspec(const char *fontspec, char *fontname,
 
 /****i* lib5250/win32_calc_default_font_size
  * NAME
- *   win32_calc_default_font_size 
+ *   win32_calc_default_font_size
  * SYNOPSIS
  *    win32_calc_default_font_size (hwnd, cols, rows, &w, &h);
  * INPUTS
  *    HWND		  hwnd       -
  *    int                 cols       -
  *    int                 rows       -
- *    int         *       w          - 
- *    int         *       h          - 
+ *    int         *       w          -
+ *    int         *       h          -
  * DESCRIPTION
  *    DOCUMENT ME!!!
  *****/
-void win32_calc_default_font_size(HWND hwnd, 
+void win32_calc_default_font_size(HWND hwnd,
            int cols, int rows, int *w, int *h) {
 
    RECT cr;
@@ -981,7 +981,7 @@ void win32_calc_default_font_size(HWND hwnd,
    *w = cli_width / cols;
 
    TN5250_LOG(("WIN32: defaulting font size to height=%d, width=%d\n",*h,*w));
-     
+
    return;
 }
 
@@ -1046,8 +1046,8 @@ static void win32_terminal_font(Tn5250Terminal *This, const char *fontname,
    ReleaseDC(This->data->hwndMain, hdc);
    This->data->font_height = tm.tmHeight + tm.tmExternalLeading;
    This->data->font_width = tm.tmAveCharWidth;
-   
-   TN5250_LOG(("WIN32: Using font size:  Loaded with height=%d, width=%d, got height=%d, width=%d\n", 
+
+   TN5250_LOG(("WIN32: Using font size:  Loaded with height=%d, width=%d, got height=%d, width=%d\n",
                fontheight, fontwidth, This->data->font_height, This->data->font_width));
 
 
@@ -1056,8 +1056,8 @@ static void win32_terminal_font(Tn5250Terminal *This, const char *fontname,
       int x;
       if (This->data->spacing != NULL)
             free(This->data->spacing);
-      This->data->spacing = malloc((cols+1)*sizeof(int)); 
-      for (x=0; x<=cols; x++) 
+      This->data->spacing = malloc((cols+1)*sizeof(int));
+      for (x=0; x<=cols; x++)
             This->data->spacing[x] = This->data->font_width;
    }
 
@@ -1087,15 +1087,15 @@ static void win32_terminal_font(Tn5250Terminal *This, const char *fontname,
                   * This->data->font_height;
    }
 
-   if (This->data->hwndMain == GetFocus()) 
+   if (This->data->hwndMain == GetFocus())
        win32_hide_caret(hdc, This);
 
 /* make the system resize the window */
 
    if ((!This->data->maximized)&&(!This->data->dont_auto_size)) {
-        TN5250_LOG(("WIN32: Re-sizing window to %d by %d\n", win_width, 
+        TN5250_LOG(("WIN32: Re-sizing window to %d by %d\n", win_width,
                     win_height));
-        SetWindowPos(This->data->hwndMain, NULL, 0, 0, win_width, win_height, 
+        SetWindowPos(This->data->hwndMain, NULL, 0, 0, win_width, win_height,
                     SWP_NOMOVE | SWP_NOZORDER);
    }
 
@@ -1103,7 +1103,7 @@ static void win32_terminal_font(Tn5250Terminal *This, const char *fontname,
 /* draw the new caret */
 
    if (This->data->hwndMain == GetFocus()) {
-       hdc = GetDC(This->data->hwndMain);      
+       hdc = GetDC(This->data->hwndMain);
        win32_make_new_caret(This);
        if (This->data->caret_style != CARETSTYLE_NOBLINK) {
             win32_move_caret(hdc, This);
@@ -1120,7 +1120,7 @@ static void win32_terminal_font(Tn5250Terminal *This, const char *fontname,
  * SYNOPSIS
  *    win32_terminal_term (This);
  * INPUTS
- *    Tn5250Terminal  *    This       - 
+ *    Tn5250Terminal  *    This       -
  * DESCRIPTION
  *    DOCUMENT ME!!!
  *****/
@@ -1135,7 +1135,7 @@ static void win32_terminal_term(Tn5250Terminal /*@unused@*/ * This)
  * SYNOPSIS
  *    win32_terminal_destroy (This);
  * INPUTS
- *    Tn5250Terminal *     This       - 
+ *    Tn5250Terminal *     This       -
  * DESCRIPTION
  *    DOCUMENT ME!!!
  *****/
@@ -1161,7 +1161,7 @@ static void win32_terminal_destroy(Tn5250Terminal * This)
  * SYNOPSIS
  *    ret = win32_terminal_width (This);
  * INPUTS
- *    Tn5250Terminal  *    This       - 
+ *    Tn5250Terminal  *    This       -
  * DESCRIPTION
  *    Returns the current width (in chars) of the terminal.
  *****/
@@ -1178,7 +1178,7 @@ static int win32_terminal_width(Tn5250Terminal *This)
  * SYNOPSIS
  *    ret = win32_terminal_height (This);
  * INPUTS
- *    Tn5250Terminal  *    This       - 
+ *    Tn5250Terminal  *    This       -
  * DESCRIPTION
  *    Returns the current height of the terminal.
  *****/
@@ -1195,7 +1195,7 @@ static int win32_terminal_height(Tn5250Terminal *This)
  * SYNOPSIS
  *    ret = win32_terminal_flags (This);
  * INPUTS
- *    Tn5250Terminal  *    This       - 
+ *    Tn5250Terminal  *    This       -
  * DESCRIPTION
  *    DOCUMENT ME!!!
  *****/
@@ -1212,8 +1212,8 @@ static int win32_terminal_flags(Tn5250Terminal /*@unused@*/ * This)
  * SYNOPSIS
  *    win32_terminal_update (This, display);
  * INPUTS
- *    Tn5250Terminal *     This       - 
- *    Tn5250Display *      display    - 
+ *    Tn5250Terminal *     This       -
+ *    Tn5250Display *      display    -
  * DESCRIPTION
  *    DOCUMENT ME!!!
  *****/
@@ -1245,8 +1245,8 @@ static void win32_terminal_update(Tn5250Terminal * This, Tn5250Display *display)
  *    win32_do_terminal_update (This, display);
  * INPUTS
  *    HDC                  hdc        -
- *    Tn5250Terminal *     This       - 
- *    Tn5250Display *      display    - 
+ *    Tn5250Terminal *     This       -
+ *    Tn5250Display *      display    -
  *    Tn5250Win32Attribute *map       -
  *    int 		   ox         - text offset on x axis
  *    int                  oy         - text offset on y axis
@@ -1254,7 +1254,7 @@ static void win32_terminal_update(Tn5250Terminal * This, Tn5250Display *display)
  *    draw the screen to the specified device context, using the
  *    specified attribute map.
  *****/
-static void win32_do_terminal_update(HDC hdc, Tn5250Terminal *This, 
+static void win32_do_terminal_update(HDC hdc, Tn5250Terminal *This,
                        Tn5250Display *display, Tn5250Win32Attribute *map,
                        int ox, int oy) {
    int y, x;
@@ -1272,13 +1272,13 @@ static void win32_do_terminal_update(HDC hdc, Tn5250Terminal *This,
        This->data->last_width != tn5250_display_width(display)) {
           if (tn5250_display_width (display)<100) {
               This->data->dont_auto_size = 0;
-              win32_terminal_font(This, This->data->font_80, 
+              win32_terminal_font(This, This->data->font_80,
                   tn5250_display_width(display),
                   tn5250_display_height(display)+1,
                   This->data->font_80_w, This->data->font_80_h);
           } else {
               This->data->dont_auto_size = 0;
-              win32_terminal_font(This, This->data->font_132, 
+              win32_terminal_font(This, This->data->font_132,
                   tn5250_display_width(display),
                   tn5250_display_height(display)+1,
                   This->data->font_132_w, This->data->font_132_h);
@@ -1299,14 +1299,14 @@ static void win32_do_terminal_update(HDC hdc, Tn5250Terminal *This,
       for (x = 0; x < tn5250_display_width(display); x++) {
 	 c = tn5250_display_char_at(display, y, x);
 	 if ((c & 0xe0) == 0x20) {	/* ATTRIBUTE */
-            if (len>0) 
-                win32_terminal_draw_text(hdc, attr, text, len, mx, my, 
+            if (len>0)
+                win32_terminal_draw_text(hdc, attr, text, len, mx, my,
                   This->data->spacing, map, ox, oy);
             len = 0;
 	    attr = (c & 0xff);
 	 } else {                       /* DATA */
             if (len==0) {
-                mx = x; 
+                mx = x;
                 my = y;
             }
             if ((c==0x1f) || (c==0x3F)) {
@@ -1315,7 +1315,7 @@ static void win32_do_terminal_update(HDC hdc, Tn5250Terminal *This,
                        my, This->data->spacing, map, ox, oy);
                 len = 0;
                 c = ' ';
-                win32_terminal_draw_text(hdc, 0x21, &c, 1, x, y, 
+                win32_terminal_draw_text(hdc, 0x21, &c, 1, x, y,
                   This->data->spacing, map, ox, oy);
             } else if ((c < 0x40 && c > 0x00) || (c == 0xff)) {
                 text[len] = ' ';
@@ -1328,7 +1328,7 @@ static void win32_do_terminal_update(HDC hdc, Tn5250Terminal *This,
 	 }			
       }			
 
-      if (len>0) 
+      if (len>0)
           win32_terminal_draw_text(hdc, attr, text, len, mx, my,
             This->data->spacing, map, ox, oy);
       len = 0;
@@ -1358,14 +1358,14 @@ static void win32_do_terminal_update(HDC hdc, Tn5250Terminal *This,
  *    This draws text on the terminal in the specified attribute
  *****/
 void win32_terminal_draw_text(HDC hdc, int attr, const char *text, int len, int x, int y, int *spacing, Tn5250Win32Attribute *map, int ox, int oy) {
- 
+
     static UINT flags;
     static RECT rect;
 
     flags = map[attr-0x20].flags;
-    
+
     /* hmm..  how _do_ you draw something that's invisible? */
-    if (flags&A_NONDISPLAY) 
+    if (flags&A_NONDISPLAY)
        return;
 
     /* create a rect to "opaque" our text.  (defines the background area
@@ -1408,7 +1408,7 @@ void win32_terminal_draw_text(HDC hdc, int attr, const char *text, int len, int 
 
     /* draw the text */
 
-    if (ExtTextOut(hdc, rect.left, rect.top, ETO_CLIPPED|ETO_OPAQUE, &rect, 
+    if (ExtTextOut(hdc, rect.left, rect.top, ETO_CLIPPED|ETO_OPAQUE, &rect,
        text, len, spacing)==0) {
          msgboxf("ExtTextOut(): Error %d\n", GetLastError());
     }
@@ -1425,20 +1425,20 @@ void win32_terminal_draw_text(HDC hdc, int attr, const char *text, int len, int 
 
     if (flags&A_UNDERLINE) {
        HPEN savepen;
-       savepen = SelectObject(hdc, 
+       savepen = SelectObject(hdc,
                    CreatePen(PS_SOLID, 0, map[attr-0x20].fg));
        MoveToEx(hdc, rect.left, rect.bottom-1, NULL);
        LineTo(hdc, rect.right, rect.bottom-1);
        savepen = SelectObject(hdc, savepen);
        DeleteObject(savepen);
     }
-    if (flags&A_VERTICAL && colsep_style==COLSEPSTYLE_FULL) { 
+    if (flags&A_VERTICAL && colsep_style==COLSEPSTYLE_FULL) {
        HPEN savepen;
-       if (flags&A_REVERSE) 
-           savepen = SelectObject(hdc, CreatePen(PS_SOLID, 0, 
+       if (flags&A_REVERSE)
+           savepen = SelectObject(hdc, CreatePen(PS_SOLID, 0,
                                                colorlist[A_5250_BLACK].ref));
        else
-           savepen = SelectObject(hdc, CreatePen(PS_SOLID, 0, 
+           savepen = SelectObject(hdc, CreatePen(PS_SOLID, 0,
                                                map[attr-0x20].fg));
        for (x=rect.left; x<=rect.right; x+=spacing[0]) {
            MoveToEx(hdc, x, rect.top, NULL);
@@ -1449,13 +1449,13 @@ void win32_terminal_draw_text(HDC hdc, int attr, const char *text, int len, int 
        savepen = SelectObject(hdc, savepen);
        DeleteObject(savepen);
     }
-    if (flags&A_VERTICAL && colsep_style==COLSEPSTYLE_DOTS) { 
+    if (flags&A_VERTICAL && colsep_style==COLSEPSTYLE_DOTS) {
        HPEN savepen;
-       if (flags&A_REVERSE) 
-           savepen = SelectObject(hdc, CreatePen(PS_SOLID, 0, 
+       if (flags&A_REVERSE)
+           savepen = SelectObject(hdc, CreatePen(PS_SOLID, 0,
                                                colorlist[A_5250_BLACK].ref));
        else
-           savepen = SelectObject(hdc, CreatePen(PS_SOLID, 0, 
+           savepen = SelectObject(hdc, CreatePen(PS_SOLID, 0,
                                                map[attr-0x20].fg));
        for (x=rect.left; x<=rect.right; x+=spacing[0]) {
            MoveToEx(hdc, x, rect.bottom-2, NULL);
@@ -1477,8 +1477,8 @@ void win32_terminal_draw_text(HDC hdc, int attr, const char *text, int len, int 
  * SYNOPSIS
  *    win32_terminal_update_indicators (This, display);
  * INPUTS
- *    Tn5250Terminal  *    This       - 
- *    Tn5250Display *      display    - 
+ *    Tn5250Terminal  *    This       -
+ *    Tn5250Display *      display    -
  * DESCRIPTION
  *    DOCUMENT ME!!!
  *****/
@@ -1512,8 +1512,8 @@ static void win32_terminal_update_indicators(Tn5250Terminal *This, Tn5250Display
    sprintf(ind_buf+72,"%03.3d/%03.3d",tn5250_display_cursor_x(display)+1,
       tn5250_display_cursor_y(display)+1);
 
-   win32_terminal_draw_text(bmphdc, 0x22, ind_buf, 79, 0, 
-         tn5250_display_height(display), This->data->spacing, attribute_map, 
+   win32_terminal_draw_text(bmphdc, 0x22, ind_buf, 79, 0,
+         tn5250_display_height(display), This->data->spacing, attribute_map,
          0, 0);
 
    This->data->caretx=tn5250_display_cursor_x(display)*This->data->font_width;
@@ -1529,7 +1529,7 @@ static void win32_terminal_update_indicators(Tn5250Terminal *This, Tn5250Display
        x = This->data->caretx;
        y = This->data->carety + This->data->font_height;
        GetClientRect(This->data->hwndMain, &rect);
-       savepen = SelectObject(bmphdc, 
+       savepen = SelectObject(bmphdc,
                    CreatePen(PS_SOLID, 0, colorlist[A_5250_RULER_COLOR].ref));
        MoveToEx(bmphdc, x, rect.top, NULL);
        LineTo  (bmphdc, x, rect.bottom);
@@ -1543,7 +1543,7 @@ static void win32_terminal_update_indicators(Tn5250Terminal *This, Tn5250Display
 
    This->data->selected = This->data->selecting = 0;
 
-   if (This->data->caret_style == CARETSTYLE_NOBLINK) 
+   if (This->data->caret_style == CARETSTYLE_NOBLINK)
        win32_move_caret(bmphdc, This);
 
    InvalidateRect(This->data->hwndMain, NULL, FALSE);
@@ -1557,7 +1557,7 @@ static void win32_terminal_update_indicators(Tn5250Terminal *This, Tn5250Display
  * SYNOPSIS
  *    ret = win32_terminal_waitevent (This);
  * INPUTS
- *    Tn5250Terminal *     This       - 
+ *    Tn5250Terminal *     This       -
  * DESCRIPTION
  *    DOCUMENT ME!!!
  *****/
@@ -1573,9 +1573,9 @@ static int win32_terminal_waitevent(Tn5250Terminal * This)
       return TN5250_TERMINAL_EVENT_QUIT;
 
    if (This->conn_fd != -1) {
-        if (WSAAsyncSelect(This->conn_fd, This->data->hwndMain, 
+        if (WSAAsyncSelect(This->conn_fd, This->data->hwndMain,
                WM_TN5250_STREAM_DATA, FD_READ) == SOCKET_ERROR) {
-           TN5250_LOG(("WIN32: WSAASyncSelect failed, reason: %d\n", 
+           TN5250_LOG(("WIN32: WSAASyncSelect failed, reason: %d\n",
                  WSAGetLastError()));
            return TN5250_TERMINAL_EVENT_QUIT;
         }
@@ -1594,7 +1594,7 @@ static int win32_terminal_waitevent(Tn5250Terminal * This)
       }
    }
 
-   if (This->conn_fd != -1) 
+   if (This->conn_fd != -1)
         WSAAsyncSelect(This->conn_fd, This->data->hwndMain, 0, 0);
 
    return result;
@@ -1607,7 +1607,7 @@ static int win32_terminal_waitevent(Tn5250Terminal * This)
  * SYNOPSIS
  *    win32_terminal_beep (This);
  * INPUTS
- *    Tn5250Terminal *     This       - 
+ *    Tn5250Terminal *     This       -
  * DESCRIPTION
  *    This plays a beep, either using a .wav file or
  *    by using the stock Windows methods.
@@ -1634,7 +1634,7 @@ static void win32_terminal_beep (Tn5250Terminal *This)
  * SYNOPSIS
  *    key = win32_get_key (This);
  * INPUTS
- *    Tn5250Terminal *     This       - 
+ *    Tn5250Terminal *     This       -
  * DESCRIPTION
  *    Read the next key from the keyboard buffer.
  *****/
@@ -1650,14 +1650,14 @@ static int win32_get_key (Tn5250Terminal *This)
 
    i = This->data->k_buf[0];
    This->data->k_buf_len --;
-   for (j=0; j<This->data->k_buf_len; j++) 
+   for (j=0; j<This->data->k_buf_len; j++)
         This->data->k_buf[j] = This->data->k_buf[j+1];
 
 #if 0
    {
        char *blah;
        blah = malloc(This->data->k_buf_len+1);
-       for (j=0; j<This->data->k_buf_len; j++) 
+       for (j=0; j<This->data->k_buf_len; j++)
            blah[j] = This->data->k_buf[j];
        blah[This->data->k_buf_len] = '\0';
        TN5250_LOG(("WIN32: getkey %c, %d bytes left:\n", i, This->data->k_buf_len));
@@ -1665,7 +1665,7 @@ static int win32_get_key (Tn5250Terminal *This)
        free(blah);
    }
 #endif
-       
+
    return i;
 
 }
@@ -1677,7 +1677,7 @@ static int win32_get_key (Tn5250Terminal *This)
  * SYNOPSIS
  *    key = win32_terminal_getkey (This);
  * INPUTS
- *    Tn5250Terminal *     This       - 
+ *    Tn5250Terminal *     This       -
  * DESCRIPTION
  *    Read the next key from the terminal, and do any
  *    required translations.
@@ -1715,7 +1715,7 @@ static int win32_terminal_getkey (Tn5250Terminal *This)
  *    key = win32_terminal_queuekey (hwnd, This, key);
  * INPUTS
  *    HWND		   hwnd	      -
- *    Tn5250Terminal *     This       - 
+ *    Tn5250Terminal *     This       -
  *    int                  key        -
  * DESCRIPTION
  *    Add a key to the terminal's keyboard buffer
@@ -1768,7 +1768,7 @@ void win32_terminal_clear_screenbuf(HWND hwnd, int width, int height,
    HBRUSH oldbrush;
    HPEN oldpen;
 
-   if (delet) 
+   if (delet)
        DeleteObject(screenbuf);
 
    if (mknew) {
@@ -1779,7 +1779,7 @@ void win32_terminal_clear_screenbuf(HWND hwnd, int width, int height,
 
    SelectObject(bmphdc, screenbuf);
    oldbrush = SelectObject(bmphdc, background_brush);
-   oldpen = SelectObject(bmphdc, 
+   oldpen = SelectObject(bmphdc,
                 CreatePen(PS_SOLID, 0, colorlist[A_5250_BLACK].ref));
    Rectangle(bmphdc, 0, 0, width+3, height+3);
    SelectObject(bmphdc, oldbrush);
@@ -1809,7 +1809,7 @@ void win32_terminal_choosefont(HWND hwnd) {
         if (globTerm->data->font_in_use.lfHeight<0)
             globTerm->data->font_in_use.lfHeight = -globTerm->data->font_in_use.lfHeight;
 
-        sprintf(fontName, "%s-%dx%d", globTerm->data->font_in_use.lfFaceName, 
+        sprintf(fontName, "%s-%dx%d", globTerm->data->font_in_use.lfFaceName,
             globTerm->data->font_in_use.lfWidth, globTerm->data->font_in_use.lfHeight);
 
         if (tn5250_display_width (globDisplay)<100) {
@@ -1854,7 +1854,7 @@ void win32_terminal_choosefont(HWND hwnd) {
  *    Windows calls this function to report events such
  *    as mouse clicks, keypresses and the receipt of network data.
  *****/
-LRESULT CALLBACK 
+LRESULT CALLBACK
 win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
      PAINTSTRUCT ps;
@@ -1950,11 +1950,11 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                   globTerm->data->selecting = 0;
                   globTerm->data->selstr.x = 2;
                   globTerm->data->selstr.y = 2;
-                  globTerm->data->selend.x = 
-                            (tn5250_display_width(globDisplay) 
+                  globTerm->data->selend.x =
+                            (tn5250_display_width(globDisplay)
                              * globTerm->data->font_width) - 2;
-                  globTerm->data->selend.y = 
-                            (tn5250_display_height(globDisplay) 
+                  globTerm->data->selend.y =
+                            (tn5250_display_height(globDisplay)
                              * globTerm->data->font_height) - 2;
                   globTerm->data->selected = 1;
                   win32_expand_text_selection(globTerm);
@@ -1981,9 +1981,9 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                      win32_terminal_update(globTerm,globDisplay);
                   }
                   return 0;
-              case IDM_MACRO_EXEC1: 
-              case IDM_MACRO_EXEC2: 
-              case IDM_MACRO_EXEC3: 
+              case IDM_MACRO_EXEC1:
+              case IDM_MACRO_EXEC2:
+              case IDM_MACRO_EXEC3:
               case IDM_MACRO_EXEC4: {
                   int key = LOWORD(wParam) - IDM_MACRO_EXEC1;
                   tn5250_display_kf_macro(globDisplay, K_EXEC);
@@ -2016,7 +2016,7 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         case WM_SIZE:
            w = LOWORD(lParam);
            h = HIWORD(lParam);
-           if (wParam==SIZE_MAXIMIZED) 
+           if (wParam==SIZE_MAXIMIZED)
               globTerm->data->maximized = 1;
            else
               globTerm->data->maximized = 0;
@@ -2041,7 +2041,7 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         case WM_SYSKEYUP:
         case WM_KEYUP:
            ext = (HIWORD (lParam) & 0x0100) >> 8;
-           GetKeyboardState(ks); 
+           GetKeyboardState(ks);
            ks[0] = 0xff;   /* so that keystate=0 always works. */
            x = 0;
            while (keyup2msg[x].win32_key != -1) {
@@ -2049,21 +2049,21 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                    (keyup2msg[x].ctx || !handledkey) &&
                    keyup2msg[x].ext == ext &&
                    (ks[keyup2msg[x].keystate]&0x80)) {
-                        win32_terminal_queuekey(hwnd, 
+                        win32_terminal_queuekey(hwnd,
                                                globTerm,keyup2msg[x].func_key);
                         PostMessage(hwnd, WM_TN5250_KEY_DATA, 0, 0);
                         TN5250_LOG(("WM_KEYUP: handling key\n"));
                         return 0;
                }
                x++;
-           } 
+           }
            break;
 
         case WM_SYSKEYDOWN:
         case WM_KEYDOWN:
            ctx = HIWORD (lParam) & 0x2000;
            ext = (HIWORD (lParam) & 0x0100) >> 8;
-           GetKeyboardState(ks); 
+           GetKeyboardState(ks);
            ks[0] = 0xff;   /* so that keystate=0 always works. */
            x = 0;
            handledkey = 0;
@@ -2083,7 +2083,7 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                         return 0;
                }
                x++;
-           } 
+           }
            /* if we didn't handle a keystroke, let Windows send it
               back to us as a character message */
            m.hwnd = hwnd;
@@ -2133,7 +2133,7 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
            ReleaseDC(hwnd, hdc);
            globTerm->data->is_focused = 1;
            return 0;
-  
+
         case WM_KILLFOCUS:
            hdc = GetDC(hwnd);
            win32_hide_caret(hdc, globTerm);
@@ -2141,8 +2141,8 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
            globTerm->data->is_focused = 0;
            return 0;
 
-        case WM_PAINT: 
-           hdc = BeginPaint (hwnd, &ps); 
+        case WM_PAINT:
+           hdc = BeginPaint (hwnd, &ps);
            GetClientRect(hwnd, &rect);
            x = rect.left;
            y = rect.top;
@@ -2152,7 +2152,7 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
            if (BitBlt(hdc, x, y, w, h, bmphdc, x, y, SRCCOPY)==0) {
                 TN5250_LOG(("WIN32: BitBlt failed: %d\n", GetLastError()));
                 /* TN5250_ASSERT(0); */
-                lReturn = 1;  
+                lReturn = 1;
            }
            if (lReturn==0) {
                if (globTerm->data->caret_style != CARETSTYLE_NOBLINK) {
@@ -2213,8 +2213,8 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         case WM_LBUTTONUP:
            redraw = 0;
            if (globTerm->data->click_moves_caret && globDisplay!=NULL) {
-                win32_move_caret_to(globTerm, 
-                                    globDisplay, 
+                win32_move_caret_to(globTerm,
+                                    globDisplay,
                                     (short)HIWORD(lParam),
                                     (short)LOWORD(lParam) );
                 redraw = 1;
@@ -2255,7 +2255,7 @@ win32_terminal_wndproc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
            break;
 #endif
 
-     }     
+     }
 
      return DefWindowProc (hwnd, msg, wParam, lParam);
 }
@@ -2290,10 +2290,10 @@ void win32_make_new_caret(Tn5250Terminal *This) {
         size = bytewidth * This->data->font_height;
         bits = malloc(size);
         memset(bits, 0x00, size);
-        caretbm = CreateBitmap(This->data->font_width, 
+        caretbm = CreateBitmap(This->data->font_width,
                    This->data->font_height, 1, 1, bits);
         free(bits);
-        CreateCaret(This->data->hwndMain, caretbm, 
+        CreateCaret(This->data->hwndMain, caretbm,
              This->data->font_height, This->data->font_width);
     }
     /* Here we create a small bitmap to use as the caret
@@ -2308,19 +2308,19 @@ void win32_make_new_caret(Tn5250Terminal *This) {
         size = bytewidth * This->data->font_height;
         bits = malloc(size);
         memset(bits, 0x00, size);
-        caretbm = CreateBitmap(This->data->font_width, 
+        caretbm = CreateBitmap(This->data->font_width,
                        This->data->font_height, 1, 1, bits);
         free(bits);
         hdc = CreateCompatibleDC(NULL);
         SelectObject(hdc, caretbm);
-        savepen = SelectObject(hdc, 
+        savepen = SelectObject(hdc,
                    CreatePen(PS_SOLID, 0, RGB(255,255,255)));
         MoveToEx(hdc, 0, This->data->font_height-2, NULL);
         LineTo(hdc, This->data->font_width, This->data->font_height-2);
         savepen = SelectObject(hdc, savepen);
         DeleteObject(savepen);
         DeleteDC(hdc);
-        CreateCaret(This->data->hwndMain, caretbm, 
+        CreateCaret(This->data->hwndMain, caretbm,
              This->data->font_height, This->data->font_width);
     }
     else {
@@ -2342,7 +2342,7 @@ void win32_make_new_caret(Tn5250Terminal *This) {
  *    Move the caret to a position on the screen.
  *    to the coordinates in This->data->caretx, This->data->carety
  *****/
- 
+
 void win32_move_caret(HDC hdc, Tn5250Terminal *This) {
 
     /* move the Windows caret */
@@ -2386,7 +2386,7 @@ void win32_hide_caret(HDC hdc, Tn5250Terminal *This) {
 
     HideCaret (This->data->hwndMain);
     DestroyCaret ();
-    
+
     return;
 }
 
@@ -2412,7 +2412,7 @@ void win32_expand_text_selection(Tn5250Terminal *This) {
       TN5250_ASSERT(This!=NULL);
       TN5250_ASSERT(This->data->font_width>0);
 
-   /* change the points so that selstr is the upper left corner 
+   /* change the points so that selstr is the upper left corner
       and selend is the lower right corner.                      */
 
 #define TN5250_FLIPEM(a, b)  if (a>b) { x = a; a = b; b = x; }
@@ -2495,7 +2495,7 @@ void win32_copy_text_selection(Tn5250Terminal *This, Tn5250Display *display)
       ey = This->data->selend.y / This->data->font_height;
 
    /* Restrict copy to actual screen size. */
-      TN5250_LOG(("WIN32-win32_copy_text_selection: Width=%d\n", 
+      TN5250_LOG(("WIN32-win32_copy_text_selection: Width=%d\n",
                 tn5250_display_width (globDisplay)));
       if (tn5250_display_width (globDisplay)<100) {
          ex = MIN(ex, (80-1));
@@ -2506,7 +2506,7 @@ void win32_copy_text_selection(Tn5250Terminal *This, Tn5250Display *display)
       }
 
       /* Limit to actual screen size (not calculated) */
-      TN5250_LOG(("WIN32-win32_copy_text_selection: Width=%d\n", 
+      TN5250_LOG(("WIN32-win32_copy_text_selection: Width=%d\n",
                tn5250_display_width (globDisplay)));
       if (tn5250_display_width (globDisplay)<100) {
          ex = MIN(ex, (80-1));
@@ -2522,7 +2522,7 @@ void win32_copy_text_selection(Tn5250Terminal *This, Tn5250Display *display)
       /* Bad selection... exit early */
 
       if ((sx > ex) || (sy > ey))
-          return; 
+          return;
 
       while (ey>tn5250_display_height(display)) ey--;
 
@@ -2530,19 +2530,19 @@ void win32_copy_text_selection(Tn5250Terminal *This, Tn5250Display *display)
       hBuf = GlobalAlloc(GHND|GMEM_SHARE, bufsize);
       TN5250_ASSERT(hBuf!=NULL);
 
-   /* populate the global buffer with the text data, inserting CR/LF 
+   /* populate the global buffer with the text data, inserting CR/LF
       in between each line that was selected */
 
-      buf = GlobalLock(hBuf); 
+      buf = GlobalLock(hBuf);
       bp = -1;
       for (y = sy; y <= ey; y++) {
 
            for (x = sx; x <= ex; x++) {
                 c = tn5250_display_char_at(display, y, x);
-	        if (((c & 0xe0) == 0x20 )||(c < 0x40 && c > 0x00)||(c == 0xff)) 
+	        if (((c & 0xe0) == 0x20 )||(c < 0x40 && c > 0x00)||(c == 0xff))
                      c = ' ';
-                else 
-                     c = tn5250_char_map_to_local( 
+                else
+                     c = tn5250_char_map_to_local(
                                 tn5250_display_char_map(display), c);
                 bp++;
                 if (bp==bufsize) break;
@@ -2568,10 +2568,10 @@ void win32_copy_text_selection(Tn5250Terminal *This, Tn5250Display *display)
 
       GlobalUnlock(hBuf);
 
-      /* create a bitmap version of the copy buffer as well... 
+      /* create a bitmap version of the copy buffer as well...
          this allows image programs to paste the buffer as a bitmap */
 
-      cx = (This->data->selend.x - This->data->selstr.x) + 1; 
+      cx = (This->data->selend.x - This->data->selstr.x) + 1;
       cy = (This->data->selend.y - This->data->selstr.y) + 1;
 
       hdc = GetDC(This->data->hwndMain);
@@ -2579,14 +2579,14 @@ void win32_copy_text_selection(Tn5250Terminal *This, Tn5250Display *display)
       ReleaseDC(This->data->hwndMain, hdc);
       hdc = CreateCompatibleDC(NULL);
       SelectObject(hdc, hBm);
-      BitBlt(hdc, 0, 0, cx, cy, bmphdc, This->data->selstr.x, 
+      BitBlt(hdc, 0, 0, cx, cy, bmphdc, This->data->selstr.x,
               This->data->selstr.y, SRCCOPY);
       DeleteDC(hdc);
-      
 
-      /* finally, copy both the global buffer & the bitmap to the 
+
+      /* finally, copy both the global buffer & the bitmap to the
          clipboard.  After this, we should not try to use (or free!)
-         the buffer/bitmap... they're Windows' property now! 
+         the buffer/bitmap... they're Windows' property now!
        */
 
       OpenClipboard (This->data->hwndMain);
@@ -2606,7 +2606,7 @@ void win32_copy_text_selection(Tn5250Terminal *This, Tn5250Display *display)
              SetClipboardData(CF_BITMAP, hBm);
              break;
       }
-             
+
       CloseClipboard ();
 }
 
@@ -2625,7 +2625,7 @@ void win32_copy_text_selection(Tn5250Terminal *This, Tn5250Display *display)
  *    Note: Increasing the MAX_K_BUF_LEN will speed this
  *           routine up...
  *****/
-void win32_paste_text_selection(HWND hwnd, Tn5250Terminal *term, 
+void win32_paste_text_selection(HWND hwnd, Tn5250Terminal *term,
                                            Tn5250Display *display) {
 
     HGLOBAL hBuf;
@@ -2636,11 +2636,11 @@ void win32_paste_text_selection(HWND hwnd, Tn5250Terminal *term,
 
     pNewBuf = NULL;
 
-    /* 
+    /*
      * If there's any data that we can paste, read it from
-     *  the clipboard. 
+     *  the clipboard.
      */
-  
+
     if (IsClipboardFormatAvailable(CF_TEXT)) {
 
         OpenClipboard(hwnd);
@@ -2711,18 +2711,19 @@ void win32_paste_text_selection(HWND hwnd, Tn5250Terminal *term,
  * DESCRIPTION
  *    This displays a standard Windows printer dialog allowing
  *    the user to choose which printer he would like to print to
- *    and stores a pointer to the resulting PRINTDLG structure 
+ *    and stores a pointer to the resulting PRINTDLG structure
  *    in This->data->pd.
  *
  *    If you call this again without first calling the
- *    win32_destroy_printer_info function, no dialog is displayed, 
- *    and the same pointer is returned. 
+ *    win32_destroy_printer_info function, no dialog is displayed,
+ *    and the same pointer is returned.
  *****/
 PRINTDLG * win32_get_printer_info(Tn5250Terminal *This) {
 
-    PRINTDLG *pd; 
+    PRINTDLG *pd;
+    int caps;
 
-    if (This->data->pd != NULL) 
+    if (This->data->pd != NULL)
         return This->data->pd;
 
     This->data->pd = (PRINTDLG *) malloc(sizeof(PRINTDLG));
@@ -2748,13 +2749,6 @@ PRINTDLG * win32_get_printer_info(Tn5250Terminal *This) {
         return NULL;
     }
 
-    if (!(GetDeviceCaps(pd->hDC, RASTERCAPS) & RC_STRETCHBLT)) {
-        win32_destroy_printer_info(This);
-        TN5250_LOG (("WIN32: StretchBlt not available for this printer.\n"));
-        msgboxf("This printer does not support the StretchBlt function.\r\n"
-                "Printing cancelled.");
-    }
-
     return This->data->pd;
 }
 
@@ -2766,8 +2760,8 @@ PRINTDLG * win32_get_printer_info(Tn5250Terminal *This) {
  *    win32_destroy_printer_info (globTerm);
  * INPUTS
  *    Tn5250Terminal  *          This    -
- * DESCRIPTION 
- *    This frees up the data allocated by the function 
+ * DESCRIPTION
+ *    This frees up the data allocated by the function
  *    win32_get_printer_info()
  *****/
 void win32_destroy_printer_info(Tn5250Terminal *This) {
@@ -2784,8 +2778,8 @@ void win32_destroy_printer_info(Tn5250Terminal *This) {
     return;
 }
 
-      
-    
+
+
 /****i* lib5250/win32_print_screen
  * NAME
  *    win32_print_screen
@@ -2807,14 +2801,16 @@ void win32_print_screen(Tn5250Terminal *This, Tn5250Display *display) {
     float pelsX1, pelsX2;
     float scaleX, pixMax;
     int rc;
-    int x, y, h, w, h2, w2;
+    int h, w, h2, w2;
     int i, size;
     RECT rect;
     LOGBRUSH lb;
     HBRUSH oldbrush;
     HPEN oldpen;
     Tn5250Win32Attribute *mymap;
-
+    BITMAP bmp;
+    BITMAPINFOHEADER bi;
+    DWORD bmpSize;
 
  /* get info about the printer.   The GDI device context will
     be in pd->hDC.  We need this to print.  */
@@ -2828,37 +2824,33 @@ void win32_print_screen(Tn5250Terminal *This, Tn5250Display *display) {
     }
     TN5250_ASSERT ( pd->hDC != NULL );
 
-
  /* Get screen size & horizontal resolution.   We need this to
     scale the screen output so that it looks good on the printer. */
 
     GetClientRect(This->data->hwndMain, &rect);
-    x = rect.left;
-    y = rect.top;
-    h = (rect.bottom - rect.top) + 7;
-    w = (rect.right - rect.left) + 7;
+    h = rect.bottom;
+    w = rect.right;
+
     screenDC = GetDC(This->data->hwndMain);
     pelsX1 = (float) GetDeviceCaps(screenDC, LOGPIXELSX);
 
 
  /* create a bitmap to draw the screen into.   We want to redraw the
     screen in black & white and put a border around it */
-    
+
     bmap = CreateCompatibleBitmap(screenDC, w+6, h+6);
     hdc  = CreateCompatibleDC(NULL);
     SelectObject(hdc, bmap);
-
 
  /* fill the bitmap by making a white rectangle with a black border */
 
     lb.lbStyle = BS_SOLID;
     lb.lbColor = RGB(255,255,255);
     lb.lbHatch = 0;
-    
+
     oldbrush = SelectObject(hdc, CreateBrushIndirect(&lb));
     oldpen = SelectObject(hdc, CreatePen(PS_SOLID, 0, RGB(0,0,0)));
-    Rectangle(hdc, 0, 0, w, h);
-    SelectObject(hdc, oldbrush);
+    Rectangle(hdc, 0, 0, w+6, h+6);
     oldpen = SelectObject(hdc, oldpen);
     DeleteObject(oldpen);
     oldbrush = SelectObject(hdc, oldbrush);
@@ -2867,14 +2859,16 @@ void win32_print_screen(Tn5250Terminal *This, Tn5250Display *display) {
 /* create a black on white attribute map, so that win32_do_terminal_update
    will paint the screen in our colors. */
 
-    i = 0;
-    while (attribute_map[i].colorindex != -1)
-        i++;
+    i = 0; while (attribute_map[i].colorindex != -1) i++;
+
     size = (i+1) * sizeof(Tn5250Win32Attribute);
     mymap = (Tn5250Win32Attribute *) malloc(size);
     if ( mymap == NULL ) {
-        TN5250_LOG(("mymap == NULL.  Unable to allocate memory.\n"));
+       TN5250_LOG(("mymap == NULL.  Unable to allocate memory.\n"));
+       // FIXME: Need to release/free screenDC, bmap, hdc, mymap
+       return;
     }
+
     memcpy(mymap, attribute_map, size);
     for (i=0; mymap[i].colorindex != -1; i++) {
         if ( mymap[i].colorindex == A_5250_BLACK )
@@ -2884,10 +2878,9 @@ void win32_print_screen(Tn5250Terminal *This, Tn5250Display *display) {
     }
 
 /* re-draw the screen into our new bitmap */
-    
+
     win32_do_terminal_update(hdc, This, display, mymap, 3, 3);
     free(mymap);
-    
 
 /* start a new printer document */
 
@@ -2901,17 +2894,23 @@ void win32_print_screen(Tn5250Terminal *This, Tn5250Display *display) {
     rc = StartDoc(pd->hDC, &di);
     if (rc == SP_ERROR) {
         msgboxf("StartDoc() ended in error.\r\n");
-        win32_destroy_printer_info(This);       
+        DeleteDC(hdc);
+        DeleteObject(bmap);
+        win32_destroy_printer_info(This);
+        ReleaseDC(This->data->hwndMain,screenDC);
         return;
     }
 
     rc = StartPage(pd->hDC);
     if (rc <= 0) {
         msgboxf("StartPage() ended in error.\r\n");
-        win32_destroy_printer_info(This);       
+        EndDoc(pd->hDC);
+        DeleteDC(hdc);
+        DeleteObject(bmap);
+        win32_destroy_printer_info(This);
+        ReleaseDC(This->data->hwndMain,screenDC);
         return;
     }
-
 
 /* calculate the scaling factor:
       a) If possible, scale the screen image so that it uses the same
@@ -2931,10 +2930,10 @@ void win32_print_screen(Tn5250Terminal *This, Tn5250Display *display) {
     if (pelsX1 > pelsX2)
         scaleX = (pelsX1 / pelsX2);
     else
-        scaleX = (pelsX2 / pelsX1);   
+        scaleX = (pelsX2 / pelsX1);
 
     w2 = w * scaleX;
-    if (w2 > pixMax) 
+    if (w2 > pixMax)
           scaleX = pixMax / w;
     w2 = w * scaleX;
     h2 = h * scaleX;
@@ -2942,30 +2941,77 @@ void win32_print_screen(Tn5250Terminal *This, Tn5250Display *display) {
     TN5250_LOG (("WIN32: PrintKey: Since Window is %d pixels wide, we'll "
                  "make the printer image %d by %d\n", w, w2, h2));
 
-/* This will stretch the bitmap to the new height & width while (at the
-    same time) copying it to the printer */
 
-    if (StretchBlt(pd->hDC, 0, 0, w2, h2, hdc, x, y, w, h, SRCCOPY)==0) {
+    GetObject(bmap, sizeof(BITMAP), &bmp);
+
+    TN5250_LOG (("WIN32: We think bmp is %d by %d, and Windows "
+                 "thinks %d by %d\n", w, h, bmp.bmWidth, bmp.bmHeight));
+
+    bi.biSize = sizeof(BITMAPINFOHEADER);
+    bi.biWidth = bmp.bmWidth;
+    bi.biHeight = bmp.bmHeight;
+    bi.biPlanes = 1;
+    bi.biBitCount = 32;
+    bi.biCompression = BI_RGB;
+    bi.biSizeImage = 0;
+    bi.biXPelsPerMeter = 0;
+    bi.biYPelsPerMeter = 0;
+    bi.biClrUsed = 0;
+    bi.biClrImportant = 0;
+
+    bmpSize = ((bmp.bmWidth * bi.biBitCount + 31) / 32) * 4 * bmp.bmHeight;
+    HANDLE hDIB = GlobalAlloc(GHND, bmpSize);
+    char *bitmap = (char *)GlobalLock(hDIB);
+
+    GetDIBits( screenDC,
+               bmap,
+               0,
+               (UINT)bmp.bmHeight,
+               bitmap,
+               (BITMAPINFO *)&bi,
+               DIB_RGB_COLORS );
+
+    if ( StretchDIBits( pd->hDC, 0, 0, w2, h2, 0, 0, w+6, h+6,
+                       (char *)bitmap,
+                       (BITMAPINFO *)&bi,
+                       DIB_RGB_COLORS,
+                       SRCCOPY) == 0 ) {
        LPVOID lpMsgBuf;
        FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_ALLOCATE_BUFFER,
-             NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL,SUBLANG_DEFAULT),
-             (LPTSTR) &lpMsgBuf, 0, NULL);
-       TN5250_LOG (("StretchBlt error %s\n", (char *)lpMsgBuf));
-       MessageBox(NULL, lpMsgBuf, "StretchBlt", MB_OK|MB_ICONINFORMATION);
+                     NULL,
+                     GetLastError(),
+                     MAKELANGID(LANG_NEUTRAL,SUBLANG_DEFAULT),
+                     (LPTSTR) &lpMsgBuf,
+                     0,
+                     NULL);
+       TN5250_LOG (("StretchDIBits error %s\n", (char *)lpMsgBuf));
+       MessageBox(NULL, lpMsgBuf, "StretchDIBits", MB_OK|MB_ICONINFORMATION);
        LocalFree(lpMsgBuf);
-       BitBlt(pd->hDC, 0, 0, w, h, hdc, x, y, SRCCOPY);  // worth a try!
        EndPage(pd->hDC);
        EndDoc(pd->hDC);
-       free(This->data->pd);
-       This->data->pd = NULL;
-       pd = NULL;
+       DeleteDC(hdc);
+       DeleteObject(bmap);
+       win32_destroy_printer_info(This);
+       ReleaseDC(This->data->hwndMain,screenDC);
        return;
     }
- 
+
+    GlobalUnlock(hDIB);
+    GlobalFree(hDIB);
+
 /* close printer document */
 
     EndPage(pd->hDC);
     EndDoc(pd->hDC);
+
+/* Free up memory of bitmap */
+
+    if ( DeleteDC(hdc)==0 )
+          TN5250_LOG (("Error deleting HDC"));
+    if ( DeleteObject(bmap) == 0 )
+          TN5250_LOG (("Error deleting bmap"));
+
+    ReleaseDC(This->data->hwndMain,screenDC);
 
 /* notify user */
 
@@ -2975,7 +3021,8 @@ void win32_print_screen(Tn5250Terminal *This, Tn5250Display *display) {
     if (This->data->always_ask)
        win32_destroy_printer_info(This);
 }
-    
+
+
 /****i* lib5250/win32_move_caret_to
  * NAME
  *    win32_move_caret_to
@@ -2987,7 +3034,7 @@ void win32_print_screen(Tn5250Terminal *This, Tn5250Display *display) {
  *    short                      y       -  y position (pixels)
  *    short                      x       -  x position (pixels)
  * DESCRIPTION
- *    This moves the caret to a given position on the display. 
+ *    This moves the caret to a given position on the display.
  *    (So that the cursor can be moved to the position that the
  *    mouse was clicked in.)
  *****/
@@ -3005,9 +3052,9 @@ void win32_move_caret_to(Tn5250Terminal *This, Tn5250Display *disp,
 
    /* Set new caret position */
 
-   cx = MIN( x / This->data->font_width, 
+   cx = MIN( x / This->data->font_width,
            ((tn5250_display_width (globDisplay)<100) ? (80-1) : (132-1)));
-   cy = MIN( y / This->data->font_height, 
+   cy = MIN( y / This->data->font_height,
            ((tn5250_display_width (globDisplay)<100) ? (RowsFor80Col-1) : (RowsFor132Col-1)));
 
    tn5250_display_set_cursor(disp, cy, cx);
@@ -3020,7 +3067,7 @@ void win32_move_caret_to(Tn5250Terminal *This, Tn5250Display *disp,
    This->data->caretok = 0;
    win32_move_caret(bmphdc, This);
 
-   TN5250_LOG(("Caret moved to %d, %d\n", 
+   TN5250_LOG(("Caret moved to %d, %d\n",
                 tn5250_display_cursor_x(disp),
                 tn5250_display_cursor_y(disp)));
 

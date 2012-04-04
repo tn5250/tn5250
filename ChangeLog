@@ -1,3 +1,8 @@
+2012-04-04 Scott Klement <tn5250@scottklemnt.com>
+- Rewrite win32_print_screen() to use StretchDiBits instead of StretchBlt().
+   StretchBlt() seems to fail with some hardware video accelerators, and
+   StretchDiBits() seems to work better.
+
 2010-05-14 James Rich <james@eaerich.com>
 - Handle AIX redefinition of accept to naccept.
 
