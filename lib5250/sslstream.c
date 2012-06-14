@@ -36,6 +36,10 @@
 #include <openssl/err.h>
 #include <time.h>
 
+#if defined (__SVR4) && defined (__sun)
+#include <sys/filio.h>
+#endif
+
 static int ssl_stream_get_next(Tn5250Stream *This,unsigned char *buf,int size);
 static void ssl_stream_do_verb(Tn5250Stream * This, unsigned char verb, unsigned char what);
 static int ssl_stream_host_verb(Tn5250Stream * This, unsigned char verb,

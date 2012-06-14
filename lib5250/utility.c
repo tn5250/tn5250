@@ -22,6 +22,10 @@
 #include "tn5250-private.h"
 #include "transmaps.h"
 
+#if defined (__SVR4) && defined (__sun)
+#include <sys/filio.h>
+#endif
+
 static char mapfix[256];
 static char mapfix2[256];
 static char mapfix3[256];

@@ -21,6 +21,10 @@
  */
 #include "tn5250-private.h"
 
+#if defined (__SVR4) && defined (__sun)
+#include <sys/filio.h>
+#endif
+
 #ifdef USES_NACCEPT
 #ifdef accept
 #undef accept

@@ -1,3 +1,7 @@
+2012-06-14 Scott Klement <tn5250@scottklement.com>
+- Applied patch from Ben Walton to ensure that FIONBIO is defined
+   on Sun/Solaris systems.
+
 2012-04-04 Scott Klement <tn5250@scottklemnt.com>
 - Rewrite win32_print_screen() to use StretchDiBits instead of StretchBlt().
    StretchBlt() seems to fail with some hardware video accelerators, and
