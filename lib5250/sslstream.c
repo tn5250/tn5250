@@ -372,22 +372,16 @@ int tn5250_ssl_stream_init (Tn5250Stream *This)
 
 /*  which SSL method do we use? */
 
-   strcpy(methstr,"auto");
-   if (This->config!=NULL && tn5250_config_get (This->config, "ssl_method")) {
-        strncpy(methstr, tn5250_config_get (This->config, "ssl_method"), 4);
-        methstr[4] = '\0';
-   }
-
-   if (!strcmp(methstr, "ssl2")) {
-        meth = SSLv2_client_method();         
-        TN5250_LOG(("SSL Method = SSLv2_client_method()\n"));
-   } else if (!strcmp(methstr, "ssl3")) {
-        meth = SSLv3_client_method();         
-        TN5250_LOG(("SSL Method = SSLv3_client_method()\n"));
-   } else {
-        meth = SSLv23_client_method();         
-        TN5250_LOG(("SSL Method = SSLv23_client_method()\n"));
-   }
+    /* Ignore the user's choice of ssl_method (which isn't documented
+     * anyway...) if it was either "ssl2" or "ssl3". Both are insecure,
+     * and this is only safe supported method left.
+     *
+     * This is a Gentoo-specific modification that lets us build
+     * against LibreSSL and newer OpenSSL with its insecure protocols
+     * disabled.
+     */
+    meth = SSLv23_client_method();
+    TN5250_LOG(("SSL Method = SSLv23_client_method()\n"));
 
 /*  create a new SSL context */
 
