@@ -368,7 +368,7 @@ int tn5250_ssl_stream_init (Tn5250Stream *This)
 /*  initialize SSL library */
 
    SSL_load_error_strings();
-   SSL_library_init();
+   OPENSSL_init_ssl(0, NULL);
 
 /*  which SSL method do we use? */
 
