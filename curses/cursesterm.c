@@ -640,9 +640,9 @@ static void curses_terminal_update(Tn5250Terminal * This, Tn5250Display *display
       if(This->data->is_xterm) {
          if (This->data->font_132!=NULL) {
                if (tn5250_display_width (display)>100)
-                    printf(This->data->font_132);
+                    printf("%s",This->data->font_132);
                else
-                    printf(This->data->font_80);
+                    printf("%s",This->data->font_80);
          }
 	 printf ("\x1b[8;%d;%dt", tn5250_display_height (display)+1,
 	       tn5250_display_width (display));

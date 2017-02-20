@@ -315,7 +315,7 @@ static void ssl_log_SB_buf(unsigned char *buf, int len)
 
    if (!tn5250_logfile)
       return;
-   fprintf(tn5250_logfile,ssl_getTelOpt(type=*buf++));
+   fprintf(tn5250_logfile,"%s",ssl_getTelOpt(type=*buf++));
    switch (c=*buf++) {
       case IS:
 		fputs("<IS>",tn5250_logfile);

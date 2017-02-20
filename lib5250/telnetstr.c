@@ -290,7 +290,7 @@ static void log_SB_buf(unsigned char *buf, int len)
 
    if (!tn5250_logfile)
       return;
-   fprintf(tn5250_logfile,getTelOpt(type=*buf++));
+   fprintf(tn5250_logfile,"%s",getTelOpt(type=*buf++));
    switch (c=*buf++) {
       case IS:
 		fputs("<IS>",tn5250_logfile);
