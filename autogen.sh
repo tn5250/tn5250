@@ -4,4 +4,4 @@
 #              repository.
 #
 
-autoreconf -i "$@"
+autoreconf -fi "$@"
