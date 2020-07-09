@@ -22,20 +22,20 @@
 #ifndef CURSESTERM_H
 #define CURSESTERM_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #if USE_CURSES
 #ifdef HAVE_NCURSES_H
 #include <ncurses.h>
 #else
 #include <curses.h>
+#include <term.h>
 #endif
 #ifdef HAVE_TERMCAP_H
 #include <termcap.h>
 #endif
-#include "cursesterm.h"
+#endif
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 #ifdef USE_CURSES

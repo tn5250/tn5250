@@ -19,6 +19,7 @@
  */
 
 #include "tn5250-private.h"
+#include "cursesterm.h"
 
 Tn5250Session *sess = NULL;
 Tn5250Stream *stream = NULL;
