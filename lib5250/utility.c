@@ -26,6 +26,9 @@
 #include <sys/filio.h>
 #endif
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 static unsigned char mapfix[256];
 static unsigned char mapfix2[256];
 static unsigned char mapfix3[256];
