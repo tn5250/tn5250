@@ -23,6 +23,7 @@
  */
 
 #include "tn5250-private.h"
+#include "scs-private.h"
 
 static void scs2ps_pp (Tn5250SCS * This);
 static void scs2ps_cr (Tn5250SCS * This);

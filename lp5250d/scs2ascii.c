@@ -21,6 +21,7 @@
  */
 
 #include "tn5250-private.h"
+#include "scs-private.h"
 
 /*
 #define DEBUG

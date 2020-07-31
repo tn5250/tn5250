@@ -24,6 +24,7 @@
  */
 
 #include "tn5250-private.h"
+#include "scs-private.h"
 #include <syslog.h>
 
 /* If getopt.h exists then getopt_long() probably does as well.  If
