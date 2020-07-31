@@ -65,7 +65,7 @@ sig_child(int signum)
   int pid;
   int status;
 
-  while( pid = waitpid(-1, &status, WNOHANG) > 0);
+  while( (pid = waitpid(-1, &status, WNOHANG)) > 0);
 
   return;
 }

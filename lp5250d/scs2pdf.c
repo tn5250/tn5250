@@ -378,7 +378,7 @@ main (int argc, char **argv)
   scs->data->objcount++;
   scs->data->filesize += pdf_begin_stream (scs, COURIER);
 #ifdef DEBUG
-  fprintf (stderr, "objcount = %d\n", scs->data->objcount);
+  fprintf (stderr, "objcount = %lu\n", scs->data->objcount);
 #endif
 
 
@@ -470,7 +470,7 @@ main (int argc, char **argv)
 				    scs->data->pagenumber);
   pageparent = scs->data->objcount;
 #ifdef DEBUG
-  fprintf (stderr, "pages objcount = %d\n", scs->data->objcount);
+  fprintf (stderr, "pages objcount = %lu\n", scs->data->objcount);
 #endif
 
   for (i = 0; i < scs->data->pagenumber; i++)
@@ -486,7 +486,7 @@ main (int argc, char **argv)
 				       scs->data->pdfleftmargin,
 				       scs->data->pdftopmargin);
 #ifdef DEBUG
-      fprintf (stderr, "page objcount = %d\n", scs->data->objcount);
+      fprintf (stderr, "page objcount = %lu\n", scs->data->objcount);
 #endif
     }
 
@@ -1103,9 +1103,9 @@ pdf_begin_stream (Tn5250SCS * This, int fontname)
   int topmargin;
 
   sprintf (text1,
-	   "%d 0 obj\n"
+	   "%lu 0 obj\n"
 	   "\t<<\n"
-	   "\t\t/Length %d 0 R\n"
+	   "\t\t/Length %lu 0 R\n"
 	   "\t>>\n"
 	   "stream\n", This->data->objcount, This->data->objcount + 1);
   fprintf (outfile, "%s", text1);

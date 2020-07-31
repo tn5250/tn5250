@@ -751,7 +751,7 @@ tn5250_macro_printstate (Tn5250Display * This)
   int NumKey;
 
   PState[0] = 0;
-  if (This->macro != NULL)
+  if (This->macro != NULL) {
     if (This->macro->RState > 0)	/* recording state */
       {
 	if (This->macro->RState == 1)
@@ -774,6 +774,7 @@ tn5250_macro_printstate (Tn5250Display * This)
 	    sprintf (PState, "P F%02i      ", NumKey);
 	  }
       }
+  }
   return (PState);
 }
 
