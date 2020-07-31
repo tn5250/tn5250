@@ -858,7 +858,7 @@ static void telnet_stream_host_sb(Tn5250Stream * This, UCHAR *sb_buf,
 	  for(i=0; i<sb_len && sb_buf[i] != IAC; i++)
 	    tn5250_buffer_append_byte(&tbuf, sb_buf[i]);
 	  tn5250_buffer_append_byte(&tbuf, TN3270E_CONNECT);
-	  tn5250_buffer_append_data(&tbuf, dummyname, strlen(dummyname));
+	  tn5250_buffer_append_data(&tbuf, (unsigned char*)dummyname, strlen(dummyname));
 	  tn5250_buffer_append_byte(&tbuf, IAC);
 	  tn5250_buffer_append_byte(&tbuf, SE);
 	  rc = TN_SEND(This->sockfd, (char *) tn5250_buffer_data(&tbuf),

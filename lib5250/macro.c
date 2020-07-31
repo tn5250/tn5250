@@ -155,7 +155,7 @@ macro_isnewmacro (char *Buff, unsigned char **name)
       ptr++;
       length = strlen (Buff) - (i + 1);
       *name = (unsigned char *) calloc (length + 1, sizeof (unsigned char));
-      strncpy (*name, ptr, length);
+      strncpy ((char*)*name, ptr, length);
     }
   return (Num);
 }
@@ -287,8 +287,8 @@ macro_loadfile (Tn5250Macro * Macro)
 			(unsigned char *) realloc (Macro->
 						   data[CurMacro - 1].name,
 						   sizeof (unsigned char) *
-						   (strlen (macroname) + 1));
-		      strcpy (Macro->data[CurMacro - 1].name, macroname);
+						   (strlen ((const char*)macroname) + 1));
+		      strcpy ((char*)Macro->data[CurMacro - 1].name, (char*)macroname);
 		      free (macroname);
 		    }
 		}

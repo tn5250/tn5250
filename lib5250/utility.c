@@ -26,10 +26,10 @@
 #include <sys/filio.h>
 #endif
 
-static char mapfix[256];
-static char mapfix2[256];
-static char mapfix3[256];
-static char mapfix4[256];
+static unsigned char mapfix[256];
+static unsigned char mapfix2[256];
+static unsigned char mapfix3[256];
+static unsigned char mapfix4[256];
 
 #ifndef WIN32
 
@@ -271,13 +271,13 @@ Tn5250CharMap *tn5250_char_map_new (const char *map)
 
       for (t = tn5250_transmaps;  t->name; t++) {
           if (!strcmp(t->name, "win870")) {
-               t->to_remote_map = (const char *)mapfix;
-               t->to_local_map = (const char *)mapfix2;
+               t->to_remote_map = mapfix;
+               t->to_local_map = mapfix2;
                TN5250_LOG(("Workaround installed for map \"win870\"\n"));
           }
           else if (!strcmp(t->name, "870")) {
-               t->to_remote_map = (const char *)mapfix3;
-               t->to_local_map = (const char *)mapfix4;
+               t->to_remote_map = mapfix3;
+               t->to_local_map = mapfix4;
                TN5250_LOG(("Workaround installed for map \"870\"\n"));
           }
       }
