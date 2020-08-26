@@ -70,5 +70,3 @@ void scs_setfont (Tn5250SCS * This);
 void scs_main (Tn5250SCS * This);
 void scs_init (Tn5250SCS * This);
 void scs_default (Tn5250SCS * This);
-
-static void scs_log(const char *msg, ...);

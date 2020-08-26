@@ -24,6 +24,7 @@
 
 #ifndef WIN32
 
+#include <syslog.h>
 
 static const struct response_code {
    const char * code;

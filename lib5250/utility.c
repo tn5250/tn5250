@@ -26,6 +26,10 @@
 #include <sys/filio.h>
 #endif
 
+#ifdef HAVE_SYSLOG_H
+#include <syslog.h>
+#endif
+
 #include <sys/types.h>
 #include <sys/stat.h>
 

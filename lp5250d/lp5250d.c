@@ -21,6 +21,7 @@
  */
 
 #include "tn5250-private.h"
+#include <syslog.h>
 
 /* If getopt.h exists then getopt_long() probably does as well.  If
  * getopt.h doesn't exist (like on Solaris) then we probably need to use

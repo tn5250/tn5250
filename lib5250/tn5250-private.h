@@ -62,10 +62,6 @@
 #include <fcntl.h>
 #endif
 
-#ifdef HAVE_SYSLOG_H
-#include <syslog.h>
-#endif
-
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
