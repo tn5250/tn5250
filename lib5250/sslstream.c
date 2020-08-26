@@ -492,7 +492,7 @@ int tn5250_ssl_stream_init (Tn5250Stream *This)
 static int ssl_stream_connect(Tn5250Stream * This, const char *to)
 {
    struct sockaddr_in serv_addr;
-   u_long ioctlarg = 1;
+   int ioctlarg = 1;
    char *address;
    int r;
    X509 *server_cert;
@@ -513,7 +513,7 @@ static int ssl_stream_connect(Tn5250Stream * This, const char *to)
    if (serv_addr.sin_addr.s_addr == INADDR_NONE) {
       struct hostent *pent = gethostbyname(address);
       if (pent != NULL)
-	 serv_addr.sin_addr.s_addr = *((u_long *) (pent->h_addr));
+	 memcpy(serv_addr.sin_addr.s_addr, pent->h_addr, 4);
    }
    free (address);
    if (serv_addr.sin_addr.s_addr == INADDR_NONE) {
@@ -650,7 +650,7 @@ static int ssl_stream_accept(Tn5250Stream * This, SOCKET_TYPE masterfd)
    int negotiating;
 
 #ifndef WINELIB
-   u_long ioctlarg=1L;
+   int ioctlarg=1;
 #endif
 
 /* FIXME:  This routine needs to be converted to use SSL calls 

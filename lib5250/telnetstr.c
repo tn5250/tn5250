@@ -381,7 +381,7 @@ int tn3270_telnet_stream_init (Tn5250Stream *This)
 static int telnet_stream_connect(Tn5250Stream * This, const char *to)
 {
    struct sockaddr_in serv_addr;
-   u_long ioctlarg = 1;
+   int ioctlarg = 1;
    char *address;
    int r;
 
@@ -397,8 +397,9 @@ static int telnet_stream_connect(Tn5250Stream * This, const char *to)
    serv_addr.sin_addr.s_addr = inet_addr(address);
    if (serv_addr.sin_addr.s_addr == INADDR_NONE) {
       struct hostent *pent = TN_GETHOSTBYNAME(address);
-      if (pent != NULL)
-	 serv_addr.sin_addr.s_addr = *((u_long *) (pent->h_addr));
+      if (pent != NULL) {
+         memcpy(&serv_addr.sin_addr.s_addr, pent->h_addr, 4);
+      }
    }
    free (address);
    if (serv_addr.sin_addr.s_addr == INADDR_NONE)
@@ -464,7 +465,7 @@ static int telnet_stream_accept(Tn5250Stream * This, SOCKET_TYPE masterfd)
    struct timeval tv;
 
 #ifndef WINELIB
-   u_long ioctlarg=1L;
+   int ioctlarg=1;
 #endif
 
    /*

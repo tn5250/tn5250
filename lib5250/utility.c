@@ -150,7 +150,7 @@ tn5250_make_socket (unsigned short int port)
   int sock;
   int on = 1;
   struct sockaddr_in name;
-  u_long ioctlarg = 0;
+  int ioctlarg = 0;
 
   /* Create the socket. */
   sock = socket (PF_INET, SOCK_STREAM, 0);
