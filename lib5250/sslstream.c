@@ -186,7 +186,7 @@ int errnum;
  #define LOGERROR	ssl_logError
  #define DUMP_ERR_STACK ssl_log_error_stack
 
-static char *ssl_getTelOpt(what)
+static char *ssl_getTelOpt(unsigned char what)
 {
    char *wcp;
    static char wbuf[12];

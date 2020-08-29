@@ -168,7 +168,7 @@ static const UCHAR SB_Str_TermType[]={IAC, SB, TERMINAL_TYPE, SEND, IAC, SE};
  #define TNSB_LOG	log_SB_buf
  #define LOGERROR	logError
 
-static char *getTelOpt(what)
+static char *getTelOpt(unsigned char what)
 {
    char *wcp;
    static char wbuf[12];
