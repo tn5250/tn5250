@@ -25,10 +25,8 @@
 #include <sys/filio.h>
 #endif
 
-#ifdef USES_NACCEPT
 #ifdef accept
 #undef accept
-#endif
 #endif
 
 static int telnet_stream_get_next(Tn5250Stream * This, unsigned char *buf, int size);
