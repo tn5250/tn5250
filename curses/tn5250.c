@@ -156,6 +156,9 @@ int main(int argc, char *argv[])
    errno = 0;
 
 bomb_out:
+   if (errno != 0)
+      printf("Could not start session: %s\n", strerror(errno));
+
    if (macro != NULL)
       tn5250_macro_exit(macro);
    if (term != NULL)
@@ -166,9 +169,6 @@ bomb_out:
       tn5250_stream_destroy (stream);
    if (config != NULL)
       tn5250_config_unref (config);
-
-   if (errno != 0)
-      printf("Could not start session: %s\n", strerror(errno));
 #ifndef NDEBUG
    tn5250_log_close();
 #endif
