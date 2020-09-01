@@ -21,6 +21,13 @@
  * Boston, MA 02111-1307 USA
  * 
  */
+#define _POSIX_C_SOURCE 200112L
+#define _XOPEN_SOURCE 600
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <string.h>
 
 #include "tn5250-private.h"
 
@@ -489,6 +496,11 @@ int tn5250_ssl_stream_init (Tn5250Stream *This)
  *****/
 static int ssl_stream_connect(Tn5250Stream * This, const char *to)
 {
+   TN5250_LOG(("tn5250_ssl_stream_connect() entered.\n"));
+
+   X509 *server_cert;
+   long certvfy;
+#if 0
    struct sockaddr_in serv_addr;
    int ioctlarg = 1;
    char *address;
@@ -496,7 +508,6 @@ static int ssl_stream_connect(Tn5250Stream * This, const char *to)
    X509 *server_cert;
    long certvfy;
 
-   TN5250_LOG(("tn5250_ssl_stream_connect() entered.\n"));
 
    memset((char *) &serv_addr, 0, sizeof(serv_addr));
    serv_addr.sin_family = AF_INET;
@@ -540,6 +551,122 @@ static int ssl_stream_connect(Tn5250Stream * This, const char *to)
       else
 	 serv_addr.sin_port = pent->s_port;
    }
+#endif
+
+
+
+   char* to_copy = strdup(to);
+   size_t to_len = strlen(to_copy);
+   char* host = to_copy;
+
+   const char* port_default = "telnets";
+   const char* port;
+
+   if (host[0] == '[') {
+      char* host_end = strrchr(host, ']');
+      if(!host_end) {
+         // TODO: error
+         fprintf(stderr, "No trailing ]\n");
+         return -1;
+      }
+
+      size_t host_len = (size_t)(host_end - host) + 1;
+      if (host_len != to_len) {
+         // Must have specified [host]:port
+         if (host[host_len] != ':') {
+            // TODO: error
+            fprintf(stderr, "No colon found:%c\n", host[host_len]);
+            return -1;
+         }
+         port = host + host_len + 1;
+      } else {
+         port = port_default;
+      }
+
+      host = host + 1;
+      *host_end = '\0';
+   }
+   else {
+      /* Figure out the port name. */
+      char* colon = strrchr (to_copy, ':');
+      if (colon) {
+         *colon = '\0';
+
+         port = colon + 1;
+      }
+      else {
+         port = port_default;
+      }
+   }
+
+   fprintf(stderr, "host: %s, port %s\n", host, port);
+
+   struct addrinfo hints;
+   struct addrinfo* result;
+
+   memset(&hints, 0, sizeof(hints));
+   hints.ai_family = AF_UNSPEC;
+   hints.ai_socktype = SOCK_STREAM;
+   // These seem redundant with the memset
+   hints.ai_flags = 0;
+   hints.ai_protocol = 0;
+
+   fprintf(stderr, "using port %s\n", port);
+   int r = getaddrinfo(host, port, &hints, &result);
+   if(r == EAI_NONAME && port == port_default) {
+      hints.ai_flags |= AI_NUMERICSERV;
+
+      freeaddrinfo(result);
+      fprintf(stderr, "using port 23\n");
+      r = getaddrinfo(host, "992", &hints, &result);
+   }
+
+   if (r != 0) {
+      freeaddrinfo(result);
+      return r;
+   }
+
+   This->ssl_handle = SSL_new(This->ssl_context);
+   if (This->ssl_handle==NULL) {
+        DUMP_ERR_STACK ();
+        TN5250_LOG(("sslstream: SSL_new() failed!\n"));
+        return -1;
+   }
+
+   int connected = 0;
+   for (struct addrinfo* addr = result; addr; addr = addr->ai_next) {
+      fprintf(stderr, "opening socket on %d %d %d\n",
+         addr->ai_family, addr->ai_socktype, addr->ai_protocol
+      );
+      This->sockfd = socket(addr->ai_family, addr->ai_socktype,
+                            addr->ai_protocol);
+      if (This->sockfd == -1) continue;
+
+      if ((r=SSL_set_fd(This->ssl_handle, This->sockfd))==0) {
+         errnum = SSL_get_error(This->ssl_handle, r);
+         DUMP_ERR_STACK ();
+         TN5250_LOG(("sslstream: SSL_set_fd() failed, errnum=%d\n", errnum));
+         freeaddrinfo(result);
+         return errnum;
+      }
+
+      fprintf(stderr, "connecting\n");
+      if (connect(This->sockfd, addr->ai_addr, addr->ai_addrlen) == 0) {
+         connected = 1;
+         break;
+      }
+   }
+   
+   freeaddrinfo(result);
+
+   if (!connected) {
+      // TODO: Figure out what to return
+      fprintf(stderr, "couldn't connect\n");
+      return -1;
+   }
+
+
+#if 0
 
    This->ssl_handle = SSL_new(This->ssl_context);
    if (This->ssl_handle==NULL) {
@@ -566,6 +693,9 @@ static int ssl_stream_connect(Tn5250Stream * This, const char *to)
       TN5250_LOG(("sslstream: connect() failed, errno=%d\n", errno));
       return -1;
    }
+
+#endif
+   
 
    if ((r=SSL_connect(This->ssl_handle)<1)) {
         errnum = SSL_get_error(This->ssl_handle, r);
@@ -621,7 +751,8 @@ static int ssl_stream_connect(Tn5250Stream * This, const char *to)
    
    /* Set socket to non-blocking mode. */
    TN5250_LOG(("SSL must be Non-Blocking\n"));
-   TN_IOCTL(This->sockfd, FIONBIO, &ioctlarg);
+   int arg = 1;
+   TN_IOCTL(This->sockfd, FIONBIO, &arg);
 
    This->state = TN5250_STREAM_STATE_DATA;
    TN5250_LOG(("tn5250_ssl_stream_connect() success.\n"));

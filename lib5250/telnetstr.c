@@ -19,11 +19,21 @@
  * Boston, MA 02111-1307 USA
  * 
  */
+#define _POSIX_C_SOURCE 200112L
+#define _XOPEN_SOURCE 600
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <string.h>
+
 #include "tn5250-private.h"
 
 #if defined (__SVR4) && defined (__sun)
 #include <sys/filio.h>
 #endif
+
+
 
 #ifdef accept
 #undef accept
@@ -378,63 +388,105 @@ int tn3270_telnet_stream_init (Tn5250Stream *This)
  *****/
 static int telnet_stream_connect(Tn5250Stream * This, const char *to)
 {
-   struct sockaddr_in serv_addr;
-   int ioctlarg = 1;
-   char *address;
-   int r;
+   char* to_copy = strdup(to);
+   size_t to_len = strlen(to_copy);
+   char* host = to_copy;
 
-   memset((char *) &serv_addr, 0, sizeof(serv_addr));
-   serv_addr.sin_family = AF_INET;
+   const char* port;
 
-   /* Figure out the internet address. */
-   address = (char *)malloc (strlen (to)+1);
-   strcpy (address, to);
-   if (strchr (address, ':'))
-      *strchr (address, ':') = '\0';
+   if (host[0] == '[') {
+      char* host_end = strrchr(host, ']');
+      if(!host_end) {
+         // TODO: error
+         fprintf(stderr, "No trailing ]\n");
+         return -1;
+      }
+
+      size_t host_len = (size_t)(host_end - host) + 1;
+      if (host_len != to_len) {
+         // Must have specified [host]:port
+         if (host[host_len] != ':') {
+            // TODO: error
+            fprintf(stderr, "No colon found:%c\n", host[host_len]);
+            return -1;
+         }
+         port = host + host_len + 1;
+      } else {
+         port = "telnet";
+      }
+
+      host = host + 1;
+      *host_end = '\0';
+   }
+   else {
+      /* Figure out the port name. */
+      char* colon = strrchr (to_copy, ':');
+      if (colon) {
+         *colon = '\0';
+
+         port = colon + 1;
+      }
+      else {
+         port = "telnet";
+      }
+   }
+
+   fprintf(stderr, "host: %s, port %s\n", host, port);
+
+   struct addrinfo hints;
+   struct addrinfo* result;
+
+   memset(&hints, 0, sizeof(hints));
+   hints.ai_family = AF_UNSPEC;
+   hints.ai_socktype = SOCK_STREAM;
+   // These seem redundant with the memset
+   hints.ai_flags = 0;
+   hints.ai_protocol = 0;
+
+   fprintf(stderr, "using port %s\n", port);
+   int r = getaddrinfo(host, port, &hints, &result);
+   if(r == EAI_NONAME && port == "telnet") {
+      hints.ai_flags |= AI_NUMERICSERV;
+
+      freeaddrinfo(result);
+      fprintf(stderr, "using port 23\n");
+      r = getaddrinfo(host, "23", &hints, &result);
+   }
+
+   if (r != 0) {
+      freeaddrinfo(result);
+      return r;
+   }
+
+   int connected = 0;
+   for (struct addrinfo* addr = result; addr; addr = addr->ai_next) {
+      fprintf(stderr, "opening socket on %d %d %d\n",
+         addr->ai_family, addr->ai_socktype, addr->ai_protocol
+      );
+      This->sockfd = socket(addr->ai_family, addr->ai_socktype,
+                            addr->ai_protocol);
+      if (This->sockfd == -1) continue;
+
+      fprintf(stderr, "connecting\n");
+      if (connect(This->sockfd, addr->ai_addr, addr->ai_addrlen) == 0) {
+         connected = 1;
+         break;
+      }
+   }
    
-   serv_addr.sin_addr.s_addr = inet_addr(address);
-   if (serv_addr.sin_addr.s_addr == INADDR_NONE) {
-      struct hostent *pent = TN_GETHOSTBYNAME(address);
-      if (pent != NULL) {
-         memcpy(&serv_addr.sin_addr.s_addr, pent->h_addr, 4);
-      }
-   }
-   free (address);
-   if (serv_addr.sin_addr.s_addr == INADDR_NONE)
-      return LAST_ERROR;
+   freeaddrinfo(result);
 
-   /* Figure out the port name. */
-   if (strchr (to, ':') != NULL) {
-      const char *port = strchr (to, ':') + 1;
-      serv_addr.sin_port = htons((u_short) atoi(port));
-      if (serv_addr.sin_port == 0) {
-	 struct servent *pent = getservbyname(port, "tcp");
-	 if (pent != NULL)
-	    serv_addr.sin_port = pent->s_port;
-      }
-      if (serv_addr.sin_port == 0)
-	 return LAST_ERROR;
-   } else {
-      /* No port specified ... use telnet port. */
-      struct servent *pent = getservbyname ("telnet", "tcp");
-      if (pent == NULL)
-	 serv_addr.sin_port = htons(23);
-      else
-	 serv_addr.sin_port = pent->s_port;
+   if (!connected) {
+      // TODO: Figure out what to return
+      fprintf(stderr, "couldn't connect\n");
+      return -1;
    }
 
-   This->sockfd = socket(PF_INET, SOCK_STREAM, 0);
-   if (WAS_INVAL_SOCK(This->sockfd)) {
-      return LAST_ERROR;
-   }
-   r = TN_CONNECT(This->sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
-   if (WAS_ERROR_RET(r)) {
-      return LAST_ERROR;
-   }
    /* Set socket to non-blocking mode. */
 #ifdef FIONBIO
    TN5250_LOG(("Non-Blocking\n"));
-   TN_IOCTL(This->sockfd, FIONBIO, &ioctlarg);
+   int arg = 1;
+   TN_IOCTL(This->sockfd, FIONBIO, &arg);
 #endif
 
    This->state = TN5250_STREAM_STATE_DATA;
@@ -462,10 +514,6 @@ static int telnet_stream_accept(Tn5250Stream * This, SOCKET_TYPE masterfd)
    fd_set fdr;
    struct timeval tv;
 
-#ifndef WINELIB
-   int ioctlarg=1;
-#endif
-
    /*
    len = sizeof(serv_addr);
    This->sockfd = accept(masterSock, (struct sockaddr *) &serv_addr, &len);
@@ -478,7 +526,8 @@ static int telnet_stream_accept(Tn5250Stream * This, SOCKET_TYPE masterfd)
 
    /* Set socket to non-blocking mode. */
 #ifndef WINELIB
-   TN_IOCTL(This->sockfd, FIONBIO, &ioctlarg);
+   int arg = 1;
+   TN_IOCTL(This->sockfd, FIONBIO, &arg);
 #endif
 
    This->state = TN5250_STREAM_STATE_DATA;
