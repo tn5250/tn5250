@@ -120,6 +120,7 @@ struct _Tn5250TerminalPrivate {
     char* font_132;
     Tn5250Display* display;
     Tn5250Config* config;
+    mmask_t old_mouse_mask;
     unsigned int quit_flag : 1;
     unsigned int have_underscores : 1;
     unsigned int underscores : 1;
@@ -467,6 +468,8 @@ static void curses_terminal_init(Tn5250Terminal* This) {
             This->data->k_map[This->data->k_map_len - s - 1].k_str[0] = 0;
     }
 #endif
+
+    mousemask(BUTTON1_CLICKED, &This->data->old_mouse_mask);
 }
 
 /****i* lib5250/tn5250_curses_terminal_use_underscores
@@ -888,8 +891,25 @@ static int curses_terminal_waitevent(Tn5250Terminal* This) {
  *****/
 static int curses_terminal_getkey(Tn5250Terminal* This) {
     int key;
+    MEVENT event;
 
     key = getch();
+
+    /*
+     * keypad must be called, but tn5250 wants to parse things on its own if
+     * it's not calling it.
+     */
+    if (key == KEY_MOUSE && getmouse(&event) == OK) {
+       int nx, ny;
+       /* Clamp to display size or we trip an assert. */
+       ny = tn5250_display_height(This->data->display) <= event.y
+          ? tn5250_display_height(This->data->display) - 1 : event.y;
+       nx = tn5250_display_width(This->data->display) <= event.x
+          ? tn5250_display_width(This->data->display) - 1 : event.x;
+       if (event.bstate & BUTTON1_CLICKED) {
+          tn5250_display_set_cursor(This->data->display, ny, nx);
+       }
+    }
 
     while (1) {
         switch (key) {
