@@ -46,66 +46,42 @@ then
     AC_DEFINE_UNQUOTED(USE_OWN_KEY_PARSING,1)
 fi
 
-AC_ARG_WITH([ssl],AS_HELP_STRING([--with-ssl],[OpenSSL support (default=yes)]),[ac_cv_use_ssl=$withval],[ac_cv_use_ssl=yes]) AC_CACHE_CHECK([whether to build with OpenSSL support],[ac_cv_use_ssl], [ac_cv_use_ssl=yes])
+AC_ARG_WITH([ssl],AS_HELP_STRING([--with-ssl@<:@=DIR@:>@],[OpenSSL support (yes/no/path to OpenSSL) @<:@default=yes@:>@]))
 
-if test "$ac_cv_use_ssl" = "yes"
-then
-dnl **
-dnl ** Check for OpenSSL include files.
-dnl ** They can be in any of a number of standard places.   Most
-dnl ** operating systems want them in /usr/include or /usr/local/include,
-dnl ** but the default OpenSSL install puts them in
-dnl ** ${PREFIX}/ssl/include/openssl
-checksslinclude() {
-    if test -f "$1/include/openssl/ssl.h"; then
-        sslincludedir="-I$1/include"
-        return 0
-    fi
-    return 1
-}
-AC_MSG_CHECKING([for OpenSSL headers])
-AC_ARG_WITH([ssl-dir],AS_HELP_STRING([--with-ssl-dir],[directory for OpenSSL headers]),[
-    if test "$with_ssl_dir" != "no"; then
-         checksslinclude "$with_ssl_dir"
-    else
-        for topdir in /usr/local /usr /usr/pkg /usr/lib /var/ssl /opt; do
-            for subdir in $topdir $topdir/openssl $topdir/ssl; do
-                checksslinclude "$subdir" && break 2
-            done
-        done
-     fi
-     if test -z "$sslincludedir"; then
-          AC_MSG_ERROR([** Unable to find OpenSSL headers! Specify --with-ssl-dir=DIR to specify a location.])
-     fi
-],[
-      for topdir in /usr/local /usr /usr/pkg /usr/lib /var/ssl /opt; do
-          for subdir in $topdir $topdir/openssl $topdir/ssl; do
-              checksslinclude "$subdir" && break 2
-          done
-      done
-])
-if test -z "$sslincludedir"; then
-     AC_MSG_RESULT([not found])
-else
-     AC_MSG_RESULT([$sslincludedir])
-fi
+case "$with_ssl" in
+    no) ;;
+    yes | '')
+        OPENSSL_DIRS="/usr/local /usr /usr/pkg /usr/lib /var/ssl /opt"
+        with_ssl=yes
+        ;;
+    *)
+        OPENSSL_DIRS="$with_ssl"
+        with_ssl=yes
+        ;;
+esac
 
-dnl **
-dnl ** Check for OpenSSL libraries.
-dnl ** happily, we don't have to hunt for them thanks to ldconfig!
-dnl **
-if test -n "$sslincludedir"; then
-     CPPFLAGS="$CPPFLAGS $sslincludedir"
-     AC_CHECK_LIB(crypto,OPENSSL_init)
-     if test "$ac_cv_lib_crypto_OPENSSL_init" != "yes"
-     then
-             AC_MSG_ERROR([** Unable to find OpenSSL libraries!])
+if test "$with_ssl" = "yes"; then
+    AC_MSG_CHECKING([for OpenSSL headers])
+    for topdir in $OPENSSL_DIRS
+    do
+        if test -e "$topdir/include/openssl/ssl.h"; then
+            OPENSSLDIR="$topdir"
+            break
+        fi
+    done
+
+    if test -z "$OPENSSLDIR"; then
+        AC_MSG_RESULT([not found])
+        AC_MSG_ERROR([** Unable to find OpenSSL headers! Specify --with-ssl=DIR to specify the path to the OpenSSL installation.])
+      else
+        AC_MSG_RESULT([$OPENSSLDIR])
      fi
-     AC_CHECK_LIB(ssl,OPENSSL_init_ssl)
-     if test "$ac_cv_lib_ssl_OPENSSL_init_ssl" != "yes"
-     then
-             AC_MSG_ERROR([** Unable to find OpenSSL libraries!])
-     fi
+
+    CPPFLAGS="$CPPFLAGS -I$OPENSSLDIR/include"
+    LDFLAGS="$LDFLAGS -L$OPENSSLDIR/lib"
+
+    AC_CHECK_LIB(crypto, OPENSSL_init, [], AC_MSG_ERROR([** Unable to find OpenSSL libraries!]))
+    AC_CHECK_LIB(ssl, OPENSSL_init_ssl, [], AC_MSG_ERROR([** Unable to find OpenSSL libraries!]))
 fi
 
 AC_SUBST([CURSES_LIB])
