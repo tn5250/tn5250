@@ -10,16 +10,15 @@ of TN5250 in PDF format. (Adobe Acrobat Reader is required to read it)
 If you need additional information or support, please follow these
 steps:
 
-     1) Go to our web page at http://tn5250.sourceforge.net and
+     1) Go to our web page at https://tn5250.github.io and
            check for documentation that might help you.
 
      2) Search the archives of our mailing list.  The list is
            called "Linux5250" and the archives can be found at
            http://archive.midrange.com
 
-     3) If you're still stuck, go to http://www.midrange.com
-           and join the Linux5250 mailing list.  Then, ask your
-           question there, and someone will help you.
+     3) If you're still stuck, open an issue at
+           https://github.com/tn5250/tn5250/issues
 
 Note:  Although our mailing list is called "Linux5250" it is used for
        supporting all versions of this emulator, including Windows.

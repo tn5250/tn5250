@@ -12,7 +12,7 @@ works with the TN5250 project, and it was I who created this Windows port.
 SUPPORT:
 ---------------------
 The first place to go for support is our home page:
-    http://tn5250.sourceforge.net
+    https://github.com/tn5250/tn5250
 
 If you can't find an answer to your question listed there, you should
 check the archives for our mailing list next.  The home page has a link

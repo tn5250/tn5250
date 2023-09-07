@@ -2,9 +2,9 @@
 AppName=@PACKAGE@
 AppVerName=@PACKAGE@ @VERSION@
 AppPublisher=The Linux Tn5250 Project
-AppPublisherURL=http://tn5250.sourceforge.net
-AppSupportURL=http://tn5250.sourceforge.net
-AppUpdatesURL=http://tn5250.sourceforge.net
+AppPublisherURL=http://tn5250.github.io
+AppSupportURL=https://github.com/tn5250/tn5250/issues
+AppUpdatesURL=https://github.com/tn5250/tn5250/releases
 DefaultDirName={pf}\TN5250
 DefaultGroupName=TN5250
 AllowNoIcons=yes
@@ -27,7 +27,7 @@ Source: "@installdir@\MANUAL.PDF"; DestDir: "{app}"; CopyMode: alwaysoverwrite
 Source: "{src}\options"; DestDir: "{app}"; CopyMode: alwaysoverwrite; Flags: external skipifsourcedoesntexist
 
 [INI]
-Filename: "{app}\TN5250.url"; Section: "InternetShortcut"; Key: "URL"; String: "http://tn5250.sourceforge.net"
+Filename: "{app}\TN5250.url"; Section: "InternetShortcut"; Key: "URL"; String: "http://tn5250.github.io"
 
 [Icons]
 Name: "{group}\Tn5250"; Filename: "{app}\TN5250.EXE"
