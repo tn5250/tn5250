@@ -3,7 +3,7 @@
 
 AC_PREREQ(2.59)
 AC_INIT([tn5250],[0.18.0],[https://github.com/tn5250/tn5250/issues])
-AC_CONFIG_AUX_DIR(.)
+AC_CONFIG_AUX_DIR([build-aux])
 
 AM_INIT_AUTOMAKE([foreign])
 AM_CONFIG_HEADER(config.h)
