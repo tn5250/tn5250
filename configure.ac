@@ -123,7 +123,7 @@ checksslinclude() {
 AC_MSG_CHECKING([for OpenSSL headers])
 AC_ARG_WITH([ssl-dir],AS_HELP_STRING([--with-ssl-dir],[directory for OpenSSL headers]),[
     if test "$with_ssl_dir" != "no"; then
-         checksslinclude "$with_ssl"
+         checksslinclude "$with_ssl_dir"
     else
         for topdir in /usr/local /usr /usr/pkg /usr/lib /var/ssl /opt; do
             for subdir in $topdir $topdir/openssl $topdir/ssl; do
@@ -131,8 +131,8 @@ AC_ARG_WITH([ssl-dir],AS_HELP_STRING([--with-ssl-dir],[directory for OpenSSL hea
             done
         done
      fi
-     if test -z $sslincludedir; then
-          AC_MSG_ERROR([** Unable to find OpenSSL headers! Specify --with-ssl=DIR to specify a location.])
+     if test -z "$sslincludedir"; then
+          AC_MSG_ERROR([** Unable to find OpenSSL headers! Specify --with-ssl-dir=DIR to specify a location.])
      fi
 ],[
       for topdir in /usr/local /usr /usr/pkg /usr/lib /var/ssl /opt; do
@@ -141,7 +141,7 @@ AC_ARG_WITH([ssl-dir],AS_HELP_STRING([--with-ssl-dir],[directory for OpenSSL hea
           done
       done
 ])
-if test -z $sslincludedir; then
+if test -z "$sslincludedir"; then
      AC_MSG_RESULT([not found])
 else
      AC_MSG_RESULT([$sslincludedir])
@@ -152,7 +152,7 @@ dnl **
 dnl ** Check for OpenSSL libraries.
 dnl ** happily, we don't have to hunt for them thanks to ldconfig!
 dnl **
-if test -n $sslincludedir; then
+if test -n "$sslincludedir"; then
      CPPFLAGS="$CPPFLAGS $sslincludedir"
      AC_CHECK_LIB(crypto,OPENSSL_init)
      if test "$ac_cv_lib_crypto_OPENSSL_init" != "yes"
