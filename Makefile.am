@@ -14,20 +14,8 @@ EXTRA_DIST = tn5250-48x48.xpm\
 #	MAYBE_CURSES =
 #endif
 
-#if COND_SLANG
-#	MAYBE_SLANG = slang
-#else
-#	MAYBE_SLANG =
-#endif
-
-#if COND_PYTHON
-#	MAYBE_PYTHON = python
-#else
-#	MAYBE_PYTHON =
-#endif
-
-SUBDIRS = lib5250 lp5250d $(MAYBE_CURSES) $(MAYBE_SLANG) $(MAYBE_PYTHON) doc freebsd linux sun win32
-DIST_SUBDIRS = lib5250 lp5250d curses slang python doc freebsd linux sun win32
+SUBDIRS = lib5250 lp5250d $(MAYBE_CURSES) doc freebsd linux sun win32
+DIST_SUBDIRS = lib5250 lp5250d curses doc freebsd linux sun win32
 
 bin_SCRIPTS = xt5250
 

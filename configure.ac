@@ -75,34 +75,6 @@ else
 	MAYBE_CURSES=
 fi
 
-## SLang support is suffering from bit-rot. Nobody is maintaining it, and
-## to the best of my knowledge, nobody is using it.  
-## Therefore, I'm disabling it, for now. -SK
-## # AC_ARG_WITH([slang],AS_HELP_STRING([--with-slang],[slang terminal support (default=no)]),[ac_cv_use_slang=$withval],[ac_cv_use_slang=no]) AC_CACHE_CHECK([whether to build slang terminal],[ac_cv_use_slang], [ac_cv_use_slang=no])
-
-## if test "$ac_cv_use_slang" = "yes"
-## then
-## 	MAYBE_SLANG=slang
-## # run AC_CHECK_LIB this way to avoid linking slang into every executable
-## 	AC_CHECK_LIB(slang, SLang_init_tty, SLANG_LIB=-lslang)
-## 	if test "$ac_cv_lib_slang_SLang_init_tty" != "yes"
-## 	then
-## 		AC_MSG_ERROR([** Can't find -lslang **])
-## 	fi
-## 	AC_SUBST([SLANG_LIB])
-## else
-## 	MAYBE_SLANG=
-## fi
-## 
-AC_ARG_WITH([python],AS_HELP_STRING([--with-python],[python terminal support (default=no)]),[ac_cv_use_python=$withval],[ac_cv_use_python=no]) AC_CACHE_CHECK([whether to build python terminal],[ac_cv_use_python], [ac_cv_use_python=no])
-## 
-if test "$ac_cv_use_python" = "yes"
-then
-	MAYBE_PYTHON=python
-else
-	MAYBE_PYTHON=
-fi
-
 AC_ARG_WITH([ssl],AS_HELP_STRING([--with-ssl],[OpenSSL support (default=yes)]),[ac_cv_use_ssl=$withval],[ac_cv_use_ssl=yes]) AC_CACHE_CHECK([whether to build with OpenSSL support],[ac_cv_use_ssl], [ac_cv_use_ssl=yes])
 
 if test "$ac_cv_use_ssl" = "yes"
@@ -226,22 +198,13 @@ if test -n "$sslincludedir"; then
 fi
 fi
 
-# These aren't working
-#AM_CONDITIONAL([COND_CURSES], [test "$ac_cv_use_curses" = yes])
-#AM_CONDITIONAL([COND_SLANG], [test "$ac_cv_use_slang" = yes])
-#AM_CONDITIONAL([COND_PYTHON], [test "$ac_cv_use_python" = yes])
-# Try these instead
 AC_SUBST([MAYBE_CURSES])
-## AC_SUBST([MAYBE_SLANG])
-AC_SUBST([MAYBE_PYTHON])
 
 AC_CONFIG_FILES([Makefile
 		 curses/Makefile
 		 doc/Makefile
 		 lib5250/Makefile
 		 lp5250d/Makefile
-		 python/Makefile
-		 slang/Makefile
 		 freebsd/Makefile
 		 linux/Makefile
 		 sun/Makefile

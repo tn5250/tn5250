@@ -114,9 +114,6 @@ int main(int argc, char *argv[])
    }
    tn5250_curses_terminal_load_colorlist(config);
 #endif
-#ifdef USE_SLANG
-   term = tn5250_slang_terminal_new();
-#endif
    if (term == NULL)
       goto bomb_out;
    if (tn5250_terminal_config (term, config) == -1)
