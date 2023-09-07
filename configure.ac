@@ -37,11 +37,6 @@ AC_FUNC_SELECT_ARGTYPES
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS([gethostbyname memset putenv select socket strcasecmp strchr strerror strrchr strstr])
 
-# Get various type sizes
-AC_CHECK_SIZEOF(short, 2)
-AC_CHECK_SIZEOF(int, 4)
-AC_CHECK_SIZEOF(long, 4)
-
 # True for anything other than Windoze.
 AC_DEFINE_UNQUOTED(SOCKET_TYPE,int)
 

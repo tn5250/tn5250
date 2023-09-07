@@ -26,16 +26,8 @@
 extern "C" {
 #endif
 
-#if SIZEOF_SHORT == 2
 typedef unsigned short Tn5250Uint16;
 typedef signed short Tn5250Sint16;
-#elif SIZEOF_INT == 2
-typedef unsigned int Tn5250Uint16;
-typedef signed int Tn5250Sint16;
-#else
-   ACK!  Need a 16-bit type!
-#endif
-
 typedef unsigned char Tn5250Char;
 
 /****s* lib5250/Tn5250CharMap
