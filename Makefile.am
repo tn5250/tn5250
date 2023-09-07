@@ -1,5 +1,7 @@
 ## Process this file with automake to produce Makefile.in
 
+ACLOCAL_AMFLAGS = -I m4
+
 EXTRA_DIST = tn5250-48x48.xpm\
         tn5250-48x48.png\
         tn5250-62x48.xpm\

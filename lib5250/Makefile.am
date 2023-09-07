@@ -24,7 +24,7 @@ lib5250_la_SOURCES =	buffer.c\
 			window.c\
 			wtd.c
 
-INCLUDES = -DSYSCONFDIR=\"$(sysconfdir)\"
+AM_CPPFLAGS = -DSYSCONFDIR=\"$(sysconfdir)\"
 
 pkginclude_HEADERS = 	buffer.h\
 		 	codes5250.h\

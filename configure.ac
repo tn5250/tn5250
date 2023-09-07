@@ -3,10 +3,11 @@
 
 AC_PREREQ(2.59)
 AC_INIT([tn5250],[0.18.0],[https://github.com/tn5250/tn5250/issues])
+AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 
 AM_INIT_AUTOMAKE([foreign])
-AM_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS(config.h)
 
 #
 # Automake
@@ -17,17 +18,14 @@ AH_TEMPLATE([USE_OWN_KEY_PARSING], [Define to let cursesterm handle key mapping.
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
-AC_PROG_RANLIB
-AM_PROG_LIBTOOL
+LT_INIT
 
 # Checks for header files.
-AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h locale.h netdb.h netinet/in.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h syslog.h unistd.h pwd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
-AC_HEADER_TIME
 AC_STRUCT_TM
 
 # Checks for library functions.

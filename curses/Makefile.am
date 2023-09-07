@@ -12,4 +12,4 @@ tn5250_LDFLAGS = $(CURSES_LIB)
 
 pkginclude_HEADERS = 	cursesterm.h
 
-INCLUDES = -DSYSCONFDIR=\"$(sysconfdir)\" -I$(top_srcdir)/lib5250
+AM_CPPFLAGS = -DSYSCONFDIR=\"$(sysconfdir)\" -I$(top_srcdir)/lib5250

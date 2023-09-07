@@ -15,4 +15,4 @@ scs2ps_SOURCES = 	scs2ps.c
 
 lp5250d_SOURCES =	lp5250d.c
 
-INCLUDES = -DSYSCONFDIR=\"$(sysconfdir)\" -I$(top_srcdir)/lib5250
+AM_CPPFLAGS = -DSYSCONFDIR=\"$(sysconfdir)\" -I$(top_srcdir)/lib5250
