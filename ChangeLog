@@ -1,3 +1,13 @@
+2023-09-07 Kevin Adler <kadler@us.ibm.com>
+- Release 0.17.5
+   - fix build with -Werror=format-security (Dan Horák)
+   - Enable build when SSLv2 and SSLv3 are disabled (Michael Orlitzky)
+   - Port to OpenSSL 1.1 (Dan Horák)
+   - Fix crash on macOS caused by implicit function definitions
+   - Fix endian bugs on 64-bit Unix platforms
+   - Fix false positive error message when exiting
+   - Fix --with-ssl-dir configure option
+
 2012-06-14 Scott Klement <tn5250@scottklement.com>
 - Applied patch from Ben Walton to ensure that FIONBIO is defined
    on Sun/Solaris systems.
