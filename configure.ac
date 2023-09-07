@@ -21,21 +21,7 @@ AC_PROG_INSTALL
 LT_INIT
 
 # Checks for header files.
-AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h locale.h netdb.h netinet/in.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h syslog.h unistd.h pwd.h])
-
-# Checks for typedefs, structures, and compiler characteristics.
-AC_C_CONST
-AC_STRUCT_TM
-
-# Checks for library functions.
-AC_FUNC_FORK
-AC_FUNC_MALLOC
-AC_FUNC_MEMCMP
-AC_FUNC_REALLOC
-AC_FUNC_SELECT_ARGTYPES
-AC_FUNC_VPRINTF
-AC_CHECK_FUNCS([gethostbyname memset putenv select socket strcasecmp strchr strerror strrchr strstr])
+AC_CHECK_HEADERS([fcntl.h locale.h sys/wait.h sys/time.h syslog.h unistd.h pwd.h])
 
 # True for anything other than Windoze.
 AC_DEFINE_UNQUOTED(SOCKET_TYPE,int)
