@@ -6,7 +6,7 @@ LDADD = ../lib5250/lib5250.la
 
 tn5250_SOURCES = 	cursesterm.c tn5250.c
 
-tn5250_CFLAGS = -DUSE_CURSES $(AM_CFLAGS)
+tn5250_CFLAGS = $(AM_CFLAGS)
 
 tn5250_LDFLAGS = $(CURSES_LIB)
 

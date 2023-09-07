@@ -23,8 +23,6 @@
 #include "tn5250-private.h"
 #include "cursesterm.h"
 
-#ifdef USE_CURSES
-
 /* Some versions of ncurses don't have this defined. */
 #ifndef A_VERTICAL
 #define A_VERTICAL ((1UL) << ((22) + 8))
@@ -1684,7 +1682,5 @@ void curses_postscript_print(FILE *out, int x, int y, char *string, attr_t attr)
 
 }
 
-
-#endif /* USE_CURSES */
 
 /* vi:set cindent sts=3 sw=3: */

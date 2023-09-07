@@ -22,7 +22,6 @@
 #ifndef CURSESTERM_H
 #define CURSESTERM_H
 
-#if USE_CURSES
 #ifdef HAVE_NCURSES_H
 #include <ncurses.h>
 #else
@@ -32,13 +31,11 @@
 #ifdef HAVE_TERMCAP_H
 #include <termcap.h>
 #endif
-#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#ifdef USE_CURSES
    extern Tn5250Terminal /*@null@*/ /*@only@*/ *tn5250_curses_terminal_new(void);
    extern void tn5250_curses_terminal_use_underscores (Tn5250Terminal *This,
 						       int use_underscores);
@@ -48,7 +45,6 @@ extern "C" {
    extern void tn5250_curses_terminal_display_ruler (Tn5250Terminal *This,
                                                        int display_ruler);
    extern void tn5250_curses_terminal_load_colorlist (Tn5250Config *config);
-#endif
 
 #ifdef __cplusplus
 }

@@ -93,7 +93,6 @@ int main(int argc, char *argv[])
    if (tn5250_display_config (display, config) == -1)
       goto bomb_out;
 
-#ifdef USE_CURSES
    term = tn5250_curses_terminal_new();
    if (tn5250_config_get (config, "underscores")) {
       tn5250_curses_terminal_use_underscores(term,
@@ -113,7 +112,7 @@ int main(int argc, char *argv[])
             );
    }
    tn5250_curses_terminal_load_colorlist(config);
-#endif
+
    if (term == NULL)
       goto bomb_out;
    if (tn5250_terminal_config (term, config) == -1)

@@ -27,31 +27,23 @@ AC_CHECK_HEADERS([fcntl.h locale.h sys/wait.h sys/time.h syslog.h unistd.h pwd.h
 AC_DEFINE_UNQUOTED(SOCKET_TYPE,int)
 
 # User specified optional packages
-AC_ARG_WITH([curses],AS_HELP_STRING([--with-curses],[curses terminal support (default=yes)]),[ac_cv_use_curses=$withval],[ac_cv_use_curses=yes]) AC_CACHE_CHECK([whether to build curses terminal],[ac_cv_use_curses], [ac_cv_use_curses=yes])
 AC_ARG_WITH([curses-old-keys],AS_HELP_STRING([--with-curses-old-keys],[curses terminal will use old key handler (default=no)]),[ac_cv_use_old_keys=$withval],[ac_cv_use_old_keys=no]) AC_CACHE_CHECK([whether to use old key handler],[ac_cv_use_old_keys], [ac_cv_use_old_keys=no])
 
-
-if test "$ac_cv_use_curses" = "yes"
-then
-	MAYBE_CURSES=curses
 # run AC_CHECK_LIB this way to avoid linking curses into every executable
-	AC_CHECK_LIB(ncurses, initscr, CURSES_LIB=-lncurses)
-	if test "$ac_cv_lib_ncurses_initscr" != "yes"
-	then
-		# Check for -lcurses if -lncurses isn't found.
-		AC_CHECK_LIB(curses, initscr, CURSES_LIB=-lcurses)
-		if test "$ac_cv_lib_curses_initscr" != "yes"
-		then
-			AC_MSG_ERROR([** You need a curses-compatible library installed.])
-		fi
-	fi
-	AC_SUBST([CURSES_LIB])
-        if test "$ac_cv_use_old_keys" != "yes";
-        then
-              AC_DEFINE_UNQUOTED(USE_OWN_KEY_PARSING,1)
-        fi
-else
-	MAYBE_CURSES=
+AC_CHECK_LIB(ncurses, initscr, CURSES_LIB=-lncurses)
+if test "$ac_cv_lib_ncurses_initscr" != "yes"
+then
+    # Check for -lcurses if -lncurses isn't found.
+    AC_CHECK_LIB(curses, initscr, CURSES_LIB=-lcurses)
+    if test "$ac_cv_lib_curses_initscr" != "yes"
+    then
+        AC_MSG_ERROR([** You need a curses-compatible library installed.])
+    fi
+fi
+
+if test "$ac_cv_use_old_keys" != "yes";
+then
+    AC_DEFINE_UNQUOTED(USE_OWN_KEY_PARSING,1)
 fi
 
 AC_ARG_WITH([ssl],AS_HELP_STRING([--with-ssl],[OpenSSL support (default=yes)]),[ac_cv_use_ssl=$withval],[ac_cv_use_ssl=yes]) AC_CACHE_CHECK([whether to build with OpenSSL support],[ac_cv_use_ssl], [ac_cv_use_ssl=yes])
@@ -177,7 +169,7 @@ if test -n "$sslincludedir"; then
 fi
 fi
 
-AC_SUBST([MAYBE_CURSES])
+AC_SUBST([CURSES_LIB])
 
 AC_CONFIG_FILES([Makefile
 		 curses/Makefile
