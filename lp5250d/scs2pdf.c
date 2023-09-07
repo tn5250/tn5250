@@ -1537,6 +1537,6 @@ print_help ()
   printf ("  -H\tprint this help and exit\n");
 #endif
   printf ("\n");
-  printf ("Report bugs to <linux5250@midrange.com>.\n");
+  printf ("Report bugs to " PACKAGE_BUGREPORT "\n");
   return;
 }
