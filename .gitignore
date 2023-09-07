@@ -1,5 +1,6 @@
 INSTALL
 aclocal.m4
+compile
 configure
 config.cache
 config.guess
@@ -17,3 +18,5 @@ tn5250-config
 xt5250
 *~
 *.scc
+autom4te.cache/
+
