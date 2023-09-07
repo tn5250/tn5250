@@ -205,9 +205,9 @@ AC_CONFIG_FILES([Makefile
 		 doc/Makefile
 		 lib5250/Makefile
 		 lp5250d/Makefile
-		 freebsd/Makefile
-		 linux/Makefile
-		 sun/Makefile
+		 termcaps/freebsd/Makefile
+		 termcaps/linux/Makefile
+		 termcaps/sun/Makefile
 		 win32/Makefile
 		 xt5250])
 AC_OUTPUT

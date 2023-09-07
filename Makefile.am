@@ -14,8 +14,8 @@ EXTRA_DIST = tn5250-48x48.xpm\
 #	MAYBE_CURSES =
 #endif
 
-SUBDIRS = lib5250 lp5250d $(MAYBE_CURSES) doc freebsd linux sun win32
-DIST_SUBDIRS = lib5250 lp5250d curses doc freebsd linux sun win32
+SUBDIRS = lib5250 lp5250d $(MAYBE_CURSES) doc termcaps/freebsd termcaps/linux termcaps/sun win32
+DIST_SUBDIRS = lib5250 lp5250d curses doc termcaps/freebsd termcaps/linux termcaps/sun win32
 
 bin_SCRIPTS = xt5250
 
