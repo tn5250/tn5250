@@ -50,4 +50,5 @@ include_HEADERS =	tn5250.h
 
 noinst_HEADERS =	transmaps.h\
 			scs-private.h\
+			stream-private.h\
 			tn5250-private.h

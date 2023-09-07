@@ -3,12 +3,12 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 gconf_serverdir=@libexecdir@
-sslincludedir=@sslincludedir@
       
  
  
 Name: tn5250
 Description: 5250 Terminal Emulator.
 Version: @VERSION@
-Libs: -L${libdir} -l5250 @LIBS@
-Cflags: -I${includedir} ${sslincludedir}
+Libs: -L${libdir} -l5250
+Libs.private: @LIBS@
+Cflags: -I${includedir}

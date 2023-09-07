@@ -89,7 +89,6 @@ if test -z "$sslincludedir"; then
 else
      AC_MSG_RESULT([$sslincludedir])
 fi
-AC_SUBST(sslincludedir)
 
 dnl **
 dnl ** Check for OpenSSL libraries.

@@ -39,7 +39,7 @@
 #include "utility.h"
 #include "buffer.h"
 #include "record.h"
-#include "stream.h"
+#include "stream-private.h"
 #include "dbuffer.h"
 #include "menu.h"
 #include "terminal.h"

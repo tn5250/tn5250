@@ -77,46 +77,7 @@ typedef union _StreamHeader StreamHeader;
  *    manages the communications transport, such as TCP/IP.
  * SOURCE
  */
-#define TN5250_RBSIZE 8192
-struct _Tn5250Stream {
-    int (*connect)(struct _Tn5250Stream* This, const char* to);
-    int (*accept)(struct _Tn5250Stream* This, SOCKET_TYPE masterSock);
-    void (*disconnect)(struct _Tn5250Stream* This);
-    int (*handle_receive)(struct _Tn5250Stream* This);
-    void (*send_packet)(struct _Tn5250Stream* This, int length,
-                        StreamHeader header, unsigned char* data);
-    void(/*@null@*/ *destroy)(struct _Tn5250Stream /*@only@*/* This);
-
-    struct _Tn5250Config* config;
-
-    Tn5250Record /*@null@*/* records;
-    Tn5250Record /*@dependent@*/ /*@null@*/* current_record;
-    int record_count;
-
-    Tn5250Buffer sb_buf;
-
-    SOCKET_TYPE sockfd;
-    int status;
-    int state;
-    int streamtype;
-    long msec_wait;
-    unsigned char options;
-
-    unsigned char rcvbuf[TN5250_RBSIZE];
-    int rcvbufpos;
-    int rcvbuflen;
-
-#ifdef HAVE_LIBSSL
-    SSL* ssl_handle;
-    SSL_CTX* ssl_context;
-    void* userdata;
-#endif
-
-#ifndef NDEBUG
-    FILE* debugfile;
-#endif
-};
-
+struct _Tn5250Stream;
 typedef struct _Tn5250Stream Tn5250Stream;
 /******/
 
