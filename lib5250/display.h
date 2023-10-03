@@ -77,13 +77,13 @@ struct _Tn5250Display {
    int key_queue_head, key_queue_tail;
    int key_queue[TN5250_DISPLAY_KEYQ_SIZE];
 
-   int indicators_dirty : 1;
-   int pending_insert : 1;
-   int destructive_backspace : 1;
-   int sign_key_hack : 1;
-   int uninhibited : 1;
-   int allow_strpccmd : 1;
-   int field_minus_in_char : 1;
+   unsigned int indicators_dirty : 1;
+   unsigned int pending_insert : 1;
+   unsigned int destructive_backspace : 1;
+   unsigned int sign_key_hack : 1;
+   unsigned int uninhibited : 1;
+   unsigned int allow_strpccmd : 1;
+   unsigned int field_minus_in_char : 1;
 };
 
 typedef struct _Tn5250Display Tn5250Display;

@@ -113,12 +113,12 @@ struct _Tn5250TerminalPrivate {
    char *         font_132;
    Tn5250Display  *display;
    Tn5250Config   *config;
-   int		  quit_flag : 1;
-   int		  have_underscores : 1;
-   int		  underscores : 1;
-   int		  is_xterm : 1;
-   int		  display_ruler : 1;
-   int            local_print : 1;
+   unsigned int		  quit_flag : 1;
+   unsigned int		  have_underscores : 1;
+   unsigned int		  underscores : 1;
+   unsigned int		  is_xterm : 1;
+   unsigned int		  display_ruler : 1;
+   unsigned int            local_print : 1;
 };
 
 #ifdef USE_OWN_KEY_PARSING

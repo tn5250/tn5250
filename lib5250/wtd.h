@@ -77,7 +77,7 @@ extern "C"
     /* A flag indicating that we have used a Clear Unit or a Clear Unit
      * Alternate command.  It's helpful in making assumptions about the state
      * of the display. */
-    int clear_unit:1;
+    unsigned int clear_unit:1;
   };
 
   typedef struct _Tn5250WTDContext Tn5250WTDContext;
