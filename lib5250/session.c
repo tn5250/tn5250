@@ -2067,7 +2067,7 @@ tn5250_session_start_of_header (Tn5250Session * This)
       tn5250_session_send_error (This, errorcode);
       return;
     }
-  TN5250_ASSERT ((n > 0 && n <= 7));
+  TN5250_ASSERT ((n >= 0 && n <= 7));
   if (n > 0)
     {
       ptr = (unsigned char *) malloc (n);
