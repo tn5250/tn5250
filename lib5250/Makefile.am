@@ -49,4 +49,5 @@ pkginclude_HEADERS = 	buffer.h\
 include_HEADERS =	tn5250.h
 
 noinst_HEADERS =	transmaps.h\
+			scs-private.h\
 			tn5250-private.h
