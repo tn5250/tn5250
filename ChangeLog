@@ -1,3 +1,12 @@
+2023-10-12 Kevin Adler <kadler@us.ibm.com>
+- Release 0.17.6
+   - fix -Wsingle-bit-bitfield-constant-conversion warnings
+   - fix assertion error in tn5250_session_start_of_header when header length
+     is 0
+   - fix pointer error in ssl_stream_connect when looking up IP address
+     by hostname which likely leads to a segfault
+   - Add scs-private.h, needed to build, to the distribution tarball
+
 2023-09-07 Kevin Adler <kadler@us.ibm.com>
 - Release 0.17.5
    - fix build with -Werror=format-security (Dan Horák)
