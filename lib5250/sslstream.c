@@ -511,7 +511,7 @@ static int ssl_stream_connect(Tn5250Stream * This, const char *to)
    if (serv_addr.sin_addr.s_addr == INADDR_NONE) {
       struct hostent *pent = gethostbyname(address);
       if (pent != NULL)
-	 memcpy(serv_addr.sin_addr.s_addr, pent->h_addr, 4);
+	 memcpy(&serv_addr.sin_addr.s_addr, pent->h_addr, 4);
    }
    free (address);
    if (serv_addr.sin_addr.s_addr == INADDR_NONE) {
