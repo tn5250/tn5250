@@ -25,51 +25,42 @@ extern "C" {
 #endif
 
 struct _Tn5250ConfigStr {
-   struct _Tn5250ConfigStr *next;
-   struct _Tn5250ConfigStr *prev;
-   char *      name;
-   char *      value;
+    struct _Tn5250ConfigStr* next;
+    struct _Tn5250ConfigStr* prev;
+    char* name;
+    char* value;
 };
 
 typedef struct _Tn5250ConfigStr Tn5250ConfigStr;
 
 struct _Tn5250Config {
-   int			ref;
-   Tn5250ConfigStr *	vars;
+    int ref;
+    Tn5250ConfigStr* vars;
 };
 
 typedef struct _Tn5250Config Tn5250Config;
 
-extern Tn5250Config *	      tn5250_config_new		 (void);
-extern Tn5250Config *	      tn5250_config_ref		 (Tn5250Config *This);
-extern void		      tn5250_config_unref  	 (Tn5250Config *This);
+extern Tn5250Config* tn5250_config_new(void);
+extern Tn5250Config* tn5250_config_ref(Tn5250Config* This);
+extern void tn5250_config_unref(Tn5250Config* This);
 
-extern int		      tn5250_config_load	 (Tn5250Config *This,
-							  const char *filen);
-extern int		      tn5250_config_load_default (Tn5250Config *This);
-extern int		      tn5250_config_parse_argv	 (Tn5250Config *This,
-							  int argc,
-							  char **argv);
+extern int tn5250_config_load(Tn5250Config* This, const char* filen);
+extern int tn5250_config_load_default(Tn5250Config* This);
+extern int tn5250_config_parse_argv(Tn5250Config* This, int argc, char** argv);
 
-extern const char *	      tn5250_config_get		 (Tn5250Config *This,
-							  const char *name);
-extern int		      tn5250_config_get_bool	 (Tn5250Config *This,
-						          const char *name);
-extern int                    tn5250_config_get_int      (Tn5250Config *This,
-                                                         const char *name);
-extern void		      tn5250_config_set		 (Tn5250Config *This,
-							  const char *name,
-							  const char *value);
-extern void		      tn5250_config_unset	 (Tn5250Config *This,
-							  const char *name);
+extern const char* tn5250_config_get(Tn5250Config* This, const char* name);
+extern int tn5250_config_get_bool(Tn5250Config* This, const char* name);
+extern int tn5250_config_get_int(Tn5250Config* This, const char* name);
+extern void tn5250_config_set(Tn5250Config* This, const char* name,
+                              const char* value);
+extern void tn5250_config_unset(Tn5250Config* This, const char* name);
 
-extern void		      tn5250_config_promote	 (Tn5250Config *This,
-							  const char *prefix);
+extern void tn5250_config_promote(Tn5250Config* This, const char* prefix);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif				/* CONF_H */
+#endif /* CONF_H */
 
 /* vi:set sts=3 sw=3: */

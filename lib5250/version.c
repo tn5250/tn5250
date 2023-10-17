@@ -1,3 +1,3 @@
 #include "config.h"
 
-char *version_string = VERSION;
+char* version_string = VERSION;

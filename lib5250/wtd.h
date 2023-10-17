@@ -1,34 +1,33 @@
 /* TN5250 - An implementation of the 5250 telnet protocol.
  * Copyright (C) 2000-2008 Jason M. Felice
- * 
+ *
  * This file is part of TN5250.
  *
  * TN5250 is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation; either version 2.1, or (at your option)
  * any later version.
- * 
+ *
  * TN5250 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this software; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA 02111-1307 USA
- * 
+ *
  */
 #ifndef WTD_H
 #define WTD_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
-  struct _Tn5250Buffer;
-  struct _Tn5250DBuffer;
+struct _Tn5250Buffer;
+struct _Tn5250DBuffer;
 
 /****s* lib5250/Tn5250WTDContext
  * NAME
@@ -59,12 +58,11 @@ extern "C"
  *
  * SOURCE
  */
-  struct _Tn5250WTDContext
-  {
-    struct _Tn5250Buffer *buffer;
+struct _Tn5250WTDContext {
+    struct _Tn5250Buffer* buffer;
 
-    struct _Tn5250DBuffer *src;
-    struct _Tn5250DBuffer *dst;
+    struct _Tn5250DBuffer* src;
+    struct _Tn5250DBuffer* dst;
 
     /* Our current position within the display. */
     int y, x;
@@ -77,23 +75,22 @@ extern "C"
     /* A flag indicating that we have used a Clear Unit or a Clear Unit
      * Alternate command.  It's helpful in making assumptions about the state
      * of the display. */
-    unsigned int clear_unit:1;
-  };
+    unsigned int clear_unit : 1;
+};
 
-  typedef struct _Tn5250WTDContext Tn5250WTDContext;
+typedef struct _Tn5250WTDContext Tn5250WTDContext;
 /*******/
 
-  extern Tn5250WTDContext *tn5250_wtd_context_new (struct _Tn5250Buffer *buf,
-						   struct _Tn5250DBuffer *sd,
-						   struct _Tn5250DBuffer *dd);
-  extern void tn5250_wtd_context_destroy (Tn5250WTDContext * This);
-  extern void tn5250_wtd_context_convert (Tn5250WTDContext * This);
-  extern void tn5250_wtd_context_set_ic (Tn5250WTDContext * This,
-					 int y, int x);
+extern Tn5250WTDContext* tn5250_wtd_context_new(struct _Tn5250Buffer* buf,
+                                                struct _Tn5250DBuffer* sd,
+                                                struct _Tn5250DBuffer* dd);
+extern void tn5250_wtd_context_destroy(Tn5250WTDContext* This);
+extern void tn5250_wtd_context_convert(Tn5250WTDContext* This);
+extern void tn5250_wtd_context_set_ic(Tn5250WTDContext* This, int y, int x);
 #ifdef __cplusplus
 }
 #endif
 
-#endif				/* WTD_H */
+#endif /* WTD_H */
 
 /* vi:set cindent sts=3 sw=3: */
