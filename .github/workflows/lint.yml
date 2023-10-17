@@ -1,0 +1,12 @@
+name: Lint PR
+
+on: pull_request
+
+jobs:
+  check-formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jidicula/clang-format-action@v4.11.0
+        with:
+          clang-format-version: 16
