@@ -220,5 +220,3 @@ void tn5250_display_wordwrap(Tn5250Display* This, unsigned char* text,
 #endif
 
 #endif /* DISPLAY_H */
-
-/* vi:set cindent sts=3 sw=3: */

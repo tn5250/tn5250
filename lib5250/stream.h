@@ -150,5 +150,3 @@ extern int tn5250_stream_socket_handle(Tn5250Stream* This);
 
 #endif
 #endif
-
-/* vi:set cindent sts=3 sw=3: */

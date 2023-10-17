@@ -92,5 +92,3 @@ extern void tn5250_wtd_context_set_ic(Tn5250WTDContext* This, int y, int x);
 #endif
 
 #endif /* WTD_H */
-
-/* vi:set cindent sts=3 sw=3: */

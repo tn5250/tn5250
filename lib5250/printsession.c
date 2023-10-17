@@ -369,4 +369,3 @@ static int tn5250_print_session_waitevent(Tn5250PrintSession* This) {
 }
 
 #endif /* ifndef WIN32 */
-/* vi:set sts=3 sw=3: */

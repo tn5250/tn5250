@@ -129,5 +129,3 @@ extern void tn5250_session_main_loop(Tn5250Session* This);
 
 #endif
 #endif /* SESSION_H */
-
-/* vi:set cindent sts=3 sw=3: */

@@ -1657,5 +1657,3 @@ X509* ssl_stream_load_cert(Tn5250Stream* This, const char* file) {
 }
 
 #endif /* HAVE_LIBSSL */
-
-/* vi:set sts=3 sw=3: */

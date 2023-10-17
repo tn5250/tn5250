@@ -184,5 +184,3 @@ INT WINAPI WINSOCK_select(INT nfds, ws_fd_set32* ws_readfds,
 /* END: of really ugly network portability layer. */
 
 #endif /* PRIVATE_H */
-
-/* vi:set cindent sts=3 sw=3: */

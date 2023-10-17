@@ -229,5 +229,3 @@ tn5250_field_list_copy(Tn5250Field /*@null@*/* list);
 
 #endif
 #endif /* FIELD_H */
-
-/* vi:set cindent sts=3 sw=3: */

@@ -250,5 +250,3 @@ extern void tn5250_terminal_destroy_menuitem(Tn5250Terminal* This,
 
 #endif
 #endif /* TERMINAL_H */
-
-/* vi:set cindent sts=3 sw=3: */

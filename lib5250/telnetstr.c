@@ -1396,5 +1396,3 @@ static void telnet_stream_escape(Tn5250Buffer* in) {
     tn5250_buffer_free(in);
     memcpy(in, &out, sizeof(Tn5250Buffer));
 }
-
-/* vi:set sts=3 sw=3: */

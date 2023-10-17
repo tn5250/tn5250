@@ -1425,5 +1425,3 @@ int parse_cmdline(char* cmdline, char** my_argv) {
     return argcnt;
 #undef MAXARG
 }
-
-/* vi:set sts=3 sw=3: */

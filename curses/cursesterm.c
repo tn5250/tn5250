@@ -1723,5 +1723,3 @@ void curses_postscript_print(FILE* out, int x, int y, char* string,
         fprintf(out, "(%s) %d %d %d drawunderline\n", string, x, y, color);
     }
 }
-
-/* vi:set cindent sts=3 sw=3: */

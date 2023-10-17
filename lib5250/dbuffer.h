@@ -141,5 +141,3 @@ extern void tn5250_dbuffer_add_menubar(Tn5250DBuffer* This,
 
 #endif
 #endif /* DBUFFER_H */
-
-/* vi:set sts=3 sw=3: */

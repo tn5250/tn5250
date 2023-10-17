@@ -67,5 +67,3 @@ extern void tn5250_buffer_log(Tn5250Buffer* This, const char* prefix);
 
 #endif
 #endif /* BUFFER_H */
-
-/* vi:set sts=3 sw=3 autoindent: */

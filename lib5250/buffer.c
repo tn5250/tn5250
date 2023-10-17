@@ -149,5 +149,3 @@ void tn5250_buffer_log(Tn5250Buffer* This, const char* prefix) {
     }
     TN5250_LOG(("\n"));
 }
-
-/* vi:set sts=3 sw=3 autoindent: */

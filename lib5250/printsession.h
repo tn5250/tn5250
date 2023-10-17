@@ -71,5 +71,3 @@ extern void tn5250_print_session_main_loop(Tn5250PrintSession* This);
 
 #endif
 #endif /* PRINTSESSION_H */
-
-/* vi:set cindent sts=3 sw=3: */

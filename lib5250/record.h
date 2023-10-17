@@ -120,5 +120,3 @@ extern void tn5250_record_dump(Tn5250Record* This);
 
 #endif
 #endif /* RECORD_H */
-
-/* vi:set cindent sts=3 sw=3: */

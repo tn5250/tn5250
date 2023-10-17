@@ -661,5 +661,3 @@ static void tn5250_config_replacedata(const char* from, const char* to,
         free(after);
     }
 }
-
-/* vi:set sts=3 sw=3: */

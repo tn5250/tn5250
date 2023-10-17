@@ -112,5 +112,3 @@ int tn5250_run_cmd(const char* cmd, int wait);
 #endif
 
 #endif /* UTILITY_H */
-
-/* vi:set sts=3 sw=3: */

@@ -240,5 +240,3 @@ Options:\n\
     printf("\n\n");
     exit(255);
 }
-
-/* vi:set cindent sts=3 sw=3: */

@@ -240,5 +240,3 @@ void scs2ascii_transparent(Tn5250SCS* This) {
         printf("%c", fgetc(stdin));
     }
 }
-
-/* vi:set sts=3 sw=3: */

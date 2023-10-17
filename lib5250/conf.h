@@ -62,5 +62,3 @@ extern void tn5250_config_promote(Tn5250Config* This, const char* prefix);
 #endif
 
 #endif /* CONF_H */
-
-/* vi:set sts=3 sw=3: */
