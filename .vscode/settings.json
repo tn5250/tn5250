@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "tn5250-private.h": "c",
+        "*.in": "cpp"
+    }
+}
