@@ -109,66 +109,6 @@ if test -n "$sslincludedir"; then
      fi
 fi
 
-dnl **
-dnl ** Is OpenSSL going to require Kerberos?
-dnl **
-dnl ** In RedHat 9 (and who knows where else?) OpenSSL is compiled with
-dnl ** kerberos support, and so it has to be able to find the krb5.h
-dnl ** file... which naturally isn't in the standard /usr/include dir
-dnl ** since that would be much too easy.
-dnl **
-checkkrb5config() {
-   if test -x "$1/krb5-config"; then
-       krb5includedir="`$1/krb5-config --cflags`"
-       return 0
-   fi
-   if test -x "$1/bin/krb5-config"; then
-       krb5includedir="`$1/bin/krb5-config --cflags`"
-       return 0
-   fi
-   return 1
-}
-if test -n "$sslincludedir"; then
-   AC_MSG_CHECKING([if OpenSSL needs krb5.h])
-   needkrb5=yes
-   AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-]], [[SSL_CTX *ssl_context=NULL;]])],[needkrb5=no],[])
-   if test $needkrb5 = "yes"; then
-       krb5config="`which krb5config 2> /dev/null`"
-       if test -z "$krb5config"; then
-           krb5config="nonexistent"
-       fi
-       if test -x "$krb5config"; then
-           krb5includedir="`$krb5config --cflags`"
-       else
-           for topdir in /usr/local /usr /opt /usr/lib /usr/pkg; do
-               for subdir in $topdir $topdir/kerberos $topdir/krb5; do
-                    checkkrb5config "$subdir" && break 2
-               done
-           done
-       fi
-       if test -n $krb5includedir; then
-           CPPFLAGS="$CPPFLAGS $krb5includedir"
-           needkrb5=no
-	      AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-]], [[SSL_CTX *ssl_context=NULL;]])],[needkrb5=yes],[])
-       fi
-   fi
-   AC_SUBST(krb5includedir)
-   AC_MSG_RESULT([$needkrb5])
-fi
-fi
-
 AC_SUBST([CURSES_LIB])
 
 AC_CONFIG_FILES([Makefile
