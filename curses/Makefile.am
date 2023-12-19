@@ -8,7 +8,7 @@ tn5250_SOURCES = 	cursesterm.c tn5250.c
 
 tn5250_CFLAGS = $(AM_CFLAGS)
 
-tn5250_LDFLAGS = $(CURSES_LIB)
+tn5250_LDFLAGS = $(CURSES_LIBS)
 
 pkginclude_HEADERS = 	cursesterm.h
 
