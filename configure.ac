@@ -94,6 +94,7 @@ AC_CONFIG_FILES([Makefile
 		 termcaps/freebsd/Makefile
 		 termcaps/linux/Makefile
 		 termcaps/sun/Makefile
+		 tn5250.pc
 		 win32/Makefile
 		 xt5250])
 AC_OUTPUT

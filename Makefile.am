@@ -16,4 +16,7 @@ bin_SCRIPTS = xt5250
 
 pkgdata_DATA = XTerm
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = tn5250.pc
+
 CLEANFILES = *~
