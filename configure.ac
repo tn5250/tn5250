@@ -30,15 +30,14 @@ AC_DEFINE_UNQUOTED(SOCKET_TYPE,int)
 AC_ARG_WITH([curses-old-keys],AS_HELP_STRING([--with-curses-old-keys],[curses terminal will use old key handler (default=no)]),[ac_cv_use_old_keys=$withval],[ac_cv_use_old_keys=no]) AC_CACHE_CHECK([whether to use old key handler],[ac_cv_use_old_keys], [ac_cv_use_old_keys=no])
 
 # run AC_CHECK_LIB this way to avoid linking curses into every executable
-AC_CHECK_LIB(ncurses, initscr, CURSES_LIB=-lncurses)
-if test "$ac_cv_lib_ncurses_initscr" != "yes"
+AC_CHECK_LIB(ncurses, initscr, CURSES_LIBS=-lncurses)
+if test "$ac_cv_lib_ncurses_initscr" = "yes"
 then
+    # Check if we need libtinfo too, see https://bugs.gentoo.org/457530#c0
+    AC_CHECK_LIB(tinfo, nodelay, CURSES_LIBS="$CURSES_LIBS -ltinfo")
+else
     # Check for -lcurses if -lncurses isn't found.
-    AC_CHECK_LIB(curses, initscr, CURSES_LIB=-lcurses)
-    if test "$ac_cv_lib_curses_initscr" != "yes"
-    then
-        AC_MSG_ERROR([** You need a curses-compatible library installed.])
-    fi
+    AC_CHECK_LIB(curses, initscr, CURSES_LIBS='-lcurses', AC_MSG_ERROR([** You need a curses-compatible library installed.]))
 fi
 
 if test "$ac_cv_use_old_keys" != "yes";
@@ -84,7 +83,7 @@ if test "$with_ssl" = "yes"; then
     AC_CHECK_LIB(ssl, OPENSSL_init_ssl, [], AC_MSG_ERROR([** Unable to find OpenSSL libraries!]))
 fi
 
-AC_SUBST([CURSES_LIB])
+AC_SUBST([CURSES_LIBS])
 
 AC_CONFIG_FILES([Makefile
 		 curses/Makefile
