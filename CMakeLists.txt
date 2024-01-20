@@ -23,7 +23,7 @@ check_include_file("sys/types.h" HAVE_SYS_TYPES_H)
 check_include_file("sys/wait.h" HAVE_SYS_WAIT_H)
 check_include_file("unistd.h" HAVE_UNISTD_H)
 
-configure_file(config.h.in config.h @ONLY)
+configure_file(config-cmake.h.in config.h @ONLY)
 
 if (${CMAKE_HOST_SYSTEM_NAME} MATCHES "Windows")
     add_definitions( -D__WIN32__)
