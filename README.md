@@ -68,6 +68,21 @@ There is one common problem which would cause `xt5250` to flash once on the
 screen then disappear. If the termcap or terminfo entry for the "xterm-5250"
 terminal type does not exist, `xterm` will exit immediately.
 
+Windows
+-------
+
+To build on Windows, use [CMake](https://cmake.org/):
+
+```ps1
+New-Item -Path build -Type Directory
+$cmake = (Join-Path -Path (Get-ItemProperty `
+        -Path HKLM://HKEY_LOCAL_MACHINE\SOFTWARE\Kitware\CMake `
+        -Name InstallDir).InstallDir `
+        -ChildPath "bin/cmake.exe")
+Start-Process -FilePath $cmake -Wait -NoNewWindow -ArgumentList "-S . -B .\build\"
+Start-Process -FilePath $cmake -Wait -NoNewWindow -ArgumentList "--build build"
+```
+
 Other Information
 -----------------
 
