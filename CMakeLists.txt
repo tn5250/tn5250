@@ -26,7 +26,6 @@ check_include_file("unistd.h" HAVE_UNISTD_H)
 configure_file(config-cmake.h.in config.h @ONLY)
 
 if (${CMAKE_HOST_SYSTEM_NAME} MATCHES "Windows")
-    add_definitions( -D_WIN32 -D__WIN32__)
     set( PLATFORM_LIBRARIES Ws2_32 Winmm)
 endif()
 

@@ -325,7 +325,7 @@ macro_clearmem (Tn5250Macro * Macro)
       }
 }
 
-#ifdef __WIN32__
+#ifdef _WIN32
 /*
  * Get the macro file name
  *    Win32 version -- Looks for a file in the same dir as the .exe
