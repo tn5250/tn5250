@@ -342,7 +342,7 @@ config_error:
     return -1;
 }
 
-#ifdef __WIN32__
+#ifdef _WIN32
 /*
  *    Load default configuration files.
  *    Win32 version -- Looks for a file in the same dir as the .exe

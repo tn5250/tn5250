@@ -1,5 +1,6 @@
 INSTALL
 build-aux/
+build/
 m4/
 aclocal.m4
 configure
@@ -15,4 +16,3 @@ xt5250
 *~
 *.scc
 autom4te.cache/
-
