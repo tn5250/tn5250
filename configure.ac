@@ -85,6 +85,21 @@ fi
 
 AC_SUBST([CURSES_LIBS])
 
+dnl Host-specific terminal information; these often are based on the OS's built
+dnl in console terminal capabilities, so they aren't portable. Especially if
+dnl they differ between termcap vs. terminfo...
+dnl
+dnl XXX: Is the Linux terminfo entry geneerally useful?
+dnl XXX: Currently, only Linux is refactored to not trample system directories.
+dnl FreeBSD termcap needs refactoring, Solaris makefiles don't install.
+case "${host_os}" in
+    linux*)
+        ac_cv_build_linux=yes
+        ;;
+esac
+
+AM_CONDITIONAL([LINUX], [test "$ac_cv_build_linux" = "yes"])
+
 AC_CONFIG_FILES([Makefile
 		 curses/Makefile
 		 doc/Makefile

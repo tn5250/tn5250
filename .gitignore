@@ -16,3 +16,5 @@ xt5250
 *~
 *.scc
 autom4te.cache/
+termcap/*/5/
+termcap/*/x/
