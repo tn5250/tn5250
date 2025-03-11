@@ -27,7 +27,22 @@ AC_CHECK_HEADERS([fcntl.h locale.h sys/wait.h sys/time.h syslog.h unistd.h pwd.h
 AC_DEFINE_UNQUOTED(SOCKET_TYPE,int)
 
 # User specified optional packages
-AC_ARG_WITH([curses-old-keys],AS_HELP_STRING([--with-curses-old-keys],[curses terminal will use old key handler (default=no)]),[ac_cv_use_old_keys=$withval],[ac_cv_use_old_keys=no]) AC_CACHE_CHECK([whether to use old key handler],[ac_cv_use_old_keys], [ac_cv_use_old_keys=no])
+AC_ARG_WITH([curses-old-keys],
+    AS_HELP_STRING([--with-curses-old-keys],[curses terminal will use old key handler (default=no)]),
+    [ac_cv_use_old_keys=$withval],
+    [ac_cv_use_old_keys=no])
+AC_CACHE_CHECK([whether to use old key handler],
+    [ac_cv_use_old_keys],
+    [ac_cv_use_old_keys=no])
+
+AC_ARG_WITH([terminfo],
+    AS_HELP_STRING([--with-terminfo],[install terminfo entries for your platform (default=yes)]),
+    [ac_cv_install_terminfo=$withval],
+    [ac_cv_install_terminfo=yes])
+AC_CACHE_CHECK([whether to install terminfo entries],
+    [ac_cv_install_terminfo],
+    [ac_cv_install_terminfo=yes])
+AM_CONDITIONAL([INSTALL_TERMINFO], [test "$ac_cv_install_terminfo" = "yes"])
 
 # run AC_CHECK_LIB this way to avoid linking curses into every executable
 AC_CHECK_LIB(ncurses, initscr, CURSES_LIBS=-lncurses)

@@ -8,6 +8,7 @@ EXTRA_DIST	= 5250.tcap\
 pkgdata_DATA	= uk5250.map\
 		  us5250.map
 
+if INSTALL_TERMINFO
 if LINUX
 all: 5/5250 x/xterm-5250
 
@@ -28,4 +29,5 @@ uninstall-local:
 
 clean-local:
 	rm -rf ./5 ./x
+endif
 endif
