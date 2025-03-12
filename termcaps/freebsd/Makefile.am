@@ -10,6 +10,7 @@ pkgdata_DATA	= us.5250.kbd \
 
 bin_SCRIPTS 	= 5250keys
 
+if INSTALL_TERMINFO
 #
 # here we install our termcap entry 
 #
@@ -42,4 +43,4 @@ install-data-local:
 	    echo "** this manually." >&2 ; \
 	    echo "**" >&2 ; \
 	  fi )
-
+endif

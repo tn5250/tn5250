@@ -27,7 +27,22 @@ AC_CHECK_HEADERS([fcntl.h locale.h sys/wait.h sys/time.h syslog.h unistd.h pwd.h
 AC_DEFINE_UNQUOTED(SOCKET_TYPE,int)
 
 # User specified optional packages
-AC_ARG_WITH([curses-old-keys],AS_HELP_STRING([--with-curses-old-keys],[curses terminal will use old key handler (default=no)]),[ac_cv_use_old_keys=$withval],[ac_cv_use_old_keys=no]) AC_CACHE_CHECK([whether to use old key handler],[ac_cv_use_old_keys], [ac_cv_use_old_keys=no])
+AC_ARG_WITH([curses-old-keys],
+    AS_HELP_STRING([--with-curses-old-keys],[curses terminal will use old key handler (default=no)]),
+    [ac_cv_use_old_keys=$withval],
+    [ac_cv_use_old_keys=no])
+AC_CACHE_CHECK([whether to use old key handler],
+    [ac_cv_use_old_keys],
+    [ac_cv_use_old_keys=no])
+
+AC_ARG_WITH([terminfo],
+    AS_HELP_STRING([--with-terminfo],[install terminfo entries for your platform (default=no)]),
+    [ac_cv_install_terminfo=$withval],
+    [ac_cv_install_terminfo=no])
+AC_CACHE_CHECK([whether to install terminfo entries],
+    [ac_cv_install_terminfo],
+    [ac_cv_install_terminfo=no])
+AM_CONDITIONAL([INSTALL_TERMINFO], [test "$ac_cv_install_terminfo" = "yes"])
 
 # run AC_CHECK_LIB this way to avoid linking curses into every executable
 AC_CHECK_LIB(ncurses, initscr, CURSES_LIBS=-lncurses)
@@ -84,6 +99,21 @@ if test "$with_ssl" = "yes"; then
 fi
 
 AC_SUBST([CURSES_LIBS])
+
+dnl Host-specific terminal information; these often are based on the OS's built
+dnl in console terminal capabilities, so they aren't portable. Especially if
+dnl they differ between termcap vs. terminfo...
+dnl
+dnl XXX: Is the Linux terminfo entry geneerally useful?
+dnl XXX: Currently, only Linux is refactored to not trample system directories.
+dnl FreeBSD termcap needs refactoring, Solaris makefiles don't install.
+case "${host_os}" in
+    linux*)
+        ac_cv_build_linux=yes
+        ;;
+esac
+
+AM_CONDITIONAL([LINUX], [test "$ac_cv_build_linux" = "yes"])
 
 AC_CONFIG_FILES([Makefile
 		 curses/Makefile
