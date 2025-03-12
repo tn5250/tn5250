@@ -127,6 +127,7 @@ struct _Tn5250TerminalPrivate {
     unsigned int is_xterm : 1;
     unsigned int display_ruler : 1;
     unsigned int local_print : 1;
+    unsigned int mouse_on_start : 1;
 };
 
 #ifdef USE_OWN_KEY_PARSING
@@ -287,6 +288,7 @@ Tn5250Terminal* tn5250_curses_terminal_new() {
     r->data->font_132 = NULL;
     r->data->display_ruler = 0;
     r->data->local_print = 0;
+    r->data->mouse_on_start = 0;
     r->data->display = NULL;
     r->data->config = NULL;
 
@@ -469,7 +471,11 @@ static void curses_terminal_init(Tn5250Terminal* This) {
     }
 #endif
 
-    mousemask(BUTTON1_CLICKED, &This->data->old_mouse_mask);
+    if (This->data->mouse_on_start) {
+        mousemask(BUTTON1_CLICKED, &This->data->old_mouse_mask);
+    } else {
+        This->data->old_mouse_mask = BUTTON1_CLICKED;
+    }
 }
 
 /****i* lib5250/tn5250_curses_terminal_use_underscores
@@ -952,6 +958,10 @@ static int curses_terminal_getkey(Tn5250Terminal* This) {
             return K_EXEC;
         case K_CTRL('X'):
             return K_FIELDPLUS;
+
+        case K_CTRL('V'): /* Toggle mouse reporting */
+            mousemask(This->data->old_mouse_mask, &This->data->old_mouse_mask);
+            return key;
 
         case K_CTRL('Q'):
             This->data->quit_flag = 1;
@@ -1455,6 +1465,9 @@ int curses_terminal_config(Tn5250Terminal* This, Tn5250Config* config) {
     This->data->config = config;
     if (tn5250_config_get_bool(config, "local_print_key")) {
         This->data->local_print = 1;
+    }
+    if (tn5250_config_get_bool(config, "mouse")) {
+        This->data->mouse_on_start = 1;
     }
     return 0;
 }
