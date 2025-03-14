@@ -545,7 +545,6 @@ static void telnet_stream_do_verb(Tn5250Stream* This, unsigned char verb,
     }
 }
 
-
 /****i* lib5250/telnet_stream_sb_var_value
  * NAME
  *    telnet_stream_sb_var_value
