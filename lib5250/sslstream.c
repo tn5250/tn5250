@@ -52,9 +52,6 @@ static void ssl_stream_disconnect(Tn5250Stream* This);
 static int ssl_stream_handle_receive(Tn5250Stream* This);
 static void ssl_stream_send_packet(Tn5250Stream* This, int length,
                                    StreamHeader header, unsigned char* data);
-static void tn3270_ssl_stream_send_packet(Tn5250Stream* This, int length,
-                                          StreamHeader header,
-                                          unsigned char* data);
 int ssl_stream_passwd_cb(char* buf, int size, int rwflag, Tn5250Stream* This);
 X509* ssl_stream_load_cert(Tn5250Stream* This, const char* file);
 
@@ -76,36 +73,6 @@ X509* ssl_stream_load_cert(Tn5250Stream* This, const char* file);
 #define TERMINAL_TYPE   24
 #define TIMING_MARK     6
 #define NEW_ENVIRON     39
-
-#define TN3270E 40
-
-/* Sub-Options for TN3270E negotiation */
-#define TN3270E_ASSOCIATE   0
-#define TN3270E_CONNECT     1
-#define TN3270E_DEVICE_TYPE 2
-#define TN3270E_FUNCTIONS   3
-#define TN3270E_IS          4
-#define TN3270E_REASON      5
-#define TN3270E_REJECT      6
-#define TN3270E_REQUEST     7
-#define TN3270E_SEND        8
-
-/* Reason codes for TN3270E negotiation */
-#define TN3270E_CONN_PARTNER    0
-#define TN3270E_DEVICE_IN_USE   1
-#define TN3270E_INV_ASSOCIATE   2
-#define TN3270E_INV_NAME        3
-#define TN3270E_INV_DEVICE_TYPE 4
-#define TN3270E_TYPE_NAME_ERROR 5
-#define TN3270E_UNKNOWN_ERROR   6
-#define TN3270E_UNSUPPORTED_REQ 7
-
-/* Function names for TN3270E FUNCTIONS sub-option */
-#define TN3270E_BIND_IMAGE      0
-#define TN3270E_DATA_STREAM_CTL 1
-#define TN3270E_RESPONSES       2
-#define TN3270E_SCS_CTL_CODES   3
-#define TN3270E_SYSREQ          4
 
 #define EOR  239
 #define SE   240
@@ -137,21 +104,12 @@ static const UCHAR hostInitStr[] = { IAC, DO, NEW_ENVIRON,
                                      IAC, DO, TERMINAL_TYPE };
 static const UCHAR hostDoEOR[] = { IAC, DO, END_OF_RECORD };
 static const UCHAR hostDoBinary[] = { IAC, DO, TRANSMIT_BINARY };
-static const UCHAR hostDoTN3270E[] = { IAC, DO, TN3270E };
-static const UCHAR hostSBDevice[] = {
-    IAC, SB, TN3270E, TN3270E_SEND, TN3270E_DEVICE_TYPE, IAC, SE
-};
 typedef struct doTable_t {
     const UCHAR* cmd;
     unsigned len;
 } DOTABLE;
 
 static const DOTABLE host5250DoTable[] = { hostInitStr,  sizeof(hostInitStr),
-                                           hostDoEOR,    sizeof(hostDoEOR),
-                                           hostDoBinary, sizeof(hostDoBinary),
-                                           NULL,         0 };
-
-static const DOTABLE host3270DoTable[] = { hostInitStr,  sizeof(hostInitStr),
                                            hostDoEOR,    sizeof(hostDoEOR),
                                            hostDoBinary, sizeof(hostDoBinary),
                                            NULL,         0 };
@@ -1141,34 +1099,6 @@ static void ssl_stream_send_packet(Tn5250Stream* This, int length,
 
     ssl_stream_write(This, tn5250_buffer_data(&out_buf),
                      tn5250_buffer_length(&out_buf));
-    tn5250_buffer_free(&out_buf);
-}
-
-void tn3270_ssl_stream_send_packet(Tn5250Stream* This, int length,
-                                   StreamHeader header, unsigned char* data) {
-    Tn5250Buffer out_buf;
-
-    tn5250_buffer_init(&out_buf);
-
-    if (This->streamtype == TN3270E_STREAM) {
-        tn5250_buffer_append_byte(&out_buf, header.h3270.data_type);
-        tn5250_buffer_append_byte(&out_buf, header.h3270.request_flag);
-        tn5250_buffer_append_byte(&out_buf, header.h3270.response_flag);
-
-        tn5250_buffer_append_byte(&out_buf, header.h3270.sequence >> 8);
-        tn5250_buffer_append_byte(&out_buf, header.h3270.sequence & 0x00ff);
-    }
-
-    tn5250_buffer_append_data(&out_buf, data, length);
-
-    ssl_stream_escape(&out_buf);
-
-    tn5250_buffer_append_byte(&out_buf, IAC);
-    tn5250_buffer_append_byte(&out_buf, EOR);
-
-    ssl_stream_write(This, tn5250_buffer_data(&out_buf),
-                     tn5250_buffer_length(&out_buf));
-
     tn5250_buffer_free(&out_buf);
 }
 

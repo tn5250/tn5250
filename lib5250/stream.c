@@ -23,7 +23,6 @@
 
 /* External declarations of initializers for each type of stream. */
 extern int tn5250_telnet_stream_init(Tn5250Stream* This);
-extern int tn3270_telnet_stream_init(Tn5250Stream* This);
 #ifdef HAVE_LIBSSL
 extern int tn5250_ssl_stream_init(Tn5250Stream* This);
 #endif
