@@ -342,7 +342,6 @@ static void log_SB_buf(unsigned char* buf, int len) {
  *****/
 int tn5250_telnet_stream_init(Tn5250Stream* This) {
     This->connect = telnet_stream_connect;
-    This->accept = telnet_stream_accept;
     This->disconnect = telnet_stream_disconnect;
     This->handle_receive = telnet_stream_handle_receive;
     This->send_packet = telnet_stream_send_packet;
@@ -363,7 +362,6 @@ int tn5250_telnet_stream_init(Tn5250Stream* This) {
  *****/
 int tn3270_telnet_stream_init(Tn5250Stream* This) {
     This->connect = telnet_stream_connect;
-    This->accept = telnet_stream_accept;
     This->disconnect = telnet_stream_disconnect;
     This->handle_receive = telnet_stream_handle_receive;
     This->send_packet = tn3270_stream_send_packet;
@@ -453,148 +451,6 @@ static int telnet_stream_connect(Tn5250Stream* This, const char* to) {
 #endif
 
     This->state = TN5250_STREAM_STATE_DATA;
-    return 0;
-}
-
-/****i* lib5250/telnet_stream_accept
- * NAME
- *    telnet_stream_accept
- * SYNOPSIS
- *    ret = telnet_stream_accept (This, masterSock);
- * INPUTS
- *    Tn5250Stream *	This       -
- *    SOCKET		masterSock -
- * DESCRIPTION
- *    Accepts a connection from the client.
- *****/
-static int telnet_stream_accept(Tn5250Stream* This, SOCKET_TYPE masterfd) {
-    int i, retCode;
-    /*
-    int len;
-    struct sockaddr_in serv_addr;
-    */
-    fd_set fdr;
-    struct timeval tv;
-
-#ifndef WINELIB
-    int ioctlarg = 1;
-#endif
-
-    /*
-    len = sizeof(serv_addr);
-    This->sockfd = accept(masterSock, (struct sockaddr *) &serv_addr, &len);
-    if (WAS_INVAL_SOCK(This->sockfd)) {
-      return LAST_ERROR;
-    }
-    */
-    printf("This->sockfd = %d\n", masterfd);
-    This->sockfd = masterfd;
-
-    /* Set socket to non-blocking mode. */
-#ifndef WINELIB
-    TN_IOCTL(This->sockfd, FIONBIO, &ioctlarg);
-#endif
-
-    This->state = TN5250_STREAM_STATE_DATA;
-    This->status = HOST;
-
-    /* Commence TN5250 negotiations...
-       Send DO options (New Environment, Terminal Type, etc.) */
-
-    if (This->streamtype == TN3270E_STREAM) {
-        retCode = send(This->sockfd, hostDoTN3270E, sizeof(hostDoTN3270E), 0);
-        if (WAS_ERROR_RET(retCode)) {
-            perror("telnetstr");
-            return LAST_ERROR;
-        }
-
-        FD_ZERO(&fdr);
-        FD_SET(This->sockfd, &fdr);
-        tv.tv_sec = 5;
-        tv.tv_usec = 0;
-        TN_SELECT(This->sockfd + 1, &fdr, NULL, NULL, &tv);
-        if (FD_ISSET(This->sockfd, &fdr)) {
-
-            if (!telnet_stream_handle_receive(This)) {
-                retCode = LAST_ERROR;
-                return retCode ? retCode : -1;
-            }
-        }
-        else {
-            return -1;
-        }
-
-        if (This->streamtype == TN3270E_STREAM) {
-            retCode = send(This->sockfd, hostSBDevice, sizeof(hostSBDevice), 0);
-
-            if (WAS_ERROR_RET(retCode)) {
-                perror("telnetstr");
-                return LAST_ERROR;
-            }
-
-            FD_ZERO(&fdr);
-            FD_SET(This->sockfd, &fdr);
-            tv.tv_sec = 5;
-            tv.tv_usec = 0;
-            TN_SELECT(This->sockfd + 1, &fdr, NULL, NULL, &tv);
-            if (FD_ISSET(This->sockfd, &fdr)) {
-
-                if (!telnet_stream_handle_receive(This)) {
-                    retCode = LAST_ERROR;
-                    return retCode ? retCode : -1;
-                }
-            }
-            else {
-                return -1;
-            }
-
-            FD_ZERO(&fdr);
-            FD_SET(This->sockfd, &fdr);
-            tv.tv_sec = 5;
-            tv.tv_usec = 0;
-            TN_SELECT(This->sockfd + 1, &fdr, NULL, NULL, &tv);
-            if (FD_ISSET(This->sockfd, &fdr)) {
-
-                if (!telnet_stream_handle_receive(This)) {
-                    retCode = LAST_ERROR;
-                    return retCode ? retCode : -1;
-                }
-            }
-            else {
-                return -1;
-            }
-        }
-        else {
-            goto neg5250;
-        }
-    }
-    else {
-    neg5250:
-        for (i = 0; host5250DoTable[i].cmd; i++) {
-            retCode = send(This->sockfd, host5250DoTable[i].cmd,
-                           host5250DoTable[i].len, 0);
-            if (WAS_ERROR_RET(retCode)) {
-                perror("telnetstr");
-                return LAST_ERROR;
-            }
-
-            FD_ZERO(&fdr);
-            FD_SET(This->sockfd, &fdr);
-            tv.tv_sec = 5;
-            tv.tv_usec = 0;
-            TN_SELECT(This->sockfd + 1, &fdr, NULL, NULL, &tv);
-            if (FD_ISSET(This->sockfd, &fdr)) {
-
-                if (!telnet_stream_handle_receive(This)) {
-                    retCode = LAST_ERROR;
-                    return retCode ? retCode : -1;
-                }
-            }
-            else {
-                return -1;
-            }
-        }
-    }
     return 0;
 }
 

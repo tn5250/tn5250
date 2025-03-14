@@ -32,7 +32,6 @@ extern "C" {
 #define TN5250_RBSIZE 8192
 struct _Tn5250Stream {
     int (*connect)(struct _Tn5250Stream* This, const char* to);
-    int (*accept)(struct _Tn5250Stream* This, SOCKET_TYPE masterSock);
     void (*disconnect)(struct _Tn5250Stream* This);
     int (*handle_receive)(struct _Tn5250Stream* This);
     void (*send_packet)(struct _Tn5250Stream* This, int length,

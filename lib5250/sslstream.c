@@ -24,10 +24,6 @@
 
 #include "tn5250-private.h"
 
-#ifdef accept
-#undef accept
-#endif
-
 #ifdef HAVE_LIBSSL
 
 #include <openssl/ssl.h>
@@ -53,7 +49,6 @@ static void ssl_stream_write(Tn5250Stream* This, unsigned char* data, int size);
 static int ssl_stream_get_byte(Tn5250Stream* This);
 
 static int ssl_stream_connect(Tn5250Stream* This, const char* to);
-static int ssl_stream_accept(Tn5250Stream* This, SOCKET_TYPE masterSock);
 static void ssl_stream_destroy(Tn5250Stream* This);
 static void ssl_stream_disconnect(Tn5250Stream* This);
 static int ssl_stream_handle_receive(Tn5250Stream* This);
@@ -479,7 +474,6 @@ int tn5250_ssl_stream_init(Tn5250Stream* This) {
     This->ssl_handle = NULL;
 
     This->connect = ssl_stream_connect;
-    This->accept = ssl_stream_accept;
     This->disconnect = ssl_stream_disconnect;
     This->handle_receive = ssl_stream_handle_receive;
     This->send_packet = ssl_stream_send_packet;
@@ -648,150 +642,6 @@ static int ssl_stream_connect(Tn5250Stream* This, const char* to) {
     This->state = TN5250_STREAM_STATE_DATA;
     TN5250_LOG(("tn5250_ssl_stream_connect() success.\n"));
     return 0;
-}
-
-/****i* lib5250/ssl_stream_accept
- * NAME
- *    ssl_stream_accept
- * SYNOPSIS
- *    ret = ssl_stream_accept (This, masterSock);
- * INPUTS
- *    Tn5250Stream *	This       -
- *    SOCKET		masterSock -
- * DESCRIPTION
- *    Accepts a connection from the client.
- *****/
-static int ssl_stream_accept(Tn5250Stream* This, SOCKET_TYPE masterfd) {
-    int i, len, retCode;
-    struct sockaddr_in serv_addr;
-    fd_set fdr;
-    struct timeval tv;
-    int negotiating;
-
-#ifndef WINELIB
-    int ioctlarg = 1;
-#endif
-
-    /* FIXME:  This routine needs to be converted to use SSL calls
-               I just left it disabled for now.  -- SCK          */
-
-#if 0
-   /*
-   len = sizeof(serv_addr);
-   This->sockfd = accept(masterSock, (struct sockaddr *) &serv_addr, &len);
-   if (WAS_INVAL_SOCK(This->sockfd)) {
-      return -1;
-   }
-   */
-   printf("This->sockfd = %d\n", masterfd);
-   This->sockfd = masterfd;
-
-   /* Set socket to non-blocking mode. */
-   TN_IOCTL(This->sockfd, FIONBIO, &ioctlarg);
-
-   This->state = TN5250_STREAM_STATE_DATA;
-   This->status = HOST;
-
-   /* Commence TN5250 negotiations...
-      Send DO options (New Environment, Terminal Type, etc.) */
-
-   if(This->streamtype == TN3270E_STREAM)
-     {
-       retCode = SSL_write(this->ssl_handle, hostDoTN3270E, sizeof(hostDoTN3270E));
-       if (retCode<1) {
-         errnum = SSL_get_error(This->ssl_handle, retCode);
-         fprintf(stderr, "sslstream: %s\n", ERR_error_string(errnum,NULL));
-	 return errnum;
-       }
-
-       tv.tv_sec = 5;
-       tv.tv_usec = 0;
-       TN_SELECT(This->sockfd + 1, &fdr, NULL, NULL, &tv);
-       if (FD_ISSET(This->sockfd, &fdr)) {
-	   
-	 if (!ssl_stream_handle_receive(This)) {
-	   retCode = errnum;
-	   return retCode ? retCode : -1;
-	 }
-       } else {
-	 return -1;
-       }
-
-       if(This->streamtype == TN3270E_STREAM)
-	 {
-           retCode = SSL_write(This->ssl_handle, hostDoTN3270E,sizeof(hostDoTN3270E));
-           if (retCode<1) {
-              errnum = SSL_get_error(This->ssl_handle, retCode);
-              fprintf(stderr,"sslstream: %s\n",ERR_error_string(errnum,NULL));
-	      return errnum;
-           }
-
-	   FD_ZERO(&fdr);
-	   FD_SET(This->sockfd, &fdr);
-	   tv.tv_sec = 5;
-	   tv.tv_usec = 0;
-	   TN_SELECT(This->sockfd + 1, &fdr, NULL, NULL, &tv);
-	   if (FD_ISSET(This->sockfd, &fdr)) {
-	     
-	     if (!ssl_stream_handle_receive(This)) {
-	       retCode = errnum;
-	       return retCode ? retCode : -1;
-	     }
-	   } else {
-	     return -1;
-	   }
-
-	   FD_ZERO(&fdr);
-	   FD_SET(This->sockfd, &fdr);
-	   tv.tv_sec = 5;
-	   tv.tv_usec = 0;
-	   TN_SELECT(This->sockfd + 1, &fdr, NULL, NULL, &tv);
-	   if (FD_ISSET(This->sockfd, &fdr)) {
-	     
-	     if (!ssl_stream_handle_receive(This)) {
-	       retCode = errnum;
-	       return retCode ? retCode : -1;
-	     }
-	   } else {
-	     return -1;
-	   }
-	 } 
-       else 
-	 {
-	   goto neg5250;
-	 }
-     }
-   else
-     {
-     neg5250:
-       for (i=0; host5250DoTable[i].cmd; i++) {
-         retCode = SSL_write(This->ssl_handle, host5250DoTable[i].cmd,
-                     host5250DoTable[i].len);
-         if (retCode<1) {
-             errnum = SSL_get_error(This->ssl_handle, retCode);
-             fprintf(stderr,"sslstream: %s\n",ERR_error_string(errnum,NULL));
-	     return errnum;
-         }
-	 
-	 FD_ZERO(&fdr);
-	 FD_SET(This->sockfd, &fdr);
-	 tv.tv_sec = 5;
-	 tv.tv_usec = 0;
-	 TN_SELECT(This->sockfd + 1, &fdr, NULL, NULL, &tv);
-	 if (FD_ISSET(This->sockfd, &fdr)) {
-	   
-	   if (!ssl_stream_handle_receive(This)) {
-	     retCode = errnum;
-	     return retCode ? retCode : -1;
-	   }
-	 } else {
-	   return -1;
-	 }
-       }
-     }
-   return 0;
-#endif
-    return -1;
 }
 
 /****i* lib5250/ssl_stream_disconnect

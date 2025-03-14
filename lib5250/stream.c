@@ -21,10 +21,6 @@
  */
 #include "tn5250-private.h"
 
-#ifdef accept
-#undef accept
-#endif
-
 /* External declarations of initializers for each type of stream. */
 extern int tn5250_telnet_stream_init(Tn5250Stream* This);
 extern int tn3270_telnet_stream_init(Tn5250Stream* This);
@@ -148,46 +144,6 @@ Tn5250Stream* tn5250_stream_open(const char* to, Tn5250Config* config) {
 
         /* Connect */
         ret = (*(This->connect))(This, postfix);
-        if (ret == 0) {
-            return This;
-        }
-
-        tn5250_stream_destroy(This);
-    }
-    return NULL;
-}
-
-/****f* lib5250/tn5250_stream_host
- * NAME
- *    tn5250_stream_host
- * SYNOPSIS
- *    ret = tn5250_stream_host (masterSock);
- * INPUTS
- *    SOCKET_TYPE	masterSock	-	Master socket
- * DESCRIPTION
- *    DOCUMENT ME!!!
- *****/
-Tn5250Stream* tn5250_stream_host(SOCKET_TYPE masterfd, long timeout,
-                                 int streamtype) {
-    Tn5250Stream* This = tn5250_new(Tn5250Stream, 1);
-    int ret;
-
-    if (This != NULL) {
-        streamInit(This, timeout);
-        if (streamtype == TN5250_STREAM) {
-            /* Assume telnet stream type. */
-            ret = tn5250_telnet_stream_init(This);
-        }
-        else {
-            ret = tn3270_telnet_stream_init(This);
-        }
-        if (ret != 0) {
-            tn5250_stream_destroy(This);
-            return NULL;
-        }
-        /* Accept */
-        printf("masterfd = %d\n", masterfd);
-        ret = (*(This->accept))(This, masterfd);
         if (ret == 0) {
             return This;
         }
