@@ -1030,9 +1030,6 @@ static int curses_terminal_get_esc_key(Tn5250Terminal* This, int is_esc) {
     move(y, x);
     refresh();
 
-    FD_ZERO(&fdr);
-    FD_SET(0, &fdr);
-    select(1, &fdr, NULL, NULL, NULL);
     key = getch();
 
     if (isalpha(key)) {
