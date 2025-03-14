@@ -38,8 +38,6 @@ static int ssl_stream_get_next(Tn5250Stream* This, unsigned char* buf,
                                int size);
 static void ssl_stream_do_verb(Tn5250Stream* This, unsigned char verb,
                                unsigned char what);
-static int ssl_stream_host_verb(Tn5250Stream* This, unsigned char verb,
-                                unsigned char what);
 static void ssl_stream_sb_var_value(Tn5250Buffer* buf, unsigned char* var,
                                     unsigned char* value);
 static void ssl_stream_sb(Tn5250Stream* This, unsigned char* sb_buf,
@@ -72,7 +70,6 @@ X509* ssl_stream_load_cert(Tn5250Stream* This, const char* file);
 #define BINARY   2
 #define RECORD   4
 #define DONE     7
-#define HOST     8
 
 #define TRANSMIT_BINARY 0
 #define END_OF_RECORD   25
@@ -728,86 +725,6 @@ static int ssl_sendWill(Tn5250Stream* This, unsigned char what) {
     return SSL_write(This->ssl_handle, buff, 3);
 }
 
-/****i* lib5250/ssl_stream_host_verb
- * NAME
- *    ssl_stream_host_verb
- * SYNOPSIS
- *    ssl_stream_host_verb (This, verb, what);
- * INPUTS
- *    Tn5250Stream   *  This    -
- *    unsigned char	verb	-
- *    unsigned char	what	-
- * DESCRIPTION
- *    Process the telnet DO, DONT, WILL, or WONT escape sequence.
- *****/
-static int ssl_stream_host_verb(Tn5250Stream* This, unsigned char verb,
-                                unsigned char what) {
-    int len, option = 0, retval = 0;
-
-    IACVERB_LOG("GotVerb(1)", verb, what);
-    switch (verb) {
-    case DO:
-        switch (what) {
-        case END_OF_RECORD:
-            option = SEND_EOR;
-            break;
-
-        case TRANSMIT_BINARY:
-            option = SEND_BINARY;
-            break;
-
-        default:
-            break;
-        } /* DO: switch (what) */
-        break;
-
-    case DONT:
-    case WONT:
-        if (what == TN3270E) {
-            This->streamtype = TN3270_STREAM;
-        }
-        break;
-
-    case WILL:
-        switch (what) {
-        case NEW_ENVIRON:
-            len = sizeof(SB_Str_NewEnv);
-            TN5250_LOG(("Sending SB NewEnv..\n"));
-            retval = SSL_write(This->ssl_handle, SB_Str_NewEnv, len);
-            break;
-
-        case TERMINAL_TYPE:
-            len = sizeof(SB_Str_TermType);
-            TN5250_LOG(("Sending SB TermType..\n"));
-            retval = SSL_write(This->ssl_handle, SB_Str_TermType, len);
-            break;
-
-        case END_OF_RECORD:
-            option = RECV_EOR;
-            retval = ssl_sendWill(This, what);
-            break;
-
-        case TRANSMIT_BINARY:
-            option = RECV_BINARY;
-            retval = ssl_sendWill(This, what);
-            break;
-
-        default:
-            break;
-        } /* WILL: switch (what) */
-        break;
-
-    default:
-        break;
-    } /* switch (verb) */
-
-    if (retval > 0) {
-        retval = option;
-    }
-
-    return (retval);
-} /* ssl_stream_host_verb */
-
 /****i* lib5250/ssl_stream_do_verb
  * NAME
  *    ssl_stream_do_verb
@@ -882,103 +799,6 @@ static void ssl_stream_do_verb(Tn5250Stream* This, unsigned char verb,
         exit(5);
     }
 }
-
-static void ssl_stream_host_sb(Tn5250Stream* This, UCHAR* sb_buf, int sb_len) {
-    int rc;
-    int i;
-    int sbType;
-    int sbParm;
-    Tn5250Buffer tbuf;
-    UCHAR deviceResponse[] = { IAC, SB, TN3270E, TN3270E_DEVICE_TYPE,
-                               TN3270E_IS };
-    UCHAR functionResponse[] = { IAC, SB, TN3270E, TN3270E_FUNCTIONS };
-    char* dummyname = "TN3E002";
-
-    if (sb_len <= 0) {
-        return;
-    }
-
-    TN5250_LOG(("GotSB:<IAC><SB>"));
-    TNSB_LOG(sb_buf, sb_len);
-    TN5250_LOG(("<IAC><SE>\n"));
-    sbType = sb_buf[0];
-    switch (sbType) {
-    case TN3270E:
-        sb_buf += 1;
-        sb_len -= 1;
-        sbParm = sb_buf[0];
-        switch (sbParm) {
-        case TN3270E_DEVICE_TYPE:
-            sb_buf += 2; /* Device string follows DEVICE_TYPE IS parameter */
-            sb_len -= 2;
-            tn5250_buffer_init(&tbuf);
-            tn5250_buffer_append_data(&tbuf, deviceResponse,
-                                      sizeof(deviceResponse));
-            for (i = 0; i < sb_len && sb_buf[i] != IAC; i++) {
-                tn5250_buffer_append_byte(&tbuf, sb_buf[i]);
-            }
-            tn5250_buffer_append_byte(&tbuf, TN3270E_CONNECT);
-            tn5250_buffer_append_data(&tbuf, (unsigned char*)dummyname,
-                                      strlen(dummyname));
-            tn5250_buffer_append_byte(&tbuf, IAC);
-            tn5250_buffer_append_byte(&tbuf, SE);
-            rc = SSL_write(This->ssl_handle, (char*)tn5250_buffer_data(&tbuf),
-                           tn5250_buffer_length(&tbuf));
-            if (rc < 1) {
-                errnum = SSL_get_error(This->ssl_handle, rc);
-                printf("Error in SSL_write: %s\n",
-                       ERR_error_string(errnum, NULL));
-                exit(5);
-            }
-            break;
-        case TN3270E_FUNCTIONS:
-            sb_buf += 2; /* Function list follows FUNCTIONS REQUEST parameter */
-            sb_len -= 2;
-            tn5250_buffer_init(&tbuf);
-            tn5250_buffer_append_data(&tbuf, functionResponse,
-                                      sizeof(functionResponse));
-
-            tn5250_buffer_append_byte(&tbuf, TN3270E_IS);
-            for (i = 0; i < sb_len && sb_buf[i] != IAC; i++) {
-                tn5250_buffer_append_byte(&tbuf, sb_buf[i]);
-                This->options = This->options | (1 << (sb_buf[i] + 1));
-            }
-
-            tn5250_buffer_append_byte(&tbuf, IAC);
-            tn5250_buffer_append_byte(&tbuf, SE);
-            rc = SSL_write(This->ssl_handle, (char*)tn5250_buffer_data(&tbuf),
-                           tn5250_buffer_length(&tbuf));
-            if (rc < 1) {
-                errnum = SSL_get_error(This->ssl_handle, rc);
-                printf("Error in SSL_write: %s\n",
-                       ERR_error_string(errnum, NULL));
-                exit(5);
-            }
-            break;
-        default:
-            break;
-        }
-        break;
-    case TERMINAL_TYPE:
-        sb_buf += 2; /* Assume IS follows SB option type. */
-        sb_len -= 2;
-        tn5250_buffer_init(&tbuf);
-        for (i = 0; i < sb_len && sb_buf[i] != IAC; i++) {
-            tn5250_buffer_append_byte(&tbuf, sb_buf[i]);
-        }
-        tn5250_buffer_append_byte(&tbuf, 0);
-        tn5250_stream_setenv(This, "TERM", (char*)tbuf.data);
-        tn5250_buffer_free(&tbuf);
-        break;
-    case NEW_ENVIRON:
-        /* TODO:
-         * setNewEnvVars(This, sb_buf, sb_len);
-         */
-        break;
-    default:
-        break;
-    } /* switch */
-} /* ssl_stream_host_sb */
 
 /****i* lib5250/ssl_stream_sb_var_value
  * NAME
@@ -1164,20 +984,8 @@ static int ssl_stream_get_byte(Tn5250Stream* This) {
             break;
 
         case TN5250_STREAM_STATE_HAVE_VERB:
-            TN5250_LOG(("HOST, This->status  = %d %d\n", HOST, This->status));
-            if (This->status & HOST) {
-                temp = ssl_stream_host_verb(This, verb, (UCHAR)temp);
-                if (temp < 1) {
-                    DUMP_ERR_STACK();
-                    return -2;
-                }
-                /* Implement later...
-                This->options |= temp;
-                */
-            }
-            else {
-                ssl_stream_do_verb(This, verb, (UCHAR)temp);
-            }
+            TN5250_LOG(("This->status  = %d\n", This->status));
+            ssl_stream_do_verb(This, verb, (UCHAR)temp);
             This->state = TN5250_STREAM_STATE_NO_DATA;
             break;
 
@@ -1201,14 +1009,8 @@ static int ssl_stream_get_byte(Tn5250Stream* This) {
                 break;
 
             case SE:
-                if (This->status & HOST) {
-                    ssl_stream_host_sb(This, tn5250_buffer_data(&This->sb_buf),
-                                       tn5250_buffer_length(&This->sb_buf));
-                }
-                else {
-                    ssl_stream_sb(This, tn5250_buffer_data(&(This->sb_buf)),
-                                  tn5250_buffer_length(&(This->sb_buf)));
-                }
+                ssl_stream_sb(This, tn5250_buffer_data(&(This->sb_buf)),
+                              tn5250_buffer_length(&(This->sb_buf)));
 
                 tn5250_buffer_free(&(This->sb_buf));
                 This->state = TN5250_STREAM_STATE_NO_DATA;
