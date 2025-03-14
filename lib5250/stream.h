@@ -34,10 +34,6 @@
 extern "C" {
 #endif
 
-#define TN3270_STREAM  0
-#define TN3270E_STREAM 1
-#define TN5250_STREAM  2
-
 struct _Tn5250Config;
 
 struct Tn5250Header {
@@ -46,19 +42,7 @@ struct Tn5250Header {
     unsigned char opcode;
 };
 
-struct Tn3270Header {
-    unsigned char data_type;
-    unsigned char request_flag;
-    unsigned char response_flag;
-    int sequence;
-};
-
-union _StreamHeader {
-    struct Tn5250Header h5250;
-    struct Tn3270Header h3270;
-};
-
-typedef union _StreamHeader StreamHeader;
+typedef struct Tn5250Header StreamHeader;
 
 /****s* lib5250/Tn5250Stream
  * NAME

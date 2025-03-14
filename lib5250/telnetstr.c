@@ -302,7 +302,6 @@ int tn5250_telnet_stream_init(Tn5250Stream* This) {
     This->handle_receive = telnet_stream_handle_receive;
     This->send_packet = telnet_stream_send_packet;
     This->destroy = telnet_stream_destroy;
-    This->streamtype = TN5250_STREAM;
     return 0; /* Ok */
 }
 
@@ -858,9 +857,9 @@ static void telnet_stream_send_packet(Tn5250Stream* This, int length,
     unsigned char flags;
     unsigned char opcode;
 
-    flowtype = header.h5250.flowtype;
-    flags = header.h5250.flags;
-    opcode = header.h5250.opcode;
+    flowtype = header.flowtype;
+    flags = header.flags;
+    opcode = header.opcode;
 
     length = length + 10;
 

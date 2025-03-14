@@ -68,7 +68,6 @@ static void streamInit(Tn5250Stream* This, long timeout) {
     This->records = This->current_record = NULL;
     This->sockfd = (SOCKET_TYPE)-1;
     This->msec_wait = timeout;
-    This->streamtype = TN5250_STREAM;
     This->rcvbufpos = 0;
     This->rcvbuflen = -1;
     tn5250_buffer_init(&(This->sb_buf));
@@ -221,13 +220,8 @@ Tn5250Record* tn5250_stream_get_record(Tn5250Stream* This) {
     This->records = tn5250_record_list_remove(This->records, record);
     This->record_count--;
 
-    if (This->streamtype == TN5250_STREAM) {
-        TN5250_ASSERT(tn5250_record_length(record) >= 10);
-        offset = 6 + tn5250_record_data(record)[6];
-    }
-    else {
-        offset = 0;
-    }
+    TN5250_ASSERT(tn5250_record_length(record) >= 10);
+    offset = 6 + tn5250_record_data(record)[6];
 
     TN5250_LOG(("tn5250_stream_get_record: offset = %d\n", offset));
     tn5250_record_set_cur_pos(record, offset);

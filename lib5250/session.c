@@ -217,9 +217,9 @@ void tn5250_session_send_error(Tn5250Session* This, unsigned long errorcode) {
     errorcode = htonl(errorcode);
 
     TN5250_LOG(("Sending negative response = %x", errorcode));
-    header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
-    header.h5250.flags = TN5250_RECORD_H_ERR;
-    header.h5250.opcode = TN5250_RECORD_OPCODE_NO_OP;
+    header.flowtype = TN5250_RECORD_FLOW_DISPLAY;
+    header.flags = TN5250_RECORD_H_ERR;
+    header.opcode = TN5250_RECORD_OPCODE_NO_OP;
 
     tn5250_stream_send_packet(This->stream, 4, header,
                               (unsigned char*)&errorcode);
@@ -330,9 +330,9 @@ static void tn5250_session_invite(Tn5250Session* This) {
 static void tn5250_session_cancel_invite(Tn5250Session* This) {
     StreamHeader header;
 
-    header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
-    header.h5250.flags = TN5250_RECORD_H_NONE;
-    header.h5250.opcode = TN5250_RECORD_OPCODE_CANCEL_INVITE;
+    header.flowtype = TN5250_RECORD_FLOW_DISPLAY;
+    header.flags = TN5250_RECORD_H_NONE;
+    header.opcode = TN5250_RECORD_OPCODE_CANCEL_INVITE;
 
     TN5250_LOG(("CancelInvite: entered.\n"));
     tn5250_display_indicator_set(This->display, TN5250_DISPLAY_IND_X_CLOCK);
@@ -436,9 +436,9 @@ static void tn5250_session_send_fields(Tn5250Session* This, int aidcode) {
     tn5250_display_indicator_clear(This->display, TN5250_DISPLAY_IND_INSERT);
     tn5250_display_update(This->display);
 
-    header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
-    header.h5250.flags = TN5250_RECORD_H_NONE;
-    header.h5250.opcode = TN5250_RECORD_OPCODE_PUT_GET;
+    header.flowtype = TN5250_RECORD_FLOW_DISPLAY;
+    header.flags = TN5250_RECORD_H_NONE;
+    header.opcode = TN5250_RECORD_OPCODE_PUT_GET;
 
     tn5250_stream_send_packet(This->stream, tn5250_buffer_length(&field_buf),
                               header, tn5250_buffer_data(&field_buf));
@@ -1252,9 +1252,9 @@ static int tn5250_session_handle_aidkey(Tn5250Session* This, int key) {
                                   tn5250_display_cursor_x(This->display) + 1);
         tn5250_buffer_append_byte(&buf, key);
 
-        header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
-        header.h5250.flags = TN5250_RECORD_H_NONE;
-        header.h5250.opcode = TN5250_RECORD_OPCODE_NO_OP;
+        header.flowtype = TN5250_RECORD_FLOW_DISPLAY;
+        header.flags = TN5250_RECORD_H_NONE;
+        header.opcode = TN5250_RECORD_OPCODE_NO_OP;
 
         tn5250_stream_send_packet(This->stream, tn5250_buffer_length(&buf),
                                   header, tn5250_buffer_data(&buf));
@@ -1263,9 +1263,9 @@ static int tn5250_session_handle_aidkey(Tn5250Session* This, int key) {
 
     case TN5250_SESSION_AID_SYSREQ:
 
-        header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
-        header.h5250.flags = TN5250_RECORD_H_SRQ;
-        header.h5250.opcode = TN5250_RECORD_OPCODE_NO_OP;
+        header.flowtype = TN5250_RECORD_FLOW_DISPLAY;
+        header.flags = TN5250_RECORD_H_SRQ;
+        header.opcode = TN5250_RECORD_OPCODE_NO_OP;
 
         tn5250_display_indicator_set(This->display,
                                      TN5250_DISPLAY_IND_X_SYSTEM);
@@ -1281,16 +1281,16 @@ static int tn5250_session_handle_aidkey(Tn5250Session* This, int key) {
         break;
 
     case TN5250_SESSION_AID_TESTREQ:
-        header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
-        header.h5250.flags = TN5250_RECORD_H_TRQ;
-        header.h5250.opcode = TN5250_RECORD_OPCODE_NO_OP;
+        header.flowtype = TN5250_RECORD_FLOW_DISPLAY;
+        header.flags = TN5250_RECORD_H_TRQ;
+        header.opcode = TN5250_RECORD_OPCODE_NO_OP;
         tn5250_stream_send_packet(This->stream, 0, header, NULL);
         break;
 
     case TN5250_SESSION_AID_ATTN:
-        header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
-        header.h5250.flags = TN5250_RECORD_H_ATN;
-        header.h5250.opcode = TN5250_RECORD_OPCODE_NO_OP;
+        header.flowtype = TN5250_RECORD_FLOW_DISPLAY;
+        header.flags = TN5250_RECORD_H_ATN;
+        header.opcode = TN5250_RECORD_OPCODE_NO_OP;
 
         tn5250_display_indicator_set(This->display,
                                      TN5250_DISPLAY_IND_X_SYSTEM);
@@ -1310,9 +1310,9 @@ static int tn5250_session_handle_aidkey(Tn5250Session* This, int key) {
             unsigned char src[2];
             src[0] = (This->display->keySRC >> 8) & 0xff;
             src[1] = (This->display->keySRC) & 0xff;
-            header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
-            header.h5250.flags = TN5250_RECORD_H_HLP;
-            header.h5250.opcode = TN5250_RECORD_OPCODE_NO_OP;
+            header.flowtype = TN5250_RECORD_FLOW_DISPLAY;
+            header.flags = TN5250_RECORD_H_HLP;
+            header.opcode = TN5250_RECORD_OPCODE_NO_OP;
             TN5250_LOG(("PreHelp HELP key: %02x %02x\n", src[0], src[1]));
             tn5250_stream_send_packet(This->stream, 2, header, src);
             This->display->keystate = TN5250_KEYSTATE_POSTHELP;
@@ -1393,9 +1393,9 @@ static void tn5250_session_save_screen(Tn5250Session* This) {
         tn5250_buffer_append_byte(&buffer, 0x00); /* FIXME: ? CC2 */
     }
 
-    header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
-    header.h5250.flags = TN5250_RECORD_H_NONE;
-    header.h5250.opcode = TN5250_RECORD_OPCODE_SAVE_SCR;
+    header.flowtype = TN5250_RECORD_FLOW_DISPLAY;
+    header.flags = TN5250_RECORD_H_NONE;
+    header.opcode = TN5250_RECORD_OPCODE_SAVE_SCR;
 
     tn5250_stream_send_packet(This->stream, tn5250_buffer_length(&buffer),
                               header, tn5250_buffer_data(&buffer));
@@ -1440,9 +1440,9 @@ static void tn5250_session_save_partial_screen(Tn5250Session* This) {
         tn5250_buffer_append_byte(&buffer, 0x00); /* FIXME: ? CC2 */
     }
 
-    header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
-    header.h5250.flags = TN5250_RECORD_H_NONE;
-    header.h5250.opcode = TN5250_RECORD_OPCODE_SAVE_SCR;
+    header.flowtype = TN5250_RECORD_FLOW_DISPLAY;
+    header.flags = TN5250_RECORD_H_NONE;
+    header.opcode = TN5250_RECORD_OPCODE_SAVE_SCR;
 
     tn5250_stream_send_packet(This->stream, tn5250_buffer_length(&buffer),
                               header, tn5250_buffer_data(&buffer));
@@ -2304,9 +2304,9 @@ static void tn5250_session_read_screen_immediate(Tn5250Session* This) {
         }
     }
 
-    header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
-    header.h5250.flags = TN5250_RECORD_H_NONE;
-    header.h5250.opcode = TN5250_RECORD_OPCODE_NO_OP;
+    header.flowtype = TN5250_RECORD_FLOW_DISPLAY;
+    header.flags = TN5250_RECORD_H_NONE;
+    header.opcode = TN5250_RECORD_OPCODE_NO_OP;
 
     tn5250_stream_send_packet(This->stream, buffer_size, header, buffer);
 
@@ -2571,9 +2571,9 @@ static void tn5250_session_query_reply(Tn5250Session* This) {
     temp[65] = 0x00;
     temp[66] = 0x00;
 
-    header.h5250.flowtype = TN5250_RECORD_FLOW_DISPLAY;
-    header.h5250.flags = TN5250_RECORD_H_NONE;
-    header.h5250.opcode = TN5250_RECORD_OPCODE_NO_OP;
+    header.flowtype = TN5250_RECORD_FLOW_DISPLAY;
+    header.flags = TN5250_RECORD_H_NONE;
+    header.opcode = TN5250_RECORD_OPCODE_NO_OP;
 
     tn5250_stream_send_packet(This->stream, temp[4] + 3, header,
                               (unsigned char*)temp);

@@ -433,7 +433,6 @@ int tn5250_ssl_stream_init(Tn5250Stream* This) {
     This->handle_receive = ssl_stream_handle_receive;
     This->send_packet = ssl_stream_send_packet;
     This->destroy = ssl_stream_destroy;
-    This->streamtype = TN5250_STREAM;
     TN5250_LOG(("tn5250_ssl_stream_init() success.\n"));
     return 0; /* Ok */
 }
@@ -1057,9 +1056,9 @@ static void ssl_stream_send_packet(Tn5250Stream* This, int length,
     unsigned char flags;
     unsigned char opcode;
 
-    flowtype = header.h5250.flowtype;
-    flags = header.h5250.flags;
-    opcode = header.h5250.opcode;
+    flowtype = header.flowtype;
+    flags = header.flags;
+    opcode = header.opcode;
 
     length = length + 10;
 

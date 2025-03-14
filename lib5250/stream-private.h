@@ -49,7 +49,6 @@ struct _Tn5250Stream {
     SOCKET_TYPE sockfd;
     int status;
     int state;
-    int streamtype;
     long msec_wait;
     unsigned char options;
 
