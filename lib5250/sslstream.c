@@ -21,6 +21,13 @@
  * Boston, MA 02111-1307 USA
  *
  */
+#define _POSIX_C_SOURCE 200112L
+#define _XOPEN_SOURCE 600
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <string.h>
 
 #include "tn5250-private.h"
 
@@ -450,62 +457,56 @@ int tn5250_ssl_stream_init(Tn5250Stream* This) {
  *    host[:port].
  *****/
 static int ssl_stream_connect(Tn5250Stream* This, const char* to) {
-    struct sockaddr_in serv_addr;
     int ioctlarg = 1;
-    char* address;
+    char *address, *host, *port;
     int r;
     X509* server_cert;
     long certvfy;
 
     TN5250_LOG(("tn5250_ssl_stream_connect() entered.\n"));
 
-    memset((char*)&serv_addr, 0, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-
     /* Figure out the internet address. */
-    address = (char*)malloc(strlen(to) + 1);
-    strcpy(address, to);
-    if (strchr(address, ':')) {
-        *strchr(address, ':') = '\0';
-    }
-
-    serv_addr.sin_addr.s_addr = inet_addr(address);
-    if (serv_addr.sin_addr.s_addr == INADDR_NONE) {
-        struct hostent* pent = gethostbyname(address);
-        if (pent != NULL) {
-            memcpy(&serv_addr.sin_addr.s_addr, pent->h_addr, 4);
-        }
-    }
-    free(address);
-    if (serv_addr.sin_addr.s_addr == INADDR_NONE) {
-        TN5250_LOG(("sslstream: Host lookup failed!\n"));
-        return -1;
-    }
-
-    /* Figure out the port name. */
-    if (strchr(to, ':') != NULL) {
-        const char* port = strchr(to, ':') + 1;
-        serv_addr.sin_port = htons((u_short)atoi(port));
-        if (serv_addr.sin_port == 0) {
-            struct servent* pent = getservbyname(port, "tcp");
-            if (pent != NULL) {
-                serv_addr.sin_port = pent->s_port;
-            }
-        }
-        if (serv_addr.sin_port == 0) {
-            TN5250_LOG(("sslstream: Port lookup failed!\n"));
+    address = strdup(to);
+    // If this is an IPv6 address, the port separate is after the brackets
+    if ((host = strchr(address, '['))) {
+        *host++;
+        char *host_end = strrchr(address, ']');
+        if (host_end == NULL) {
             return -1;
         }
+        if ((port = strchr(host_end, ':'))) {
+            *port++ = '\0';
+        }
+        *host_end = '\0';
+    } else if ((port = strchr(address, ':'))) {
+        // IPv4 or hostname, only colon is for port
+        *port++ = '\0';
     }
-    else {
-        /* No port specified ... use telnet-ssl port. */
-        struct servent* pent = getservbyname("telnets", "tcp");
-        if (pent == NULL) {
-            serv_addr.sin_port = htons(992);
-        }
-        else {
-            serv_addr.sin_port = pent->s_port;
-        }
+
+    if (host == NULL) {
+        host = address;
+    }
+    if (port == NULL) {
+        port = "telnets";
+    }
+
+    struct addrinfo *result;
+    struct addrinfo hints = {
+        .ai_family = AF_UNSPEC,
+        .ai_socktype = SOCK_STREAM
+    };
+
+    r = getaddrinfo(host, port, &hints, &result);
+    if (r == EAI_NONAME && strcmp(port, "telnets") == 0) {
+        hints.ai_flags |= AI_NUMERICSERV;
+        freeaddrinfo(result);
+        r = getaddrinfo(host, "992", &hints, &result);
+    }
+
+    free(address);
+    if (r != 0) {
+        freeaddrinfo(result);
+        return r;
     }
 
     This->ssl_handle = SSL_new(This->ssl_context);
@@ -515,20 +516,30 @@ static int ssl_stream_connect(Tn5250Stream* This, const char* to) {
         return -1;
     }
 
-    This->sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (WAS_INVAL_SOCK(This->sockfd)) {
-        TN5250_LOG(("sslstream: socket() failed, errno=%d\n", errno));
-        return -1;
+    for (struct addrinfo* addr = result; addr; addr = addr->ai_next) {
+        This->sockfd = socket(addr->ai_family, addr->ai_socktype,
+                              addr->ai_protocol);
+        if (WAS_INVAL_SOCK(This->sockfd)) {
+            TN5250_LOG(("sslstream: socket() failed, errno=%d\n", errno));
+            freeaddrinfo(result);
+            return -1;
+        }
+
+        if ((r = SSL_set_fd(This->ssl_handle, This->sockfd)) == 0) {
+            errnum = SSL_get_error(This->ssl_handle, r);
+            DUMP_ERR_STACK();
+            TN5250_LOG(("sslstream: SSL_set_fd() failed, errnum=%d\n", errnum));
+            freeaddrinfo(result);
+            return errnum;
+        }
+
+        r = TN_CONNECT(This->sockfd, addr->ai_addr, addr->ai_addrlen);
+        if (r == 0) {
+            break;
+        }
     }
 
-    if ((r = SSL_set_fd(This->ssl_handle, This->sockfd)) == 0) {
-        errnum = SSL_get_error(This->ssl_handle, r);
-        DUMP_ERR_STACK();
-        TN5250_LOG(("sslstream: SSL_set_fd() failed, errnum=%d\n", errnum));
-        return errnum;
-    }
-
-    r = connect(This->sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+    freeaddrinfo(result);
     if (WAS_ERROR_RET(r)) {
         TN5250_LOG(("sslstream: connect() failed, errno=%d\n", errno));
         return -1;

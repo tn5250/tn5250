@@ -19,6 +19,14 @@
  * Boston, MA 02111-1307 USA
  *
  */
+#define _POSIX_C_SOURCE 200112L
+#define _XOPEN_SOURCE 600
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <string.h>
+
 #include "tn5250-private.h"
 
 #if defined(__SVR4) && defined(__sun)
@@ -318,64 +326,66 @@ int tn5250_telnet_stream_init(Tn5250Stream* This) {
  *    host[:port].
  *****/
 static int telnet_stream_connect(Tn5250Stream* This, const char* to) {
-    struct sockaddr_in serv_addr;
     int ioctlarg = 1;
-    char* address;
+    char *address, *host, *port;
     int r;
 
-    memset((char*)&serv_addr, 0, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-
     /* Figure out the internet address. */
-    address = (char*)malloc(strlen(to) + 1);
-    strcpy(address, to);
-    if (strchr(address, ':')) {
-        *strchr(address, ':') = '\0';
+    address = strdup(to);
+    // If this is an IPv6 address, the port separate is after the brackets
+    if ((host = strchr(address, '['))) {
+        *host++;
+        char *host_end = strrchr(address, ']');
+        if (host_end == NULL) {
+            return -1;
+        }
+        if ((port = strchr(host_end, ':'))) {
+            *port++ = '\0';
+        }
+        *host_end = '\0';
+    } else if ((port = strchr(address, ':'))) {
+        // IPv4 or hostname, only colon is for port
+        *port++ = '\0';
     }
 
-    serv_addr.sin_addr.s_addr = inet_addr(address);
-    if (serv_addr.sin_addr.s_addr == INADDR_NONE) {
-        struct hostent* pent = TN_GETHOSTBYNAME(address);
-        if (pent != NULL) {
-            memcpy(&serv_addr.sin_addr.s_addr, pent->h_addr, 4);
-        }
+    if (host == NULL) {
+        host = address;
     }
+    if (port == NULL) {
+        port = "telnet";
+    }
+
+    struct addrinfo *result;
+    struct addrinfo hints = {
+        .ai_family = AF_UNSPEC,
+        .ai_socktype = SOCK_STREAM
+    };
+
+    r = getaddrinfo(host, port, &hints, &result);
+    if (r == EAI_NONAME && strcmp(port, "telnet") == 0) {
+        hints.ai_flags |= AI_NUMERICSERV;
+        freeaddrinfo(result);
+        r = getaddrinfo(host, "23", &hints, &result);
+    }
+
     free(address);
-    if (serv_addr.sin_addr.s_addr == INADDR_NONE) {
-        return LAST_ERROR;
+    if (r != 0) {
+        freeaddrinfo(result);
+        return r;
     }
 
-    /* Figure out the port name. */
-    if (strchr(to, ':') != NULL) {
-        const char* port = strchr(to, ':') + 1;
-        serv_addr.sin_port = htons((u_short)atoi(port));
-        if (serv_addr.sin_port == 0) {
-            struct servent* pent = getservbyname(port, "tcp");
-            if (pent != NULL) {
-                serv_addr.sin_port = pent->s_port;
-            }
-        }
-        if (serv_addr.sin_port == 0) {
-            return LAST_ERROR;
-        }
-    }
-    else {
-        /* No port specified ... use telnet port. */
-        struct servent* pent = getservbyname("telnet", "tcp");
-        if (pent == NULL) {
-            serv_addr.sin_port = htons(23);
-        }
-        else {
-            serv_addr.sin_port = pent->s_port;
+    for (struct addrinfo* addr = result; addr; addr = addr->ai_next) {
+        This->sockfd = socket(addr->ai_family, addr->ai_socktype,
+                              addr->ai_protocol);
+        if (This->sockfd == -1) continue;
+
+        r = TN_CONNECT(This->sockfd, addr->ai_addr, addr->ai_addrlen);
+        if (r == 0) {
+            break;
         }
     }
 
-    This->sockfd = socket(PF_INET, SOCK_STREAM, 0);
-    if (WAS_INVAL_SOCK(This->sockfd)) {
-        return LAST_ERROR;
-    }
-    r = TN_CONNECT(This->sockfd, (struct sockaddr*)&serv_addr,
-                   sizeof(serv_addr));
+    freeaddrinfo(result);
     if (WAS_ERROR_RET(r)) {
         return LAST_ERROR;
     }

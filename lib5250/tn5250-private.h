@@ -108,8 +108,6 @@ extern char* version_string;
 #define TN_SOCKET        WINSOCK_socket
 #define TN_CONNECT       WINSOCK_connect
 #define TN_SELECT        WINSOCK_select
-#define TN_GETHOSTBYNAME WINSOCK_gethostbyname
-#define TN_GETSERVBYNAME WINSOCK_getservbyname
 #define TN_SEND          WINSOCK_send
 #define TN_RECV          WINSOCK_recv
 #define TN_CLOSE         WINSOCK_closesocket
@@ -140,8 +138,6 @@ INT WINAPI WINSOCK_select(INT nfds, ws_fd_set32* ws_readfds,
 #define TN_SOCKET        socket
 #define TN_CONNECT       connect
 #define TN_SELECT        select
-#define TN_GETHOSTBYNAME gethostbyname
-#define TN_GETSERVBYNAME getservbyname
 #define TN_SEND          send
 #define TN_RECV          recv
 #define TN_CLOSE         closesocket
@@ -152,8 +148,6 @@ INT WINAPI WINSOCK_select(INT nfds, ws_fd_set32* ws_readfds,
 #define TN_SOCKET        socket
 #define TN_CONNECT       connect
 #define TN_SELECT        select
-#define TN_GETHOSTBYNAME gethostbyname
-#define TN_GETSERVBYNAME getservbyname
 #define TN_SEND          send
 #define TN_RECV          recv
 #define TN_CLOSE         close
