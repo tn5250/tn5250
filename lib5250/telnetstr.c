@@ -20,7 +20,7 @@
  *
  */
 #define _POSIX_C_SOURCE 200112L
-#define _XOPEN_SOURCE 600
+#define _XOPEN_SOURCE   600
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -336,7 +336,7 @@ static int telnet_stream_connect(Tn5250Stream* This, const char* to) {
     // If this is an IPv6 address, the port separate is after the brackets
     if ((host = strchr(address, '['))) {
         *host++;
-        char *host_end = strrchr(address, ']');
+        char* host_end = strrchr(address, ']');
         if (host_end == NULL) {
             return -1;
         }
@@ -344,7 +344,8 @@ static int telnet_stream_connect(Tn5250Stream* This, const char* to) {
             *port++ = '\0';
         }
         *host_end = '\0';
-    } else if ((port = strchr(address, ':'))) {
+    }
+    else if ((port = strchr(address, ':'))) {
         // IPv4 or hostname, only colon is for port
         *port++ = '\0';
     }
@@ -356,11 +357,9 @@ static int telnet_stream_connect(Tn5250Stream* This, const char* to) {
         port = "telnet";
     }
 
-    struct addrinfo *result;
-    struct addrinfo hints = {
-        .ai_family = AF_UNSPEC,
-        .ai_socktype = SOCK_STREAM
-    };
+    struct addrinfo* result;
+    struct addrinfo hints = { .ai_family = AF_UNSPEC,
+                              .ai_socktype = SOCK_STREAM };
 
     r = getaddrinfo(host, port, &hints, &result);
     if (r == EAI_NONAME && strcmp(port, "telnet") == 0) {
@@ -375,8 +374,8 @@ static int telnet_stream_connect(Tn5250Stream* This, const char* to) {
     }
 
     for (struct addrinfo* addr = result; addr; addr = addr->ai_next) {
-        This->sockfd = socket(addr->ai_family, addr->ai_socktype,
-                              addr->ai_protocol);
+        This->sockfd =
+            socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
         if (This->sockfd == -1) continue;
 
         r = TN_CONNECT(This->sockfd, addr->ai_addr, addr->ai_addrlen);

@@ -22,7 +22,7 @@
  *
  */
 #define _POSIX_C_SOURCE 200112L
-#define _XOPEN_SOURCE 600
+#define _XOPEN_SOURCE   600
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -471,7 +471,7 @@ static int ssl_stream_connect(Tn5250Stream* This, const char* to) {
     // If this is an IPv6 address, the port separate is after the brackets
     if ((host = strchr(address, '['))) {
         *host++;
-        char *host_end = strrchr(address, ']');
+        char* host_end = strrchr(address, ']');
         if (host_end == NULL) {
             return -1;
         }
@@ -479,7 +479,8 @@ static int ssl_stream_connect(Tn5250Stream* This, const char* to) {
             *port++ = '\0';
         }
         *host_end = '\0';
-    } else if ((port = strchr(address, ':'))) {
+    }
+    else if ((port = strchr(address, ':'))) {
         // IPv4 or hostname, only colon is for port
         *port++ = '\0';
     }
@@ -491,11 +492,9 @@ static int ssl_stream_connect(Tn5250Stream* This, const char* to) {
         port = "telnets";
     }
 
-    struct addrinfo *result;
-    struct addrinfo hints = {
-        .ai_family = AF_UNSPEC,
-        .ai_socktype = SOCK_STREAM
-    };
+    struct addrinfo* result;
+    struct addrinfo hints = { .ai_family = AF_UNSPEC,
+                              .ai_socktype = SOCK_STREAM };
 
     r = getaddrinfo(host, port, &hints, &result);
     if (r == EAI_NONAME && strcmp(port, "telnets") == 0) {
@@ -521,13 +520,15 @@ static int ssl_stream_connect(Tn5250Stream* This, const char* to) {
     r = SSL_set_tlsext_host_name(This->ssl_handle, host);
     if (r == 0) {
         errnum = SSL_get_error(This->ssl_handle, r);
-        TN5250_LOG(("sslstream: SSL_set_tlsext_host_name() failed!, host=%s errnum=%d\n", host, errnum));
+        TN5250_LOG(("sslstream: SSL_set_tlsext_host_name() failed!, host=%s "
+                    "errnum=%d\n",
+                    host, errnum));
         // Not fatal, can continue?
     }
 
     for (struct addrinfo* addr = result; addr; addr = addr->ai_next) {
-        This->sockfd = socket(addr->ai_family, addr->ai_socktype,
-                              addr->ai_protocol);
+        This->sockfd =
+            socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
         if (WAS_INVAL_SOCK(This->sockfd)) {
             TN5250_LOG(("sslstream: socket() failed, errno=%d\n", errno));
             freeaddrinfo(result);

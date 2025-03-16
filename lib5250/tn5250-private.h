@@ -105,13 +105,13 @@ extern char* version_string;
 
 /** Start of REALLY ugly network portability layer. **/
 #if defined(WINE)
-#define TN_SOCKET        WINSOCK_socket
-#define TN_CONNECT       WINSOCK_connect
-#define TN_SELECT        WINSOCK_select
-#define TN_SEND          WINSOCK_send
-#define TN_RECV          WINSOCK_recv
-#define TN_CLOSE         WINSOCK_closesocket
-#define TN_IOCTL         WINSOCK_ioctlsocket
+#define TN_SOCKET  WINSOCK_socket
+#define TN_CONNECT WINSOCK_connect
+#define TN_SELECT  WINSOCK_select
+#define TN_SEND    WINSOCK_send
+#define TN_RECV    WINSOCK_recv
+#define TN_CLOSE   WINSOCK_closesocket
+#define TN_IOCTL   WINSOCK_ioctlsocket
 
 /* Prototypes needed by WINE's winsock implementation so that the
  * names don't clash with system functions. */
@@ -135,23 +135,23 @@ INT WINAPI WINSOCK_select(INT nfds, ws_fd_set32* ws_readfds,
 /* end WINE */
 
 #elif defined(WIN32)
-#define TN_SOCKET        socket
-#define TN_CONNECT       connect
-#define TN_SELECT        select
-#define TN_SEND          send
-#define TN_RECV          recv
-#define TN_CLOSE         closesocket
-#define TN_IOCTL         ioctlsocket
+#define TN_SOCKET  socket
+#define TN_CONNECT connect
+#define TN_SELECT  select
+#define TN_SEND    send
+#define TN_RECV    recv
+#define TN_CLOSE   closesocket
+#define TN_IOCTL   ioctlsocket
 /* end WIN32 */
 
 #else
-#define TN_SOCKET        socket
-#define TN_CONNECT       connect
-#define TN_SELECT        select
-#define TN_SEND          send
-#define TN_RECV          recv
-#define TN_CLOSE         close
-#define TN_IOCTL         ioctl
+#define TN_SOCKET  socket
+#define TN_CONNECT connect
+#define TN_SELECT  select
+#define TN_SEND    send
+#define TN_RECV    recv
+#define TN_CLOSE   close
+#define TN_IOCTL   ioctl
 
 #endif
 
