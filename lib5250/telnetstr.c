@@ -327,11 +327,12 @@ int tn5250_telnet_stream_init(Tn5250Stream* This) {
  *****/
 static int telnet_stream_connect(Tn5250Stream* This, const char* to) {
     int ioctlarg = 1;
-    char *address, *host, *port;
+    // Should hold a hostname + :port/service name
+    char address[512], *host, *port;
     int r;
 
     /* Figure out the internet address. */
-    address = strdup(to);
+    strncpy(address, to, 512);
     // If this is an IPv6 address, the port separate is after the brackets
     if ((host = strchr(address, '['))) {
         *host++;
@@ -368,7 +369,6 @@ static int telnet_stream_connect(Tn5250Stream* This, const char* to) {
         r = getaddrinfo(host, "23", &hints, &result);
     }
 
-    free(address);
     if (r != 0) {
         freeaddrinfo(result);
         return r;

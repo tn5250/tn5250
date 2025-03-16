@@ -458,7 +458,8 @@ int tn5250_ssl_stream_init(Tn5250Stream* This) {
  *****/
 static int ssl_stream_connect(Tn5250Stream* This, const char* to) {
     int ioctlarg = 1;
-    char *address, *host, *port;
+    // Should hold a hostname + :port/service name
+    char address[512], *host, *port;
     int r;
     X509* server_cert;
     long certvfy;
@@ -466,7 +467,7 @@ static int ssl_stream_connect(Tn5250Stream* This, const char* to) {
     TN5250_LOG(("tn5250_ssl_stream_connect() entered.\n"));
 
     /* Figure out the internet address. */
-    address = strdup(to);
+    strncpy(address, to, 512);
     // If this is an IPv6 address, the port separate is after the brackets
     if ((host = strchr(address, '['))) {
         *host++;
@@ -503,7 +504,6 @@ static int ssl_stream_connect(Tn5250Stream* This, const char* to) {
         r = getaddrinfo(host, "992", &hints, &result);
     }
 
-    free(address);
     if (r != 0) {
         freeaddrinfo(result);
         return r;
@@ -514,6 +514,15 @@ static int ssl_stream_connect(Tn5250Stream* This, const char* to) {
         DUMP_ERR_STACK();
         TN5250_LOG(("sslstream: SSL_new() failed!\n"));
         return -1;
+    }
+
+    // Provide host name for SNI; IBM i doesn't do anything with this AFAIK,
+    // but a proxy might. Note that 0 indicates failure.
+    r = SSL_set_tlsext_host_name(This->ssl_handle, host);
+    if (r == 0) {
+        errnum = SSL_get_error(This->ssl_handle, r);
+        TN5250_LOG(("sslstream: SSL_set_tlsext_host_name() failed!, host=%s errnum=%d\n", host, errnum));
+        // Not fatal, can continue?
     }
 
     for (struct addrinfo* addr = result; addr; addr = addr->ai_next) {
