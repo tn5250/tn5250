@@ -23,6 +23,10 @@
 #include "tn5250-private.h"
 #include "resource.h"
 
+#include <commdlg.h>
+#include <shellapi.h>
+#include <Winspool.h>
+
 #define MAXDEVNAME 64
 #define MAXMSG     1024
 

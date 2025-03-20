@@ -26,11 +26,11 @@ configure_file(config-cmake.h.in config.h @ONLY)
 
 add_subdirectory(doc)
 add_subdirectory(lib5250)
-add_subdirectory(lp5250d)
 add_subdirectory(termcaps)
 
 if (WIN32)
     add_subdirectory(win32)
 else()
     add_subdirectory(curses)
+    add_subdirectory(lp5250d)
 endif()
