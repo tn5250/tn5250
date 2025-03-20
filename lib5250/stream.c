@@ -21,13 +21,8 @@
  */
 #include "tn5250-private.h"
 
-#ifdef accept
-#undef accept
-#endif
-
 /* External declarations of initializers for each type of stream. */
 extern int tn5250_telnet_stream_init(Tn5250Stream* This);
-extern int tn3270_telnet_stream_init(Tn5250Stream* This);
 #ifdef HAVE_LIBSSL
 extern int tn5250_ssl_stream_init(Tn5250Stream* This);
 #endif
@@ -73,7 +68,6 @@ static void streamInit(Tn5250Stream* This, long timeout) {
     This->records = This->current_record = NULL;
     This->sockfd = (SOCKET_TYPE)-1;
     This->msec_wait = timeout;
-    This->streamtype = TN5250_STREAM;
     This->rcvbufpos = 0;
     This->rcvbuflen = -1;
     tn5250_buffer_init(&(This->sb_buf));
@@ -157,46 +151,6 @@ Tn5250Stream* tn5250_stream_open(const char* to, Tn5250Config* config) {
     return NULL;
 }
 
-/****f* lib5250/tn5250_stream_host
- * NAME
- *    tn5250_stream_host
- * SYNOPSIS
- *    ret = tn5250_stream_host (masterSock);
- * INPUTS
- *    SOCKET_TYPE	masterSock	-	Master socket
- * DESCRIPTION
- *    DOCUMENT ME!!!
- *****/
-Tn5250Stream* tn5250_stream_host(SOCKET_TYPE masterfd, long timeout,
-                                 int streamtype) {
-    Tn5250Stream* This = tn5250_new(Tn5250Stream, 1);
-    int ret;
-
-    if (This != NULL) {
-        streamInit(This, timeout);
-        if (streamtype == TN5250_STREAM) {
-            /* Assume telnet stream type. */
-            ret = tn5250_telnet_stream_init(This);
-        }
-        else {
-            ret = tn3270_telnet_stream_init(This);
-        }
-        if (ret != 0) {
-            tn5250_stream_destroy(This);
-            return NULL;
-        }
-        /* Accept */
-        printf("masterfd = %d\n", masterfd);
-        ret = (*(This->accept))(This, masterfd);
-        if (ret == 0) {
-            return This;
-        }
-
-        tn5250_stream_destroy(This);
-    }
-    return NULL;
-}
-
 /****f* lib5250/tn5250_stream_config
  * NAME
  *    tn5250_stream_config
@@ -266,13 +220,8 @@ Tn5250Record* tn5250_stream_get_record(Tn5250Stream* This) {
     This->records = tn5250_record_list_remove(This->records, record);
     This->record_count--;
 
-    if (This->streamtype == TN5250_STREAM) {
-        TN5250_ASSERT(tn5250_record_length(record) >= 10);
-        offset = 6 + tn5250_record_data(record)[6];
-    }
-    else {
-        offset = 0;
-    }
+    TN5250_ASSERT(tn5250_record_length(record) >= 10);
+    offset = 6 + tn5250_record_data(record)[6];
 
     TN5250_LOG(("tn5250_stream_get_record: offset = %d\n", offset));
     tn5250_record_set_cur_pos(record, offset);

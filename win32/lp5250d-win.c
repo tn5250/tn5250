@@ -1159,9 +1159,9 @@ void tn5250_windows_print_session_main_loop(Tn5250PrintSession* This) {
                         continue;
                     }
 
-                    header.h5250.flowtype = TN5250_RECORD_FLOW_CLIENTO;
-                    header.h5250.flags = TN5250_RECORD_H_NONE;
-                    header.h5250.opcode = TN5250_RECORD_OPCODE_PRINT_COMPLETE;
+                    header.flowtype = TN5250_RECORD_FLOW_CLIENTO;
+                    header.flags = TN5250_RECORD_H_NONE;
+                    header.opcode = TN5250_RECORD_OPCODE_PRINT_COMPLETE;
 
                     tn5250_stream_send_packet(This->stream, 0, header, NULL);
 
