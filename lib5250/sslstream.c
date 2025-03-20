@@ -467,7 +467,7 @@ static int ssl_stream_connect(Tn5250Stream* This, const char* to) {
     TN5250_LOG(("tn5250_ssl_stream_connect() entered.\n"));
 
     /* Figure out the internet address. */
-    strncpy(address, to, 512);
+    strncpy(address, to, sizeof(address));
     // If this is an IPv6 address, the port separate is after the brackets
     if ((host = strchr(address, '['))) {
         *host++;

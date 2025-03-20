@@ -332,7 +332,7 @@ static int telnet_stream_connect(Tn5250Stream* This, const char* to) {
     int r;
 
     /* Figure out the internet address. */
-    strncpy(address, to, 512);
+    strncpy(address, to, sizeof(adress));
     // If this is an IPv6 address, the port separate is after the brackets
     if ((host = strchr(address, '['))) {
         *host++;
