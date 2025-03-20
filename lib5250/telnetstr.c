@@ -376,7 +376,7 @@ static int telnet_stream_connect(Tn5250Stream* This, const char* to) {
     for (struct addrinfo* addr = result; addr; addr = addr->ai_next) {
         This->sockfd =
             socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
-        if (This->sockfd == -1) continue;
+        if (WAS_INVAL_SOCK(This->sockfd)) continue;
 
         r = TN_CONNECT(This->sockfd, addr->ai_addr, addr->ai_addrlen);
         if (r == 0) {
