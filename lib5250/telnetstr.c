@@ -338,6 +338,7 @@ static int telnet_stream_connect(Tn5250Stream* This, const char* to) {
         *host++;
         char* host_end = strrchr(address, ']');
         if (host_end == NULL) {
+            // XXX: Map this and others to appropriate error (GH-29)
             return -1;
         }
         if ((port = strchr(host_end, ':'))) {
