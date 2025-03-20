@@ -907,16 +907,12 @@ static int curses_terminal_getkey(Tn5250Terminal* This) {
 
         case KEY_MOUSE:
             if (getmouse(&event) == OK) {
-                int nx, ny;
-                /* Clamp to display size or we trip an assert. */
-                ny = tn5250_display_height(This->data->display) <= event.y
-                         ? tn5250_display_height(This->data->display) - 1
-                         : event.y;
-                nx = tn5250_display_width(This->data->display) <= event.x
-                         ? tn5250_display_width(This->data->display) - 1
-                         : event.x;
-                if (event.bstate & BUTTON1_CLICKED) {
-                    tn5250_display_set_cursor(This->data->display, ny, nx);
+                /* Ignore positions outside display or we trip an assert. */
+                if ((event.y < tn5250_display_height(This->data->display) &&
+                     event.x < tn5250_display_width(This->data->display)) &&
+                    event.bstate & BUTTON1_CLICKED) {
+                    tn5250_display_set_cursor(This->data->display, event.y,
+                                              event.x);
                 }
             }
             return -1;
