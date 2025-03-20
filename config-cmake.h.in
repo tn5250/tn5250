@@ -26,4 +26,16 @@
 #cmakedefine HAVE_SYS_TIME_H
 #cmakedefine HAVE_SYS_TYPES_H
 #cmakedefine HAVE_SYS_WAIT_H
+#cmakedefine HAVE_TERMCAP_H
 #cmakedefine HAVE_UNISTD_H
+
+#cmakedefine CURSES_HAVE_NCURSES_H
+#ifdef CURSES_HAVE_NCURSES_H
+#define HAVE_NCURSES_H
+#endif
+
+#cmakedefine OPENSSL_FOUND
+#ifdef OPENSSL_FOUND
+#define HAVE_LIBSSL
+#define HAVE_LIBCRYPTO
+#endif
