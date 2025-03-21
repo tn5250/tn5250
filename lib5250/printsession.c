@@ -22,7 +22,7 @@
 
 #include "tn5250-private.h"
 
-#ifndef WIN32
+#ifndef _WIN32
 
 #include <syslog.h>
 
@@ -368,4 +368,4 @@ static int tn5250_print_session_waitevent(Tn5250PrintSession* This) {
     return result;
 }
 
-#endif /* ifndef WIN32 */
+#endif /* ifndef _WIN32 */

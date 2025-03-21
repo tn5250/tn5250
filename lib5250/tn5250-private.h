@@ -25,7 +25,7 @@
 /*#include "tn5250-autoconfig.h"*/
 #include "config.h"
 
-#if defined(WIN32) || defined(WINE)
+#if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <winsock2.h>
@@ -90,7 +90,7 @@
 
 extern char* version_string;
 
-#if !defined(WINE) && !defined(WIN32)
+#if !defined(_WIN32)
 #include <sys/time.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
@@ -106,37 +106,8 @@ extern char* version_string;
 #endif
 
 /** Start of REALLY ugly network portability layer. **/
-#if defined(WINE)
-#define TN_SOCKET  WINSOCK_socket
-#define TN_CONNECT WINSOCK_connect
-#define TN_SELECT  WINSOCK_select
-#define TN_SEND    WINSOCK_send
-#define TN_RECV    WINSOCK_recv
-#define TN_CLOSE   WINSOCK_closesocket
-#define TN_IOCTL   WINSOCK_ioctlsocket
 
-/* Prototypes needed by WINE's winsock implementation so that the
- * names don't clash with system functions. */
-struct hostent* WINAPI WINSOCK_gethostbyname(const char* name);
-INT WINAPI WINSOCK_socket(INT af, INT type, INT protocol);
-INT WINAPI WINSOCK_connect(SOCKET s, struct sockaddr* name, INT namelen);
-INT WINAPI WINSOCK_recv(SOCKET s, char* buf, INT len, INT flags);
-INT WINAPI WINSOCK_send(SOCKET s, char* buf, INT len, INT flags);
-void WINAPI WINSOCK_closesocket(SOCKET s);
-INT WINAPI WINSOCK_select(INT nfds, ws_fd_set32* ws_readfds,
-                          ws_fd_set32* ws_writefds, ws_fd_set32* ws_exceptfds,
-                          struct timeval* timeout);
-
-#define fd_set ws_fd_set32
-#undef FD_ZERO
-#undef FD_SET
-#undef FD_ISSET
-#define FD_ZERO(x)     WS_FD_ZERO((x))
-#define FD_SET(x, y)   WS_FD_SET((x), (y))
-#define FD_ISSET(x, y) WS_FD_ISSET((x), (y))
-/* end WINE */
-
-#elif defined(WIN32)
+#if defined(_WIN32)
 #define TN_SOCKET  socket
 #define TN_CONNECT connect
 #define TN_SELECT  select
@@ -144,7 +115,7 @@ INT WINAPI WINSOCK_select(INT nfds, ws_fd_set32* ws_readfds,
 #define TN_RECV    recv
 #define TN_CLOSE   closesocket
 #define TN_IOCTL   ioctlsocket
-/* end WIN32 */
+/* end _WIN32 */
 
 #else
 #define TN_SOCKET  socket
@@ -157,7 +128,7 @@ INT WINAPI WINSOCK_select(INT nfds, ws_fd_set32* ws_readfds,
 
 #endif
 
-#if defined(WINE) || defined(WIN32)
+#if defined(_WIN32)
 /* Windows' braindead socketing */
 #define LAST_ERROR        (WSAGetLastError())
 #define ERR_INTR          WSAEINTR

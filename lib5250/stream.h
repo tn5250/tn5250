@@ -22,7 +22,7 @@
 #ifndef STREAM5250_H
 #define STREAM5250_H
 
-#if WIN32
+#if _WIN32
 #include <winsock2.h> /* Need for SOCKET type.  GJS 3/3/2000 */
 #endif
 

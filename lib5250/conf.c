@@ -30,7 +30,7 @@ static Tn5250ConfigStr* tn5250_config_get_str(Tn5250Config* This,
 static void tn5250_config_replace_vars(char* buf, int maxlen);
 static void tn5250_config_replacedata(const char* from, const char* to,
                                       char* line, int maxlen);
-#ifdef WIN32
+#ifdef _WIN32
 #define snprintf  _snprintf
 #define vsnprintf _vsnprintf
 #endif
@@ -589,7 +589,7 @@ static Tn5250ConfigStr* tn5250_config_get_str(Tn5250Config* This,
 #define USER_NAME_MAX 50
 static void tn5250_config_replace_vars(char* buf, int maxlen) {
 
-#ifdef WIN32
+#ifdef _WIN32
     {
         DWORD len;
         char usrnam[USER_NAME_MAX + 1];

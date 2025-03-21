@@ -38,7 +38,7 @@ static unsigned char mapfix2[256];
 static unsigned char mapfix3[256];
 static unsigned char mapfix4[256];
 
-#ifndef WIN32
+#ifndef _WIN32
 
 /****f* lp5250d/tn5250_closeall
  * NAME
@@ -145,7 +145,7 @@ int tn5250_daemon(int nochdir, int noclose, int ignsigcld) {
     return 0;
 }
 
-#endif /* ifndef WIN32 */
+#endif /* ifndef _WIN32 */
 
 /****f* lib5250/tn5250_char_map_to_remote
  * NAME
@@ -256,7 +256,7 @@ Tn5250CharMap* tn5250_char_map_new(const char* map) {
 
     /* Under Windows, we'll try the "winXXX" maps first, then fall back
        to the standard (unix) versions */
-#ifdef WIN32
+#ifdef _WIN32
     {
         char winmap[10];
         _snprintf(winmap, sizeof(winmap) - 1, "win%s", map);
@@ -357,7 +357,7 @@ void tn5250_log_open(const char* fname) {
         exit(1);
     }
     /* FIXME: Write $TERM, version, and uname -a to the file. */
-#ifndef WIN32
+#ifndef _WIN32
     /* Set file mode to 0600 since it may contain passwords. */
     fchmod(fileno(tn5250_logfile), 0600);
 #endif
@@ -558,7 +558,7 @@ int tn5250_parse_color(Tn5250Config* config, const char* colorname, int* red,
  * DESCRIPTION
  *    Run a command (submitted to us by the AS/400)
  *****/
-#ifndef WIN32
+#ifndef _WIN32
 int tn5250_run_cmd(const char* cmd, int wait) {
 
     struct sigaction sa;
@@ -594,7 +594,7 @@ int tn5250_run_cmd(const char* cmd, int wait) {
 }
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 int win32_run_process(const char* cmd, int wait);
 
 int tn5250_run_cmd(const char* cmd, int wait) {
@@ -649,4 +649,4 @@ int win32_run_process(const char* cmd, int wait) {
     return 0;
 }
 
-#endif /* ifdef WIN32 */
+#endif /* ifdef _WIN32 */
