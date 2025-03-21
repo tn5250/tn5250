@@ -79,7 +79,6 @@ Tn5250Char tn5250_char_map_to_local(Tn5250CharMap* This, Tn5250Char ebcdic);
 
 int tn5250_char_map_printable_p(Tn5250CharMap* This, Tn5250Char data);
 int tn5250_char_map_attribute_p(Tn5250CharMap* This, Tn5250Char data);
-int tn5250_setenv(const char* name, const char* value, int overwrite);
 
 #define tn5250_new(type, count) (type*)calloc(sizeof(type), (count))
 
