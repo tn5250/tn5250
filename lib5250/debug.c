@@ -27,8 +27,9 @@
 
 #if defined(WINE) || defined(WIN32)
 #undef VERSION
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <winsock.h>
+#include <winsock2.h>
 #endif
 
 #include <stdio.h>
