@@ -1,2 +1,2 @@
-cmake_minimum_required (VERSION 3.12)
-project (termcaps LANGUAGES C)
+cmake_minimum_required(VERSION 3.12)
+project(termacps)
