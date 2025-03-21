@@ -25,7 +25,7 @@
 /*#include "tn5250-autoconfig.h"*/
 #include "config.h"
 
-#if defined(WIN32) || defined(WINE)
+#if defined(_WIN32) || defined(WINE)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <winsock2.h>
@@ -90,7 +90,7 @@
 
 extern char* version_string;
 
-#if !defined(WINE) && !defined(WIN32)
+#if !defined(WINE) && !defined(_WIN32)
 #include <sys/time.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
@@ -136,7 +136,7 @@ INT WINAPI WINSOCK_select(INT nfds, ws_fd_set32* ws_readfds,
 #define FD_ISSET(x, y) WS_FD_ISSET((x), (y))
 /* end WINE */
 
-#elif defined(WIN32)
+#elif defined(_WIN32)
 #define TN_SOCKET  socket
 #define TN_CONNECT connect
 #define TN_SELECT  select
@@ -144,7 +144,7 @@ INT WINAPI WINSOCK_select(INT nfds, ws_fd_set32* ws_readfds,
 #define TN_RECV    recv
 #define TN_CLOSE   closesocket
 #define TN_IOCTL   ioctlsocket
-/* end WIN32 */
+/* end _WIN32 */
 
 #else
 #define TN_SOCKET  socket
@@ -157,7 +157,7 @@ INT WINAPI WINSOCK_select(INT nfds, ws_fd_set32* ws_readfds,
 
 #endif
 
-#if defined(WINE) || defined(WIN32)
+#if defined(WINE) || defined(_WIN32)
 /* Windows' braindead socketing */
 #define LAST_ERROR        (WSAGetLastError())
 #define ERR_INTR          WSAEINTR

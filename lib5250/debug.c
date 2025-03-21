@@ -25,7 +25,7 @@
 
 #define _TN5250_TERMINAL_PRIVATE_DEFINED
 
-#if defined(WINE) || defined(WIN32)
+#if defined(WINE) || defined(_WIN32)
 #undef VERSION
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
