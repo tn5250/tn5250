@@ -1,3 +1,8 @@
+#define VERSION "@CMAKE_PROJECT_VERSION@"
+#define PACKAGE "@CMAKE_PROJECT_NAME@"
+#define PACKAGE_BUGREPORT "https://github.com/tn5250/tn5250/issues"
+#define SYSCONFDIR "@CMAKE_INSTALL_FULL_SYSCONFDIR@"
+
 #define SOCKET_TYPE int
 
 #ifdef _MSC_VER 
@@ -5,11 +10,6 @@
 #define strncasecmp _strnicmp
 #define strcasecmp _stricmp
 #endif
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
-#define VERSION TOSTRING(_VERSION)
-#define PACKAGE TOSTRING(_PACKAGE)
-#define PACKAGE_BUGREPORT "https://github.com/tn5250/tn5250/issues"
 
 #cmakedefine HAVE_FCNTL_H
 #cmakedefine HAVE_LOCALE_H
