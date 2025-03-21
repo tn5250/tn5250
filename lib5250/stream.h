@@ -23,7 +23,7 @@
 #define STREAM5250_H
 
 #if WIN32
-#include <winsock.h> /* Need for SOCKET type.  GJS 3/3/2000 */
+#include <winsock2.h> /* Need for SOCKET type.  GJS 3/3/2000 */
 #endif
 
 #ifdef HAVE_LIBSSL

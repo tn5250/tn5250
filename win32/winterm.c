@@ -29,6 +29,9 @@
 #include "tn5250-private.h"
 #include "resource.h"
 
+#include <commdlg.h>
+#include <Mmsystem.h>
+
 #define TN5250_WNDCLASS       "tn5250-win32-terminal"
 #define WM_TN5250_STREAM_DATA (WM_USER + 2000)
 #define WM_TN5250_KEY_DATA    (WM_USER + 2001)
