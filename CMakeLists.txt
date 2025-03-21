@@ -1,5 +1,5 @@
-cmake_minimum_required (VERSION 3.12)
-project (tn5250 LANGUAGES C VERSION 0.9.8)
+cmake_minimum_required(VERSION 3.12)
+project(tn5250 LANGUAGES C VERSION 0.9.8)
 
 include(CheckIncludeFile)
 include(GNUInstallDirs)
@@ -20,10 +20,10 @@ check_include_file("unistd.h" HAVE_UNISTD_H)
 configure_file(config-cmake.h.in config.h @ONLY)
 
 if (${CMAKE_HOST_SYSTEM_NAME} MATCHES "Windows")
-    set( PLATFORM_LIBRARIES Ws2_32 Winmm)
+    set(PLATFORM_LIBRARIES Ws2_32 Winmm)
 endif()
 
-add_definitions ( -D_VERSION=${CMAKE_PROJECT_VERSION} -D_PACKAGE=${CMAKE_PROJECT_NAME} -DSYSCONFDIR="${CMAKE_INSTALL_FULL_SYSCONFDIR}")
+add_definitions(-D_VERSION=${CMAKE_PROJECT_VERSION} -D_PACKAGE=${CMAKE_PROJECT_NAME} -DSYSCONFDIR="${CMAKE_INSTALL_FULL_SYSCONFDIR}")
 
 add_subdirectory(curses)
 add_subdirectory(doc)

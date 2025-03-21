@@ -1,5 +1,5 @@
-cmake_minimum_required (VERSION 3.12)
-project (tn5250 LANGUAGES C)
+cmake_minimum_required(VERSION 3.12)
+project(tn5250-curses LANGUAGES C)
 
 include_directories(${CMAKE_BINARY_DIR} ../lib5250)
 

@@ -1,5 +1,5 @@
-cmake_minimum_required (VERSION 3.12)
-project (5250 LANGUAGES C)
+cmake_minimum_required(VERSION 3.12)
+project(lib5250 LANGUAGES C)
 
 include_directories(${CMAKE_BINARY_DIR})
 
