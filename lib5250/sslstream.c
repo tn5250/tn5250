@@ -21,14 +21,6 @@
  * Boston, MA 02111-1307 USA
  *
  */
-#define _POSIX_C_SOURCE 200112L
-#define _XOPEN_SOURCE   600
-
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <string.h>
-
 #include "tn5250-private.h"
 
 #ifdef HAVE_LIBSSL
@@ -470,7 +462,7 @@ static int ssl_stream_connect(Tn5250Stream* This, const char* to) {
     strncpy(address, to, sizeof(address));
     // If this is an IPv6 address, the port separate is after the brackets
     if ((host = strchr(address, '['))) {
-        *host++;
+        host++;
         char* host_end = strrchr(address, ']');
         if (host_end == NULL) {
             // XXX: Map this and others to appropriate error (GH-29)

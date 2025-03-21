@@ -28,6 +28,7 @@
 #if defined(WIN32) || defined(WINE)
 #include <windows.h>
 #include <winsock.h>
+#include <ws2tcpip.h>
 #endif
 
 #include <stdarg.h>
