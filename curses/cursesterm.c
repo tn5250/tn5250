@@ -96,26 +96,11 @@ void curses_terminal_print_screen(Tn5250Terminal* This, Tn5250Display* display);
 void curses_postscript_print(FILE* out, int x, int y, char* string,
                              attr_t attr);
 
-#ifdef USE_OWN_KEY_PARSING
-struct _Key {
-    int k_code;
-    char k_str[10];
-};
-
-typedef struct _Key Key;
-#endif
 
 #define MAX_K_BUF_LEN 20
 
 struct _Tn5250TerminalPrivate {
     int last_width, last_height;
-#ifdef USE_OWN_KEY_PARSING
-    unsigned char k_buf[MAX_K_BUF_LEN];
-    int k_buf_len;
-
-    Key* k_map;
-    int k_map_len;
-#endif
     char* font_80;
     char* font_132;
     Tn5250Display* display;
@@ -130,133 +115,6 @@ struct _Tn5250TerminalPrivate {
     unsigned int mouse_on_start : 1;
 };
 
-#ifdef USE_OWN_KEY_PARSING
-/* This is an array mapping our key code to a termcap capability
- * name. */
-static Key curses_caps[] = {
-    // clang-format off
-    { K_ENTER,     "@8" },
-    { K_ENTER,     "cr" },
-    { K_BACKTAB,   "kB" },
-    { K_F1,        "k1" },
-    { K_F2,        "k2" },
-    { K_F3,        "k3" },
-    { K_F4,        "k4" },
-    { K_F5,        "k5" },
-    { K_F6,        "k6" },
-    { K_F7,        "k7" },
-    { K_F8,        "k8" },
-    { K_F9,        "k9" },
-    { K_F10,       "k;" },
-    { K_F11,       "F1" },
-    { K_F12,       "F2" },
-    { K_F13,       "F3" },
-    { K_F14,       "F4" },
-    { K_F15,       "F5" },
-    { K_F16,       "F6" },
-    { K_F17,       "F7" },
-    { K_F18,       "F8" },
-    { K_F19,       "F9" },
-    { K_F20,       "FA" },
-    { K_F21,       "FB" },
-    { K_F22,       "FC" },
-    { K_F23,       "FD" },
-    { K_F24,       "FE" },
-    { K_LEFT,      "kl" },
-    { K_RIGHT,     "kr" },
-    { K_UP,        "ku" },
-    { K_DOWN,      "kd" },
-    { K_ROLLDN,    "kP" },
-    { K_ROLLUP,    "kN" },
-    { K_BACKSPACE, "kb" },
-    { K_HOME,      "kh" },
-    { K_END,       "@7" },
-    { K_INSERT,    "kI" },
-    { K_DELETE,    "kD" },
-    { K_PRINT,     "%9" },
-    { K_HELP,      "%1" },
-    { K_CLEAR,     "kC" },
-    { K_REFRESH,   "&2" },
-    { K_FIELDEXIT, "@9" },
-    // clang-format on
-};
-
-/* This is an array mapping some of our vt100 sequences to our internal
- * key names. */
-static Key curses_vt100[] = {
-    /* CTRL strings */
-    // clang-format off
-    { K_ATTENTION,  "\001"             }, /* CTRL A */
-    { K_ROLLDN,     "\002"             }, /* CTRL B */
-    { K_SYSREQ,     "\003"             }, /* CTRL C */
-    { K_ROLLUP,     "\004"             }, /* CTRL D */
-    { K_ERASE,      "\005"             }, /* CTRL E */
-    { K_ROLLUP,     "\006"             }, /* CTRL F */
-    { K_FIELDEXIT,  "\013"             }, /* CTRL K */
-    { K_REFRESH,    "\014"             }, /* CTRL L */
-    { K_HOME,       "\017"             }, /* CTRL O */
-    { K_PRINT,      "\020"             }, /* CTRL P */
-    { K_RESET,      "\022"             }, /* CTRL R */
-    { K_MEMO,       "\023"             }, /* CTRL S */
-    { K_TESTREQ,    "\024"             }, /* CTRL T */
-    { K_ROLLDN,     "\025"             }, /* CTRL U */
-    { K_EXEC,       "\027"             }, /* CTRL W */
-    { K_FIELDPLUS,  "\030"             }, /* CTRL X */
-
-    /* ASCII DEL is not correctly reported as the DC key in some
-     * termcaps */
-    /* But it is backspace in some termcaps... */
-    /* { K_DELETE,		"\177" }, */  /* ASCII DEL */
-    { K_DELETE,     "\033\133\063\176" }, /* ASCII DEL Sequence: \E[3~ */
-
-    /* ESC strings */
-    { K_F1,         "\033\061"         }, /* ESC 1 */
-    { K_F2,         "\033\062"         }, /* ESC 2 */
-    { K_F3,         "\033\063"         }, /* ESC 3 */
-    { K_F4,         "\033\064"         }, /* ESC 4 */
-    { K_F5,         "\033\065"         }, /* ESC 5 */
-    { K_F6,         "\033\066"         }, /* ESC 6 */
-    { K_F7,         "\033\067"         }, /* ESC 7 */
-    { K_F8,         "\033\070"         }, /* ESC 8 */
-    { K_F9,         "\033\071"         }, /* ESC 9 */
-    { K_F10,        "\033\060"         }, /* ESC 0 */
-    { K_F11,        "\033\055"         }, /* ESC - */
-    { K_F12,        "\033\075"         }, /* ESC = */
-    { K_F13,        "\033\041"         }, /* ESC ! */
-    { K_F14,        "\033\100"         }, /* ESC @ */
-    { K_F15,        "\033\043"         }, /* ESC # */
-    { K_F16,        "\033\044"         }, /* ESC $ */
-    { K_F17,        "\033\045"         }, /* ESC % */
-    { K_F18,        "\033\136"         }, /* ESC ^ */
-    { K_F19,        "\033\046"         }, /* ESC & */
-    { K_F20,        "\033\052"         }, /* ESC * */
-    { K_F21,        "\033\050"         }, /* ESC ( */
-    { K_F22,        "\033\051"         }, /* ESC ) */
-    { K_F23,        "\033\137"         }, /* ESC _ */
-    { K_F24,        "\033\053"         }, /* ESC + */
-    { K_ATTENTION,  "\033\101"         }, /* ESC A */
-    { K_CLEAR,      "\033\103"         }, /* ESC C */
-    { K_DUPLICATE,  "\033\104"         }, /* ESC D */
-    { K_HELP,       "\033\110"         }, /* ESC H */
-    { K_INSERT,     "\033\111"         }, /* ESC I */
-    { K_REFRESH,    "\033\114"         }, /* ESC L */
-    { K_FIELDMINUS, "\033\115"         }, /* ESC M */
-    { K_NEWLINE,    "\033\116"         }, /* ESC N */  /* Our extension */
-    { K_PRINT,      "\033\120"         }, /* ESC P */
-    { K_RESET,      "\033\122"         }, /* ESC R */
-    { K_SYSREQ,     "\033\123"         }, /* ESC S */
-    { K_TOGGLE,     "\033\124"         }, /* ESC T */
-    { K_FIELDEXIT,  "\033\130"         }, /* ESC X */
-    { K_NEWLINE,    "\033\012"         }, /* ESC ^J */
-    { K_NEWLINE,    "\033\015"         }, /* ESC ^M */
-    { K_INSERT,     "\033\177"         }, /* ESC DEL */
-    { K_NEXTFLD,    "\033\025"         }, /* ESC Ctrl-U */
-    { K_PREVFLD,    "\033\010"         }, /* ESC Ctrl-H */
-    { K_FIELDHOME,  "\033\006"         }, /* ESC Ctrl-F */
-    /* K_INSERT = ESC+DEL handled in code below. */
-    // clang-format on
-};
-#endif
 
 /****f* lib5250/tn5250_curses_terminal_new
  * NAME
@@ -292,11 +150,6 @@ Tn5250Terminal* tn5250_curses_terminal_new() {
     r->data->display = NULL;
     r->data->config = NULL;
 
-#ifdef USE_OWN_KEY_PARSING
-    r->data->k_buf_len = 0;
-    r->data->k_map_len = 0;
-    r->data->k_map = NULL;
-#endif
 
     r->conn_fd = -1;
     r->init = curses_terminal_init;
@@ -334,14 +187,7 @@ static void curses_terminal_init(Tn5250Terminal* This) {
     (void)initscr();
     raw();
 
-#ifdef USE_OWN_KEY_PARSING
-    if ((str = tgetstr("ks", NULL)) != NULL) {
-        tputs(str, 1, putchar);
-    }
-    fflush(stdout);
-#else
     keypad(stdscr, 1);
-#endif
 
     nodelay(stdscr, 1);
     noecho();
@@ -420,56 +266,6 @@ static void curses_terminal_init(Tn5250Terminal* This) {
         }
     }
 
-#ifdef USE_OWN_KEY_PARSING
-    /* Allocate and populate an array of escape code => key code
-     * mappings. */
-    This->data->k_map_len = (sizeof(curses_vt100) / sizeof(Key)) * 2 +
-                            sizeof(curses_caps) / sizeof(Key) + 1;
-    This->data->k_map = (Key*)malloc(sizeof(Key) * This->data->k_map_len);
-
-    c = sizeof(curses_caps) / sizeof(Key);
-    s = sizeof(curses_vt100) / sizeof(Key);
-    for (i = 0; i < c; i++) {
-        This->data->k_map[i].k_code = curses_caps[i].k_code;
-        if ((str = tgetstr(curses_caps[i].k_str, NULL)) != NULL) {
-            TN5250_LOG(("Found string for cap '%s': '%s'.\n",
-                        curses_caps[i].k_str, str));
-            strcpy(This->data->k_map[i].k_str, str);
-        }
-        else {
-            This->data->k_map[i].k_str[0] = '\0';
-        }
-    }
-
-    /* Populate vt100 escape codes, both ESC+ and C-g+ forms. */
-    for (i = 0; i < sizeof(curses_vt100) / sizeof(Key); i++) {
-        This->data->k_map[i + c].k_code = This->data->k_map[i + c + s].k_code =
-            curses_vt100[i].k_code;
-        strcpy(This->data->k_map[i + c].k_str, curses_vt100[i].k_str);
-        strcpy(This->data->k_map[i + c + s].k_str, curses_vt100[i].k_str);
-
-        if (This->data->k_map[i + c + s].k_str[0] == '\033') {
-            This->data->k_map[i + c + s].k_str[0] = K_CTRL('G');
-        }
-        else {
-            This->data->k_map[i + c + s].k_str[0] = '\0';
-        }
-    }
-
-    /* Damn the exceptions to the rules. (ESC + DEL) */
-    This->data->k_map[This->data->k_map_len - 1].k_code = K_INSERT;
-    This->data->k_map[This->data->k_map_len - s - 1].k_code = K_INSERT;
-    if ((str = tgetstr("kD", NULL)) != NULL) {
-        This->data->k_map[This->data->k_map_len - 1].k_str[0] = '\033';
-        This->data->k_map[This->data->k_map_len - s - 1].k_str[0] = K_CTRL('G');
-        strcpy(This->data->k_map[This->data->k_map_len - 1].k_str + 1, str);
-        strcpy(This->data->k_map[This->data->k_map_len - s - 1].k_str + 1, str);
-    }
-    else {
-        This->data->k_map[This->data->k_map_len - 1].k_str[0] =
-            This->data->k_map[This->data->k_map_len - s - 1].k_str[0] = 0;
-    }
-#endif
 
     if (This->data->mouse_on_start) {
         mousemask(BUTTON1_CLICKED, &This->data->old_mouse_mask);
@@ -571,11 +367,6 @@ static void curses_terminal_term(Tn5250Terminal /*@unused@*/* This) {
  *    DOCUMENT ME!!!
  *****/
 static void curses_terminal_destroy(Tn5250Terminal* This) {
-#ifdef USE_OWN_KEY_PARSING
-    if (This->data->k_map != NULL) {
-        free(This->data->k_map);
-    }
-#endif
     if (This->data->font_80 != NULL) {
         free(This->data->font_80);
     }
@@ -885,7 +676,6 @@ static int curses_terminal_waitevent(Tn5250Terminal* This) {
     return result;
 }
 
-#ifndef USE_OWN_KEY_PARSING
 /****i* lib5250/curses_terminal_getkey
  * NAME
  *    curses_terminal_getkey
@@ -999,7 +789,6 @@ static int curses_terminal_getkey(Tn5250Terminal* This) {
         }
     }
 }
-#endif
 
 /****i* lib5250/curses_terminal_beep
  * NAME
@@ -1029,7 +818,6 @@ static void curses_terminal_beep(Tn5250Terminal* This) {
  *****/
 static int curses_terminal_enhanced(Tn5250Terminal* This) { return (0); }
 
-#ifndef USE_OWN_KEY_PARSING
 /****i* lib5250/curses_terminal_get_esc_key
  * NAME
  *    curses_terminal_get_esc_key
@@ -1220,103 +1008,7 @@ static int curses_terminal_get_esc_key(Tn5250Terminal* This, int is_esc) {
     refresh();
     return key;
 }
-#endif
 
-#ifdef USE_OWN_KEY_PARSING
-static int curses_get_key(Tn5250Terminal* This, int rmflag) {
-    int i, j;
-    int have_incomplete_match = -1;
-    int have_complete_match = -1;
-    int complete_match_len;
-
-    /* Fast path */
-    if (This->data->k_buf_len == 0) return -1;
-
-    /* Look up escape codes. */
-    for (i = 0; i < This->data->k_map_len; i++) {
-
-        /* Skip empty entries. */
-        if (This->data->k_map[i].k_str[0] == '\0') continue;
-
-        for (j = 0; j < MAX_K_BUF_LEN + 1; j++) {
-            if (This->data->k_map[i].k_str[j] == '\0') {
-                have_complete_match = i;
-                complete_match_len = j;
-                break;
-            }
-            if (j == This->data->k_buf_len) {
-                have_incomplete_match = i;
-                TN5250_LOG(("Have incomplete match ('%s')\n",
-                            This->data->k_map[i].k_str));
-                break;
-            }
-            if (This->data->k_map[i].k_str[j] != This->data->k_buf[j]) {
-                break; /* No match */
-            }
-        }
-    }
-
-    if (have_incomplete_match == -1 && have_complete_match == -1) {
-        /* At this point, we know that we don't have an escape sequence,
-         * so just return the next character. */
-        i = This->data->k_buf[0];
-        if (rmflag) {
-            memmove(This->data->k_buf, This->data->k_buf + 1,
-                    MAX_K_BUF_LEN - 1);
-            This->data->k_buf_len--;
-        }
-        return i;
-    }
-
-    if (have_incomplete_match != -1) return -1;
-
-    if (have_complete_match != -1) {
-        if (rmflag) {
-            if (This->data->k_buf_len - complete_match_len > 0) {
-                memmove(This->data->k_buf,
-                        This->data->k_buf + complete_match_len,
-                        This->data->k_buf_len - complete_match_len);
-            }
-            This->data->k_buf_len -= complete_match_len;
-        }
-        return This->data->k_map[have_complete_match].k_code;
-    }
-
-    return -1;
-}
-
-static int curses_terminal_getkey(Tn5250Terminal* This) {
-    int ch;
-
-    /* Retreive all keys from the keyboard buffer. */
-    while (This->data->k_buf_len < MAX_K_BUF_LEN && (ch = getch()) != ERR) {
-        TN5250_LOG(("curses_getch: received 0x%02X.\n", ch));
-
-        /* FIXME: Here would be the proper place to get mouse events :) */
-
-        /* HACK! Why are we gettings these 0410s still?  ncurses bug? */
-        if (ch < 0 || ch > 255) continue;
-
-        This->data->k_buf[This->data->k_buf_len++] = ch;
-    }
-
-    ch = curses_get_key(This, 1);
-    switch (ch) {
-    case K_CTRL('Q'):
-        This->data->quit_flag = 1;
-        return -1;
-    case 0x0a:
-        return 0x0d;
-    case K_PRINT:
-        if (This->data->local_print) {
-            curses_terminal_print_screen(This, This->data->display);
-            ch = K_RESET;
-        }
-        break;
-    }
-    return ch;
-}
-#endif
 
 /****i* lib5250/curses_rgb_to_color
  * NAME

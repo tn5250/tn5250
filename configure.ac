@@ -27,14 +27,6 @@ AC_CHECK_HEADERS([fcntl.h locale.h sys/wait.h sys/time.h syslog.h unistd.h pwd.h
 AC_DEFINE_UNQUOTED(SOCKET_TYPE,int)
 
 # User specified optional packages
-AC_ARG_WITH([curses-old-keys],
-    AS_HELP_STRING([--with-curses-old-keys],[curses terminal will use old key handler (default=no)]),
-    [ac_cv_use_old_keys=$withval],
-    [ac_cv_use_old_keys=no])
-AC_CACHE_CHECK([whether to use old key handler],
-    [ac_cv_use_old_keys],
-    [ac_cv_use_old_keys=no])
-
 AC_ARG_WITH([terminfo],
     AS_HELP_STRING([--with-terminfo],[install terminfo entries for your platform (default=no)]),
     [ac_cv_install_terminfo=$withval],
@@ -53,11 +45,6 @@ then
 else
     # Check for -lcurses if -lncurses isn't found.
     AC_CHECK_LIB(curses, initscr, CURSES_LIBS='-lcurses', AC_MSG_ERROR([** You need a curses-compatible library installed.]))
-fi
-
-if test "$ac_cv_use_old_keys" != "yes";
-then
-    AC_DEFINE_UNQUOTED(USE_OWN_KEY_PARSING,1)
 fi
 
 AC_ARG_WITH([ssl],AS_HELP_STRING([--with-ssl@<:@=DIR@:>@],[OpenSSL support (yes/no/path to OpenSSL) @<:@default=yes@:>@]))
