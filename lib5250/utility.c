@@ -170,7 +170,7 @@ const char* tn5250_strerror(void) {
     else if (tn5250_error.type == TN5250_ERROR_GAI) {
         return gai_strerror(tn5250_error.code);
     }
-#if HAVE_LIBSSL
+#ifdef HAVE_LIBSSL
     else if (tn5250_error.type == TN5250_ERROR_SSL) {
         return ERR_error_string(tn5250_error.code, NULL);
     }
