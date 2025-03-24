@@ -96,7 +96,6 @@ void curses_terminal_print_screen(Tn5250Terminal* This, Tn5250Display* display);
 void curses_postscript_print(FILE* out, int x, int y, char* string,
                              attr_t attr);
 
-
 #define MAX_K_BUF_LEN 20
 
 struct _Tn5250TerminalPrivate {
@@ -114,7 +113,6 @@ struct _Tn5250TerminalPrivate {
     unsigned int local_print : 1;
     unsigned int mouse_on_start : 1;
 };
-
 
 /****f* lib5250/tn5250_curses_terminal_new
  * NAME
@@ -149,7 +147,6 @@ Tn5250Terminal* tn5250_curses_terminal_new() {
     r->data->mouse_on_start = 0;
     r->data->display = NULL;
     r->data->config = NULL;
-
 
     r->conn_fd = -1;
     r->init = curses_terminal_init;
@@ -265,7 +262,6 @@ static void curses_terminal_init(Tn5250Terminal* This) {
             This->data->underscores = 0;
         }
     }
-
 
     if (This->data->mouse_on_start) {
         mousemask(BUTTON1_CLICKED, &This->data->old_mouse_mask);
@@ -1008,7 +1004,6 @@ static int curses_terminal_get_esc_key(Tn5250Terminal* This, int is_esc) {
     refresh();
     return key;
 }
-
 
 /****i* lib5250/curses_rgb_to_color
  * NAME
