@@ -155,11 +155,10 @@ int main(int argc, char* argv[]) {
     tn5250_macro_attach(display, macro);
 
     tn5250_session_main_loop(sess);
-    errno = 0;
 
 bomb_out:
-    if (errno != 0) {
-        printf("Could not start session: %s\n", strerror(errno));
+    if (tn5250_has_error()) {
+        printf("Could not start session: %s\n", tn5250_strerror());
     }
 
     if (macro != NULL) {

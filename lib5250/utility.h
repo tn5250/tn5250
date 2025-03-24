@@ -30,6 +30,24 @@ typedef unsigned short Tn5250Uint16;
 typedef signed short Tn5250Sint16;
 typedef unsigned char Tn5250Char;
 
+typedef enum {
+    TN5250_ERROR_UNKNOWN,
+    TN5250_ERROR_INTERNAL,
+    TN5250_ERROR_ERRNO,
+    TN5250_ERROR_GAI,
+    TN5250_ERROR_SSL,
+} Tn5250ErrorType;
+
+typedef enum {
+    TN5250_INTERNALERROR_UNKNOWN,
+    TN5250_INTERNALERROR_INVALIDADDRESS,
+    TN5250_INTERNALERROR_INVALIDCERT,
+} Tn5250InternalErrorCode;
+
+void tn5250_set_error(Tn5250ErrorType type, int code);
+int tn5250_has_error(void);
+const char* tn5250_strerror(void);
+
 /****s* lib5250/Tn5250CharMap
  * NAME
  *    Tn5250CharMap
