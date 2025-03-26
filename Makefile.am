@@ -7,7 +7,9 @@ EXTRA_DIST = tn5250-48x48.xpm\
         tn5250-62x48.xpm\
         tn5250-62x48.png\
         XTerm\
-        README.ssl
+        README.ssl\
+        termcaps/CMakeLists.txt\
+        CMakeLists.txt
 
 SUBDIRS = lib5250 lp5250d curses doc termcaps/freebsd termcaps/linux termcaps/sun win32
 DIST_SUBDIRS = lib5250 lp5250d curses doc termcaps/freebsd termcaps/linux termcaps/sun win32

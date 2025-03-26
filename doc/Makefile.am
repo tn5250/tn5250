@@ -6,7 +6,8 @@ man_MANS =		scs2ascii.1\
 			lp5250d.1\
 			tn5250rc.5
 
-EXTRA_DIST =		$(man_MANS)
+EXTRA_DIST =		$(man_MANS)\
+			CMakeLists.txt
 
 html-local:
 	robodoc --src $(top_srcdir)/src/ --doc lib5250 --singledoc --html \

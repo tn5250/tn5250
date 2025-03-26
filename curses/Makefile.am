@@ -1,5 +1,7 @@
 ## Process this file with automake to produce Makefile.in
 
+EXTRA_DIST = CMakeLists.txt
+
 bin_PROGRAMS =		tn5250
 
 LDADD = ../lib5250/lib5250.la

@@ -6,4 +6,5 @@ EXTRA_DIST =	afterinstall.txt\
 		tn5250_innosetup.iss.in\
 		tn5250-win.c\
 		tn5250-res.rc\
-		winterm.c
+		winterm.c\
+		CMakeLists.txt
