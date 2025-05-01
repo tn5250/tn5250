@@ -1,5 +1,5 @@
-cmake_minimum_required (VERSION 3.12)
-project (doc LANGUAGES C)
+cmake_minimum_required(VERSION 3.12)
+project(doc)
 
 # TYPE MAN is insufficient to get it into the correct subdirectory
 install(FILES lp5250d.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
