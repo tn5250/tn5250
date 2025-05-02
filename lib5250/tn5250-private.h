@@ -124,23 +124,13 @@ void _tn5250_set_error(Tn5250ErrorType type, int code);
 /** Start of REALLY ugly network portability layer. **/
 
 #if defined(_WIN32)
-#define TN_SOCKET  socket
-#define TN_CONNECT connect
-#define TN_SELECT  select
-#define TN_SEND    send
-#define TN_RECV    recv
-#define TN_CLOSE   closesocket
-#define TN_IOCTL   ioctlsocket
+#define TN_CLOSE closesocket
+#define TN_IOCTL ioctlsocket
 /* end _WIN32 */
 
 #else
-#define TN_SOCKET  socket
-#define TN_CONNECT connect
-#define TN_SELECT  select
-#define TN_SEND    send
-#define TN_RECV    recv
-#define TN_CLOSE   close
-#define TN_IOCTL   ioctl
+#define TN_CLOSE close
+#define TN_IOCTL ioctl
 
 #endif
 

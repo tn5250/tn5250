@@ -541,7 +541,7 @@ static int ssl_stream_connect(Tn5250Stream* This, const char* to) {
             return errnum;
         }
 
-        r = TN_CONNECT(This->sockfd, addr->ai_addr, addr->ai_addrlen);
+        r = connect(This->sockfd, addr->ai_addr, addr->ai_addrlen);
         if (r == 0) {
             break;
         }
