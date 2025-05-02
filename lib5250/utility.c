@@ -156,7 +156,7 @@ static struct {
     unsigned long code; // for compat with OpenSSL
 } tn5250_error;
 
-void tn5250_set_error(Tn5250ErrorType type, int code) {
+void _tn5250_set_error(Tn5250ErrorType type, int code) {
     tn5250_error.type = type;
     tn5250_error.code = code;
 }

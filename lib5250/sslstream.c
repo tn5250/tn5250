@@ -465,7 +465,7 @@ static int ssl_stream_connect(Tn5250Stream* This, const char* to) {
         host++;
         char* host_end = strrchr(address, ']');
         if (host_end == NULL) {
-            tn5250_set_error(TN5250_ERROR_INTERNAL,
+            _tn5250_set_error(TN5250_ERROR_INTERNAL,
                              TN5250_INTERNALERROR_INVALIDADDRESS);
             return -1;
         }
@@ -499,13 +499,13 @@ static int ssl_stream_connect(Tn5250Stream* This, const char* to) {
 
     if (r != 0) {
         freeaddrinfo(result);
-        tn5250_set_error(TN5250_ERROR_GAI, r);
+        _tn5250_set_error(TN5250_ERROR_GAI, r);
         return r;
     }
 
     This->ssl_handle = SSL_new(This->ssl_context);
     if (This->ssl_handle == NULL) {
-        tn5250_set_error(TN5250_ERROR_SSL, ERR_peek_error());
+        _tn5250_set_error(TN5250_ERROR_SSL, ERR_peek_error());
         DUMP_ERR_STACK();
         TN5250_LOG(("sslstream: SSL_new() failed!\n"));
         return -1;
@@ -526,14 +526,14 @@ static int ssl_stream_connect(Tn5250Stream* This, const char* to) {
         This->sockfd =
             socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
         if (WAS_INVAL_SOCK(This->sockfd)) {
-            tn5250_set_error(TN5250_ERROR_ERRNO, LAST_ERROR);
+            _tn5250_set_error(TN5250_ERROR_ERRNO, LAST_ERROR);
             TN5250_LOG(("sslstream: socket() failed, errno=%d\n", errno));
             freeaddrinfo(result);
             return -1;
         }
 
         if ((r = SSL_set_fd(This->ssl_handle, This->sockfd)) == 0) {
-            tn5250_set_error(TN5250_ERROR_SSL, ERR_peek_error());
+            _tn5250_set_error(TN5250_ERROR_SSL, ERR_peek_error());
             errnum = SSL_get_error(This->ssl_handle, r);
             DUMP_ERR_STACK();
             TN5250_LOG(("sslstream: SSL_set_fd() failed, errnum=%d\n", errnum));
@@ -549,13 +549,13 @@ static int ssl_stream_connect(Tn5250Stream* This, const char* to) {
 
     freeaddrinfo(result);
     if (WAS_ERROR_RET(r)) {
-        tn5250_set_error(TN5250_ERROR_ERRNO, LAST_ERROR);
+        _tn5250_set_error(TN5250_ERROR_ERRNO, LAST_ERROR);
         TN5250_LOG(("sslstream: connect() failed, errno=%d\n", errno));
         return -1;
     }
 
     if ((r = SSL_connect(This->ssl_handle) < 1)) {
-        tn5250_set_error(TN5250_ERROR_SSL, ERR_peek_error());
+        _tn5250_set_error(TN5250_ERROR_SSL, ERR_peek_error());
         errnum = SSL_get_error(This->ssl_handle, r);
         DUMP_ERR_STACK();
         TN5250_LOG(("sslstream: SSL_connect() failed, errnum=%d\n", errnum));
@@ -570,7 +570,7 @@ static int ssl_stream_connect(Tn5250Stream* This, const char* to) {
     server_cert = SSL_get_peer_certificate(This->ssl_handle);
 
     if (server_cert == NULL) {
-        tn5250_set_error(TN5250_ERROR_INTERNAL,
+        _tn5250_set_error(TN5250_ERROR_INTERNAL,
                          TN5250_INTERNALERROR_INVALIDCERT);
         TN5250_LOG(("sslstream: Server did not present a certificate!\n"));
         return -1;
@@ -592,7 +592,7 @@ static int ssl_stream_connect(Tn5250Stream* This, const char* to) {
                     printf("SSL error: server certificate has expired\n");
                     TN5250_LOG(("SSL: server certificate has expired\n"));
                 }
-                tn5250_set_error(TN5250_ERROR_SSL, ERR_peek_error());
+                _tn5250_set_error(TN5250_ERROR_SSL, ERR_peek_error());
                 return -1;
             }
         }
@@ -609,7 +609,7 @@ static int ssl_stream_connect(Tn5250Stream* This, const char* to) {
             if (This->config != NULL &&
                 tn5250_config_get_bool(This->config, "ssl_verify_server")) {
                 // XXX: Stringify certvfy?
-                tn5250_set_error(TN5250_ERROR_INTERNAL,
+                _tn5250_set_error(TN5250_ERROR_INTERNAL,
                                  TN5250_INTERNALERROR_INVALIDCERT);
                 return -1;
             }

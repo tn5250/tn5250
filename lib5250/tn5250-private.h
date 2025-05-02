@@ -119,7 +119,7 @@ typedef enum {
     TN5250_INTERNALERROR_INVALIDCERT,
 } Tn5250InternalErrorCode;
 
-void tn5250_set_error(Tn5250ErrorType type, int code);
+void _tn5250_set_error(Tn5250ErrorType type, int code);
 
 /** Start of REALLY ugly network portability layer. **/
 
