@@ -26,6 +26,11 @@
 #define HAVE_NCURSES_H
 #endif
 
+#cmakedefine CURSES_HAVE_NCURSES_NCURSES_H
+#ifdef CURSES_HAVE_NCURSES_NCURSES_H
+#define HAVE_NCURSES_NCURSES_H
+#endif
+
 #cmakedefine OPENSSL_FOUND
 #ifdef OPENSSL_FOUND
 #define HAVE_LIBSSL
