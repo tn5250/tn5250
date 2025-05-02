@@ -163,6 +163,10 @@ void _tn5250_set_error(Tn5250ErrorType type, int code) {
 
 int tn5250_has_error(void) { return tn5250_error.type != TN5250_ERROR_UNKNOWN; }
 
+void tn5250_clear_error(void) {
+	_tn5250_set_error(0, 0);
+}
+
 const char* tn5250_strerror(void) {
     if (tn5250_error.type == TN5250_ERROR_ERRNO) {
         return strerror(tn5250_error.code);
