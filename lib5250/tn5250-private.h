@@ -105,6 +105,22 @@ extern char* version_string;
 #include <sys/filio.h>
 #endif
 
+typedef enum {
+    TN5250_ERROR_UNKNOWN,
+    TN5250_ERROR_INTERNAL,
+    TN5250_ERROR_ERRNO,
+    TN5250_ERROR_GAI,
+    TN5250_ERROR_SSL,
+} Tn5250ErrorType;
+
+typedef enum {
+    TN5250_INTERNALERROR_UNKNOWN,
+    TN5250_INTERNALERROR_INVALIDADDRESS,
+    TN5250_INTERNALERROR_INVALIDCERT,
+} Tn5250InternalErrorCode;
+
+void _tn5250_set_error(Tn5250ErrorType type, int code);
+
 /** Start of REALLY ugly network portability layer. **/
 
 #if defined(_WIN32)

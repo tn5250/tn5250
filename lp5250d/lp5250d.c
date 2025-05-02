@@ -148,6 +148,9 @@ int main(int argc, char* argv[]) {
     }
 
     tn5250_print_session_main_loop(printsess);
+    if (tn5250_has_error()) {
+        printf("Could not start session: %s\n", tn5250_strerror());
+    }
 
     tn5250_print_session_destroy(printsess);
     tn5250_stream_destroy(stream);

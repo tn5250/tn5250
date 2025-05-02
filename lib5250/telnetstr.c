@@ -330,7 +330,8 @@ static int telnet_stream_connect(Tn5250Stream* This, const char* to) {
         host++;
         char* host_end = strrchr(address, ']');
         if (host_end == NULL) {
-            // XXX: Map this and others to appropriate error (GH-29)
+            _tn5250_set_error(TN5250_ERROR_INTERNAL,
+                              TN5250_INTERNALERROR_INVALIDADDRESS);
             return -1;
         }
         if ((port = strchr(host_end, ':'))) {
@@ -363,13 +364,19 @@ static int telnet_stream_connect(Tn5250Stream* This, const char* to) {
 
     if (r != 0) {
         freeaddrinfo(result);
+        _tn5250_set_error(TN5250_ERROR_GAI, r);
         return r;
     }
 
     for (struct addrinfo* addr = result; addr; addr = addr->ai_next) {
         This->sockfd =
             socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
-        if (WAS_INVAL_SOCK(This->sockfd)) continue;
+        if (WAS_INVAL_SOCK(This->sockfd)) {
+            _tn5250_set_error(TN5250_ERROR_ERRNO, LAST_ERROR);
+            TN5250_LOG(("sslstream: socket() failed, errno=%d\n", errno));
+            freeaddrinfo(result);
+            return -1;
+        }
 
         r = TN_CONNECT(This->sockfd, addr->ai_addr, addr->ai_addrlen);
         if (r == 0) {
@@ -379,6 +386,7 @@ static int telnet_stream_connect(Tn5250Stream* This, const char* to) {
 
     freeaddrinfo(result);
     if (WAS_ERROR_RET(r)) {
+        _tn5250_set_error(TN5250_ERROR_ERRNO, LAST_ERROR);
         return LAST_ERROR;
     }
     /* Set socket to non-blocking mode. */

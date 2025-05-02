@@ -33,6 +33,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#ifdef HAVE_LIBSSL
+#include <openssl/err.h>
+#endif
+
 static unsigned char mapfix[256];
 static unsigned char mapfix2[256];
 static unsigned char mapfix3[256];
@@ -146,6 +150,43 @@ int tn5250_daemon(int nochdir, int noclose, int ignsigcld) {
 }
 
 #endif /* ifndef _WIN32 */
+
+static struct {
+    Tn5250ErrorType type;
+    unsigned long code; // for compat with OpenSSL
+} tn5250_error;
+
+void _tn5250_set_error(Tn5250ErrorType type, int code) {
+    tn5250_error.type = type;
+    tn5250_error.code = code;
+}
+
+int tn5250_has_error(void) { return tn5250_error.type != TN5250_ERROR_UNKNOWN; }
+
+void tn5250_clear_error(void) { _tn5250_set_error(0, 0); }
+
+const char* tn5250_strerror(void) {
+    if (tn5250_error.type == TN5250_ERROR_ERRNO) {
+        return strerror(tn5250_error.code);
+    }
+    else if (tn5250_error.type == TN5250_ERROR_GAI) {
+        return gai_strerror(tn5250_error.code);
+    }
+#ifdef HAVE_LIBSSL
+    else if (tn5250_error.type == TN5250_ERROR_SSL) {
+        return ERR_error_string(tn5250_error.code, NULL);
+    }
+#endif
+    else if (tn5250_error.type == TN5250_ERROR_INTERNAL) {
+        switch (tn5250_error.code) {
+        case TN5250_INTERNALERROR_INVALIDADDRESS:
+            return "Invalid address";
+        case TN5250_INTERNALERROR_INVALIDCERT:
+            return "Certificate verification failure";
+        }
+    }
+    return NULL;
+}
 
 /****f* lib5250/tn5250_char_map_to_remote
  * NAME

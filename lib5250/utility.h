@@ -30,6 +30,10 @@ typedef unsigned short Tn5250Uint16;
 typedef signed short Tn5250Sint16;
 typedef unsigned char Tn5250Char;
 
+int tn5250_has_error(void);
+void tn5250_clear_error(void);
+const char* tn5250_strerror(void);
+
 /****s* lib5250/Tn5250CharMap
  * NAME
  *    Tn5250CharMap
