@@ -466,7 +466,7 @@ static int ssl_stream_connect(Tn5250Stream* This, const char* to) {
         char* host_end = strrchr(address, ']');
         if (host_end == NULL) {
             _tn5250_set_error(TN5250_ERROR_INTERNAL,
-                             TN5250_INTERNALERROR_INVALIDADDRESS);
+                              TN5250_INTERNALERROR_INVALIDADDRESS);
             return -1;
         }
         if ((port = strchr(host_end, ':'))) {
@@ -571,7 +571,7 @@ static int ssl_stream_connect(Tn5250Stream* This, const char* to) {
 
     if (server_cert == NULL) {
         _tn5250_set_error(TN5250_ERROR_INTERNAL,
-                         TN5250_INTERNALERROR_INVALIDCERT);
+                          TN5250_INTERNALERROR_INVALIDCERT);
         TN5250_LOG(("sslstream: Server did not present a certificate!\n"));
         return -1;
     }
@@ -610,7 +610,7 @@ static int ssl_stream_connect(Tn5250Stream* This, const char* to) {
                 tn5250_config_get_bool(This->config, "ssl_verify_server")) {
                 // XXX: Stringify certvfy?
                 _tn5250_set_error(TN5250_ERROR_INTERNAL,
-                                 TN5250_INTERNALERROR_INVALIDCERT);
+                                  TN5250_INTERNALERROR_INVALIDCERT);
                 return -1;
             }
         }
