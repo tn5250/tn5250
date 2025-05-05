@@ -378,7 +378,7 @@ static int telnet_stream_connect(Tn5250Stream* This, const char* to) {
             return -1;
         }
 
-        r = TN_CONNECT(This->sockfd, addr->ai_addr, addr->ai_addrlen);
+        r = connect(This->sockfd, addr->ai_addr, addr->ai_addrlen);
         if (r == 0) {
             break;
         }
@@ -451,12 +451,12 @@ static int telnet_stream_get_next(Tn5250Stream* This, unsigned char* buf,
     FD_SET(This->sockfd, &fdr);
     tv.tv_sec = This->msec_wait / 1000;
     tv.tv_usec = (This->msec_wait % 1000) * 1000;
-    TN_SELECT(This->sockfd + 1, &fdr, NULL, NULL, &tv);
+    select(This->sockfd + 1, &fdr, NULL, NULL, &tv);
     if (!FD_ISSET(This->sockfd, &fdr)) {
         return -1; /* No data on socket. */
     }
 
-    rc = TN_RECV(This->sockfd, buf, size, 0);
+    rc = recv(This->sockfd, buf, size, 0);
     if (WAS_ERROR_RET(rc)) {
         if (LAST_ERROR != ERR_AGAIN && LAST_ERROR != ERR_INTR) {
             TN5250_LOG(
@@ -548,7 +548,7 @@ static void telnet_stream_do_verb(Tn5250Stream* This, unsigned char verb,
      * Actually, I don't even remember what that comment means -JMF */
 
     IACVERB_LOG("GotVerb(3)", verb, what);
-    ret = TN_SEND(This->sockfd, (char*)reply, 3, 0);
+    ret = send(This->sockfd, (char*)reply, 3, 0);
     if (WAS_ERROR_RET(ret)) {
         printf("Error writing to socket: %s\n", strerror(LAST_ERROR));
         exit(5);
@@ -619,8 +619,8 @@ static void telnet_stream_sb(Tn5250Stream* This, unsigned char* sb_buf,
         tn5250_buffer_append_byte(&out_buf, IAC);
         tn5250_buffer_append_byte(&out_buf, SE);
 
-        ret = TN_SEND(This->sockfd, (char*)tn5250_buffer_data(&out_buf),
-                      tn5250_buffer_length(&out_buf), 0);
+        ret = send(This->sockfd, (char*)tn5250_buffer_data(&out_buf),
+                   tn5250_buffer_length(&out_buf), 0);
         if (WAS_ERROR_RET(ret)) {
             printf("Error writing to socket: %s\n", strerror(LAST_ERROR));
             exit(5);
@@ -652,8 +652,8 @@ static void telnet_stream_sb(Tn5250Stream* This, unsigned char* sb_buf,
         tn5250_buffer_append_byte(&out_buf, IAC);
         tn5250_buffer_append_byte(&out_buf, SE);
 
-        ret = TN_SEND(This->sockfd, (char*)tn5250_buffer_data(&out_buf),
-                      tn5250_buffer_length(&out_buf), 0);
+        ret = send(This->sockfd, (char*)tn5250_buffer_data(&out_buf),
+                   tn5250_buffer_length(&out_buf), 0);
         if (WAS_ERROR_RET(ret)) {
             printf("Error writing to socket: %s\n", strerror(LAST_ERROR));
             exit(5);
@@ -810,7 +810,7 @@ static void telnet_stream_write(Tn5250Stream* This, unsigned char* data,
     do {
         FD_ZERO(&fdw);
         FD_SET(This->sockfd, &fdw);
-        r = TN_SELECT(This->sockfd + 1, NULL, &fdw, NULL, NULL);
+        r = select(This->sockfd + 1, NULL, &fdw, NULL, NULL);
         if (WAS_ERROR_RET(r)) {
             last_error = LAST_ERROR;
             switch (last_error) {
@@ -825,7 +825,7 @@ static void telnet_stream_write(Tn5250Stream* This, unsigned char* data,
             }
         }
         if (FD_ISSET(This->sockfd, &fdw)) {
-            r = TN_SEND(This->sockfd, (char*)data, size, 0);
+            r = send(This->sockfd, (char*)data, size, 0);
             if (WAS_ERROR_RET(r)) {
                 last_error = LAST_ERROR;
                 if (last_error != ERR_AGAIN) {
