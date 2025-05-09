@@ -28,9 +28,9 @@ AC_DEFINE_UNQUOTED(SOCKET_TYPE,int)
 
 # User specified optional packages
 AC_ARG_WITH([curses-old-keys],
-    AS_HELP_STRING([--with-curses-old-keys],[curses terminal will use old key handler (default=no)]),
+    AS_HELP_STRING([--with-curses-old-keys],[use curses built-in key handling (default=yes)]),
     [ac_cv_use_old_keys=$withval],
-    [ac_cv_use_old_keys=no])
+    [ac_cv_use_old_keys=yes])
 AC_CACHE_CHECK([whether to use old key handler],
     [ac_cv_use_old_keys],
     [ac_cv_use_old_keys=no])
