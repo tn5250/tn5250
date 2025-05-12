@@ -1,12 +1,41 @@
+2025-05-12 Korinne Adler <kadler@us.ibm.com>
+- Release 0.18.0
+  - Removed 5250 host support along with tn5250_stream_host and
+    tn5250_make_socket APIs
+  - Remove tn5250_setenv API
+  - Removed stubbed out 3270 support along with its undocumented APIs
+  - Remove defunct Python bindings
+  - Remove defunct S-Lang support
+  - Removed defunct Winelib support
+  - Remove custom automake build support on Windows (use CMake instead)
+  - Default to using "old" Curses key handling on Unix
+  - terminfo files are no longer installed by default (use --with-terminfo to
+    re-enable, if desired)
+  - Require the Curses library be NCurses
+  - Preliminary CMake build support
+  - Basic mouse supported added (only supported using Curses key handling)
+  - Add IPv6 support
+  - Use getaddrinfo instead of gethostbyname
+  - Added tn5250_has_error, tn5250_clear_error, tn5250_strerror APIs for
+    improved error handling
+  - Add Server Name Indication (SNI) support for TLS connections
+  - Fix Escape/Meta handling bug requiring an extra key press to redraw
+  - Fix various warnings
+  - Link with libtinfo, if required for certain Curses builds
+  - Lots of autotools build system cleanup
+  - Code reformatted with clang-format
+  - Many other general cleanups
+  - Full changelog https://github.com/tn5250/tn5250/compare/v0.17.5...v0.18.0
+
 2023-09-07 Kevin Adler <kadler@us.ibm.com>
 - Release 0.17.5
-   - fix build with -Werror=format-security (Dan Horák)
-   - Enable build when SSLv2 and SSLv3 are disabled (Michael Orlitzky)
-   - Port to OpenSSL 1.1 (Dan Horák)
-   - Fix crash on macOS caused by implicit function definitions
-   - Fix endian bugs on 64-bit Unix platforms
-   - Fix false positive error message when exiting
-   - Fix --with-ssl-dir configure option
+  - fix build with -Werror=format-security (Dan Horák)
+  - Enable build when SSLv2 and SSLv3 are disabled (Michael Orlitzky)
+  - Port to OpenSSL 1.1 (Dan Horák)
+  - Fix crash on macOS caused by implicit function definitions
+  - Fix endian bugs on 64-bit Unix platforms
+  - Fix false positive error message when exiting
+  - Fix --with-ssl-dir configure option
 
 2012-06-14 Scott Klement <tn5250@scottklement.com>
 - Applied patch from Ben Walton to ensure that FIONBIO is defined
