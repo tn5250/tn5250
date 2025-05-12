@@ -12,6 +12,8 @@ if (NOT WIN32)
     find_package(Curses REQUIRED)
 endif()
 
+option(CURSES_OLD_KEYS "Use curses built-in key handling" YES)
+
 check_include_file("fcntl.h" HAVE_FCNTL_H)
 check_include_file("locale.h" HAVE_LOCALE_H)
 check_include_file("pwd.h" HAVE_PWD_H)
