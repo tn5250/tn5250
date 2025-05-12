@@ -8,6 +8,7 @@ EXTRA_DIST = tn5250-48x48.xpm\
         tn5250-62x48.png\
         XTerm\
         README.ssl\
+        config-cmake.h.in\
         termcaps/CMakeLists.txt\
         CMakeLists.txt
 
