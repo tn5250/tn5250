@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([tn5250],[0.18.0],[https://github.com/tn5250/tn5250/issues])
+AC_INIT([tn5250],[0.19.0],[https://github.com/tn5250/tn5250/issues])
 AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 

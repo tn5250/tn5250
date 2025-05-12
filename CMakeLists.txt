@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(tn5250 LANGUAGES C VERSION 0.18.0)
+project(tn5250 LANGUAGES C VERSION 0.19.0)
 
 include(CheckIncludeFile)
 include(GNUInstallDirs)
