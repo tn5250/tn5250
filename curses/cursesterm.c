@@ -341,6 +341,8 @@ static void curses_terminal_init(Tn5250Terminal* This) {
     fflush(stdout);
 #else
     keypad(stdscr, 1);
+    /* Speed up mouse events. */
+    mouseinterval(0);
 #endif
 
     nodelay(stdscr, 1);
