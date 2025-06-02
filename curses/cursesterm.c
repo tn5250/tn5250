@@ -924,13 +924,15 @@ static int curses_terminal_getkey(Tn5250Terminal* This) {
                     event.bstate & BUTTON1_CLICKED) {
                     tn5250_display_set_cursor(This->data->display, event.y,
                                               event.x);
-                } else if (event.bstate & BUTTON4_PRESSED) {
-			return K_ROLLDN;
+                }
+                else if (event.bstate & BUTTON4_PRESSED) {
+                    return K_ROLLDN;
 #if NCURSES_MOUSE_VERSION > 1
-		} else if (event.bstate & BUTTON5_PRESSED) {
-			return K_ROLLUP;
+                }
+                else if (event.bstate & BUTTON5_PRESSED) {
+                    return K_ROLLUP;
 #endif
-		}
+                }
             }
             return -1;
 
