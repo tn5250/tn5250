@@ -60,7 +60,7 @@ Tn5250Display* tn5250_display_new() {
     This->destructive_backspace = 0;
     This->sign_key_hack = 1;
     This->field_minus_in_char = 0;
-    This->uninhibited = 0;
+    This->uninhibited = 1;
     This->session = NULL;
     This->key_queue_head = This->key_queue_tail = 0;
     This->saved_msg_line = NULL;
