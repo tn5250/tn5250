@@ -23,17 +23,3 @@ jobs:
       run: |
         cmake -B build-dir -S .
         cmake --build build-dir
-
-  build-autoconf:
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-
-    runs-on: ${{ matrix.os }}
-    steps:
-    - uses: actions/checkout@v2
-    - name: Autoconf Build
-      run: |
-        ./autogen.sh
-        ./configure
-        make -j
