@@ -473,15 +473,11 @@ static void curses_terminal_init(Tn5250Terminal* This) {
     }
 #endif
 
-#if NCURSES_MOUSE_VERSION > 1
     /*
      * The wheel down (button 5) is an ncurses 5 extension, made standard in
      * ncurses 6. Note we have to use PRESSED for the wheel it seems.
      */
 #define TN5250_MOUSE_MASK (BUTTON1_CLICKED | BUTTON4_PRESSED | BUTTON5_PRESSED)
-#else
-#define TN5250_MOUSE_MASK (BUTTON1_CLICKED | BUTTON4_PRESSED)
-#endif
     if (This->data->mouse_on_start) {
         mousemask(TN5250_MOUSE_MASK, &This->data->old_mouse_mask);
     }
@@ -927,11 +923,9 @@ static int curses_terminal_getkey(Tn5250Terminal* This) {
                 }
                 else if (event.bstate & BUTTON4_PRESSED) {
                     return K_ROLLDN;
-#if NCURSES_MOUSE_VERSION > 1
                 }
                 else if (event.bstate & BUTTON5_PRESSED) {
                     return K_ROLLUP;
-#endif
                 }
             }
             return -1;
