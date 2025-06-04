@@ -36,3 +36,9 @@ else()
     add_subdirectory(curses)
     add_subdirectory(lp5250d)
 endif()
+
+# Add macOS-specific configurations
+if (APPLE)
+    # macOS-specific settings can be added here
+    message(STATUS "Building for macOS")
+endif()
