@@ -1,0 +1,78 @@
+tn5250 macOS README
+------------------------------------------------------------------------------
+
+This file contains installation and configuration instructions and notes
+specific to the macOS platform.
+
+TERMINAL CONFIGURATION
+======================
+
+macOS Terminal.app and iTerm2 support most of the function keys needed for
+tn5250 out of the box. However, to get the full 5250 experience with all
+24 function keys, you need to install the custom terminfo entry.
+
+INSTALLING TERMINFO
+==================
+
+To install the 5250 terminfo entry on macOS, run the following command as
+a user with appropriate permissions:
+
+   tic 5250.terminfo
+
+This will compile and install the terminfo entry to your system's terminfo
+database (usually /usr/share/terminfo/).
+
+USING THE TERMINAL
+==================
+
+After installing the terminfo entry, you can use tn5250 by setting your
+TERM environment variable:
+
+   export TERM=5250
+
+Or for X11/XQuartz terminals:
+
+   export TERM=xterm-5250
+
+FUNCTION KEY MAPPING
+===================
+
+The following function keys are supported:
+
+F1-F12:  Standard function keys
+F13-F24: Accessed via Shift+F1 through Shift+F12 (terminal dependent)
+
+Some terminals may require additional configuration:
+
+Terminal.app:
+- Go to Preferences > Profiles > Keyboard
+- Enable "Use Option as Meta key" if needed
+- Function keys F1-F12 work by default
+- F13-F24 may require Shift+Fn+F1-F12
+
+iTerm2:
+- Go to Preferences > Profiles > Keys
+- Function keys work by default
+- Better support for F13-F24 via Shift+F1-F12
+
+HOMEBREW INSTALLATION
+====================
+
+If you installed tn5250 via Homebrew, the terminfo files may be installed
+automatically. Check if the 5250 terminfo is available:
+
+   infocmp 5250
+
+If not found, manually install using the tic command above.
+
+TROUBLESHOOTING
+===============
+
+If you experience issues with function keys:
+
+1. Verify your TERM variable is set correctly
+2. Check that the terminfo entry is installed: infocmp 5250
+3. Test function keys in your terminal emulator
+4. Consider using iTerm2 for better compatibility
+
+For X11 applications (XQuartz), use TERM=xterm-5250 instead of TERM=5250.
