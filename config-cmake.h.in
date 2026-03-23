@@ -13,6 +13,9 @@
 
 #cmakedefine HAVE_FCNTL_H
 #cmakedefine HAVE_LOCALE_H
+#ifdef HAVE_LOCALE_H
+#define HAVE_SETLOCALE
+#endif
 #cmakedefine HAVE_PWD_H
 #cmakedefine HAVE_SYSLOG_H
 #cmakedefine HAVE_SYS_TIME_H
