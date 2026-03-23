@@ -111,9 +111,13 @@ case "${host_os}" in
     linux*)
         ac_cv_build_linux=yes
         ;;
+    darwin*)
+        ac_cv_build_macos=yes
+        ;;
 esac
 
 AM_CONDITIONAL([LINUX], [test "$ac_cv_build_linux" = "yes"])
+AM_CONDITIONAL([MACOS], [test "$ac_cv_build_macos" = "yes"])
 
 AC_CONFIG_FILES([Makefile
 		 curses/Makefile
@@ -122,6 +126,7 @@ AC_CONFIG_FILES([Makefile
 		 lp5250d/Makefile
 		 termcaps/freebsd/Makefile
 		 termcaps/linux/Makefile
+		 termcaps/macos/Makefile
 		 termcaps/sun/Makefile
 		 tn5250.pc
 		 win32/Makefile
