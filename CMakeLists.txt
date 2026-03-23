@@ -15,7 +15,6 @@ endif()
 option(CURSES_OLD_KEYS "Use curses built-in key handling" YES)
 
 check_include_file("fcntl.h" HAVE_FCNTL_H)
-check_include_file("locale.h" HAVE_LOCALE_H)
 check_include_file("pwd.h" HAVE_PWD_H)
 check_include_file("syslog.h" HAVE_SYSLOG_H)
 check_include_file("sys/time.h" HAVE_SYS_TIME_H)

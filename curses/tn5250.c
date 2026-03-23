@@ -56,9 +56,7 @@ int main(int argc, char* argv[]) {
     const char* tracefile;
 #endif
 
-#ifdef HAVE_SETLOCALE
     setlocale(LC_ALL, "");
-#endif
 
     config = tn5250_config_new();
     if (tn5250_config_load_default(config) == -1) {

@@ -21,7 +21,7 @@ AC_PROG_INSTALL
 LT_INIT
 
 # Checks for header files.
-AC_CHECK_HEADERS([fcntl.h locale.h sys/wait.h sys/time.h syslog.h unistd.h pwd.h])
+AC_CHECK_HEADERS([fcntl.h sys/wait.h sys/time.h syslog.h unistd.h pwd.h])
 
 # True for anything other than Windoze.
 AC_DEFINE_UNQUOTED(SOCKET_TYPE,int)
