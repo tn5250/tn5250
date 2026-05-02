@@ -976,6 +976,10 @@ static int curses_terminal_getkey(Tn5250Terminal* This) {
         case 127:
             return K_DELETE;
 
+	case KEY_BACKSPACE:
+	case K_CTRL('H'): /* backspace commonly mapped to this in termcaps */
+            return K_BACKSPACE;
+
         case KEY_A1:
             return K_HOME;
 
