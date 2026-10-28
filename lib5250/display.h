@@ -28,6 +28,8 @@ extern "C" {
 
 #define TN5250_DISPLAY_KEYQ_SIZE 50
 
+#define TN5250_DISPLAY_BUTTONS_SIZE 50
+
 #define TN5250_DISPLAY_IND_INHIBIT         0x0001
 #define TN5250_DISPLAY_IND_MESSAGE_WAITING 0x0002
 #define TN5250_DISPLAY_IND_X_SYSTEM        0x0004
@@ -45,6 +47,13 @@ struct _Tn5250Buffer;
 struct _Tn5250CharMap;
 struct _Tn5250Config;
 struct _Tn5250Macro;
+
+struct _Tn5250DisplayButton {
+    short key;
+    int y, x, len;
+};
+
+typedef struct _Tn5250DisplayButton Tn5250DisplayButton;
 
 /****s* lib5250/Tn5250Display
  * NAME
@@ -77,6 +86,10 @@ struct _Tn5250Display {
     int key_queue_head, key_queue_tail;
     int key_queue[TN5250_DISPLAY_KEYQ_SIZE];
 
+    /* Buttons recognized from labels on screen. */
+    struct _Tn5250DisplayButton buttons[TN5250_DISPLAY_BUTTONS_SIZE];
+    int button_count;
+
     unsigned int indicators_dirty : 1;
     unsigned int pending_insert : 1;
     unsigned int destructive_backspace : 1;
@@ -84,6 +97,7 @@ struct _Tn5250Display {
     unsigned int uninhibited : 1;
     unsigned int allow_strpccmd : 1;
     unsigned int field_minus_in_char : 1;
+    unsigned int allow_buttons : 1;
 };
 
 typedef struct _Tn5250Display Tn5250Display;
@@ -100,6 +114,9 @@ extern void tn5250_display_set_session(Tn5250Display* This,
 extern Tn5250DBuffer* tn5250_display_push_dbuffer(Tn5250Display* This);
 extern void tn5250_display_restore_dbuffer(Tn5250Display* This,
                                            Tn5250DBuffer* display);
+
+extern void tn5250_display_update_buttons(Tn5250Display* This);
+extern short tn5250_display_get_button(Tn5250Display* This, int y, int x);
 
 extern void tn5250_display_set_terminal(Tn5250Display* This,
                                         struct _Tn5250Terminal*);

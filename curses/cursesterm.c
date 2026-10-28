@@ -706,9 +706,10 @@ static void curses_terminal_update(Tn5250Terminal* This,
         move(y, 0);
         for (x = 0; x < tn5250_display_width(display); x++) {
             c = tn5250_display_char_at(display, y, x);
+            bool is_ruler = curses_terminal_is_ruler(This, display, x, y);
             if ((c & 0xe0) == 0x20) { /* ATTRIBUTE */
                 a = (c & 0xff);
-                if (curses_terminal_is_ruler(This, display, x, y)) {
+                if (is_ruler) {
                     addch(A_REVERSE | attribute_map[0] | ' ');
                 }
                 else {
@@ -716,9 +717,10 @@ static void curses_terminal_update(Tn5250Terminal* This,
                 }
             }
             else { /* DATA */
+                short is_button = tn5250_display_get_button(display, y, x);
                 curs_attr = attribute_map[a - 0x20];
                 if (curs_attr == 0x00) { /* NONDISPLAY */
-                    if (curses_terminal_is_ruler(This, display, x, y)) {
+                    if (is_ruler || is_button) {
                         addch(A_REVERSE | attribute_map[0] | ' ');
                     }
                     else {
@@ -753,7 +755,7 @@ static void curses_terminal_update(Tn5250Terminal* This,
                             }
                         }
                     }
-                    if (curses_terminal_is_ruler(This, display, x, y)) {
+                    if (is_ruler || is_button) {
                         curs_attr |= A_REVERSE;
                     }
                     addch((chtype)(c | curs_attr));
@@ -911,8 +913,19 @@ static int curses_terminal_getkey(Tn5250Terminal* This) {
                 if ((event.y < tn5250_display_height(This->data->display) &&
                      event.x < tn5250_display_width(This->data->display)) &&
                     event.bstate & BUTTON1_CLICKED) {
-                    tn5250_display_set_cursor(This->data->display, event.y,
-                                              event.x);
+                    /* Hit test for a key */
+                    short button_key = tn5250_display_get_button(
+                        This->data->display, event.y, event.x);
+                    if (button_key) {
+                        TN5250_LOG((
+                            "Hit button at %d,%d: key %x (K_F1 %d for scale)\n",
+                            event.y, event.x, button_key, K_F1));
+                        return button_key;
+                    }
+                    else {
+                        tn5250_display_set_cursor(This->data->display, event.y,
+                                                  event.x);
+                    }
                 }
             }
             return -1;

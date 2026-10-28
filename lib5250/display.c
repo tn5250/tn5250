@@ -152,6 +152,11 @@ int tn5250_display_config(Tn5250Display* This, Tn5250Config* config) {
         This->allow_strpccmd = tn5250_config_get_bool(config, "allow_strpccmd");
     }
 
+    /* check if user wants clickable buttons in the UI */
+    if (tn5250_config_get(config, "buttons")) {
+        This->allow_buttons = tn5250_config_get_bool(config, "buttons");
+    }
+
     /* Should field minus act like field exit in a char field? */
     if (tn5250_config_get(config, "field_minus_in_char")) {
         This->field_minus_in_char =
@@ -329,6 +334,8 @@ void tn5250_display_update(Tn5250Display* This) {
     }
     if (display_check_pccmd(This) == 0) {
         if (This->terminal != NULL) {
+            /* Update the buttons before display */
+            tn5250_display_update_buttons(This);
             tn5250_terminal_update(This->terminal, This);
             if (This->indicators_dirty) {
                 tn5250_terminal_update_indicators(This->terminal, This);
@@ -3227,4 +3234,98 @@ int display_check_pccmd(Tn5250Display* This) {
 
     tn5250_display_do_aidkey(This, TN5250_SESSION_AID_ENTER);
     return 1;
+}
+
+void tn5250_display_update_buttons(Tn5250Display* This) {
+    int width = tn5250_display_width(This),
+        height = tn5250_display_height(This);
+    int index = 0, key = 0, length = 0, bx = 0;
+    unsigned char c;
+
+    if (!(This->allow_buttons)) return;
+
+    memset(This->buttons, 0,
+           sizeof(Tn5250DisplayButton) * TN5250_DISPLAY_BUTTONS_SIZE);
+
+    TN5250_LOG(("Updating buttons on screen\n"));
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            key = 0;
+            length = 0;
+            bx = x;
+
+            if (index == TN5250_DISPLAY_BUTTONS_SIZE) return;
+
+            /*
+             * We scan for PFnn and Fnn. ACS offers FPnn as well, but we don't
+             * check for that.
+             *
+             * We do not yet do numbered entries (for menus), recognized macro
+             * names, or URLs.
+             */
+            c = tn5250_display_char_at(This, y, bx);
+            if (c == 0xD7) { /* P */
+                length++;
+                if (++bx > width) {
+                    continue;
+                }
+                c = tn5250_display_char_at(This, y, bx);
+            }
+            if (c == 0xC6) { /* F */
+                length++;
+            }
+            else {
+                continue;
+            }
+            if (++bx > width) {
+                continue;
+            }
+            c = tn5250_display_char_at(This, y, bx);
+            if (c >= 0xF1 && c <= 0xF9) {
+                key = c - 0xF0;
+                length++;
+            }
+            else {
+                continue;
+            }
+            if (++bx <= width) {
+                c = tn5250_display_char_at(This, y, bx);
+                if ((key == 1 && (c >= 0xF0 && c <= 0xF9)) ||
+                    (key == 2 && (c >= 0xF0 && c <= 0xF4))) {
+                    TN5250_LOG(("More: that is %x...\n", c));
+                    key = (c - 0xF0) + (key * 10);
+                    length++;
+                }
+            }
+
+            if (key && length) {
+                TN5250_LOG(("Button with key F%d at %d,%d len %d\n", key, y, x,
+                            length));
+                This->buttons[index].key = 0410 + key; /* K_F1 */
+                This->buttons[index].y = y;
+                This->buttons[index].x = x;
+                This->buttons[index++].len = length;
+            }
+            x = x + length;
+        }
+    }
+    This->button_count = index;
+    TN5250_LOG(("%d button(s) found\n", index));
+}
+
+short tn5250_display_get_button(Tn5250Display* This, int y, int x) {
+    if (!(This->allow_buttons)) return 0;
+    for (int i = 0; i < This->button_count; i++) {
+        short key = This->buttons[i].key;
+        if (!key) {
+            return 0;
+        }
+
+        int by = This->buttons[i].y, bx = This->buttons[i].x;
+        int len = This->buttons[i].len - 1;
+        if (y == by && (x >= bx && x <= bx + len)) {
+            return key;
+        }
+    }
+    return 0;
 }
