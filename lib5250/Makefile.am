@@ -1,6 +1,7 @@
 ## Process this file with automake to produce Makefile.in
 
-EXTRA_DIST = CMakeLists.txt
+EXTRA_DIST = CMakeLists.txt\
+		mkunicodemaps.py
 
 lib_LTLIBRARIES =	lib5250.la
 
@@ -51,6 +52,7 @@ pkginclude_HEADERS = 	buffer.h\
 include_HEADERS =	tn5250.h
 
 noinst_HEADERS =	transmaps.h\
+			unicodemaps.h\
 			scs-private.h\
 			stream-private.h\
 			tn5250-private.h

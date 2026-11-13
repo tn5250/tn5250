@@ -378,23 +378,24 @@ int tn5250_field_count_right(Tn5250Field* This, int y, int x) {
     return tn5250_field_end_pos(This) - (y * This->w + x);
 }
 
-/****f* lib5250/tn5250_field_valid_char
+/****i* lib5250/field_valid_char
  * NAME
- *    tn5250_field_valid_char
+ *    field_valid_char
  * SYNOPSIS
- *    ret = tn5250_field_valid_char (field, ch);
+ *    ret = field_valid_char (field, ch, alpha, digit, src);
  * INPUTS
  *    Tn5250Field *        field      -
- *    int                  ch         -
+ *    int                  ch         - The character, which only has to
+ *                                      be right if it is an ASCII one.
+ *    int                  alpha      - Whether it is alphabetic.
+ *    int                  digit      - Whether it is a digit.
  *    int         *        src        -
  * DESCRIPTION
- *    Determine if the supplied character is a valid data character
- *    for this field, and return system reference code for errors (SRC)
+ *    Determine if a character is a valid data character for this field,
+ *    whatever the character set it comes from.
  *****/
-int tn5250_field_valid_char(Tn5250Field* field, int ch, int* src) {
-    TN5250_LOG(("HandleKey: fieldtype = %d; char = '%c'.\n",
-                tn5250_field_type(field), ch));
-
+static int field_valid_char(Tn5250Field* field, int ch, int alpha, int digit,
+                            int* src) {
     *src = TN5250_KBDSRC_NONE;
 
     switch (tn5250_field_type(field)) {
@@ -402,8 +403,7 @@ int tn5250_field_valid_char(Tn5250Field* field, int ch, int* src) {
         return 1;
 
     case TN5250_FIELD_ALPHA_ONLY:
-        if (!(isalpha(ch) || ch == ',' || ch == '.' || ch == '-' ||
-              ch == ' ')) {
+        if (!(alpha || ch == ',' || ch == '.' || ch == '-' || ch == ' ')) {
             *src = TN5250_KBDSRC_ALPHAONLY;
             return 0;
         }
@@ -413,8 +413,7 @@ int tn5250_field_valid_char(Tn5250Field* field, int ch, int* src) {
         return 1;
 
     case TN5250_FIELD_NUM_ONLY:
-        if (!(isdigit(ch) || ch == ',' || ch == '.' || ch == '-' ||
-              ch == ' ')) {
+        if (!(digit || ch == ',' || ch == '.' || ch == '-' || ch == ' ')) {
             *src = TN5250_KBDSRC_NUMONLY;
             return 0;
         }
@@ -425,7 +424,7 @@ int tn5250_field_valid_char(Tn5250Field* field, int ch, int* src) {
         return 1;
 
     case TN5250_FIELD_DIGIT_ONLY:
-        if (!isdigit(ch)) {
+        if (!digit) {
             *src = TN5250_KBDSRC_ONLY09;
             return 0;
         }
@@ -436,13 +435,56 @@ int tn5250_field_valid_char(Tn5250Field* field, int ch, int* src) {
         return 0;
 
     case TN5250_FIELD_SIGNED_NUM:
-        if (!isdigit(ch)) {
+        if (!digit) {
             *src = TN5250_KBDSRC_ONLY09;
             return 0;
         }
         return 1;
     }
     return 0;
+}
+
+/****f* lib5250/tn5250_field_valid_char
+ * NAME
+ *    tn5250_field_valid_char
+ * SYNOPSIS
+ *    ret = tn5250_field_valid_char (field, ch);
+ * INPUTS
+ *    Tn5250Field *        field      -
+ *    int                  ch         - A character of the local 8-bit
+ *                                      character set.
+ *    int         *        src        -
+ * DESCRIPTION
+ *    Determine if the supplied character is a valid data character
+ *    for this field, and return system reference code for errors (SRC)
+ *****/
+int tn5250_field_valid_char(Tn5250Field* field, int ch, int* src) {
+    TN5250_LOG(("HandleKey: fieldtype = %d; char = '%c'.\n",
+                tn5250_field_type(field), ch));
+
+    return field_valid_char(field, ch, isalpha(ch), isdigit(ch), src);
+}
+
+/****f* lib5250/tn5250_field_valid_unicode
+ * NAME
+ *    tn5250_field_valid_unicode
+ * SYNOPSIS
+ *    ret = tn5250_field_valid_unicode (field, uc, &src);
+ * INPUTS
+ *    Tn5250Field *        field      -
+ *    Tn5250Unicode        uc         - A Unicode character.
+ *    int         *        src        -
+ * DESCRIPTION
+ *    Determine if the supplied Unicode character is a valid data
+ *    character for this field, and return system reference code for
+ *    errors (SRC)
+ *****/
+int tn5250_field_valid_unicode(Tn5250Field* field, Tn5250Unicode uc, int* src) {
+    TN5250_LOG(("HandleKey: fieldtype = %d; char = U+%04X.\n",
+                tn5250_field_type(field), uc));
+
+    return field_valid_char(field, (int)uc, tn5250_unicode_isalpha(uc),
+                            uc >= '0' && uc <= '9', src);
 }
 
 /****f* lib5250/tn5250_field_set_mdt

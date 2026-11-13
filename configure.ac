@@ -45,15 +45,65 @@ AC_CACHE_CHECK([whether to install terminfo entries],
 AM_CONDITIONAL([INSTALL_TERMINFO], [test "$ac_cv_install_terminfo" = "yes"])
 
 # run AC_CHECK_LIB this way to avoid linking curses into every executable
-AC_CHECK_LIB(ncurses, initscr, CURSES_LIBS=-lncurses)
-if test "$ac_cv_lib_ncurses_initscr" = "yes"
+#
+# Displaying UTF-8 takes the wide character functions of curses.  They often
+# are in a library of their own (ncursesw), which is then the one to use, or
+# else the plain curses library may have them.
+AC_CHECK_LIB(ncursesw, initscr, CURSES_LIBS=-lncursesw)
+if test "$ac_cv_lib_ncursesw_initscr" = "yes"
 then
     # Check if we need libtinfo too, see https://bugs.gentoo.org/457530#c0
-    AC_CHECK_LIB(tinfo, nodelay, CURSES_LIBS="$CURSES_LIBS -ltinfo")
+    AC_CHECK_LIB(tinfow, nodelay, CURSES_LIBS="$CURSES_LIBS -ltinfow",
+        [AC_CHECK_LIB(tinfo, nodelay, CURSES_LIBS="$CURSES_LIBS -ltinfo")])
+    # ncursesw may come with header files of its own.
+    AC_CHECK_HEADERS([ncursesw/ncurses.h ncursesw/curses.h], [break])
 else
-    # Check for -lcurses if -lncurses isn't found.
-    AC_CHECK_LIB(curses, initscr, CURSES_LIBS='-lcurses', AC_MSG_ERROR([** You need a curses-compatible library installed.]))
+    AC_CHECK_LIB(ncurses, initscr, CURSES_LIBS=-lncurses)
+    if test "$ac_cv_lib_ncurses_initscr" = "yes"
+    then
+        # Check if we need libtinfo too, see https://bugs.gentoo.org/457530#c0
+        AC_CHECK_LIB(tinfo, nodelay, CURSES_LIBS="$CURSES_LIBS -ltinfo")
+    else
+        # Check for -lcurses if -lncurses isn't found.
+        AC_CHECK_LIB(curses, initscr, CURSES_LIBS='-lcurses', AC_MSG_ERROR([** You need a curses-compatible library installed.]))
+    fi
 fi
+
+AC_CACHE_CHECK([whether curses has wide character functions],
+    [tn5250_cv_curses_widechar],
+    [tn5250_save_LIBS="$LIBS"
+    LIBS="$CURSES_LIBS $LIBS"
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+#define _XOPEN_SOURCE_EXTENDED 1
+#define NCURSES_WIDECHAR 1
+#if defined(HAVE_NCURSESW_NCURSES_H)
+#include <ncursesw/ncurses.h>
+#elif defined(HAVE_NCURSESW_CURSES_H)
+#include <ncursesw/curses.h>
+#else
+#include <curses.h>
+#endif
+#include <wchar.h>
+]], [[
+cchar_t cell;
+wchar_t text[2] = { L'x', 0 };
+setcchar(&cell, text, A_NORMAL, 0, 0);
+return add_wch(&cell);
+]])],
+        [tn5250_cv_curses_widechar=yes],
+        [tn5250_cv_curses_widechar=no])
+    LIBS="$tn5250_save_LIBS"])
+if test "$tn5250_cv_curses_widechar" = "yes"
+then
+    AC_DEFINE([HAVE_CURSES_WIDECHAR], [1], [Define to 1 if curses has the wide character functions, which UTF-8 support needs.])
+fi
+
+# What "make check" needs to know: some of the tests take Python, and what
+# they expect depends on the choices above.
+AM_PATH_PYTHON([3.6],, [:])
+AM_CONDITIONAL([HAVE_PYTHON], [test "$PYTHON" != :])
+AM_CONDITIONAL([CURSES_WIDECHAR], [test "$tn5250_cv_curses_widechar" = "yes"])
+AM_CONDITIONAL([OWN_KEY_PARSING], [test "$ac_cv_use_old_keys" != "yes"])
 
 if test "$ac_cv_use_old_keys" != "yes";
 then
@@ -123,6 +173,7 @@ AC_CONFIG_FILES([Makefile
 		 termcaps/freebsd/Makefile
 		 termcaps/linux/Makefile
 		 termcaps/sun/Makefile
+		 tests/Makefile
 		 tn5250.pc
 		 win32/Makefile
 		 xt5250])

@@ -144,6 +144,15 @@ only work as Field+ and Field- in signed numeric fields.
 The screen display tries to be the same as a colour 5250 terminal.
 There are some unavoidable differences though:
 .IP \(bu 3
+Characters are translated from the EBCDIC of the host to UTF-8 if the
+terminal uses it, or else to an 8-bit encoding which may lack some of
+them.  See the
+.B map
+and
+.B utf8
+options in
+.BR tn5250rc (5).
+.IP \(bu
 ASCII terminals (and curses) do not support the 5250 column
 separators.
 .IP \(bu
@@ -174,6 +183,13 @@ Connect to
 using the translation map for CCSID 870 (Eastern Europe), the session
 name SESSION1 and with a terminal supporting colour and a 132x27
 display.
+.TP
+.I "tn5250 map=1147 +utf8 as400sys"
+Connect to
+.I as400sys
+using the translation map for CCSID 1147 (France, with the euro sign)
+and UTF-8, even though the locale does not say that the terminal uses
+it.
 .SH BUGS
 Please report any bugs you find to https://github.com/tn5250/tn5250/issues
 .SH "SEE ALSO"

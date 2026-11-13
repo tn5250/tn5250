@@ -57,6 +57,22 @@ sure you have the ncurses development libraries installed before trying to
 compile the source. There have been both reports of the standard BSD curses
 working and not working, so you may have to install ncurses under *BSD.
 
+UTF-8 terminals are supported if the wide character version of ncurses
+(ncursesw) is found when building, which `configure` and CMake both report.
+The emulator then uses UTF-8 whenever the locale says the terminal does; see
+the `utf8` option in the tn5250rc(5) man page.
+
+Testing
+-------
+
+`make check` runs the tests, and so does `ctest` in the build directory of
+CMake.
+
+Some of them run the emulator in a pseudo terminal with a fake host at the
+other end, to check what it displays and what it sends. These take Python 3,
+and are skipped on the systems which lack what they need. See the top of
+`tests/test_terminal.py` to run them by hand.
+
 X Windows
 ---------
 

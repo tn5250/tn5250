@@ -895,6 +895,28 @@ void tn5250_display_make_wtd_data(Tn5250Display* This, Tn5250Buffer* buf,
     return;
 }
 
+/****f* lib5250/tn5250_display_has_unicode
+ * NAME
+ *    tn5250_display_has_unicode
+ * SYNOPSIS
+ *    if (tn5250_display_has_unicode (This))
+ *       ;
+ * INPUTS
+ *    Tn5250Display *      This       -
+ * DESCRIPTION
+ *    Determines whether the terminal of this display works with Unicode
+ *    characters, rather than with the characters of the local 8-bit
+ *    character set (see TN5250_TERMINAL_HAS_UNICODE).
+ *****/
+int tn5250_display_has_unicode(Tn5250Display* This) {
+    int flags = 0;
+
+    if (This->terminal != NULL && This->terminal->flags != NULL) {
+        flags = tn5250_terminal_flags(This->terminal);
+    }
+    return (flags & TN5250_TERMINAL_HAS_UNICODE) != 0;
+}
+
 /****f* lib5250/tn5250_display_interactive_addch
  * NAME
  *    tn5250_display_interactive_addch
@@ -906,13 +928,40 @@ void tn5250_display_make_wtd_data(Tn5250Display* This, Tn5250Buffer* buf,
  * DESCRIPTION
  *    Add a character to the display, and set the field's MDT flag.  This
  *    is meant to be called by the keyboard handler when the user is
- *    entering data.
+ *    entering data.  See tn5250_display_interactive_addkey for the
+ *    characters which don't fit in an unsigned char.
  *****/
 void tn5250_display_interactive_addch(Tn5250Display* This, unsigned char ch) {
+    tn5250_display_interactive_addkey(This, ch);
+}
+
+/****f* lib5250/tn5250_display_interactive_addkey
+ * NAME
+ *    tn5250_display_interactive_addkey
+ * SYNOPSIS
+ *    tn5250_display_interactive_addkey (This, key);
+ * INPUTS
+ *    Tn5250Display *      This       -
+ *    int                  key        - A character, as returned by the
+ *                                      terminal: either a character of
+ *                                      the local character set, or a
+ *                                      Unicode character (see K_UNICODE).
+ * DESCRIPTION
+ *    Add a character to the display, and set the field's MDT flag.  This
+ *    is meant to be called by the keyboard handler when the user is
+ *    entering data.
+ *****/
+void tn5250_display_interactive_addkey(Tn5250Display* This, int key) {
     Tn5250Field* field = tn5250_display_current_field(This);
     Tn5250Field* contfield;
     int end_of_field = 0;
     int nextfieldprogressionid = 0;
+    int unicode = K_IS_UNICODE(key) || tn5250_display_has_unicode(This);
+    Tn5250Unicode uc = K_UNICODE_CHAR(key);
+    Tn5250Unicode upper;
+    unsigned char ch = key & 0xff;
+    Tn5250Char ec;
+    int valid;
 
     if (field == NULL || tn5250_field_is_bypass(field)) {
         This->keystate = TN5250_KEYSTATE_PREHELP;
@@ -920,15 +969,39 @@ void tn5250_display_interactive_addch(Tn5250Display* This, unsigned char ch) {
         tn5250_display_inhibit(This);
         return;
     }
-    /* Upcase the character if this is a monocase field. */
-    if (tn5250_field_is_monocase(field) && isalpha(ch)) {
-        ch = toupper(ch);
+
+    /* Upcase the character if this is a monocase field, and translate it
+     * to what the host calls it. */
+    if (unicode) {
+        /* Characters stay as they are when the host has no upper case for
+         * them, like the y with diaeresis of most Latin character maps. */
+        upper = tn5250_unicode_toupper(uc);
+        if (tn5250_field_is_monocase(field) &&
+            tn5250_char_map_from_unicode(This->map, upper, &ec)) {
+            uc = upper;
+        }
+        if (!tn5250_char_map_from_unicode(This->map, uc, &ec)) {
+            TN5250_LOG(("Beep: U+%04X is not in character map %s.\n", uc,
+                        This->map->name));
+            tn5250_display_beep(This);
+            return;
+        }
+        /* This one is for tn5250_terminal_putkey, which takes a character
+         * of the local character set. */
+        ch = tn5250_char_map_to_local(This->map, ec);
+    }
+    else {
+        if (tn5250_field_is_monocase(field) && isalpha(ch)) {
+            ch = toupper(ch);
+        }
+        ec = tn5250_char_map_to_remote(This->map, ch);
+        uc = ch;
     }
 
     /* '+' and '-' keys activate field exit/field minus for numeric fields. */
     if (This->sign_key_hack && (tn5250_field_is_num_only(field) ||
                                 tn5250_field_is_signed_num(field))) {
-        switch (ch) {
+        switch (uc) {
         case '+':
             tn5250_display_kf_field_plus(This);
             return;
@@ -940,7 +1013,13 @@ void tn5250_display_interactive_addch(Tn5250Display* This, unsigned char ch) {
     }
 
     /* Make sure this is a valid data character for this field type. */
-    if (!tn5250_field_valid_char(field, ch, &(This->keySRC))) {
+    if (unicode) {
+        valid = tn5250_field_valid_unicode(field, uc, &(This->keySRC));
+    }
+    else {
+        valid = tn5250_field_valid_char(field, ch, &(This->keySRC));
+    }
+    if (!valid) {
         TN5250_LOG(("Inhibiting: invalid character for field type.\n"));
         This->keystate = TN5250_KEYSTATE_PREHELP;
         tn5250_display_inhibit(This);
@@ -995,14 +1074,13 @@ void tn5250_display_interactive_addch(Tn5250Display* This, unsigned char ch) {
 
         if (tn5250_field_is_wordwrap(field)) {
             tn5250_display_wordwrap_insert(
-                This, tn5250_char_map_to_remote(This->map, ch),
+                This, ec,
                 tn5250_field_count_right(field, tn5250_display_cursor_y(This),
                                          tn5250_display_cursor_x(This)));
         }
         else {
             tn5250_dbuffer_ins(
-                This->display_buffers, field->id,
-                tn5250_char_map_to_remote(This->map, ch),
+                This->display_buffers, field->id, ec,
                 tn5250_field_count_right(field, tn5250_display_cursor_y(This),
                                          tn5250_display_cursor_x(This)));
         }
@@ -1011,8 +1089,7 @@ void tn5250_display_interactive_addch(Tn5250Display* This, unsigned char ch) {
         if (tn5250_field_is_wordwrap(field) ||
             (tn5250_field_is_continued_last(field) &&
              tn5250_field_is_wordwrap(field->prev))) {
-            tn5250_display_wordwrap_addch(
-                This, tn5250_char_map_to_remote(This->map, ch));
+            tn5250_display_wordwrap_addch(This, ec);
         }
         else {
             if (This->terminal->putkey != NULL) {
@@ -1021,8 +1098,7 @@ void tn5250_display_interactive_addch(Tn5250Display* This, unsigned char ch) {
                                        tn5250_display_cursor_x(This));
             }
 
-            tn5250_dbuffer_addch(This->display_buffers,
-                                 tn5250_char_map_to_remote(This->map, ch));
+            tn5250_dbuffer_addch(This->display_buffers, ec);
         }
     }
 
@@ -1534,9 +1610,13 @@ void tn5250_display_do_key(Tn5250Display* This, int key) {
         }
 
         /* Handle data keys. */
-        if (key >= ' ' && key <= 255) {
+        if (K_IS_UNICODE(key)) {
+            TN5250_LOG(("HandleKey: key = U+%04X\n", K_UNICODE_CHAR(key)));
+            tn5250_display_interactive_addkey(This, key);
+        }
+        else if (key >= ' ' && key <= 255) {
             TN5250_LOG(("HandleKey: key = %c\n", key));
-            tn5250_display_interactive_addch(This, key);
+            tn5250_display_interactive_addkey(This, key);
         }
         else {
             TN5250_LOG(("HandleKey: Weird key ignored: %d\n", key));
@@ -3143,7 +3223,11 @@ int display_check_pccmd(Tn5250Display* This) {
     int b, c;
     int header[5];
     int wait = 0;
-    char cmdstr[124];
+    int len;
+    int unicode;
+    unsigned char* data;
+    Tn5250Unicode uc;
+    char cmdstr[123 * TN5250_UTF8_MAX + 1];
 
     if (This->allow_strpccmd == 0) {
         return 0;
@@ -3197,22 +3281,27 @@ int display_check_pccmd(Tn5250Display* This) {
     }
 
     /* The header bytes are followed by a 123 character fixed-length command
-       string. */
+       string.  It is run by a system which expects it in the same character
+       set as the terminal uses: UTF-8 if the terminal has Unicode. */
 
-    memcpy(cmdstr, This->display_buffers->data + 12, 123);
-    cmdstr[123] = '\0';
+    unicode = tn5250_display_has_unicode(This);
+    data = This->display_buffers->data + 12;
+    len = 0;
+    for (b = 0; b < 123; b++) {
+        if (unicode) {
+            uc = tn5250_char_map_to_unicode(This->map, data[b]);
+            len += tn5250_utf8_encode(uc, cmdstr + len);
+        }
+        else {
+            cmdstr[len++] = tn5250_char_map_to_local(This->map, data[b]);
+        }
+    }
+    cmdstr[len] = '\0';
 
     /* Strip any trailing blanks from the command string */
 
-    for (b = 0; b < 123; b++) {
-        cmdstr[b] =
-            tn5250_char_map_to_local(tn5250_display_char_map(This), cmdstr[b]);
-    }
-
-    b = 122;
-    while (b && cmdstr[b] == ' ') {
-        cmdstr[b] = '\0';
-        b--;
+    while (len > 1 && cmdstr[len - 1] == ' ') {
+        cmdstr[--len] = '\0';
     }
 
     TN5250_LOG(("PCO Command: wait=%d, String: \"%s\"\n", wait, cmdstr));

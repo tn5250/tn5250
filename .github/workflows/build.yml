@@ -23,6 +23,9 @@ jobs:
       run: |
         cmake -B build-dir -S .
         cmake --build build-dir
+    - name: CMake Test
+      if: ${{ startsWith(matrix.os, 'ubuntu') }}
+      run: ctest --test-dir build-dir --output-on-failure
 
   build-autoconf:
     strategy:
@@ -37,3 +40,5 @@ jobs:
         ./autogen.sh
         ./configure
         make -j
+    - name: Autoconf Test
+      run: make check VERBOSE=1

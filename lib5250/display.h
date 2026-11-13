@@ -128,6 +128,8 @@ extern void tn5250_display_field_adjust(Tn5250Display* This,
                                         Tn5250Field* field);
 extern void tn5250_display_interactive_addch(Tn5250Display* This,
                                              unsigned char ch);
+extern void tn5250_display_interactive_addkey(Tn5250Display* This, int key);
+extern int tn5250_display_has_unicode(Tn5250Display* This);
 extern void tn5250_display_beep(Tn5250Display* This);
 extern void tn5250_display_do_aidkey(Tn5250Display* This, int aidcode);
 extern void tn5250_display_indicator_set(Tn5250Display* This, int inds);

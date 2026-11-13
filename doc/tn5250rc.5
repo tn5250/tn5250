@@ -81,8 +81,9 @@ See
 below for descriptions of the available protocols.
 .TP
 .BI map= CCSID
-Set the translation table between ASCII and EBCDIC.  This should match
-the CCSID of the interactive job.  The default is
+Set the translation table between EBCDIC and the character set of the
+terminal.  This should match the CCSID of the interactive job.  The
+default is
 .BR 37 .
 See
 .B "Translation Maps"
@@ -143,6 +144,33 @@ does not work this out itself.
 .BR + / \-ruler
 Turn the ruler feature on or off.  When enabled, the row and column of
 the cursor will be highlighted.
+.TP
+.BR + / \-utf8
+Use or do not use UTF-8 for the characters sent to the terminal, and
+for the ones typed on it.  The default is to use UTF-8 if the locale
+says the terminal does, which is the case when the character encoding
+of the locale set with the
+.BR LC_ALL ,
+.B LC_CTYPE
+or
+.B LANG
+environment variables is UTF-8.
+.IP
+Use
+.B +utf8
+if the terminal uses UTF-8 but the locale does not say so, which
+requires a UTF-8 locale to be installed all the same.  Use
+.B \-utf8
+to get the 8-bit encoding listed in
+.B "Translation Maps"
+below instead, as earlier versions of
+.B tn5250
+did.
+.IP
+This option requires
+.B tn5250
+to have been built with the wide character version of the curses
+library.
 .TP
 .BR + / \-mouse
 Turns on using the mouse automatically to move the cursor. You can toggle
@@ -235,10 +263,20 @@ available on the web at
 .PP
 Currently recognised values for the translation map are: 37, 256, 273,
 277, 278, 280, 284, 285, 290, 297, 420, 424, 500, 870, 871, 875, 880, 905,
-and 1026.  Most of these are translated to ISO-8859-1, also known as
-Latin 1.  Some of them contain characters only present in another
-encoding, which is used instead.  The valid CCSID values, and the Unix
-encoding used, are listed below.
+and 1026, along with the ones which add the euro sign to one of them:
+1140, 1141, 1142, 1143, 1144, 1145, 1146, 1147, 1148, 1149, 1153, 1155,
+4971, 12712, and 16804.
+.PP
+If the terminal uses UTF-8 (see the
+.B utf8
+option), all the characters of these CCSIDs are displayed as they are,
+and may be typed.
+.PP
+Otherwise, they are translated to an 8-bit encoding.  Most of these
+CCSIDs are translated to ISO-8859-1, also known as Latin 1.  Some of
+them contain characters only present in another encoding, which is
+used instead.  The valid CCSID values, and the 8-bit Unix encoding
+used, are listed below.
 .PP
 .TS
 tab (:);
@@ -267,10 +305,31 @@ CCSID:Unix encoding:Description
 880:ISO-8859-5:Cyrillic
 905:ISO-8859-3:Turkey \- Latin3
 1026:ISO-8859-9:Turkey \- Latin5
+1140:ISO-8859-1:37 with euro sign
+1141:ISO-8859-1:273 with euro sign
+1142:ISO-8859-1:277 with euro sign
+1143:ISO-8859-1:278 with euro sign
+1144:ISO-8859-1:280 with euro sign
+1145:ISO-8859-1:284 with euro sign
+1146:ISO-8859-1:285 with euro sign
+1147:ISO-8859-1:297 with euro sign
+1148:ISO-8859-1:500 with euro sign
+1149:ISO-8859-1:871 with euro sign
+1153:ISO-8859-2:870 with euro sign
+1155:ISO-8859-9:1026 with euro sign
+4971:ISO-8859-7:875 with euro sign
+12712:ISO-8859-8:424 with euro sign
+16804:ISO-8859-6:420 with euro sign
 .TE
 .PP
-If possible, configure your terminal to use the appropriate encoding
-if your AS/400 uses any of these CCSIDs.
+If your terminal does not use UTF-8, configure it to use the
+appropriate encoding if your AS/400 uses any of these CCSIDs.
+.PP
+None of these 8-bit encodings has a euro sign.  The CCSIDs which have
+one are translated like the CCSID they add it to, so that most of them
+have the euro sign where the currency sign of the 8-bit encoding is.
+This is where ISO-8859-15 has the euro sign, which makes it a better
+encoding for the terminal than ISO-8859-1.
 .SS "Display Types"
 The following values are valid for the
 .B env.TERM

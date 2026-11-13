@@ -106,7 +106,8 @@ static const MacroKey MKey[] = {
 char PState[12]; /* Printable state */
 
 int macro_isnewmacro(char* Buff, unsigned char** name);
-void macro_write(int Num, unsigned char* name, int* Buff, FILE* MF);
+void macro_write(int Num, unsigned char* name, int* Buff, FILE* MF,
+                 int unicode);
 
 /*
  * Clean trailing CRs. Returns line size
@@ -201,13 +202,18 @@ int macro_specialkey(char* Buff, int* Pt) {
 
 /*
  * Add the line contents to macro
+ * The characters of the line are the ones of the terminal: UTF-8 if it has
+ * Unicode, the local 8-bit character set otherwise.
  * TODO : add an escape character
  * TODO : resize macro buffer when special keys are transcoded
  */
-void macro_addline(int** PDest, char* Buff, int Sz) {
-    int i, j, key;
+void macro_addline(int** PDest, char* Buff, int Sz, Tn5250Display* Dsp) {
+    int i, j, key, len;
     int* Buffer;
     int NSz, OSz;
+    int unicode = tn5250_display_has_unicode(Dsp);
+    unsigned char c;
+    Tn5250Unicode uc;
 
     if (*PDest == NULL) {
         Buffer = (int*)malloc((Sz + 1) * sizeof(int));
@@ -228,8 +234,21 @@ void macro_addline(int** PDest, char* Buff, int Sz) {
             if ((key = macro_specialkey(Buff, &j)) > 0) {
                 Buffer[OSz + i] = key; /* maybe should resize buffer here */
             }
+            else if (unicode &&
+                     (len = tn5250_utf8_decode(Buff + j, Sz - j, &uc)) > 1) {
+                Buffer[OSz + i] = K_UNICODE(uc);
+                j += len - 1;
+            }
+            else if (unicode && (c = (unsigned char)Buff[j]) >= 0x80) {
+                /* This is not UTF-8, so the macro must have been recorded
+                 * by a terminal without Unicode: the character is one of
+                 * the local character set of the map. */
+                c = tn5250_char_map_to_remote(Dsp->map, c);
+                uc = tn5250_char_map_to_unicode(Dsp->map, c);
+                Buffer[OSz + i] = K_UNICODE(uc);
+            }
             else {
-                Buffer[OSz + i] = (int)Buff[j];
+                Buffer[OSz + i] = (unsigned char)Buff[j];
             }
             i++;
             j++;
@@ -242,7 +261,7 @@ void macro_addline(int** PDest, char* Buff, int Sz) {
 /*
  * Load the macro definitions file
  */
-char macro_loadfile(Tn5250Macro* Macro) {
+char macro_loadfile(Tn5250Macro* Macro, Tn5250Display* Dsp) {
     FILE* MFile;
     int Sz, Num, CurMacro;
     char Buffer[MAX_LINESZ];
@@ -273,7 +292,7 @@ char macro_loadfile(Tn5250Macro* Macro) {
                 else {
                     if ((CurMacro > 0) && (Sz > 0)) {
                         macro_addline(&Macro->data[CurMacro - 1].BuffM, Buffer,
-                                      Sz);
+                                      Sz, Dsp);
                     }
                 }
             }
@@ -418,8 +437,10 @@ Tn5250Macro* tn5250_macro_init() {
 /*
  * Write one macro to file
  */
-void macro_write(int Num, unsigned char* name, int* Buff, FILE* MF) {
-    int i, j, Sz;
+void macro_write(int Num, unsigned char* name, int* Buff, FILE* MF,
+                 int unicode) {
+    int i, j, Sz, len;
+    char text[TN5250_UTF8_MAX];
 
     fprintf(MF, "[M%02i]%s\n", Num, name);
 
@@ -430,12 +451,23 @@ void macro_write(int Num, unsigned char* name, int* Buff, FILE* MF) {
             j++;
         }
         if (MKey[j].km_code == 0) {
-            if (Sz + 1 > MAX_LINESZ - 3) {
+            /* Characters are written the way the terminal has them: in
+             * UTF-8 if it has Unicode, as they are otherwise. */
+            if (K_IS_UNICODE(Buff[i]) ||
+                (unicode && Buff[i] >= ' ' && Buff[i] <= 255)) {
+                len = tn5250_utf8_encode(K_UNICODE_CHAR(Buff[i]), text);
+            }
+            else {
+                text[0] = (char)Buff[i];
+                len = 1;
+            }
+            /* A character must not be split between two lines. */
+            if (Sz + len > MAX_LINESZ - 3) {
                 fprintf(MF, "\n");
                 Sz = 0;
             }
-            fprintf(MF, "%c", (char)Buff[i]);
-            Sz++;
+            fwrite(text, 1, len, MF);
+            Sz += len;
         }
         else {
             if (Sz + strlen(MKey[j].km_str) + 2 > MAX_LINESZ - 3) {
@@ -455,7 +487,7 @@ void macro_write(int Num, unsigned char* name, int* Buff, FILE* MF) {
 /*
  * Save the macro definitions file
  */
-char macro_savefile(Tn5250Macro* Macro) {
+char macro_savefile(Tn5250Macro* Macro, int unicode) {
     FILE* MFile;
     int i;
 
@@ -464,7 +496,7 @@ char macro_savefile(Tn5250Macro* Macro) {
             for (i = 0; i < 24; i++) {
                 if (Macro->data[i].BuffM != NULL) {
                     macro_write(i + 1, Macro->data[i].name,
-                                Macro->data[i].BuffM, MFile);
+                                Macro->data[i].BuffM, MFile, unicode);
                 }
             }
             fclose(MFile);
@@ -603,7 +635,7 @@ void tn5250_macro_enddef(Tn5250Display* This) {
                 This->macro->data[NumMacro].BuffM = NULL;
             }
 
-            macro_savefile(This->macro);
+            macro_savefile(This->macro, tn5250_display_has_unicode(This));
         }
         This->macro->RState = 0;
     }
@@ -632,7 +664,7 @@ char tn5250_macro_recfunct(Tn5250Display* This, int key) {
             NumMacro = key - K_F1;
             if ((NumMacro >= 0) && (NumMacro < 24)) {
                 macro_clearmem(This->macro);
-                macro_loadfile(This->macro);
+                macro_loadfile(This->macro, This);
 
                 if (This->macro->data[NumMacro].BuffM != NULL) {
                     free(This->macro->data[NumMacro].BuffM);
@@ -785,7 +817,7 @@ char tn5250_macro_execfunct(Tn5250Display* This, int key) {
         NumMacro = key - K_F1;
         if ((NumMacro >= 0) && (NumMacro < 24)) {
             macro_clearmem(This->macro);
-            macro_loadfile(This->macro);
+            macro_loadfile(This->macro, This);
 
             This->macro->EState = 3; /* Ok to run macro */
             This->macro->TleBuff = 0;
