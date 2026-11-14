@@ -16,5 +16,6 @@ xt5250
 *~
 *.scc
 autom4te.cache/
+__pycache__/
 termcap/*/5/
 termcap/*/x/

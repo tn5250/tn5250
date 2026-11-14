@@ -19,9 +19,19 @@
  * Boston, MA 02111-1307 USA
  *
  */
+/* glibc only declares wcwidth() on request. */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #define _TN5250_TERMINAL_PRIVATE_DEFINED
 #include "tn5250-private.h"
 #include "cursesterm.h"
+
+#ifdef HAVE_CURSES_WIDECHAR
+#include <langinfo.h>
+#include <wchar.h>
+#endif
 
 /* Some versions of ncurses don't have this defined. */
 #ifndef A_VERTICAL
@@ -90,6 +100,9 @@ static void curses_terminal_beep(Tn5250Terminal* This);
 static int curses_terminal_enhanced(Tn5250Terminal* This);
 static int curses_terminal_is_ruler(Tn5250Terminal* This,
                                     Tn5250Display* display, int x, int y);
+static void curses_terminal_addch(Tn5250Terminal* This, int ch, attr_t attr);
+static int curses_terminal_utf8_locale(void);
+static int curses_terminal_utf8_key(Tn5250Terminal* This, int byte);
 int curses_rgb_to_color(int r, int g, int b, int* rclr, int* rbold);
 int curses_terminal_config(Tn5250Terminal* This, Tn5250Config* config);
 void curses_terminal_print_screen(Tn5250Terminal* This, Tn5250Display* display);
@@ -121,6 +134,13 @@ struct _Tn5250TerminalPrivate {
     Tn5250Display* display;
     Tn5250Config* config;
     mmask_t old_mouse_mask;
+    /* The bytes of the UTF-8 character which is being typed. */
+    char utf8_key[TN5250_UTF8_MAX];
+    int utf8_key_len;
+    /* What the "utf8" option asks for: 1, 0, or -1 to follow the locale. */
+    int utf8_option;
+    /* Whether the terminal displays, and is typed, UTF-8. */
+    unsigned int utf8 : 1;
     unsigned int quit_flag : 1;
     unsigned int have_underscores : 1;
     unsigned int underscores : 1;
@@ -291,6 +311,9 @@ Tn5250Terminal* tn5250_curses_terminal_new() {
     r->data->mouse_on_start = 0;
     r->data->display = NULL;
     r->data->config = NULL;
+    r->data->utf8 = 0;
+    r->data->utf8_option = -1;
+    r->data->utf8_key_len = 0;
 
 #ifdef USE_OWN_KEY_PARSING
     r->data->k_buf_len = 0;
@@ -330,6 +353,17 @@ static void curses_terminal_init(Tn5250Terminal* This) {
     int i = 0, c, s;
     char* str;
     int x;
+
+    /* Curses encodes the characters we give it the way the locale says, so
+     * the locale is what tells whether the terminal is to be sent (and
+     * sends us) UTF-8, rather than the 8-bit character set of the character
+     * map.  The "utf8" option may have made up for the locale by now, see
+     * curses_terminal_config. */
+    This->data->utf8 = 0;
+    if (This->data->utf8_option != 0 && curses_terminal_utf8_locale()) {
+        This->data->utf8 = 1;
+    }
+    TN5250_LOG(("CURSES: UTF-8 is %s.\n", This->data->utf8 ? "on" : "off"));
 
     (void)initscr();
     raw();
@@ -630,10 +664,13 @@ static int curses_terminal_height(Tn5250Terminal /*@unused@*/* This) {
  * DESCRIPTION
  *    DOCUMENT ME!!!
  *****/
-static int curses_terminal_flags(Tn5250Terminal /*@unused@*/* This) {
+static int curses_terminal_flags(Tn5250Terminal* This) {
     int f = 0;
     if (has_colors() != 0) {
         f |= TN5250_TERMINAL_HAS_COLOR;
+    }
+    if (This->data->utf8) {
+        f |= TN5250_TERMINAL_HAS_UNICODE;
     }
     return f;
 }
@@ -653,6 +690,7 @@ static void curses_terminal_update(Tn5250Terminal* This,
                                    Tn5250Display* display) {
     int my, mx;
     int y, x;
+    int ch;
     attr_t curs_attr;
     unsigned char a = 0x20, c;
 
@@ -728,15 +766,19 @@ static void curses_terminal_update(Tn5250Terminal* This,
                 else {
                     /* UNPRINTABLE -- print block */
                     if ((c == 0x1f) || (c == 0x3F)) {
-                        c = ' ';
+                        ch = ' ';
                         curs_attr ^= A_REVERSE;
                     }
                     /* UNPRINTABLE -- print blank */
                     else if ((c < 0x40 && c > 0x00) || c == 0xff) {
-                        c = ' ';
+                        ch = ' ';
+                    }
+                    else if (This->data->utf8) {
+                        ch = tn5250_char_map_to_unicode(
+                            tn5250_display_char_map(display), c);
                     }
                     else {
-                        c = tn5250_char_map_to_local(
+                        ch = tn5250_char_map_to_local(
                             tn5250_display_char_map(display), c);
                     }
                     if ((curs_attr & A_VERTICAL) != 0) {
@@ -748,15 +790,15 @@ static void curses_terminal_update(Tn5250Terminal* This,
                     if (This->data->underscores) {
                         if ((curs_attr & A_UNDERLINE) != 0) {
                             curs_attr &= ~A_UNDERLINE;
-                            if (c == ' ') {
-                                c = '_';
+                            if (ch == ' ') {
+                                ch = '_';
                             }
                         }
                     }
                     if (curses_terminal_is_ruler(This, display, x, y)) {
                         curs_attr |= A_REVERSE;
                     }
-                    addch((chtype)(c | curs_attr));
+                    curses_terminal_addch(This, ch, curs_attr);
                 }
             } /* if ((c & 0xe0) ... */
         }     /* for (int x ... */
@@ -795,6 +837,191 @@ static int curses_terminal_is_ruler(Tn5250Terminal* This,
     }
 
     return 0;
+}
+
+/****i* lib5250/curses_terminal_utf8_locale
+ * NAME
+ *    curses_terminal_utf8_locale
+ * SYNOPSIS
+ *    ret = curses_terminal_utf8_locale ();
+ * INPUTS
+ *    None
+ * DESCRIPTION
+ *    Returns 1 if the character encoding of the locale is UTF-8 and we
+ *    have what it takes to display it, 0 otherwise.
+ *****/
+static int curses_terminal_utf8_locale(void) {
+#ifdef HAVE_CURSES_WIDECHAR
+    const char* codeset = nl_langinfo(CODESET);
+
+    return codeset != NULL &&
+           (!strcasecmp(codeset, "UTF-8") || !strcasecmp(codeset, "UTF8"));
+#else
+    return 0;
+#endif
+}
+
+/****i* lib5250/curses_terminal_force_utf8
+ * NAME
+ *    curses_terminal_force_utf8
+ * SYNOPSIS
+ *    ret = curses_terminal_force_utf8 ();
+ * INPUTS
+ *    None
+ * DESCRIPTION
+ *    Make the character encoding of the locale UTF-8 if it is something
+ *    else, which is what happens to the people whose terminal does UTF-8
+ *    but whose environment doesn't say so (LANG is easily lost on the way
+ *    to a remote system).  Returns 1 if the encoding is UTF-8 in the end,
+ *    0 if no UTF-8 locale could be found.
+ *****/
+static int curses_terminal_force_utf8(void) {
+#ifdef HAVE_CURSES_WIDECHAR
+    /* There is no telling which locales a system has: these are the names
+     * of the UTF-8 ones which don't depend on what got installed, as far as
+     * such a thing exists (EN_US.UTF-8 is how AIX spells it). */
+    static const char* const names[] = {
+        // clang-format off
+        "C.UTF-8", "C.utf8", "en_US.UTF-8", "en_US.utf8", "EN_US.UTF-8", "UTF-8"
+        // clang-format on
+    };
+    char name[64];
+    char* saved;
+    size_t i;
+
+    if (curses_terminal_utf8_locale()) {
+        return 1;
+    }
+
+    saved = setlocale(LC_CTYPE, NULL);
+    if (saved != NULL) {
+        saved = strdup(saved);
+    }
+
+    /* The UTF-8 flavour of the current locale is the first choice. */
+    if (saved != NULL && strlen(saved) < sizeof(name) - 6) {
+        strcpy(name, saved);
+        strcpy(name + strcspn(name, ".@"), ".UTF-8");
+        if (setlocale(LC_CTYPE, name) != NULL &&
+            curses_terminal_utf8_locale()) {
+            TN5250_LOG(("CURSES: switched to locale %s.\n", name));
+            free(saved);
+            return 1;
+        }
+    }
+    for (i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
+        if (setlocale(LC_CTYPE, names[i]) != NULL &&
+            curses_terminal_utf8_locale()) {
+            TN5250_LOG(("CURSES: switched to locale %s.\n", names[i]));
+            free(saved);
+            return 1;
+        }
+    }
+    if (saved != NULL) {
+        setlocale(LC_CTYPE, saved);
+        free(saved);
+    }
+#endif
+    return 0;
+}
+
+#ifdef HAVE_CURSES_WIDECHAR
+/****i* lib5250/curses_terminal_wide_text
+ * NAME
+ *    curses_terminal_wide_text
+ * SYNOPSIS
+ *    curses_terminal_wide_text (uc, text);
+ * INPUTS
+ *    Tn5250Unicode        uc         - The character to display.
+ *    wchar_t *            text       - Where to store what displays it,
+ *                                      which takes up to 3 wide characters.
+ * DESCRIPTION
+ *    Make the wide character string which displays a Unicode character
+ *    in one cell of the screen, no more and no less: this is what every
+ *    character of a 5250 takes.
+ *****/
+static void curses_terminal_wide_text(Tn5250Unicode uc, wchar_t* text) {
+    char utf8[TN5250_UTF8_MAX];
+    mbstate_t state;
+    wchar_t wc;
+    int len, width;
+
+    text[0] = L' ';
+    text[1] = text[2] = L'\0';
+
+    /* Characters which only tell how to lay out the text around them, such
+     * as the directional marks, have nothing to show. */
+    if ((uc >= 0x200B && uc <= 0x200F) || (uc >= 0x202A && uc <= 0x202E) ||
+        (uc >= 0x2060 && uc <= 0x206F) || uc == 0xFEFF) {
+        return;
+    }
+
+    /* A 5250 shows the syllable hyphen as a hyphen, while there is no
+     * telling whether a terminal shows the soft hyphen of Unicode at all. */
+    if (uc == 0x00AD) {
+        text[0] = L'-';
+        return;
+    }
+
+    /* What a wchar_t holds is up to the C library, which is only bound to
+     * make them out of the encoding of the locale.  That one is UTF-8. */
+    if (uc < 0x80) {
+        wc = (wchar_t)uc;
+    }
+    else {
+        len = tn5250_utf8_encode(uc, utf8);
+        memset(&state, 0, sizeof(state));
+        if (len == 0 || mbrtowc(&wc, utf8, len, &state) != (size_t)len) {
+            wc = L'?';
+        }
+    }
+
+    width = wcwidth(wc);
+    if (width == 1) {
+        text[0] = wc;
+    }
+    else if (width == 0) {
+        /* A combining character would be drawn over the previous cell and
+         * leave its own one empty, so give it a space to combine with. */
+        text[1] = wc;
+    }
+    else {
+        /* Two cells wide, or unknown to the C library. */
+        text[0] = L'?';
+    }
+}
+#endif
+
+/****i* lib5250/curses_terminal_addch
+ * NAME
+ *    curses_terminal_addch
+ * SYNOPSIS
+ *    curses_terminal_addch (This, ch, attr);
+ * INPUTS
+ *    Tn5250Terminal *     This       -
+ *    int                  ch         - The character: a Unicode one if
+ *                                      the terminal does UTF-8, one of the
+ *                                      local character set otherwise.
+ *    attr_t               attr       - The curses attributes to give it.
+ * DESCRIPTION
+ *    Add a character to the screen, where the cursor is.
+ *****/
+static void curses_terminal_addch(Tn5250Terminal* This, int ch, attr_t attr) {
+#ifdef HAVE_CURSES_WIDECHAR
+    if (This->data->utf8) {
+        wchar_t text[3];
+        cchar_t cell;
+        short pair = (short)PAIR_NUMBER(attr);
+
+        curses_terminal_wide_text((Tn5250Unicode)ch, text);
+        if (setcchar(&cell, text, attr & ~A_COLOR, pair, NULL) == OK) {
+            add_wch(&cell);
+            return;
+        }
+        ch = '?';
+    }
+#endif
+    addch((chtype)ch | attr);
 }
 
 /****i* lib5250/curses_terminal_update_indicators
@@ -885,7 +1112,81 @@ static int curses_terminal_waitevent(Tn5250Terminal* This) {
     return result;
 }
 
+/****i* lib5250/curses_terminal_utf8_key
+ * NAME
+ *    curses_terminal_utf8_key
+ * SYNOPSIS
+ *    key = curses_terminal_utf8_key (This, byte);
+ * INPUTS
+ *    Tn5250Terminal *     This       -
+ *    int                  byte       - One of the bytes of a UTF-8
+ *                                      character, which all are 0x80 or
+ *                                      more.
+ * DESCRIPTION
+ *    Curses hands over the UTF-8 characters which get typed one byte at a
+ *    time, and they may not even all be there yet.  This collects them, and
+ *    returns the character (see K_UNICODE) once it was given all its bytes,
+ *    or -1 as long as there are more to come.
+ *****/
+static int curses_terminal_utf8_key(Tn5250Terminal* This, int byte) {
+    Tn5250Unicode uc;
+    char* utf8 = This->data->utf8_key;
+    int used;
+
+    utf8[This->data->utf8_key_len++] = (char)byte;
+    used = tn5250_utf8_decode(utf8, This->data->utf8_key_len, &uc);
+    if (used < 0 && This->data->utf8_key_len > 1) {
+        /* This is not the rest of the character we were collecting, which
+         * is given up: it may be the start of another one. */
+        utf8[0] = (char)byte;
+        This->data->utf8_key_len = 1;
+        used = tn5250_utf8_decode(utf8, 1, &uc);
+    }
+    if (used == 0) {
+        return -1;
+    }
+
+    This->data->utf8_key_len = 0;
+    if (used < 0) {
+        TN5250_LOG(("CURSES: ignoring 0x%02X, which is not UTF-8.\n", byte));
+        return -1;
+    }
+    return K_UNICODE(uc);
+}
+
 #ifndef USE_OWN_KEY_PARSING
+/****i* lib5250/curses_terminal_getch
+ * NAME
+ *    curses_terminal_getch
+ * SYNOPSIS
+ *    key = curses_terminal_getch (This);
+ * INPUTS
+ *    Tn5250Terminal *     This       -
+ * DESCRIPTION
+ *    This is getch(), but for the UTF-8 characters which are returned as
+ *    a single key (see K_UNICODE) rather than as a key for each of their
+ *    bytes.
+ *****/
+static int curses_terminal_getch(Tn5250Terminal* This) {
+    int key;
+
+    for (;;) {
+        key = getch();
+        if (!This->data->utf8 || key == ERR) {
+            return key;
+        }
+        if (key < 0x80 || key > 0xff) {
+            /* Whatever character was being typed got cut short. */
+            This->data->utf8_key_len = 0;
+            return key;
+        }
+        key = curses_terminal_utf8_key(This, key);
+        if (key != -1) {
+            return key;
+        }
+    }
+}
+
 /****i* lib5250/curses_terminal_getkey
  * NAME
  *    curses_terminal_getkey
@@ -900,7 +1201,7 @@ static int curses_terminal_getkey(Tn5250Terminal* This) {
     int key;
     MEVENT event;
 
-    key = getch();
+    key = curses_terminal_getch(This);
 
     while (1) {
         switch (key) {
@@ -1061,9 +1362,10 @@ static int curses_terminal_get_esc_key(Tn5250Terminal* This, int is_esc) {
     move(y, x);
     refresh();
 
-    key = getch();
+    key = curses_terminal_getch(This);
 
-    if (isalpha(key)) {
+    /* Function keys and UTF-8 characters are no business of isalpha(). */
+    if (key >= 0 && key < 0x80 && isalpha(key)) {
         key = toupper(key);
     }
 
@@ -1305,6 +1607,19 @@ static int curses_terminal_getkey(Tn5250Terminal* This) {
     }
 
     ch = curses_get_key(This, 1);
+
+    /* Put the UTF-8 characters back together. */
+    while (This->data->utf8 && ch >= 0x80 && ch <= 0xff) {
+        ch = curses_terminal_utf8_key(This, ch);
+        if (ch == -1) {
+            ch = curses_get_key(This, 1);
+        }
+    }
+    if (ch != -1 && !K_IS_UNICODE(ch)) {
+        /* Whatever character was being typed got cut short. */
+        This->data->utf8_key_len = 0;
+    }
+
     switch (ch) {
     case K_CTRL('Q'):
         This->data->quit_flag = 1;
@@ -1468,6 +1783,20 @@ int curses_terminal_config(Tn5250Terminal* This, Tn5250Config* config) {
     }
     if (tn5250_config_get_bool(config, "mouse")) {
         This->data->mouse_on_start = 1;
+    }
+    /* UTF-8 is used whenever the locale says so, unless told otherwise. */
+    if (tn5250_config_get(config, "utf8")) {
+        This->data->utf8_option = tn5250_config_get_bool(config, "utf8");
+        if (This->data->utf8_option && !curses_terminal_force_utf8()) {
+#ifdef HAVE_CURSES_WIDECHAR
+            fprintf(stderr, "tn5250: +utf8: no UTF-8 locale was found, set "
+                            "LANG to one of those `locale -a' lists.\n");
+#else
+            fprintf(stderr, "tn5250: +utf8: this tn5250 was built without "
+                            "the wide character curses library.\n");
+#endif
+            return -1;
+        }
     }
     return 0;
 }

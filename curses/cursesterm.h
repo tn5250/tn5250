@@ -22,7 +22,24 @@
 #ifndef CURSESTERM_H
 #define CURSESTERM_H
 
-#if defined(HAVE_NCURSES_NCURSES_H)
+#ifdef HAVE_CURSES_WIDECHAR
+/* The wide character functions, which are what it takes to display UTF-8,
+ * are only declared on request. */
+#ifndef _XOPEN_SOURCE_EXTENDED
+#define _XOPEN_SOURCE_EXTENDED 1
+#endif
+#ifndef NCURSES_WIDECHAR
+#define NCURSES_WIDECHAR 1
+#endif
+#endif
+
+#if defined(HAVE_NCURSESW_NCURSES_H)
+#include <ncursesw/ncurses.h>
+#include <ncursesw/term.h>
+#elif defined(HAVE_NCURSESW_CURSES_H)
+#include <ncursesw/curses.h>
+#include <ncursesw/term.h>
+#elif defined(HAVE_NCURSES_NCURSES_H)
 #include <ncurses/ncurses.h>
 #elif defined(HAVE_NCURSES_H)
 #include <ncurses.h>

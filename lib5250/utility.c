@@ -21,6 +21,7 @@
  */
 #include "tn5250-private.h"
 #include "transmaps.h"
+#include "unicodemaps.h"
 
 #if defined(__SVR4) && defined(__sun)
 #include <sys/filio.h>
@@ -41,6 +42,105 @@ static unsigned char mapfix[256];
 static unsigned char mapfix2[256];
 static unsigned char mapfix3[256];
 static unsigned char mapfix4[256];
+
+/* The 8-bit tables of the Windows maps whose CCSID has a euro sign, see
+ * char_map_win_euro. */
+#define WIN_EURO_MAPS 15
+static unsigned char win_euro_tables[WIN_EURO_MAPS][2][256];
+
+#define N_ELEMENTS(array) ((int)(sizeof(array) / sizeof((array)[0])))
+
+/* The tables of transmaps.h which translate between an 8-bit character set
+ * and EBCDIC. */
+#define MAP_ISO(part, ebcdic)                                                  \
+    iso_8859_##part##_to_##ebcdic, ebcdic##_to_iso_8859_##part
+#define MAP_WIN(codepage, ebcdic)                                              \
+    windows_##codepage##_to_##ebcdic, ebcdic##_to_windows_##codepage
+#define MAP_JIS(ebcdic) jis_x0201_to_##ebcdic, ebcdic##_to_jis_x0201
+
+/* This is the translation-map index which is scanned by
+ * tn5250_char_map_new.  Each map has the tables which translate between the
+ * local 8-bit character set and EBCDIC (from transmaps.h), and the table
+ * which translates EBCDIC to Unicode (from unicodemaps.h).
+ *
+ * The CCSIDs which only add the euro sign to another CCSID have the 8-bit
+ * tables of that CCSID.  As the ISO character sets have no euro sign, 8-bit
+ * terminals get it where the currency sign used to be, which is how
+ * ISO-8859-15 was made out of ISO-8859-1.  The Windows code pages do have a
+ * euro sign, see char_map_win_euro.
+ */
+Tn5250CharMap tn5250_transmaps[] = {
+    // clang-format off
+    { "37",       MAP_ISO(1, ibm037),     ibm037_to_unicode   },
+    { "256",      MAP_ISO(1, ibm256),     ibm256_to_unicode   },
+    { "273",      MAP_ISO(1, ibm273),     ibm273_to_unicode   },
+    { "277",      MAP_ISO(1, ibm277),     ibm277_to_unicode   },
+    { "278",      MAP_ISO(1, ibm278),     ibm278_to_unicode   },
+    { "280",      MAP_ISO(1, ibm280),     ibm280_to_unicode   },
+    { "284",      MAP_ISO(1, ibm284),     ibm284_to_unicode   },
+    { "285",      MAP_ISO(1, ibm285),     ibm285_to_unicode   },
+    { "297",      MAP_ISO(1, ibm297),     ibm297_to_unicode   },
+    { "500",      MAP_ISO(1, ibm500),     ibm500_to_unicode   },
+    { "871",      MAP_ISO(1, ibm871),     ibm871_to_unicode   },
+    { "870",      MAP_ISO(2, ibm870),     ibm870_to_unicode   },
+    { "905",      MAP_ISO(3, ibm905),     ibm905_to_unicode   },
+    { "880",      MAP_ISO(5, ibm880),     ibm880_to_unicode   },
+    { "420",      MAP_ISO(6, ibm420),     ibm420_to_unicode   },
+    { "875",      MAP_ISO(7, ibm875),     ibm875_to_unicode   },
+    { "424",      MAP_ISO(8, ibm424),     ibm424_to_unicode   },
+    { "1026",     MAP_ISO(9, ibm1026),    ibm1026_to_unicode  },
+    { "290",      MAP_JIS(ibm290),        ibm290_to_unicode   },
+    { "1140",     MAP_ISO(1, ibm037),     ibm1140_to_unicode  },
+    { "1141",     MAP_ISO(1, ibm273),     ibm1141_to_unicode  },
+    { "1142",     MAP_ISO(1, ibm277),     ibm1142_to_unicode  },
+    { "1143",     MAP_ISO(1, ibm278),     ibm1143_to_unicode  },
+    { "1144",     MAP_ISO(1, ibm280),     ibm1144_to_unicode  },
+    { "1145",     MAP_ISO(1, ibm284),     ibm1145_to_unicode  },
+    { "1146",     MAP_ISO(1, ibm285),     ibm1146_to_unicode  },
+    { "1147",     MAP_ISO(1, ibm297),     ibm1147_to_unicode  },
+    { "1148",     MAP_ISO(1, ibm500),     ibm1148_to_unicode  },
+    { "1149",     MAP_ISO(1, ibm871),     ibm1149_to_unicode  },
+    { "1153",     MAP_ISO(2, ibm870),     ibm1153_to_unicode  },
+    { "1155",     MAP_ISO(9, ibm1026),    ibm1155_to_unicode  },
+    { "4971",     MAP_ISO(7, ibm875),     ibm4971_to_unicode  },
+    { "12712",    MAP_ISO(8, ibm424),     ibm12712_to_unicode },
+    { "16804",    MAP_ISO(6, ibm420),     ibm16804_to_unicode },
+    { "win37",    MAP_WIN(1252, ibm037),  ibm037_to_unicode   },
+    { "win256",   MAP_WIN(1252, ibm256),  ibm256_to_unicode   },
+    { "win273",   MAP_WIN(1252, ibm273),  ibm273_to_unicode   },
+    { "win277",   MAP_WIN(1252, ibm277),  ibm277_to_unicode   },
+    { "win278",   MAP_WIN(1252, ibm278),  ibm278_to_unicode   },
+    { "win280",   MAP_WIN(1252, ibm280),  ibm280_to_unicode   },
+    { "win284",   MAP_WIN(1252, ibm284),  ibm284_to_unicode   },
+    { "win285",   MAP_WIN(1252, ibm285),  ibm285_to_unicode   },
+    { "win297",   MAP_WIN(1252, ibm297),  ibm297_to_unicode   },
+    { "win500",   MAP_WIN(1252, ibm500),  ibm500_to_unicode   },
+    { "win871",   MAP_WIN(1252, ibm871),  ibm871_to_unicode   },
+    { "win870",   MAP_WIN(1250, ibm870),  ibm870_to_unicode   },
+    { "win905",   MAP_WIN(1254, ibm905),  ibm905_to_unicode   },
+    { "win880",   MAP_WIN(1251, ibm880),  ibm880_to_unicode   },
+    { "win420",   MAP_WIN(1256, ibm420),  ibm420_to_unicode   },
+    { "win875",   MAP_WIN(1253, ibm875),  ibm875_to_unicode   },
+    { "win424",   MAP_WIN(1255, ibm424),  ibm424_to_unicode   },
+    { "win1026",  MAP_WIN(1254, ibm1026), ibm1026_to_unicode  },
+    { "win1140",  MAP_WIN(1252, ibm037),  ibm1140_to_unicode  },
+    { "win1141",  MAP_WIN(1252, ibm273),  ibm1141_to_unicode  },
+    { "win1142",  MAP_WIN(1252, ibm277),  ibm1142_to_unicode  },
+    { "win1143",  MAP_WIN(1252, ibm278),  ibm1143_to_unicode  },
+    { "win1144",  MAP_WIN(1252, ibm280),  ibm1144_to_unicode  },
+    { "win1145",  MAP_WIN(1252, ibm284),  ibm1145_to_unicode  },
+    { "win1146",  MAP_WIN(1252, ibm285),  ibm1146_to_unicode  },
+    { "win1147",  MAP_WIN(1252, ibm297),  ibm1147_to_unicode  },
+    { "win1148",  MAP_WIN(1252, ibm500),  ibm1148_to_unicode  },
+    { "win1149",  MAP_WIN(1252, ibm871),  ibm1149_to_unicode  },
+    { "win1153",  MAP_WIN(1250, ibm870),  ibm1153_to_unicode  },
+    { "win1155",  MAP_WIN(1254, ibm1026), ibm1155_to_unicode  },
+    { "win4971",  MAP_WIN(1253, ibm875),  ibm4971_to_unicode  },
+    { "win12712", MAP_WIN(1255, ibm424),  ibm12712_to_unicode },
+    { "win16804", MAP_WIN(1256, ibm420),  ibm16804_to_unicode },
+    { NULL,       NULL, NULL,             NULL                }
+    // clang-format on
+};
 
 #ifndef _WIN32
 
@@ -196,7 +296,9 @@ const char* tn5250_strerror(void) {
  * INPUTS
  *    Tn5250Char           ascii      - The local character to translate.
  * DESCRIPTION
- *    Translate the specified character from local to remote.
+ *    Translate the specified character from local to remote.  The local
+ *    character is in the 8-bit character set which goes with the map (such
+ *    as ISO-8859-1), see tn5250_char_map_from_unicode for Unicode.
  *****/
 Tn5250Char tn5250_char_map_to_remote(Tn5250CharMap* map, Tn5250Char ascii) {
     return map->to_remote_map[ascii];
@@ -210,7 +312,9 @@ Tn5250Char tn5250_char_map_to_remote(Tn5250CharMap* map, Tn5250Char ascii) {
  * INPUTS
  *    Tn5250Char           ebcdic     - The remote character to translate.
  * DESCRIPTION
- *    Translate the specified character from remote character to local.
+ *    Translate the specified character from remote character to local.  The
+ *    local character is in the 8-bit character set which goes with the map
+ *    (such as ISO-8859-1), see tn5250_char_map_to_unicode for Unicode.
  *****/
 Tn5250Char tn5250_char_map_to_local(Tn5250CharMap* map, Tn5250Char ebcdic) {
     switch (ebcdic) {
@@ -221,6 +325,310 @@ Tn5250Char tn5250_char_map_to_local(Tn5250CharMap* map, Tn5250Char ebcdic) {
     default:
         return map->to_local_map[ebcdic];
     }
+}
+
+/****f* lib5250/tn5250_char_map_to_unicode
+ * NAME
+ *    tn5250_char_map_to_unicode
+ * SYNOPSIS
+ *    uc = tn5250_char_map_to_unicode (map, ebcdic);
+ * INPUTS
+ *    Tn5250CharMap *      map        - The character map to use.
+ *    Tn5250Char           ebcdic     - The remote character to translate.
+ * DESCRIPTION
+ *    Translate the specified character from remote character to Unicode.
+ *    TN5250_UNICODE_REPLACEMENT is returned for the characters which are
+ *    not defined by the character map.
+ *****/
+Tn5250Unicode tn5250_char_map_to_unicode(Tn5250CharMap* map,
+                                         Tn5250Char ebcdic) {
+    switch (ebcdic) {
+    case 0x1C:
+        return '*'; /* This should be an overstriken asterisk (DUP) */
+    case 0:
+        return ' ';
+    default:
+        /* Maps which weren't taken from tn5250_transmaps may lack a Unicode
+         * table: the best guess for their local characters is ISO-8859-1. */
+        if (map->to_unicode_map == NULL) {
+            return map->to_local_map[ebcdic];
+        }
+        return map->to_unicode_map[ebcdic];
+    }
+}
+
+/****f* lib5250/tn5250_char_map_from_unicode
+ * NAME
+ *    tn5250_char_map_from_unicode
+ * SYNOPSIS
+ *    if (tn5250_char_map_from_unicode (map, uc, &ebcdic))
+ *       ;
+ * INPUTS
+ *    Tn5250CharMap *      map        - The character map to use.
+ *    Tn5250Unicode        uc         - The Unicode character to translate.
+ *    Tn5250Char *         ebcdic     - Where to store the remote character.
+ * DESCRIPTION
+ *    Translate the specified character from Unicode to remote character.
+ *    Returns 1 if the character was translated, or 0 if the remote character
+ *    set has no such character (in which case ebcdic is left alone).  Only
+ *    the displayable characters are translated, not the control codes.
+ *****/
+int tn5250_char_map_from_unicode(Tn5250CharMap* map, Tn5250Unicode uc,
+                                 Tn5250Char* ebcdic) {
+    int i;
+
+    if (uc < 0x20 || uc == TN5250_UNICODE_REPLACEMENT) {
+        return 0;
+    }
+
+    if (map->to_unicode_map == NULL) {
+        if (uc > 0xFF) {
+            return 0;
+        }
+        *ebcdic = map->to_remote_map[uc];
+        return 1;
+    }
+
+    /* Typing is slow enough for a linear search not to matter, and the
+     * displayable characters are all between 0x40 and 0xFE. */
+    for (i = 0x40; i < 0xFF; i++) {
+        if (map->to_unicode_map[i] == uc) {
+            *ebcdic = (Tn5250Char)i;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/****f* lib5250/tn5250_utf8_encode
+ * NAME
+ *    tn5250_utf8_encode
+ * SYNOPSIS
+ *    len = tn5250_utf8_encode (uc, buf);
+ * INPUTS
+ *    Tn5250Unicode        uc         - The Unicode character to encode.
+ *    char *               utf8       - Buffer of at least TN5250_UTF8_MAX
+ *                                      bytes.
+ * DESCRIPTION
+ *    Encode a Unicode character in UTF-8.  Returns the number of bytes
+ *    stored in the buffer (which doesn't get a terminating NUL), or 0 if
+ *    this is not a character which can be encoded.
+ *****/
+int tn5250_utf8_encode(Tn5250Unicode uc, char* utf8) {
+    if (uc < 0x80) {
+        utf8[0] = (char)uc;
+        return 1;
+    }
+    if (uc < 0x800) {
+        utf8[0] = (char)(0xC0 | (uc >> 6));
+        utf8[1] = (char)(0x80 | (uc & 0x3F));
+        return 2;
+    }
+    if (uc >= 0xD800 && uc <= 0xDFFF) {
+        return 0; /* Surrogates aren't characters. */
+    }
+    if (uc < 0x10000) {
+        utf8[0] = (char)(0xE0 | (uc >> 12));
+        utf8[1] = (char)(0x80 | ((uc >> 6) & 0x3F));
+        utf8[2] = (char)(0x80 | (uc & 0x3F));
+        return 3;
+    }
+    if (uc < 0x110000) {
+        utf8[0] = (char)(0xF0 | (uc >> 18));
+        utf8[1] = (char)(0x80 | ((uc >> 12) & 0x3F));
+        utf8[2] = (char)(0x80 | ((uc >> 6) & 0x3F));
+        utf8[3] = (char)(0x80 | (uc & 0x3F));
+        return 4;
+    }
+    return 0;
+}
+
+/****f* lib5250/tn5250_utf8_decode
+ * NAME
+ *    tn5250_utf8_decode
+ * SYNOPSIS
+ *    used = tn5250_utf8_decode (buf, len, &uc);
+ * INPUTS
+ *    const char *         utf8       - The bytes to decode.
+ *    int                  len        - How many bytes there are.
+ *    Tn5250Unicode *      uc         - Where to store the character.
+ * DESCRIPTION
+ *    Decode the UTF-8 character at the start of a buffer.  Returns the
+ *    number of bytes this character is made of, 0 if the buffer ends before
+ *    the character does (there might be more to come), or -1 if the buffer
+ *    doesn't start with a valid character (in which case the first byte
+ *    should be skipped).
+ *****/
+int tn5250_utf8_decode(const char* utf8, int len, Tn5250Unicode* uc) {
+    const unsigned char* s = (const unsigned char*)utf8;
+    Tn5250Unicode c, min;
+    int need, i;
+
+    if (len <= 0) {
+        return 0;
+    }
+
+    if (s[0] < 0x80) {
+        *uc = s[0];
+        return 1;
+    }
+    else if (s[0] >= 0xC2 && s[0] <= 0xDF) {
+        need = 2;
+        c = s[0] & 0x1F;
+        min = 0x80;
+    }
+    else if (s[0] >= 0xE0 && s[0] <= 0xEF) {
+        need = 3;
+        c = s[0] & 0x0F;
+        min = 0x800;
+    }
+    else if (s[0] >= 0xF0 && s[0] <= 0xF4) {
+        need = 4;
+        c = s[0] & 0x07;
+        min = 0x10000;
+    }
+    else {
+        return -1;
+    }
+
+    for (i = 1; i < need; i++) {
+        if (i == len) {
+            return 0;
+        }
+        if ((s[i] & 0xC0) != 0x80) {
+            return -1;
+        }
+        c = (c << 6) | (s[i] & 0x3F);
+    }
+
+    /* Reject what a strict decoder must: overlong forms, surrogates and
+     * what is beyond Unicode. */
+    if (c < min || c > 0x10FFFF || (c >= 0xD800 && c <= 0xDFFF)) {
+        return -1;
+    }
+
+    *uc = c;
+    return need;
+}
+
+/****f* lib5250/tn5250_unicode_toupper
+ * NAME
+ *    tn5250_unicode_toupper
+ * SYNOPSIS
+ *    uc = tn5250_unicode_toupper (uc);
+ * INPUTS
+ *    Tn5250Unicode        uc         - The Unicode character to convert.
+ * DESCRIPTION
+ *    Convert a character to upper case.  Unlike towupper(), this neither
+ *    depends on the locale nor on wchar_t being Unicode, but it only knows
+ *    the characters of the remote character sets.
+ *****/
+Tn5250Unicode tn5250_unicode_toupper(Tn5250Unicode uc) {
+    int low = 0;
+    int high = N_ELEMENTS(unicode_upper_map) - 1;
+
+    while (low <= high) {
+        int mid = (low + high) / 2;
+        if (unicode_upper_map[mid][0] == uc) {
+            return unicode_upper_map[mid][1];
+        }
+        if (unicode_upper_map[mid][0] < uc) {
+            low = mid + 1;
+        }
+        else {
+            high = mid - 1;
+        }
+    }
+    return uc;
+}
+
+/****f* lib5250/tn5250_unicode_isalpha
+ * NAME
+ *    tn5250_unicode_isalpha
+ * SYNOPSIS
+ *    if (tn5250_unicode_isalpha (uc))
+ *       ;
+ * INPUTS
+ *    Tn5250Unicode        uc         - The Unicode character to test.
+ * DESCRIPTION
+ *    Determines whether a character is alphabetic.  Unlike iswalpha(), this
+ *    neither depends on the locale nor on wchar_t being Unicode, but it only
+ *    knows the characters of the remote character sets.
+ *****/
+int tn5250_unicode_isalpha(Tn5250Unicode uc) {
+    int low = 0;
+    int high = N_ELEMENTS(unicode_alpha_ranges) - 1;
+
+    while (low <= high) {
+        int mid = (low + high) / 2;
+        if (uc < unicode_alpha_ranges[mid][0]) {
+            high = mid - 1;
+        }
+        else if (uc > unicode_alpha_ranges[mid][1]) {
+            low = mid + 1;
+        }
+        else {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/****i* lib5250/char_map_win_euro
+ * NAME
+ *    char_map_win_euro
+ * SYNOPSIS
+ *    char_map_win_euro (map);
+ * INPUTS
+ *    Tn5250CharMap *      map        - One of tn5250_transmaps.
+ * DESCRIPTION
+ *    Unlike the ISO character sets, the Windows code pages have a euro
+ *    sign, which is unknown to the 8-bit tables as they were made for
+ *    CCSIDs without one.  If this is the Windows map of a CCSID which has
+ *    a euro sign, give it 8-bit tables of its own which know about it.
+ *
+ *    The euro sign is 0x80 in the code pages of all the CCSIDs we have with
+ *    a euro sign (1250 and 1252 to 1256).  Mind that it is 0x88 in 1251.
+ *****/
+static void char_map_win_euro(Tn5250CharMap* map) {
+    Tn5250CharMap* t;
+    unsigned char* to_remote;
+    unsigned char* to_local;
+    int euro = 0;
+    int n = 0;
+    int e;
+
+    /* Each of these maps has its own tables: count the ones before it. */
+    for (t = tn5250_transmaps; t->name != NULL; t++) {
+        if (strncmp(t->name, "win", 3) != 0) {
+            continue;
+        }
+        e = 0x40;
+        while (e < 0xFF && t->to_unicode_map[e] != 0x20AC) {
+            e++;
+        }
+        if (t == map) {
+            euro = (e < 0xFF) ? e : 0;
+            break;
+        }
+        if (e < 0xFF) {
+            n++;
+        }
+    }
+    if (euro == 0 || n >= WIN_EURO_MAPS) {
+        return;
+    }
+
+    to_remote = win_euro_tables[n][0];
+    to_local = win_euro_tables[n][1];
+    if (map->to_remote_map != to_remote) {
+        memcpy(to_remote, map->to_remote_map, 256);
+        memcpy(to_local, map->to_local_map, 256);
+        map->to_remote_map = to_remote;
+        map->to_local_map = to_local;
+    }
+    to_remote[0x80] = (unsigned char)euro;
+    to_local[euro] = 0x80;
 }
 
 /****f* lib5250/tn5250_char_map_new
@@ -244,7 +652,9 @@ Tn5250CharMap* tn5250_char_map_new(const char* map) {
 
     TN5250_LOG(("tn5250_char_map_new: map = \"%s\"\n", map));
 
-    if (!strcmp(map, "870") || !strcmp(map, "win870")) {
+    /* 1153 is 870 with a euro sign, and has the same 8-bit tables. */
+    if (!strcmp(map, "870") || !strcmp(map, "win870") || !strcmp(map, "1153") ||
+        !strcmp(map, "win1153")) {
 
         TN5250_LOG(("tn5250_char_map_new: Installing 870 workaround\n"));
 
@@ -282,15 +692,17 @@ Tn5250CharMap* tn5250_char_map_new(const char* map) {
         mapfix4[186] = 163;
 
         for (t = tn5250_transmaps; t->name; t++) {
-            if (!strcmp(t->name, "win870")) {
+            if (!strcmp(t->name, "win870") || !strcmp(t->name, "win1153")) {
                 t->to_remote_map = mapfix;
                 t->to_local_map = mapfix2;
-                TN5250_LOG(("Workaround installed for map \"win870\"\n"));
+                /* This just took its euro sign away from win1153. */
+                char_map_win_euro(t);
+                TN5250_LOG(("Workaround installed for map \"%s\"\n", t->name));
             }
-            else if (!strcmp(t->name, "870")) {
+            else if (!strcmp(t->name, "870") || !strcmp(t->name, "1153")) {
                 t->to_remote_map = mapfix3;
                 t->to_local_map = mapfix4;
-                TN5250_LOG(("Workaround installed for map \"870\"\n"));
+                TN5250_LOG(("Workaround installed for map \"%s\"\n", t->name));
             }
         }
     }
@@ -304,6 +716,7 @@ Tn5250CharMap* tn5250_char_map_new(const char* map) {
         for (t = tn5250_transmaps; t->name; t++) {
             if (strcmp(t->name, winmap) == 0) {
                 TN5250_LOG(("Using map %s\n", t->name));
+                char_map_win_euro(t);
                 return t;
             }
         }
@@ -312,6 +725,7 @@ Tn5250CharMap* tn5250_char_map_new(const char* map) {
 
     for (t = tn5250_transmaps; t->name; t++) {
         if (strcmp(t->name, map) == 0) {
+            char_map_win_euro(t);
             return t;
         }
     }

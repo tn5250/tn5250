@@ -30,6 +30,16 @@ typedef unsigned short Tn5250Uint16;
 typedef signed short Tn5250Sint16;
 typedef unsigned char Tn5250Char;
 
+/* A Unicode code point. */
+typedef unsigned int Tn5250Unicode;
+
+/* What tn5250_char_map_to_unicode returns for the EBCDIC characters which
+ * the character map does not define. */
+#define TN5250_UNICODE_REPLACEMENT 0xFFFD
+
+/* The size of a buffer which can hold any character encoded in UTF-8. */
+#define TN5250_UTF8_MAX 4
+
 int tn5250_has_error(void);
 void tn5250_clear_error(void);
 const char* tn5250_strerror(void);
@@ -41,6 +51,9 @@ const char* tn5250_strerror(void);
  *    Tn5250CharMap *map = tn5250_char_map_new ("37");
  *    ac = tn5250_char_map_to_local(map,ec);
  *    ec = tn5250_char_map_to_remote(map,ac);
+ *    uc = tn5250_char_map_to_unicode(map,ec);
+ *    if (tn5250_char_map_from_unicode(map,uc,&ec))
+ *	 ;
  *    if (tn5250_char_map_printable_p (map,ec))
  *	 ;
  *    if (tn5250_char_map_attribute_p (map,ec))
@@ -48,9 +61,12 @@ const char* tn5250_strerror(void);
  *    tn5250_char_map_destroy(map);
  * DESCRIPTION
  *    The Tn5250CharMap object embodies a translation map which can be
- *    used to translate characters from various flavours of ASCII and
- *    ISO character sets to various flavours of EBCDIC characters sets
- *    (and back).
+ *    used to translate characters from various flavours of EBCDIC
+ *    character sets to Unicode (and back).
+ *
+ *    For the terminals which can't handle Unicode, it also translates
+ *    EBCDIC to the 8-bit ASCII or ISO character set (the ``local''
+ *    character set) which is the closest to the EBCDIC character set.
  * SOURCE
  */
 
@@ -58,6 +74,7 @@ struct _Tn5250CharMap {
     const char* name;
     const unsigned char* to_remote_map;
     const unsigned char* to_local_map;
+    const Tn5250Uint16* to_unicode_map;
 };
 
 typedef struct _Tn5250CharMap Tn5250CharMap;
@@ -81,8 +98,19 @@ int tn5250_daemon(int nochdir, int noclose, int ignsigcld);
 Tn5250Char tn5250_char_map_to_remote(Tn5250CharMap* This, Tn5250Char ascii);
 Tn5250Char tn5250_char_map_to_local(Tn5250CharMap* This, Tn5250Char ebcdic);
 
+Tn5250Unicode tn5250_char_map_to_unicode(Tn5250CharMap* This,
+                                         Tn5250Char ebcdic);
+int tn5250_char_map_from_unicode(Tn5250CharMap* This, Tn5250Unicode uc,
+                                 Tn5250Char* ebcdic);
+
 int tn5250_char_map_printable_p(Tn5250CharMap* This, Tn5250Char data);
 int tn5250_char_map_attribute_p(Tn5250CharMap* This, Tn5250Char data);
+
+int tn5250_utf8_encode(Tn5250Unicode uc, char* utf8);
+int tn5250_utf8_decode(const char* utf8, int len, Tn5250Unicode* uc);
+
+Tn5250Unicode tn5250_unicode_toupper(Tn5250Unicode uc);
+int tn5250_unicode_isalpha(Tn5250Unicode uc);
 
 #define tn5250_new(type, count) (type*)calloc(sizeof(type), (count))
 

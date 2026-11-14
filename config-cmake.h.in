@@ -30,6 +30,10 @@
 #define HAVE_NCURSES_NCURSES_H
 #endif
 
+#cmakedefine HAVE_NCURSESW_NCURSES_H
+#cmakedefine HAVE_NCURSESW_CURSES_H
+#cmakedefine HAVE_CURSES_WIDECHAR
+
 #cmakedefine OPENSSL_FOUND
 #ifdef OPENSSL_FOUND
 #define HAVE_LIBSSL

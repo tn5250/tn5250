@@ -29,6 +29,10 @@ extern "C" {
 /* Flags */
 #define TN5250_TERMINAL_HAS_COLOR 0x0001
 
+/* The terminal displays Unicode (see tn5250_char_map_to_unicode) and the
+ * characters it gets from the keyboard are Unicode, see K_UNICODE. */
+#define TN5250_TERMINAL_HAS_UNICODE 0x0002
+
 /* Events */
 #define TN5250_TERMINAL_EVENT_KEY  0x0001
 #define TN5250_TERMINAL_EVENT_DATA 0x0002
@@ -107,6 +111,20 @@ extern "C" {
 #define K_COPY_TEXT  0xfffd /* no similar curses key */
 #define K_PASTE_TEXT 0xfffe /* no similar curses key */
 #define K_UNKNOW     0xffff
+
+/* Keys which aren't one of the above are characters.  A terminal normally
+ * returns them as characters of the local 8-bit character set, between 0x20
+ * and 0xff (see tn5250_char_map_to_remote).
+ *
+ * A terminal which has TN5250_TERMINAL_HAS_UNICODE among its flags returns
+ * Unicode characters instead.  As most of them would be mistaken for one of
+ * the keys above, they are returned as K_UNICODE(character).  Such a
+ * terminal may leave out K_UNICODE for the characters below 0x100, they are
+ * Unicode characters all the same. */
+#define K_UNICODE_FLAG    0x40000000
+#define K_UNICODE(u)      ((int)(K_UNICODE_FLAG | (u)))
+#define K_IS_UNICODE(k)   ((~0x1fffff & (k)) == K_UNICODE_FLAG)
+#define K_UNICODE_CHAR(k) ((Tn5250Unicode)(0x1fffff & (k)))
 
 struct _Tn5250Display;
 

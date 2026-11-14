@@ -226,6 +226,8 @@ Options:\n\
    +/-underscores          Use/don't use underscores instead of underline\n\
                            attribute.\n\
    +/-ruler		   Draw a ruler pointing to the cursor position\n\
+   +/-utf8                 Use/don't use UTF-8 with the terminal (default:\n\
+                           use it if the locale says the terminal does).\n\
    +/-version              Show emulator version and exit.\n\
    env.NAME=VALUE          Set telnet environment string NAME to VALUE.\n\
    env.TERM=TYPE           Emulate IBM terminal type (default: depends)");
